@@ -1,4 +1,4 @@
-# 🏪 ERP Runas
+# ERP Runas
 
 > Sistema ERP completo para comércio de alimentos e bebidas com arquitetura de microsserviços
 
@@ -11,21 +11,21 @@
 
 ---
 
-## 📋 Sobre o Projeto
+## Sobre o Projeto
 
 O **ERP Runas** é uma solução completa para gestão de pequenos e médios comércios de alimentos e bebidas, oferecendo:
 
-- ✅ **Gestão de Clientes** com crédito fiado e múltiplos endereços
-- ✅ **Catálogo de Produtos** com variantes e fornecedores
-- ✅ **Controle de Estoque** em tempo real com lotes e validade
-- ✅ **Sistema de Vendas** (balcão e online) - Em desenvolvimento
-- ✅ **Gestão Financeira** e cobranças automatizadas - Em desenvolvimento
-- ✅ **Notificações via WhatsApp** (Evolution API) - Em desenvolvimento
-- ✅ **Pagamentos via PIX** (Mercado Pago) - Em desenvolvimento
+-  **Gestão de Clientes** com crédito fiado e múltiplos endereços
+-  **Catálogo de Produtos** com variantes e fornecedores
+-  **Controle de Estoque** em tempo real com lotes e validade
+-  **Sistema de Vendas** (balcão e online) - Em desenvolvimento
+-  **Gestão Financeira** e cobranças automatizadas - Em desenvolvimento
+-  **Notificações via WhatsApp** (Evolution API) - Em desenvolvimento
+-  **Pagamentos via PIX** (Mercado Pago) - Em desenvolvimento
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Pré-requisitos
 
@@ -47,7 +47,7 @@ docker-compose up -d
 bash tests/test-mvp.sh
 ```
 
-**Pronto!** O sistema está rodando. 🎉
+**Pronto!** O sistema está rodando. 
 
 ### Acessar a Aplicação
 
@@ -65,12 +65,12 @@ Email: admin@runas.com
 Senha: Admin@123
 ```
 
-📖 **Guia completo**: [QUICK-START.md](./QUICK-START.md)  
-📖 **Teste de Estoque**: [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md)
+ **Guia completo**: [QUICK-START.md](./QUICK-START.md)  
+ **Teste de Estoque**: [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md)
 
 ---
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 O sistema é composto por **7 microsserviços independentes**:
 
@@ -99,19 +99,19 @@ O sistema é composto por **7 microsserviços independentes**:
 
 ### Características Técnicas
 
-- ✅ **Database per Service** - Cada microsserviço tem seu próprio PostgreSQL
-- ✅ **Event-Driven** - Comunicação assíncrona via RabbitMQ
-- ✅ **Cache Distribuído** - Redis para sessões e blacklist de tokens
-- ✅ **API Gateway** - Ponto único de entrada com autenticação centralizada
-- ✅ **Service-to-Service Communication** - HTTP para comunicação síncrona
-- ✅ **Health Checks** - Monitoramento de saúde de todos os serviços
-- ✅ **Docker Compose** - Orquestração completa de containers
+- **Database per Service** - Cada microsserviço tem seu próprio PostgreSQL
+- **Event-Driven** - Comunicação assíncrona via RabbitMQ
+- **Cache Distribuído** - Redis para sessões e blacklist de tokens
+- **API Gateway** - Ponto único de entrada com autenticação centralizada
+- **Service-to-Service Communication** - HTTP para comunicação síncrona
+- **Health Checks** - Monitoramento de saúde de todos os serviços
+- **Docker Compose** - Orquestração completa de containers
 
 ---
 
-## 📊 Status do MVP
+## Status do MVP
 
-### ✅ Componentes Implementados (100%)
+### Componentes Implementados (100%)
 
 | Componente | Status | Endpoints | Descrição |
 |------------|--------|-----------|-----------|
@@ -123,7 +123,7 @@ O sistema é composto por **7 microsserviços independentes**:
 
 **Total**: 70 endpoints REST funcionais | ~15.000 linhas de código
 
-### 🔨 Próximos Passos
+### Próximos Passos
 
 | Serviço | Prioridade | Status |
 |---------|-----------|--------|
@@ -136,7 +136,7 @@ O sistema é composto por **7 microsserviços independentes**:
 
 ---
 
-## 🛠️ Tecnologias
+## Tecnologias
 
 | Categoria | Tecnologia | Versão |
 |-----------|-----------|--------|
@@ -157,7 +157,7 @@ O sistema é composto por **7 microsserviços independentes**:
 
 ---
 
-## 📦 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 erp-runas/
@@ -205,7 +205,7 @@ erp-runas/
 
 ---
 
-## 🧪 Testes
+## Testes
 
 ### Testes Automatizados
 
@@ -215,22 +215,22 @@ bash tests/test-mvp.sh
 ```
 
 O script testa automaticamente:
-- ✅ Health checks de todos os serviços
-- ✅ Autenticação e geração de tokens
-- ✅ CRUD de clientes via gateway
-- ✅ CRUD de produtos via gateway
-- ✅ Logout e blacklist de tokens
+- Health checks de todos os serviços
+- Autenticação e geração de tokens
+- CRUD de clientes via gateway
+- CRUD de produtos via gateway
+- Logout e blacklist de tokens
 
 ### Testes Manuais
 
 Consulte os guias completos:
-- 📖 [QUICK-START.md](./QUICK-START.md) - Testes básicos
-- 📖 [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md) - Testes de estoque
-- 📖 [docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md) - Testes completos
+- [QUICK-START.md](./QUICK-START.md) - Testes básicos
+- [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md) - Testes de estoque
+- [docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md) - Testes completos
 
 ---
 
-## 🔐 Autenticação e Autorização
+## Autenticação e Autorização
 
 O sistema utiliza **OAuth2 com JWT** e **RBAC (Role-Based Access Control)**.
 
@@ -269,7 +269,7 @@ Header: Authorization: Bearer {access_token}
 
 ---
 
-## 📝 Comandos Úteis
+## Comandos Úteis
 
 ```bash
 # Gerenciamento de Containers
@@ -301,31 +301,31 @@ make help              # Lista todos os comandos disponíveis
 
 ---
 
-## 📚 Documentação
+## Documentação
 
 ### Documentação Essencial
 
-- 📖 [QUICK-START.md](./QUICK-START.md) - Guia rápido de 5 minutos
-- 📖 [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md) - Guia de teste do estoque
-- 📖 [FEATURES-FUTURAS.md](./FEATURES-FUTURAS.md) - Roadmap e features planejadas
-- 📊 [docs/mvp/RESUMO-EXECUTIVO.md](./docs/mvp/RESUMO-EXECUTIVO.md) - Visão geral do MVP
-- ✅ [docs/mvp/STATUS-FINAL.md](./docs/mvp/STATUS-FINAL.md) - Status detalhado
+- [QUICK-START.md](./QUICK-START.md) - Guia rápido de 5 minutos
+- [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md) - Guia de teste do estoque
+- [FEATURES-FUTURAS.md](./FEATURES-FUTURAS.md) - Roadmap e features planejadas
+- [docs/mvp/RESUMO-EXECUTIVO.md](./docs/mvp/RESUMO-EXECUTIVO.md) - Visão geral do MVP
+- [docs/mvp/STATUS-FINAL.md](./docs/mvp/STATUS-FINAL.md) - Status detalhado
 
 ### Documentação Técnica
 
-- 🏗️ [docs/ARQUITETURA-COMUNICACAO.md](./docs/ARQUITETURA-COMUNICACAO.md) - Arquitetura
-- 📐 [docs/ESPECIFICACAO-TECNICA.md](./docs/ESPECIFICACAO-TECNICA.md) - Especificações
-- 🗺️ [docs/MAPEAMENTO-ROTAS.md](./docs/MAPEAMENTO-ROTAS.md) - Endpoints
-- 💻 [docs/GUIA-IMPLEMENTACAO.md](./docs/GUIA-IMPLEMENTACAO.md) - Guia de desenvolvimento
+- [docs/ARQUITETURA-COMUNICACAO.md](./docs/ARQUITETURA-COMUNICACAO.md) - Arquitetura
+- [docs/ESPECIFICACAO-TECNICA.md](./docs/ESPECIFICACAO-TECNICA.md) - Especificações
+- [docs/MAPEAMENTO-ROTAS.md](./docs/MAPEAMENTO-ROTAS.md) - Endpoints
+- [docs/GUIA-IMPLEMENTACAO.md](./docs/GUIA-IMPLEMENTACAO.md) - Guia de desenvolvimento
 
 ### Testes
 
-- 🧪 [docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md) - Guia de testes
-- 📋 [docs/mvp/CHECKLIST-VALIDACAO.md](./docs/mvp/CHECKLIST-VALIDACAO.md) - Checklist
+- [docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md) - Guia de testes
+- [docs/mvp/CHECKLIST-VALIDACAO.md](./docs/mvp/CHECKLIST-VALIDACAO.md) - Checklist
 
 ---
 
-## 🤝 Contribuindo
+## Contribuindo
 
 Este é um projeto proprietário. Para contribuir:
 
@@ -336,17 +336,17 @@ Este é um projeto proprietário. Para contribuir:
 
 ---
 
-## 📄 Licença
+## Licença
 
 **Propriedade de Runas** - Todos os direitos reservados.
 
 Este software é proprietário e confidencial. Uso não autorizado é estritamente proibido.
 
-📖 **Licença completa**: [LICENSE.md](./LICENSE.md)
+**Licença completa**: [LICENSE.md](./LICENSE.md)
 
 ---
 
-## 👥 Equipe
+## Equipe
 
 Desenvolvido por **DenebCorp**
 
@@ -362,7 +362,7 @@ Para suporte técnico:
 
 ---
 
-## 🎯 Roadmap
+## Roadmap
 
 ### Q2 2026 (Atual - Maio/Junho)
 - [x] MVP com Gateway, Clientes e Produtos
@@ -386,7 +386,7 @@ Para suporte técnico:
 
 ---
 
-## 📊 Métricas do Projeto
+## Métricas do Projeto
 
 - **Linhas de código**: ~15.000 linhas Python
 - **Arquivos criados**: ~150 arquivos
@@ -399,7 +399,7 @@ Para suporte técnico:
 
 **Versão**: 1.0.0-MVP  
 **Última atualização**: 2026-05-14  
-**Status**: ✅ MVP 100% Funcional e Pronto para Testes
+**Status**: MVP 100% Funcional e Pronto para Testes
 
 ---
 
