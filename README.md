@@ -407,6 +407,6 @@ Para suporte técnico:
 
 **[⬆ Voltar ao topo](#-erp-runas)**
 
-Feito com ❤️ pela equipe **Runas**
+Feito com ❤️ pela equipe **DenebCorp**
 
 </div>
