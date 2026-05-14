@@ -348,7 +348,7 @@ Este software é proprietário e confidencial. Uso não autorizado é estritamen
 
 ## 👥 Equipe
 
-Desenvolvido por **Runas**
+Desenvolvido por **DenebCorp**
 
 ---
 
