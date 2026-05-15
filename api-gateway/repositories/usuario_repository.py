@@ -21,7 +21,8 @@ class UsuarioRepository:
     @staticmethod
     def hash_password(password: str) -> str:
         """Hash de senha usando bcrypt."""
-        return pwd_context.hash(password)
+        # Bcrypt limita senhas a 72 bytes
+        return pwd_context.hash(password[:72])
     
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:

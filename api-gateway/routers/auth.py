@@ -13,13 +13,53 @@ from repositories.usuario_repository import UsuarioRepository
 from auth.jwt import create_access_token, create_refresh_token, verify_token
 from auth.oauth2 import get_current_user
 from auth.redis_client import get_redis
-from schemas.usuario import Token, RefreshTokenRequest
+from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioResponse
 from models.usuario import Usuario
 from config import settings
 
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 log = structlog.get_logger()
+
+
+@router.post("/register", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    data: UsuarioCreate,
+    db: Annotated[AsyncSession, Depends(get_db)]
+):
+    """
+    Registra um novo usuário.
+    
+    Por padrão, cria usuários com role OPERADOR.
+    Para criar ADMIN, use role: "ADMIN" no body.
+    """
+    repo = UsuarioRepository(db)
+    
+    # Verificar se email já existe
+    existing = await repo.buscar_por_email(data.email)
+    if existing:
+        log.warning("register.email_exists", email=data.email)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email já cadastrado"
+        )
+    
+    # Criar usuário
+    usuario = await repo.criar(data)
+    
+    log.info("register.success", user_id=str(usuario.id), email=usuario.email, role=usuario.role.value)
+    
+    return usuario
+
+
+@router.get("/me", response_model=UsuarioResponse)
+async def get_current_user_info(
+    current_user: Annotated[Usuario, Depends(get_current_user)]
+):
+    """
+    Retorna informações do usuário logado.
+    """
+    return current_user
 
 
 @router.post("/login", response_model=Token)

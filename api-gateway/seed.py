@@ -24,7 +24,7 @@ async def seed_admin():
     - ADMIN_NAME (default: Administrador)
     """
     admin_email = os.getenv("ADMIN_EMAIL", "admin@runas.com")
-    admin_password = os.getenv("ADMIN_PASSWORD", "Admin@123")
+    admin_password = os.getenv("ADMIN_PASSWORD", "Admin@123")[:72]  # Bcrypt limita a 72 bytes
     admin_name = os.getenv("ADMIN_NAME", "Administrador")
     
     async with AsyncSessionLocal() as db:
