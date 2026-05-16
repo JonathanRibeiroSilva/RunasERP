@@ -214,8 +214,7 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
       - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
-      - ./pgadmin/pgpass:/var/lib/pgadmin/pgpass:ro
-    user: root
+      - ./pgadmin/pgpass:/tmp/pgpass:ro
     depends_on:
       - db-gateway
       - db-clientes
@@ -226,6 +225,14 @@ services:
       - db-notificacoes
     networks:
       - erp-network
+    entrypoint: >
+      /bin/sh -c "
+      mkdir -p /var/lib/pgadmin/storage/admin_runas.com &&
+      cp /tmp/pgpass /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+      chmod 600 /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+      chown -R pgadmin:root /var/lib/pgadmin/storage &&
+      /entrypoint.sh
+      "
 
   # ============================================
   # EVOLUTION API (WhatsApp)
