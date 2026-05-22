@@ -591,3 +591,405 @@
 - Usado para rastreabilidade
 - **Exemplo**: `LOTE-2026-001`, `FAB-20260521`
 
+
+**RN-LOT-002: Validação de Quantidades**
+- `quantidade` deve ser maior que zero
+- `quantidade_inicial` é registrada na criação e não muda
+- `quantidade` diminui conforme o lote é consumido
+
+**RN-LOT-003: Validação de Datas**
+- `data_validade` deve ser posterior a `data_fabricacao`
+- Se `data_validade` for fornecida, sistema monitora vencimento
+- Lotes sem data de validade não geram alertas
+
+**RN-LOT-004: Status do Lote**
+- `ATIVO`: Lote disponível para uso
+- `VENCIDO`: Lote passou da data de validade
+- `BLOQUEADO`: Lote bloqueado manualmente (recall, problema de qualidade)
+
+**RN-LOT-005: Alertas de Vencimento**
+- Sistema verifica diariamente lotes próximos do vencimento
+- Alerta é gerado quando faltam 7 dias para vencer
+- Notificação via WhatsApp para gerentes
+
+**RN-LOT-006: Rastreabilidade**
+- Código do lote permite rastreamento completo
+- Todas as movimentações registram o lote de origem
+- Usado para recalls e controle de qualidade
+
+---
+
+### 3.4. Entidade: Inventário
+
+#### 📊 Estrutura de Dados
+
+| Campo | Tipo | Obrigatório | Único | Descrição |
+|-------|------|-------------|-------|-----------|
+| `id` | UUID | Sim | Sim | Identificador único |
+| `data_inventario` | DateTime | Sim | Não | Data da contagem |
+| `responsavel` | String(200) | Sim | Não | Nome do responsável |
+| `observacao` | Text | Não | Não | Observações gerais |
+| `finalizado` | Boolean | Sim | Não | Inventário finalizado? |
+| `data_finalizacao` | DateTime | Não | Não | Data de finalização |
+| `created_at` | DateTime | Sim | Não | Data de criação |
+| `updated_at` | DateTime | Sim | Não | Data de atualização |
+
+#### ✅ Regras de Validação
+
+**RN-INV-001: Criação de Inventário**
+- Inventário é criado com `finalizado = false`
+- Deve ter pelo menos um item para ser criado
+- Responsável é obrigatório
+
+**RN-INV-002: Itens do Inventário**
+- Cada item registra:
+  - `quantidade_sistema`: Quantidade no sistema
+  - `quantidade_contada`: Quantidade física contada
+  - `diferenca`: Calculada automaticamente
+- Diferença pode ser positiva (sobra) ou negativa (falta)
+
+**RN-INV-003: Finalização de Inventário**
+- Apenas inventários não finalizados podem ser finalizados
+- Ao finalizar:
+  - Todos os itens com diferença são ajustados
+  - Movimentações de ajuste são criadas
+  - Campo `finalizado` é marcado como `true`
+  - `data_finalizacao` é registrada
+- Inventário finalizado não pode ser editado
+
+**RN-INV-004: Ajustes Automáticos**
+- Ao finalizar inventário, sistema ajusta automaticamente:
+  - Aumenta quantidade se diferença for positiva
+  - Diminui quantidade se diferença for negativa
+- Cada ajuste gera uma movimentação tipo `AJUSTE`
+
+---
+
+## 4. Integrações entre Serviços
+
+### 4.1. Cliente ↔ Vendas
+
+**Validações ao criar venda:**
+- Cliente deve existir e estar ativo
+- Cliente não pode estar bloqueado
+- Se venda fiada: verificar crédito disponível
+
+**Atualizações automáticas:**
+- Venda fiada: debita crédito do cliente
+- Pagamento recebido: credita crédito do cliente
+
+---
+
+### 4.2. Produto ↔ Estoque
+
+**Validações ao movimentar estoque:**
+- Produto deve existir no serviço de Produtos
+- Se variante fornecida, deve existir e estar ativa
+- Produto deve estar ativo para entrada/saída
+
+**Sincronização:**
+- Estoque mantém `produto_id` e `variante_id` como referências
+- Não há FK física (serviços separados)
+- Validação é feita via API
+
+---
+
+### 4.3. Estoque ↔ Vendas
+
+**Fluxo de reserva:**
+1. Cliente adiciona produto ao carrinho
+2. Sistema reserva estoque (diminui disponível)
+3. Reserva expira em X horas se não finalizada
+4. Ao finalizar venda: estoque é baixado e reserva removida
+5. Ao cancelar: reserva é liberada
+
+**Validações:**
+- Não pode vender mais que o disponível
+- Reserva não pode exceder disponível
+- Saída de estoque requer documento (número da venda)
+
+---
+
+### 4.4. Cliente ↔ Financeiro
+
+**Integração de crédito:**
+- Venda fiada cria conta a receber no Financeiro
+- Conta a receber debita crédito do cliente
+- Pagamento recebido credita crédito do cliente
+- Cliente é bloqueado se crédito ficar negativo
+
+---
+
+### 4.5. Eventos Assíncronos (RabbitMQ)
+
+**Eventos publicados:**
+
+| Evento | Publicador | Consumidores | Descrição |
+|--------|-----------|--------------|-----------|
+| `estoque.entrada` | Estoque | Relatórios | Entrada de mercadoria |
+| `estoque.saida` | Estoque | Relatórios | Saída de mercadoria |
+| `estoque.alerta_baixo` | Estoque | Notificações | Estoque abaixo do mínimo |
+| `estoque.lote_vencido` | Estoque | Notificações | Lote venceu |
+| `venda.finalizada` | Vendas | Financeiro, Estoque | Venda concluída |
+| `venda.cancelada` | Vendas | Estoque, Financeiro | Venda cancelada |
+| `pagamento.recebido` | Financeiro | Clientes | Pagamento confirmado |
+| `cliente.bloqueado` | Clientes | Vendas | Cliente foi bloqueado |
+
+---
+
+## 5. Validações Globais
+
+### 5.1. Validações de Formato
+
+**CPF:**
+- 11 dígitos numéricos
+- Validação de dígitos verificadores
+- Não aceita CPFs conhecidos como inválidos (111.111.111-11)
+
+**Telefone:**
+- Formato E.164: `+[código país][DDD][número]`
+- Exemplo: `+5511999999999`
+
+**CEP:**
+- 8 dígitos numéricos
+- Exemplo: `01234567`
+
+**UF:**
+- 2 caracteres maiúsculos
+- Deve ser sigla válida de estado brasileiro
+
+**Email:**
+- Formato válido de email
+- Máximo 255 caracteres
+
+---
+
+### 5.2. Validações de Negócio
+
+**Unicidade:**
+- CPF único por cliente
+- SKU único por variante
+- Código de lote único
+- Email único por usuário (gateway)
+
+**Valores Monetários:**
+- Sempre maior ou igual a zero
+- 2 casas decimais
+- Tipo: Decimal(10,2)
+
+**Quantidades:**
+- Sempre maior ou igual a zero
+- Tipo: Float (permite fracionados)
+
+**Datas:**
+- Data de nascimento: no passado
+- Data de validade: no futuro
+- Data de fabricação: anterior à validade
+
+---
+
+### 5.3. Regras de Autorização (RBAC)
+
+| Operação | ADMIN | GERENTE | VENDEDOR | OPERADOR |
+|----------|-------|---------|----------|----------|
+| Criar Cliente | ✅ | ✅ | ✅ | ❌ |
+| Editar Cliente | ✅ | ✅ | ❌ | ❌ |
+| Desativar Cliente | ✅ | ❌ | ❌ | ❌ |
+| Criar Produto | ✅ | ✅ | ❌ | ❌ |
+| Editar Produto | ✅ | ✅ | ❌ | ❌ |
+| Entrada Estoque | ✅ | ✅ | ❌ | ❌ |
+| Saída Estoque | ✅ | ✅ | ✅ | ✅ |
+| Criar Venda | ✅ | ✅ | ✅ | ✅ |
+| Cancelar Venda | ✅ | ✅ | ❌ | ❌ |
+| Inventário | ✅ | ✅ | ❌ | ❌ |
+| Ajustar Crédito | ✅ | ✅ | ❌ | ❌ |
+
+---
+
+## 6. Casos de Uso Especiais
+
+### 6.1. Carrinho e Pedido
+
+#### 6.1.1. Criação e Gestão de Carrinho
+
+**RN-CAR-001: Carrinho Anônimo**
+- Cliente pode criar carrinho sem estar autenticado
+- Carrinho é identificado por token único (UUID)
+- Carrinho anônimo pode ser convertido em carrinho de cliente
+
+**RN-CAR-002: Expiração de Carrinho**
+- Carrinho tem TTL (Time To Live) de 2 horas
+- Após expiração, reservas são liberadas automaticamente
+- Job Celery executa a cada 15 minutos para limpar carrinhos expirados
+
+**RN-CAR-003: Reserva de Estoque no Carrinho**
+- Ao adicionar item ao carrinho, estoque é reservado
+- Reserva diminui `quantidade_disponivel`
+- Reserva aumenta `quantidade_reservada`
+- Quantidade física não é alterada na reserva
+
+**RN-CAR-004: Validação de Disponibilidade**
+- Sistema verifica disponibilidade antes de adicionar ao carrinho
+- Se estoque insuficiente, item não é adicionado
+- Cliente é notificado da indisponibilidade
+
+**RN-CAR-005: Remoção de Item**
+- Ao remover item, reserva é liberada automaticamente
+- `quantidade_disponivel` é restaurada
+- `quantidade_reservada` é decrementada
+
+#### 6.1.2. Checkout e Criação de Pedido
+
+**RN-PED-001: Validações no Checkout**
+- Cliente deve estar cadastrado e ativo
+- Cliente não pode estar bloqueado
+- Endereço de entrega deve existir
+- Carrinho não pode estar vazio
+
+**RN-PED-002: Conversão Carrinho → Pedido**
+- Checkout cria pedido com status `PENDENTE`
+- Reservas são mantidas durante processamento
+- Carrinho é removido após criação do pedido
+
+**RN-PED-003: Formas de Pagamento**
+- **À vista (PIX/Cartão)**: Pedido fica `AGUARDANDO_PAGAMENTO`
+- **Fiado**: Valida crédito e cria conta a receber
+
+**RN-PED-004: Pagamento PIX**
+- Sistema gera QR Code via Mercado Pago
+- Pedido aguarda webhook de confirmação
+- Timeout de 30 minutos para pagamento
+
+**RN-PED-005: Pagamento Fiado**
+- Valida crédito disponível do cliente
+- Cria conta a receber no Financeiro
+- Debita crédito do cliente
+- Pedido vai direto para `CONFIRMADO`
+
+**RN-PED-006: Confirmação de Pagamento**
+- Webhook Mercado Pago confirma pagamento
+- Pedido muda para `PAGO`
+- Sistema converte pedido em venda
+- Reservas são confirmadas (baixa física)
+
+**RN-PED-007: Falha no Pagamento**
+- Pagamento recusado: pedido vai para `PAGAMENTO_RECUSADO`
+- Todas as reservas são liberadas
+- Cliente pode tentar novamente
+
+**RN-PED-008: Cancelamento de Pedido**
+- Apenas pedidos não finalizados podem ser cancelados
+- Reservas são liberadas automaticamente
+- Se fiado: crédito é estornado
+- Motivo do cancelamento é obrigatório
+
+#### 6.1.3. Conversão Pedido → Venda
+
+**RN-VEN-001: Criação de Venda**
+- Venda é criada após confirmação de pagamento
+- Status inicial: `FINALIZADA`
+- Venda referencia o pedido original
+
+**RN-VEN-002: Confirmação de Reservas**
+- Sistema chama `POST /estoque/confirmar-reserva` para cada item
+- `quantidade_reservada` é decrementada
+- `quantidade` física é decrementada
+- Movimentação tipo `SAIDA` é registrada
+
+**RN-VEN-003: Eventos Publicados**
+- `venda.finalizada` - Venda concluída
+- `pedido.pago` - Pedido pago
+- `estoque.confirmado` - Estoque baixado
+
+---
+
+### 6.2. Venda com Estoque Insuficiente
+
+**Cenário**: Cliente tenta comprar 100 unidades, mas há apenas 50 em estoque
+
+**Comportamento**:
+1. Sistema tenta reservar 100 unidades
+2. Estoque valida disponibilidade
+3. Retorna erro: `400 Bad Request - Estoque insuficiente`
+4. Venda não é criada
+5. Nenhuma reserva é feita
+
+**Alternativa**: Venda parcial (futuro)
+- Permitir venda de 50 unidades
+- Criar backorder para as 50 restantes
+
+---
+
+### 6.3. Cliente com Crédito Insuficiente
+
+**Cenário**: Cliente tenta compra fiada de R$ 500, mas tem apenas R$ 300 de crédito
+
+**Comportamento**:
+1. Sistema valida crédito disponível
+2. Retorna erro: `400 Bad Request - Crédito insuficiente`
+3. Venda não é criada
+4. Estoque não é reservado
+
+**Alternativa**: Pagamento misto (futuro)
+- R$ 300 no fiado
+- R$ 200 à vista
+
+---
+
+### 6.4. Lote Vencido com Estoque
+
+**Cenário**: Lote vence mas ainda tem 50 unidades
+
+**Comportamento**:
+1. Job diário verifica lotes vencidos
+2. Marca lote como `VENCIDO`
+3. Publica evento `estoque.lote_vencido`
+4. Notificação é enviada ao gerente
+5. Lote vencido não é usado em novas saídas (FIFO)
+6. Gerente deve dar baixa manual (perda) ou remarcar validade
+
+---
+
+### 6.5. Inventário com Grandes Diferenças
+
+**Cenário**: Inventário encontra diferença de -100 unidades (falta)
+
+**Comportamento**:
+1. Diferença é registrada no item do inventário
+2. Ao finalizar inventário:
+   - Quantidade é ajustada para quantidade contada
+   - Movimentação tipo `AJUSTE` é criada
+   - Motivo: `Inventário #{uuid}`
+3. Alerta é gerado se diferença > 10% do estoque
+
+---
+
+## 7. Glossário
+
+| Termo | Definição |
+|-------|-----------|
+| **Soft Delete** | Desativação lógica (ativo=false) ao invés de exclusão física |
+| **FIFO** | First In, First Out - Primeiro que entra, primeiro que sai |
+| **SKU** | Stock Keeping Unit - Código único de produto/variante |
+| **Markup** | Percentual de lucro sobre o custo |
+| **E.164** | Formato internacional de telefone |
+| **RBAC** | Role-Based Access Control - Controle de acesso baseado em papéis |
+| **Saga Pattern** | Padrão para transações distribuídas em microsserviços |
+| **Idempotência** | Operação que pode ser executada múltiplas vezes com mesmo resultado |
+
+---
+
+## 📚 Referências
+
+- **Diagramas de Sequência**: [docs/DIAGRAMAS-SEQUENCIA.md](./DIAGRAMAS-SEQUENCIA.md)
+- **Arquitetura**: [docs/ARQUITETURA-COMUNICACAO.md](./ARQUITETURA-COMUNICACAO.md)
+- **Especificação Técnica**: [docs/ESPECIFICACAO-TECNICA.md](./ESPECIFICACAO-TECNICA.md)
+- **Mapeamento de Rotas**: [docs/MAPEAMENTO-ROTAS.md](./MAPEAMENTO-ROTAS.md)
+
+---
+
+**Última atualização**: 2026-05-21  
+**Versão**: 1.0.0  
+**Autor**: Equipe Runas  
+**Status**: ✅ Completo
+

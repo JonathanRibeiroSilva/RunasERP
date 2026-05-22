@@ -75,7 +75,9 @@ async def listar_categorias(skip: int = Query(0, ge=0), limit: int = Query(10, g
     """Lista todas as categorias."""
     service = CategoriaService(session)
     categorias, total = await service.listar_categorias(skip=skip, limit=limit)
-    return {"total": total, "skip": skip, "limit": limit, "items": categorias}
+    # Converter modelos SQLAlchemy para schemas Pydantic
+    categorias_response = [CategoriaRead.model_validate(cat) for cat in categorias]
+    return {"total": total, "skip": skip, "limit": limit, "items": categorias_response}
 
 
 @router_categorias.put("/{categoria_id}", response_model=CategoriaRead)
@@ -150,7 +152,9 @@ async def listar_produtos(
     """Lista todos os produtos."""
     service = ProdutoService(session)
     produtos, total = await service.listar_produtos(skip=skip, limit=limit, apenas_ativos=apenas_ativos)
-    return {"total": total, "skip": skip, "limit": limit, "items": produtos}
+    # Converter modelos SQLAlchemy para schemas Pydantic
+    produtos_response = [ProdutoRead.model_validate(prod) for prod in produtos]
+    return {"total": total, "skip": skip, "limit": limit, "items": produtos_response}
 
 
 @router_produtos.get("/categoria/{categoria_id}", response_model=dict)
@@ -164,7 +168,9 @@ async def listar_por_categoria(
     try:
         service = ProdutoService(session)
         produtos, total = await service.listar_por_categoria(categoria_id, skip=skip, limit=limit)
-        return {"total": total, "skip": skip, "limit": limit, "items": produtos}
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        produtos_response = [ProdutoRead.model_validate(prod) for prod in produtos]
+        return {"total": total, "skip": skip, "limit": limit, "items": produtos_response}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -174,7 +180,9 @@ async def buscar_por_nome(nome: str = Query(..., min_length=3), session: AsyncSe
     """Busca produtos por nome."""
     try:
         service = ProdutoService(session)
-        return await service.buscar_por_nome(nome)
+        produtos = await service.buscar_por_nome(nome)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [ProdutoReadSimples.model_validate(prod) for prod in produtos]
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -245,7 +253,9 @@ async def listar_variantes_produto(produto_id: UUID, session: AsyncSession = Dep
     """Lista variantes de um produto."""
     try:
         service = VarianteService(session)
-        return await service.listar_por_produto(produto_id)
+        variantes = await service.listar_por_produto(produto_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [VarianteRead.model_validate(var) for var in variantes]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -348,7 +358,9 @@ async def listar_fotos_catalogo(produto_id: UUID, session: AsyncSession = Depend
     """Lista fotos de um produto."""
     try:
         service = CatalogoService(session)
-        return await service.listar_fotos(produto_id)
+        fotos = await service.listar_fotos(produto_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [CatalogoFotoRead.model_validate(foto) for foto in fotos]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -424,7 +436,9 @@ async def listar_fornecedores(
     """Lista todos os fornecedores."""
     service = FornecedorService(session)
     fornecedores, total = await service.listar_fornecedores(skip=skip, limit=limit, apenas_ativos=apenas_ativos)
-    return {"total": total, "skip": skip, "limit": limit, "items": fornecedores}
+    # Converter modelos SQLAlchemy para schemas Pydantic
+    fornecedores_response = [FornecedorRead.model_validate(forn) for forn in fornecedores]
+    return {"total": total, "skip": skip, "limit": limit, "items": fornecedores_response}
 
 
 @router_fornecedores.put("/{fornecedor_id}", response_model=FornecedorRead)
@@ -493,7 +507,9 @@ async def listar_fornecedores_produto(produto_id: UUID, session: AsyncSession = 
     """Lista fornecedores de um produto."""
     try:
         service = FornecedorProdutoService(session)
-        return await service.listar_fornecedores_produto(produto_id)
+        vinculos = await service.listar_fornecedores_produto(produto_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [FornecedorProdutoRead.model_validate(vinc) for vinc in vinculos]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -503,7 +519,9 @@ async def listar_produtos_fornecedor(fornecedor_id: UUID, session: AsyncSession 
     """Lista produtos de um fornecedor."""
     try:
         service = FornecedorProdutoService(session)
-        return await service.listar_produtos_fornecedor(fornecedor_id)
+        vinculos = await service.listar_produtos_fornecedor(fornecedor_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [FornecedorProdutoRead.model_validate(vinc) for vinc in vinculos]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
