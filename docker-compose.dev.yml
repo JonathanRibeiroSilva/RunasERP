@@ -1,0 +1,30 @@
+# Docker Compose para Desenvolvimento
+# Usa Dockerfile.dev com hot reload
+
+version: '3.8'
+
+services:
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: erp-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_ENABLE_DEVTOOLS=true
+    depends_on:
+      - api-gateway
+    networks:
+      - erp-network
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+networks:
+  erp-network:
+    external: true

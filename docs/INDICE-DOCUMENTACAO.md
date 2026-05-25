@@ -90,6 +90,30 @@
 
 ---
 
+### 🎨 Para Desenvolvedores Frontend
+
+1. **[Frontend - README](./frontend/README.md)** ⭐ ESSENCIAL
+   - Visão geral do frontend
+   - Quick start e setup
+   - Tech stack e estrutura
+
+2. **[Frontend - Requirements](./frontend/REQUIREMENTS.md)**
+   - Requisitos funcionais e não funcionais
+   - Regras de negócio do frontend
+   - Critérios de aceitação
+
+3. **[Frontend - Design](./frontend/DESIGN.md)**
+   - Arquitetura de componentes
+   - Padrões de código
+   - UI/UX design system
+
+4. **[Frontend - Tasks](./frontend/TASKS.md)**
+   - 28 tarefas de implementação
+   - Estimativa: 162h (195h com buffer)
+   - Cronograma em 10 fases
+
+---
+
 ## 📋 Documentos por Categoria
 
 ### 🎨 Arquitetura e Design
@@ -100,6 +124,15 @@
 | [Arquitetura Visual](./ARQUITETURA-VISUAL.md) | 8 | Diagramas e fluxos visuais |
 | [Especificação Técnica](./ESPECIFICACAO-TECNICA.md) | 40 | Requisitos e especificações |
 | [Diagramas de Sequência](./DIAGRAMAS-SEQUENCIA.md) | 50 | 28 diagramas de operações |
+
+### 🎨 Frontend
+
+| Documento | Páginas | Descrição |
+|-----------|---------|-----------|
+| [Frontend - README](./frontend/README.md) | 8 | Visão geral e quick start |
+| [Frontend - Requirements](./frontend/REQUIREMENTS.md) | 25 | Requisitos funcionais e não funcionais |
+| [Frontend - Design](./frontend/DESIGN.md) | 20 | Arquitetura e design técnico |
+| [Frontend - Tasks](./frontend/TASKS.md) | 15 | 28 tarefas de implementação |
 
 ### 📐 Regras e Validações
 
@@ -163,9 +196,9 @@
 ## 📈 Estatísticas da Documentação
 
 ### Documentos Criados
-- **Total de documentos**: 25 arquivos
-- **Total de páginas**: ~200 páginas
-- **Total de linhas**: ~8.000 linhas
+- **Total de documentos**: 29 arquivos (+4 frontend)
+- **Total de páginas**: ~270 páginas (+70 frontend)
+- **Total de linhas**: ~12.000 linhas (+4.000 frontend)
 - **Diagramas**: 35+ diagramas
 
 ### Cobertura
@@ -204,6 +237,14 @@
 ---
 
 ## 🔄 Atualizações Recentes
+
+### Versão 2.1.0 (2026-05-25)
+- ✅ Adicionada documentação completa do Frontend
+- ✅ 4 novos documentos: README, Requirements, Design, Tasks
+- ✅ 28 tarefas de implementação detalhadas
+- ✅ Estimativa de 162h (195h com buffer)
+- ✅ Tech stack definido (React, TypeScript, Bootstrap)
+- ✅ Arquitetura de componentes completa
 
 ### Versão 2.0.0 (2026-05-21)
 - ✅ Adicionados 6 diagramas de carrinho e pedido

@@ -1,0 +1,23 @@
+# Dockerfile para desenvolvimento com hot reload
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependências globais
+RUN npm install -g npm@latest
+
+# Copiar package files
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm install
+
+# Copiar código fonte
+COPY . .
+
+# Expor porta do Vite
+EXPOSE 3000
+
+# Comando para iniciar em modo desenvolvimento
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

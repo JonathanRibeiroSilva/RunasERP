@@ -1,0 +1,245 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.05) 0%,
+    rgba(34, 211, 238, 0.03) 100%
+  );
+  padding: $spacer-3;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 420px;
+}
+
+.login-card {
+  @include card;
+  @include fade-in;
+  padding: $spacer-5;
+
+  @include media-xs {
+    padding: $spacer-4;
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: $spacer-5;
+
+  .login-title {
+    font-size: $h2-font-size;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin-bottom: $spacer-2;
+    background: linear-gradient(135deg, $primary 0%, $secondary 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .login-subtitle {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-bottom: 0;
+  }
+}
+
+.login-form {
+  .form-group {
+    margin-bottom: $spacer-4;
+
+    &:last-of-type {
+      margin-bottom: $spacer-5;
+    }
+  }
+
+  .form-label {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+    margin-bottom: $spacer-2;
+  }
+
+  .input-group {
+    position: relative;
+
+    .input-icon {
+      position: absolute;
+      left: $spacer-3;
+      top: 50%;
+      transform: translateY(-50%);
+      color: $text-tertiary;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: $spacer-2 $spacer-3 $spacer-2 calc(#{$spacer-3} + 24px);
+      font-size: $font-size-sm;
+      background: $surface-hover;
+      border: 1px solid $border-default;
+      border-radius: $border-radius;
+      color: $text-primary;
+      transition: $transition-base;
+
+      &::placeholder {
+        color: $text-tertiary;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        background: $surface;
+        box-shadow: 0 0 0 3px $primary-light;
+      }
+
+      &.is-invalid {
+        border-color: $error;
+
+        &:focus {
+          box-shadow: 0 0 0 3px $error-light;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .invalid-feedback {
+    display: block;
+    font-size: $font-size-xs;
+    color: $error;
+    margin-top: $spacer-1;
+  }
+
+  .btn-login {
+    @include button-base;
+    width: 100%;
+    padding: $spacer-3;
+    font-size: $font-size-base;
+    background: $primary;
+    color: $text-primary;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+      box-shadow: $glow-primary;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      background: $primary-active;
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.login-footer {
+  margin-top: $spacer-4;
+  padding-top: $spacer-4;
+  border-top: 1px solid $border-subtle;
+  text-align: center;
+
+  .text-muted {
+    color: $text-tertiary;
+    font-size: $font-size-xs;
+    line-height: 1.6;
+
+    strong {
+      color: $text-secondary;
+    }
+  }
+}
+
+// Divider
+.divider {
+  display: flex;
+  align-items: center;
+  margin: $spacer-4 0;
+  color: $text-tertiary;
+  font-size: $font-size-sm;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: $border-default;
+  }
+
+  span {
+    padding: 0 $spacer-3;
+  }
+}
+
+// OAuth Buttons
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: $spacer-3;
+  margin-bottom: $spacer-4;
+
+  .btn-oauth {
+    @include button-base;
+    width: 100%;
+    padding: $spacer-3;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    background: $surface-hover;
+    color: $text-primary;
+    border: 1px solid $border-default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacer-2;
+    transition: $transition-base;
+
+    &:hover:not(:disabled) {
+      background: $surface;
+      border-color: $border-strong;
+      transform: translateY(-1px);
+      box-shadow: $box-shadow-sm;
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &.btn-google {
+      &:hover:not(:disabled) {
+        border-color: #4285f4;
+      }
+    }
+
+    &.btn-microsoft {
+      &:hover:not(:disabled) {
+        border-color: #00a4ef;
+      }
+
+      svg {
+        color: #00a4ef;
+      }
+    }
+  }
+}
