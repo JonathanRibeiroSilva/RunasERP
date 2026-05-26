@@ -1,0 +1,113 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.navbar {
+  height: 64px;
+  background: $surface;
+  border-bottom: 1px solid $border-default;
+  position: sticky;
+  top: 0;
+  z-index: $z-index-sticky;
+  box-shadow: $box-shadow-sm;
+}
+
+.navbar-content {
+  height: 100%;
+  padding: 0 $spacer-4;
+  @include flex-between;
+
+  @include media-xs {
+    padding: 0 $spacer-3;
+  }
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: $spacer-3;
+
+  .btn-icon {
+    @include button-base;
+    padding: $spacer-2;
+    background: transparent;
+    color: $text-secondary;
+
+    &:hover {
+      background: $surface-hover;
+      color: $text-primary;
+    }
+  }
+
+  .navbar-title {
+    font-size: $h5-font-size;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin: 0;
+    background: linear-gradient(135deg, $primary 0%, $secondary 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+
+    @include media-xs {
+      font-size: $h6-font-size;
+    }
+  }
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: $spacer-3;
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+    padding: $spacer-2 $spacer-3;
+    background: $surface-hover;
+    border-radius: $border-radius;
+
+    @include media-xs {
+      padding: $spacer-2;
+    }
+
+    .user-icon {
+      font-size: 20px;
+      color: $text-secondary;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      @include media-xs {
+        display: none;
+      }
+
+      .user-name {
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        color: $text-primary;
+      }
+
+      .user-role {
+        font-size: $font-size-xs;
+        color: $text-tertiary;
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  .btn-logout {
+    @include button-base;
+    padding: $spacer-2;
+    background: transparent;
+    color: $text-secondary;
+
+    &:hover {
+      background: $error-light;
+      color: $error;
+    }
+  }
+}

@@ -3,7 +3,9 @@ Modelos de Estoque.
 """
 from datetime import datetime, date
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Date, ForeignKey, Text
+from uuid import uuid4
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Date, ForeignKey, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -32,9 +34,9 @@ class Estoque(Base):
     """
     __tablename__ = "estoque"
 
-    id = Column(Integer, primary_key=True, index=True)
-    produto_id = Column(Integer, nullable=False, index=True)
-    variante_id = Column(Integer, nullable=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    produto_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    variante_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     
     quantidade = Column(Float, nullable=False, default=0.0)
     quantidade_reservada = Column(Float, nullable=False, default=0.0)
@@ -61,9 +63,9 @@ class Movimentacao(Base):
     """
     __tablename__ = "movimentacoes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    estoque_id = Column(Integer, ForeignKey("estoque.id"), nullable=False, index=True)
-    lote_id = Column(Integer, ForeignKey("lotes.id"), nullable=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.id"), nullable=False, index=True)
+    lote_id = Column(UUID(as_uuid=True), ForeignKey("lotes.id"), nullable=True, index=True)
     
     tipo = Column(String(20), nullable=False, index=True)  # TipoMovimentacao
     quantidade = Column(Float, nullable=False)
@@ -74,7 +76,7 @@ class Movimentacao(Base):
     observacao = Column(Text, nullable=True)
     
     documento = Column(String(100), nullable=True)  # Número da NF, pedido, etc.
-    usuario_id = Column(Integer, nullable=True)  # ID do usuário que fez a movimentação
+    usuario_id = Column(UUID(as_uuid=True), nullable=True)  # ID do usuário que fez a movimentação
     
     custo_unitario = Column(Float, nullable=True)
     custo_total = Column(Float, nullable=True)
@@ -93,8 +95,8 @@ class Lote(Base):
     """
     __tablename__ = "lotes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    estoque_id = Column(Integer, ForeignKey("estoque.id"), nullable=False, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.id"), nullable=False, index=True)
     
     codigo = Column(String(100), nullable=False, unique=True, index=True)
     quantidade = Column(Float, nullable=False, default=0.0)
@@ -125,7 +127,7 @@ class Inventario(Base):
     """
     __tablename__ = "inventarios"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
     
     data_inventario = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     responsavel = Column(String(200), nullable=False)
@@ -148,9 +150,9 @@ class ItemInventario(Base):
     """
     __tablename__ = "itens_inventario"
 
-    id = Column(Integer, primary_key=True, index=True)
-    inventario_id = Column(Integer, ForeignKey("inventarios.id"), nullable=False, index=True)
-    estoque_id = Column(Integer, ForeignKey("estoque.id"), nullable=False, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    inventario_id = Column(UUID(as_uuid=True), ForeignKey("inventarios.id"), nullable=False, index=True)
+    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.id"), nullable=False, index=True)
     
     quantidade_sistema = Column(Float, nullable=False)
     quantidade_contada = Column(Float, nullable=False)
