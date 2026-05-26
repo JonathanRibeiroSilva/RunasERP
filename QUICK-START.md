@@ -1,4 +1,4 @@
-# ⚡ Quick Start - Runas MVP
+# ⚡ Quick Start - Runas 
 
 **Tempo estimado**: 5 minutos  
 **Pré-requisitos**: Docker e Docker Compose instalados
