@@ -18,6 +18,49 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Testes automatizados
 - Documentação de API
 
+### ✨ Adicionado
+
+**Backend - Transações de Banco de Dados** (2026-05-26)
+- Implementação de transações atômicas ACID em todos os serviços implementados
+- Uso de `begin_nested()` para operações complexas
+- Tratamento robusto de exceções com rollback automático
+- Logging estruturado de operações e erros
+- Documentação completa sobre transações
+
+**Serviços Atualizados:**
+- ✅ **Estoque**: Todas as operações (entrada, saída, ajuste, reserva) com transações atômicas
+- ✅ **Produtos**: CRUD de produtos, categorias e variantes com transações atômicas
+- ✅ **Clientes**: CRUD de clientes, crédito, endereços com transações atômicas
+- ⚪ **Vendas**: Serviço ainda não implementado
+- ⚪ **Financeiro**: Serviço ainda não implementado
+
+**Melhorias de Arquitetura:**
+- Separação clara de responsabilidades (Router → Service → Repository)
+- Commits gerenciados exclusivamente na camada de serviço
+- Routers simplificados sem lógica de transação
+- Padrões consistentes em todos os serviços
+
+### 📚 Documentação
+
+- Novo documento: `docs/04-backend/transacoes-banco-dados.md`
+  - Conceitos ACID explicados
+  - Padrões de implementação
+  - Exemplos práticos completos
+  - Boas práticas e anti-padrões
+  - Guia de troubleshooting
+- Novo documento: `docs/04-backend/QUICK_REFERENCE_TRANSACOES.md`
+  - Templates prontos para uso
+  - Checklist de implementação
+  - Padrões por tipo de operação
+- Novo documento: `docs/04-backend/README.md`
+  - Visão geral do backend
+  - Stack tecnológica
+  - Arquitetura em camadas
+- Novo documento: `TRANSACOES_IMPLEMENTADAS.md`
+  - Resumo executivo
+  - Status de implementação
+  - Exemplos práticos
+
 ---
 
 ## [1.0.0] - 2026-05-26
