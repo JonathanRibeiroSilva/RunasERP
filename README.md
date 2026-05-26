@@ -1,6 +1,6 @@
-# 🏪 Runas
+# 🏪 ERP Runas
 
-> Sistema ERP completo para pequenos comércios com arquitetura de microsserviços
+> Sistema ERP completo para comércio de alimentos e bebidas com arquitetura de microsserviços
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green)
@@ -13,7 +13,7 @@
 
 ## 📋 Sobre o Projeto
 
-O **Runas** é uma solução completa para gestão de pequenos comércios, oferecendo:
+O **ERP Runas** é uma solução completa para gestão de pequenos e médios comércios de alimentos e bebidas, oferecendo:
 
 - ✅ **Gestão de Clientes** com crédito fiado e múltiplos endereços
 - ✅ **Catálogo de Produtos** com variantes e fornecedores
@@ -22,7 +22,6 @@ O **Runas** é uma solução completa para gestão de pequenos comércios, ofere
 - ✅ **Gestão Financeira** e cobranças automatizadas - Em desenvolvimento
 - ✅ **Notificações via WhatsApp** (Evolution API) - Em desenvolvimento
 - ✅ **Pagamentos via PIX** (Mercado Pago) - Em desenvolvimento
-- ✅ **Hospedagem via ngrok** para acesso externo seguro
 
 ---
 
@@ -52,36 +51,12 @@ bash tests/test-mvp.sh
 
 ### Acessar a Aplicação
 
-#### Acesso Local
-
 - **API Gateway**: http://localhost:8000/docs
 - **Serviço Clientes**: http://localhost:8001/docs
 - **Serviço Produtos**: http://localhost:8002/docs
 - **Serviço Estoque**: http://localhost:8003/docs
 - **pgAdmin**: http://localhost:5050 (admin@runas.local / admin123)
 - **RabbitMQ Management**: http://localhost:15672 (guest / guest)
-
-#### Acesso Externo (via ngrok)
-
-Para acessar o sistema de qualquer lugar:
-
-```bash
-# Instalar ngrok (se ainda não tiver)
-# Windows: choco install ngrok
-# Mac: brew install ngrok
-# Linux: snap install ngrok
-
-# Expor o API Gateway
-ngrok http 8000
-```
-
-O ngrok fornecerá uma URL pública (ex: `https://abc123.ngrok.io`) que pode ser usada para:
-- ✅ Testar webhooks (Mercado Pago, WhatsApp)
-- ✅ Acessar a API de dispositivos móveis
-- ✅ Demonstrações para clientes
-- ✅ Desenvolvimento remoto
-
-**Configuração OAuth com ngrok**: Veja [docs/09-troubleshooting/oauth-issues.md](./docs/09-troubleshooting/oauth-issues.md)
 
 ### Login Padrão
 
@@ -91,10 +66,7 @@ Senha: Admin@123
 ```
 
 📖 **Guia completo**: [QUICK-START.md](./QUICK-START.md)  
-📖 **Documentação**: [docs/README.md](./docs/README.md)  
-📖 **Troubleshooting**: [docs/02-setup/troubleshooting.md](./docs/02-setup/troubleshooting.md)  
-📖 **FAQ**: [docs/01-visao-geral/faq.md](./docs/01-visao-geral/faq.md)  
-📖 **Contribuir**: [CONTRIBUTING.md](./CONTRIBUTING.md)
+📖 **Teste de Estoque**: [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md)
 
 ---
 
@@ -134,8 +106,6 @@ O sistema é composto por **7 microsserviços independentes**:
 - ✅ **Service-to-Service Communication** - HTTP para comunicação síncrona
 - ✅ **Health Checks** - Monitoramento de saúde de todos os serviços
 - ✅ **Docker Compose** - Orquestração completa de containers
-- ✅ **ngrok Integration** - Acesso externo seguro para webhooks e testes
-- ✅ **Documentação Estruturada** - 12 seções organizadas com 25+ documentos
 
 ---
 
@@ -333,33 +303,25 @@ make help              # Lista todos os comandos disponíveis
 
 ## 📚 Documentação
 
-### 📖 Documentação Organizada
-
-A documentação está estruturada em **12 seções numeradas** para fácil navegação:
-
-1. **[Visão Geral](./docs/01-visao-geral/)** - Sobre o projeto, objetivos e status
-2. **[Setup e Instalação](./docs/02-setup/)** - Guias de instalação e configuração
-3. **[Arquitetura](./docs/03-arquitetura/)** - Arquitetura detalhada e diagramas
-4. **[Backend](./docs/04-backend/)** - Documentação dos serviços backend
-5. **[Frontend](./docs/05-frontend/)** - Documentação do frontend (em desenvolvimento)
-6. **[Features](./docs/06-features/)** - Funcionalidades implementadas
-7. **[Desenvolvimento](./docs/07-desenvolvimento/)** - Guias para desenvolvedores
-8. **[Deploy](./docs/08-deployment/)** - Guias de deploy e produção
-9. **[Troubleshooting](./docs/09-troubleshooting/)** - Resolução de problemas
-10. **[API Reference](./docs/10-api-reference/)** - Referência completa das APIs
-11. **[Regras de Negócio](./docs/11-regras-negocio/)** - Regras por domínio
-12. **[Changelog](./docs/12-changelog/)** - Histórico de versões
-
-📖 **Índice completo**: [docs/README.md](./docs/README.md)
-
-### Documentos Essenciais
+### Documentação Essencial
 
 - 📖 [QUICK-START.md](./QUICK-START.md) - Guia rápido de 5 minutos
-- 📖 [docs/02-setup/README.md](./docs/02-setup/README.md) - Instalação completa
-- 📖 [docs/03-arquitetura/README.md](./docs/03-arquitetura/README.md) - Arquitetura
-- 📖 [docs/03-arquitetura/diagramas/sequencia.md](./docs/03-arquitetura/diagramas/sequencia.md) - 28 diagramas de sequência
-- 📖 [docs/11-regras-negocio/README.md](./docs/11-regras-negocio/README.md) - Regras de negócio
-- 📖 [docs/09-troubleshooting/oauth-issues.md](./docs/09-troubleshooting/oauth-issues.md) - Problemas com OAuth/ngrok
+- 📖 [TESTE-ESTOQUE.md](./TESTE-ESTOQUE.md) - Guia de teste do estoque
+- 📖 [FEATURES-FUTURAS.md](./FEATURES-FUTURAS.md) - Roadmap e features planejadas
+- 📊 [docs/mvp/RESUMO-EXECUTIVO.md](./docs/mvp/RESUMO-EXECUTIVO.md) - Visão geral do MVP
+- ✅ [docs/mvp/STATUS-FINAL.md](./docs/mvp/STATUS-FINAL.md) - Status detalhado
+
+### Documentação Técnica
+
+- 🏗️ [docs/ARQUITETURA-COMUNICACAO.md](./docs/ARQUITETURA-COMUNICACAO.md) - Arquitetura
+- 📐 [docs/ESPECIFICACAO-TECNICA.md](./docs/ESPECIFICACAO-TECNICA.md) - Especificações
+- 🗺️ [docs/MAPEAMENTO-ROTAS.md](./docs/MAPEAMENTO-ROTAS.md) - Endpoints
+- 💻 [docs/GUIA-IMPLEMENTACAO.md](./docs/GUIA-IMPLEMENTACAO.md) - Guia de desenvolvimento
+
+### Testes
+
+- 🧪 [docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md) - Guia de testes
+- 📋 [docs/mvp/CHECKLIST-VALIDACAO.md](./docs/mvp/CHECKLIST-VALIDACAO.md) - Checklist
 
 ---
 
@@ -436,15 +398,15 @@ Para suporte técnico:
 ---
 
 **Versão**: 1.0.0-MVP  
-**Última atualização**: 26 de Maio de 2026  
+**Última atualização**: 2026-05-14  
 **Status**: ✅ MVP 100% Funcional e Pronto para Testes
 
 ---
 
 <div align="center">
 
-**[⬆ Voltar ao topo](#-runas)**
+**[⬆ Voltar ao topo](#-erp-runas)**
 
-Desenvolvido por **Equipe DenebCorp**
+Feito com ❤️ pela equipe **Runas**
 
 </div>

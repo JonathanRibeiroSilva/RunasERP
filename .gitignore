@@ -73,6 +73,4 @@ celerybeat.pid
 # Redis
 dump.rdb
 
-# Documentação
-REORGANIZACAO-COMPLETA.md
 
