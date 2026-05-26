@@ -34,12 +34,16 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         access_token: JWT access token
         refresh_token: JWT refresh token
     """
+    # Detectar se está em HTTPS (ngrok, produção) ou HTTP (desenvolvimento local)
+    # Em produção com ngrok, sempre usar secure=True
+    secure = True  # Sempre True para ngrok/produção
+    
     # Access token - expira em 30 minutos
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,  # Não acessível via JavaScript
-        secure=False,  # True em produção (HTTPS only)
+        secure=secure,  # True em produção/ngrok (HTTPS only)
         samesite="lax",  # Proteção CSRF
         max_age=30 * 60,  # 30 minutos em segundos
         path="/"
@@ -50,7 +54,7 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,  # True em produção
+        secure=secure,
         samesite="lax",
         max_age=7 * 24 * 60 * 60,  # 7 dias em segundos
         path="/"
