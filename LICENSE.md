@@ -1,4 +1,4 @@
-# Licença Proprietária - Runas
+# Licença Proprietária - ERP Runas
 
 **Copyright © 2026 Runas. Todos os direitos reservados.**
 
@@ -6,7 +6,7 @@
 
 ## Termos e Condições
 
-Este software e a documentação associada (o "Software") são propriedade exclusiva da **Equipe DenebCorp** e estão protegidos por leis de direitos autorais e tratados internacionais.
+Este software e a documentação associada (o "Software") são propriedade exclusiva da **DenebCorp.** e estão protegidos por leis de direitos autorais e tratados internacionais.
 
 ### 1. Concessão de Licença
 
@@ -116,5 +116,5 @@ Telefone: +55 44 998373972
 
 ---
 
-**Última atualização**: 26 de Maio de 2026  
+**Última atualização**: 14 de maio de 2026  
 **Versão da Licença**: 1.0

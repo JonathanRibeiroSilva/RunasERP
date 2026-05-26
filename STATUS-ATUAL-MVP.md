@@ -1,6 +1,6 @@
 # 📊 Status Atual do MVP - Análise do Terminal
 
-**Data**: 26 de Maio de 2026  
+**Data**: 2026-05-14 18:41  
 **Análise**: Verificação de erros no terminal após subir containers
 
 ---
@@ -16,28 +16,6 @@
 ### Impacto no MVP
 - **Bloqueador**: Seed do admin não funciona → Login não funciona
 - **Solução**: Rebuild da imagem do API Gateway (5 minutos)
-
-### ✨ Melhorias Recentes (26 de Maio de 2026)
-
-#### Documentação Reorganizada
-- ✅ **12 seções numeradas** (01-visao-geral até 12-changelog)
-- ✅ **25+ documentos** organizados por categoria
-- ✅ **28 diagramas de sequência** completos e atualizados
-- ✅ **5 domínios de regras de negócio** documentados
-- ✅ **Nomenclatura padronizada**: "Runas" e "Equipe DenebCorp"
-- ✅ **Documentos obsoletos arquivados** em `docs/_archive/`
-
-#### Infraestrutura
-- ✅ **Hospedagem via ngrok** configurada e documentada
-- ✅ **OAuth com ngrok** - guia de troubleshooting completo
-- ✅ **Docker Compose** otimizado com health checks
-- ✅ **Serviço de Estoque** implementado e funcional
-
-#### Qualidade
-- ✅ **Testes automatizados** via `test-mvp.sh`
-- ✅ **Scripts de correção** automatizados
-- ✅ **Checklist de validação** completo
-- ✅ **Guias de troubleshooting** para problemas comuns
 
 ---
 
@@ -508,6 +486,6 @@ docker-compose logs -f api-gateway
 
 ---
 
-**Data**: 26 de Maio de 2026  
+**Data**: 2026-05-14 18:41  
 **Analisado por**: Kiro AI  
 **Prioridade**: 🔴 ALTA
