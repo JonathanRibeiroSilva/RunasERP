@@ -404,5 +404,5 @@ O projeto está pronto para receber a implementação dos modelos, repositories,
 ---
 
 **Última atualização**: 2026-05-14  
-**Responsável**: Equipe Runas  
+**Responsável**: Equipe Deneb Corp  
 **Versão**: 1.0.0

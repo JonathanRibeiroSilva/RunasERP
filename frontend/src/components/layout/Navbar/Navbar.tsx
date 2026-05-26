@@ -1,4 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { FiMenu, FiLogOut, FiUser } from 'react-icons/fi';
 import './Navbar.scss';
 
@@ -21,7 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           <button className="btn-icon" onClick={onToggleSidebar} aria-label="Toggle sidebar">
             <FiMenu />
           </button>
-          <h1 className="navbar-title">ERP Runas</h1>
+          <h1 className="navbar-title">Runas</h1>
         </div>
 
         {/* Right Side */}

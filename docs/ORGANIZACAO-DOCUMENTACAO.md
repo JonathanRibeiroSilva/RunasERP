@@ -241,7 +241,7 @@ Para dúvidas sobre a organização da documentação:
 ---
 
 **Organização realizada em**: 2026-05-14  
-**Responsável**: Equipe Runas  
+**Responsável**: Equipe Deneb Corp  
 **Status**: ✅ Concluída
 
 ---

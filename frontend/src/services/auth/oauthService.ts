@@ -5,121 +5,94 @@ import type { LoginResponse } from '@/types/auth';
 
 export type OAuthProvider = 'google' | 'microsoft';
 
-interface OAuthConfig {
-  clientId: string;
-  redirectUri: string;
-  scope: string;
-  authUrl: string;
+interface OAuthInitResponse {
+  auth_url: string;
+  state: string;
 }
-
-// Configurações OAuth por provider
-const oauthConfigs: Record<OAuthProvider, OAuthConfig> = {
-  google: {
-    clientId: env.oauth.googleClientId,
-    redirectUri: env.oauth.redirectUri,
-    scope: 'openid profile email',
-    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-  },
-  microsoft: {
-    clientId: env.oauth.microsoftClientId,
-    redirectUri: env.oauth.redirectUri,
-    scope: 'openid profile email User.Read',
-    authUrl: `https://login.microsoftonline.com/${env.oauth.microsoftTenantId}/oauth2/v2.0/authorize`,
-  },
-};
 
 export const oauthService = {
   /**
-   * Inicia o fluxo OAuth redirecionando para o provider
+   * Inicia o fluxo OAuth através do backend
    */
-  initiateOAuth(provider: OAuthProvider): void {
-    const config = oauthConfigs[provider];
+  async initiateOAuth(provider: OAuthProvider): Promise<void> {
+    try {
+      // Chamar backend para obter URL de autorização
+      const response = await api.post<OAuthInitResponse>(`/auth/oauth/${provider}`, {
+        redirect_uri: env.oauth.redirectUri,
+      });
 
-    if (!config.clientId) {
-      throw new Error(`${provider} OAuth não está configurado. Configure VITE_${provider.toUpperCase()}_CLIENT_ID`);
+      const { auth_url, state } = response.data;
+
+      // Salvar state no sessionStorage para validação posterior
+      sessionStorage.setItem('oauth_state', state);
+      sessionStorage.setItem('oauth_provider', provider);
+
+      // Redirecionar para o provider
+      window.location.href = auth_url;
+    } catch (error) {
+      console.error('[OAuth] Erro ao iniciar OAuth:', error);
+      throw new Error(`Erro ao iniciar autenticação com ${provider}`);
     }
-
-    // Gerar state para CSRF protection
-    const state = this.generateState();
-    sessionStorage.setItem('oauth_state', state);
-    sessionStorage.setItem('oauth_provider', provider);
-
-    // Construir URL de autorização
-    const params = new URLSearchParams({
-      client_id: config.clientId,
-      redirect_uri: config.redirectUri,
-      response_type: 'code',
-      scope: config.scope,
-      state,
-      ...(provider === 'google' && {
-        access_type: 'offline',
-        prompt: 'consent',
-      }),
-    });
-
-    const authUrl = `${config.authUrl}?${params.toString()}`;
-
-    // Redirecionar para o provider
-    window.location.href = authUrl;
   },
 
   /**
    * Processa o callback do OAuth
    */
   async handleOAuthCallback(code: string, state: string): Promise<LoginResponse> {
-    // Verificar state (CSRF protection)
-    const savedState = sessionStorage.getItem('oauth_state');
+    // Obter provider do sessionStorage
     const provider = sessionStorage.getItem('oauth_provider') as OAuthProvider;
 
-    if (!savedState || savedState !== state) {
-      throw new Error('Estado OAuth inválido. Possível ataque CSRF.');
-    }
+    // Se não tiver provider no sessionStorage, usar 'google' como padrão
+    const finalProvider = provider || 'google';
 
-    if (!provider) {
-      throw new Error('Provider OAuth não encontrado.');
-    }
-
-    // Limpar state do sessionStorage
+    // Limpar sessionStorage
     sessionStorage.removeItem('oauth_state');
     sessionStorage.removeItem('oauth_provider');
 
-    // Enviar code para o backend
-    const response = await api.post<LoginResponse>(`/auth/oauth/${provider}`, {
-      code,
-      redirect_uri: env.oauth.redirectUri,
-    });
+    try {
+      // Enviar code e state para o backend processar
+      // O backend vai validar o state no Redis e definir cookies HTTP-only
+      const response = await api.post<LoginResponse>(`/auth/oauth/${finalProvider}/callback`, {
+        code,
+        state,
+      });
 
-    const { access_token, refresh_token } = response.data;
+      const { user } = response.data;
 
-    // Salvar tokens
-    tokenService.setAccessToken(access_token);
-    tokenService.setRefreshToken(refresh_token);
+      if (!user) {
+        throw new Error('Dados do usuário não retornados pelo servidor');
+      }
 
-    return response.data;
-  },
+      // Tokens agora são gerenciados via cookies HTTP-only pelo backend
+      // Não é necessário salvar manualmente no localStorage
 
-  /**
-   * Gera um state aleatório para CSRF protection
-   */
-  generateState(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+      return response.data;
+    } catch (error) {
+      console.error('[OAuth] Erro ao processar callback:', error);
+      throw error;
+    }
   },
 
   /**
    * Verifica se OAuth está configurado para um provider
    */
   isConfigured(provider: OAuthProvider): boolean {
-    return !!oauthConfigs[provider].clientId;
+    if (provider === 'google') {
+      return !!env.oauth.googleClientId;
+    }
+    if (provider === 'microsoft') {
+      return !!env.oauth.microsoftClientId;
+    }
+    return false;
   },
 
   /**
    * Retorna os providers configurados
    */
   getConfiguredProviders(): OAuthProvider[] {
-    return (Object.keys(oauthConfigs) as OAuthProvider[]).filter((provider) =>
-      this.isConfigured(provider)
-    );
+    const providers: OAuthProvider[] = [];
+    if (this.isConfigured('google')) providers.push('google');
+    if (this.isConfigured('microsoft')) providers.push('microsoft');
+    return providers;
   },
 };

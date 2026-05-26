@@ -1,18 +1,18 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { getErrorMessage } from '@/services/api/axios';
 import { oauthService } from '@/services/auth/oauthService';
 import { toast } from 'react-toastify';
-import { FiMail, FiLock, FiLogIn } from 'react-icons/fi';
+import { FiMail, FiLock, FiLogIn, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { SiMicrosoft } from 'react-icons/si';
 import './LoginPage.scss';
 
-// Schema de validação
+// Schema de validação para login
 const loginSchema = z.object({
   email: z.string().email('Email inválido').min(1, 'Email é obrigatório'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
@@ -24,34 +24,68 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
+  // Form para login
+  const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  // Limpar erro quando o usuário começa a digitar
+  useEffect(() => {
+    const subscription = loginForm.watch(() => {
+      if (loginError) {
+        setLoginError(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loginError, loginForm]);
+
+  const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    setLoginError(null);
+    console.log('[LoginPage] Tentando fazer login com:', data.email);
     try {
       await login(data.email, data.password);
+      console.log('[LoginPage] Login bem-sucedido, redirecionando para dashboard');
       navigate('/dashboard');
     } catch (error) {
+      console.log('[LoginPage] Erro ao fazer login:', error);
       const message = getErrorMessage(error);
-      toast.error(message || 'Erro ao fazer login');
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = message;
+      
+      if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
+        errorMessage = 'Email ou senha incorretos. Verifique seus dados e tente novamente.';
+      } else if (message.toLowerCase().includes('not found') || message.toLowerCase().includes('não encontrado')) {
+        errorMessage = 'Usuário não encontrado. Verifique o email ou crie uma nova conta.';
+      } else if (message.toLowerCase().includes('unauthorized') || message.toLowerCase().includes('não autorizado')) {
+        errorMessage = 'Acesso negado. Verifique suas credenciais.';
+      } else if (message.toLowerCase().includes('network') || message.toLowerCase().includes('conexão')) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      }
+      
+      console.log('[LoginPage] Mensagem de erro:', errorMessage);
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOAuthLogin = (provider: 'google' | 'microsoft') => {
+  const handleOAuthLogin = async (provider: 'google' | 'microsoft') => {
     try {
-      oauthService.initiateOAuth(provider);
+      setIsLoading(true);
+      setLoginError(null);
+      await oauthService.initiateOAuth(provider);
     } catch (error) {
       const message = getErrorMessage(error);
+      setLoginError(message);
       toast.error(message);
+      setIsLoading(false);
     }
   };
 
@@ -65,15 +99,25 @@ const LoginPage = () => {
         <div className="login-card">
           {/* Logo e Título */}
           <div className="login-header">
-            <h1 className="login-title">ERP Runas</h1>
-            <p className="login-subtitle">Sistema de Gestão Empresarial</p>
+            <h1 className="login-title">Runas</h1>
+            <p className="login-subtitle">Runas - Sistema de Gestão Empresarial</p>
           </div>
 
-          {/* Formulário */}
-          <form onSubmit={handleSubmit(onSubmit)} className="login-form">
+          {/* Mensagem de Erro */}
+          {loginError && (
+            <div className="alert alert-error">
+              <FiAlertCircle className="alert-icon" />
+              <div className="alert-content">
+                <p className="alert-message">{loginError}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Formulário de Login */}
+          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="auth-form">
             {/* Email */}
             <div className="form-group">
-              <label htmlFor="email" className="form-label">
+              <label htmlFor="login-email" className="form-label">
                 Email
               </label>
               <div className="input-group">
@@ -81,20 +125,22 @@ const LoginPage = () => {
                   <FiMail />
                 </span>
                 <input
-                  id="email"
+                  id="login-email"
                   type="email"
-                  className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                  className={`form-control ${loginForm.formState.errors.email ? 'is-invalid' : ''}`}
                   placeholder="seu@email.com"
-                  {...register('email')}
+                  {...loginForm.register('email')}
                   disabled={isLoading}
                 />
               </div>
-              {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
+              {loginForm.formState.errors.email && (
+                <div className="invalid-feedback">{loginForm.formState.errors.email.message}</div>
+              )}
             </div>
 
             {/* Senha */}
             <div className="form-group">
-              <label htmlFor="password" className="form-label">
+              <label htmlFor="login-password" className="form-label">
                 Senha
               </label>
               <div className="input-group">
@@ -102,21 +148,29 @@ const LoginPage = () => {
                   <FiLock />
                 </span>
                 <input
-                  id="password"
-                  type="password"
-                  className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className={`form-control ${loginForm.formState.errors.password ? 'is-invalid' : ''}`}
                   placeholder="••••••••"
-                  {...register('password')}
+                  {...loginForm.register('password')}
                   disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
               </div>
-              {errors.password && (
-                <div className="invalid-feedback">{errors.password.message}</div>
+              {loginForm.formState.errors.password && (
+                <div className="invalid-feedback">{loginForm.formState.errors.password.message}</div>
               )}
             </div>
 
             {/* Botão Submit */}
-            <button type="submit" className="btn btn-primary btn-login" disabled={isLoading}>
+            <button type="submit" className="btn btn-primary btn-auth" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" role="status" />
@@ -166,16 +220,13 @@ const LoginPage = () => {
             </>
           )}
 
-          {/* Credenciais de teste */}
-          <div className="login-footer">
-            <p className="text-muted">
-              <small>
-                <strong>Credenciais de teste:</strong>
-                <br />
-                Email: admin@runas.com
-                <br />
-                Senha: Admin@123
-              </small>
+          {/* Link para registro */}
+          <div className="auth-link">
+            <p>
+              Não tem conta?{' '}
+              <Link to="/register" className="link-primary">
+                Criar conta
+              </Link>
             </p>
           </div>
         </div>

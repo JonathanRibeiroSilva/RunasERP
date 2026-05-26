@@ -6,6 +6,39 @@
 
 ## 📚 Documentação
 
+### 🚀 [QUICK-TEST-GUIDE.md](./QUICK-TEST-GUIDE.md) - **COMECE AQUI!**
+Guia rápido para testar a autenticação do frontend em 5-15 minutos.
+
+**Conteúdo:**
+- Início rápido (5 minutos)
+- Testes básicos (10 minutos)
+- Testes OAuth (15 minutos)
+- Verificações no DevTools
+- Checklist de testes
+- Troubleshooting rápido
+
+### ✅ [PREREQUISITES.md](./PREREQUISITES.md)
+Checklist de pré-requisitos antes de começar os testes.
+
+**Conteúdo:**
+- Verificação de instalações (Node.js, npm, Docker, Python, Git)
+- Configuração de variáveis de ambiente
+- Banco de dados
+- Credenciais de teste
+- Verificação final
+
+### 🔐 [OAUTH-SETUP.md](./OAUTH-SETUP.md)
+Configuração detalhada do login social com Google e Microsoft.
+
+**Conteúdo:**
+- Fluxo OAuth completo (visual e detalhado)
+- Configuração do Google OAuth
+- Configuração do Microsoft OAuth
+- Configuração do backend
+- Testes OAuth
+- Troubleshooting
+- Segurança e referências
+
 ### ⭐ [IMPLEMENTATION-LOG.md](./IMPLEMENTATION-LOG.md) - **LOG DE IMPLEMENTAÇÃO**
 Registro detalhado do progresso da implementação, decisões técnicas e próximos passos.
 
@@ -56,9 +89,6 @@ Plano de implementação com tarefas detalhadas.
 ### 🔧 [DOCKER.md](./DOCKER.md)
 Guia completo para executar o frontend com Docker (desenvolvimento e produção).
 
-### 🔐 [OAUTH-SETUP.md](./OAUTH-SETUP.md)
-Configuração detalhada do login social com Google e Microsoft.
-
 ### 🔌 [API-EXAMPLES.md](./API-EXAMPLES.md)
 Exemplos de integração com todas as APIs do backend.
 
@@ -68,11 +98,25 @@ Exemplos de integração com todas as APIs do backend.
 
 ### Pré-requisitos
 
-- Node.js 18+
-- npm ou yarn
+- Docker e Docker Compose (recomendado)
+- Ou Node.js 18+ e npm 9+ (alternativa)
 - Backend ERP Runas rodando (porta 8000)
 
-### Instalação
+### Instalação com Docker (Recomendado)
+
+```bash
+# Clonar repositório
+git clone <repo-url>
+cd RunasERP
+
+# Iniciar backend
+docker-compose -f docker-compose.dev.yml up api-gateway
+
+# Em outro terminal, iniciar frontend
+docker-compose -f docker-compose.dev.yml up frontend-dev
+```
+
+### Instalação sem Docker
 
 ```bash
 # Clonar repositório
@@ -300,8 +344,9 @@ docker run -p 80:80 erp-runas-frontend
 
 ### Fase Atual: MVP
 - [x] Documentação completa
-- [ ] Setup inicial do projeto
-- [ ] Autenticação e layout
+- [x] Setup inicial do projeto
+- [x] Autenticação e layout
+- [x] OAuth Google e Microsoft
 - [ ] Módulo de clientes
 - [ ] Módulo de produtos
 - [ ] Módulo de estoque
@@ -330,7 +375,7 @@ Para dúvidas ou problemas:
 
 **Versão:** 1.0.0  
 **Data:** 2026-05-25  
-**Status:** 📝 Documentação Completa - Pronto para Implementação
+**Status:** ✅ Autenticação Completa - Pronto para Testes
 
 ---
 

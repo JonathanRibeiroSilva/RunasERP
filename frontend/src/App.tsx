@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/Login/LoginPage';
+import RegisterPage from '@/pages/Register/RegisterPage';
 import OAuthCallbackPage from '@/pages/Auth/OAuthCallbackPage';
 import DashboardPage from '@/pages/Dashboard/DashboardPage';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
@@ -32,31 +33,41 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  console.log('[ProtectedRoute] Estado:', { isAuthenticated, isLoading, user });
 
   if (isLoading) {
+    console.log('[ProtectedRoute] Ainda carregando, mostrando LoadingScreen');
     return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {
+    console.log('[ProtectedRoute] Não autenticado, redirecionando para /login');
     return <Navigate to="/login" replace />;
   }
 
+  console.log('[ProtectedRoute] Autenticado, renderizando children');
   return <>{children}</>;
 };
 
 // Public Route Component (redirect if authenticated)
 const PublicRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  console.log('[PublicRoute] Estado:', { isAuthenticated, isLoading, user });
 
   if (isLoading) {
+    console.log('[PublicRoute] Ainda carregando, mostrando LoadingScreen');
     return <LoadingScreen />;
   }
 
   if (isAuthenticated) {
+    console.log('[PublicRoute] Autenticado, redirecionando para /dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
+  console.log('[PublicRoute] Não autenticado, renderizando children (página pública)');
   return <>{children}</>;
 };
 
@@ -70,6 +81,15 @@ function App() {
           element={
             <PublicRoute>
               <LoginPage />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
             </PublicRoute>
           }
         />

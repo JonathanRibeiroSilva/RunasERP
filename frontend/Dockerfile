@@ -1,15 +1,18 @@
 # Multi-stage build para otimizar o tamanho da imagem
 
 # Stage 1: Build
-FROM node:18-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
+
+# Instalar dependências de build necessárias para módulos nativos
+RUN apk add --no-cache python3 make g++ curl
 
 # Copiar package files
 COPY package*.json ./
 
-# Instalar dependências
-RUN npm ci --only=production
+# Limpar cache e reinstalar
+RUN rm -rf node_modules package-lock.json && npm install
 
 # Copiar código fonte
 COPY . .

@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { env } from '@/config/env';
-import { tokenService } from '@/services/auth/tokenService';
 import type { ApiError, RefreshTokenResponse } from '@/types/auth';
 
 // Criar instância do Axios
@@ -10,9 +9,11 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Importante: envia cookies em requisições cross-origin
 });
 
 // Flag para evitar múltiplas tentativas de refresh
+// DEPRECATED: Com cookies HTTP-only, não é mais necessário
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value?: unknown) => void;
@@ -31,15 +32,12 @@ const processQueue = (error: Error | null = null) => {
   failedQueue = [];
 };
 
-// Interceptor de Request - Adiciona token
+// Interceptor de Request - Cookies são enviados automaticamente
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = tokenService.getAccessToken();
-
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
+    // Não precisa mais adicionar token manualmente
+    // Os cookies HTTP-only são enviados automaticamente pelo navegador
+    // devido ao withCredentials: true
     return config;
   },
   (error: AxiosError) => {
@@ -47,7 +45,7 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor de Response - Refresh token automático
+// Interceptor de Response - Refresh token automático via cookies
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiError>) => {
@@ -55,55 +53,17 @@ api.interceptors.response.use(
 
     // Se erro 401 e não é tentativa de refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        // Se já está refreshing, adiciona à fila
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(() => {
-            return api(originalRequest);
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = tokenService.getRefreshToken();
-
-      if (!refreshToken) {
-        // Sem refresh token, fazer logout
-        tokenService.clearTokens();
-        window.location.href = '/login';
+      // Não fazer refresh se for requisição de login/register
+      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register')) {
         return Promise.reject(error);
       }
 
-      try {
-        // Tentar refresh do token
-        const response = await axios.post<RefreshTokenResponse>(
-          `${env.apiUrl}/auth/refresh`,
-          { refresh_token: refreshToken }
-        );
-
-        const { access_token } = response.data;
-        tokenService.setAccessToken(access_token);
-
-        // Processar fila de requisições pendentes
-        processQueue();
-        isRefreshing = false;
-
-        // Retentar requisição original
-        return api(originalRequest);
-      } catch (refreshError) {
-        // Falha no refresh, fazer logout
-        processQueue(refreshError as Error);
-        isRefreshing = false;
-        tokenService.clearTokens();
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+      // Com cookies HTTP-only, o refresh é automático
+      // Se chegou aqui com 401, significa que o refresh também falhou
+      // Redirecionar para login
+      tokenService.clearTokens(); // Limpar localStorage legado
+      window.location.href = '/login';
+      return Promise.reject(error);
     }
 
     // Outros erros

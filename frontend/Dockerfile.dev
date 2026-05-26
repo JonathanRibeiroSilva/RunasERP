@@ -1,23 +1,33 @@
 # Dockerfile para desenvolvimento com hot reload
+# Node 22 com melhor suporte a módulos nativos
 
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-# Instalar dependências globais
-RUN npm install -g npm@latest
+# Instalar dependências de build necessárias para módulos nativos
+RUN apk add --no-cache python3 make g++ curl
 
 # Copiar package files
 COPY package*.json ./
 
-# Instalar dependências
-RUN npm install
+# Forçar limpeza e reinstalação completa
+RUN rm -rf node_modules && \
+    npm cache clean --force && \
+    npm install --verbose
 
 # Copiar código fonte
 COPY . .
 
 # Expor porta do Vite
 EXPOSE 3000
+
+# Variáveis de ambiente para melhor watch em Docker
+ENV CHOKIDAR_USEPOLLING=true
+ENV CHOKIDAR_INTERVAL=50
+ENV VITE_HMR_HOST=localhost
+ENV VITE_HMR_PORT=3000
+ENV VITE_HMR_PROTOCOL=ws
 
 # Comando para iniciar em modo desenvolvimento
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

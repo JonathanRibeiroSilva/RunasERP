@@ -1,7 +1,7 @@
 export const env = {
   apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   apiTimeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
-  appName: import.meta.env.VITE_APP_NAME || 'ERP Runas',
+  appName: import.meta.env.VITE_APP_NAME || 'Runas',
   appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
   enableDevtools: import.meta.env.VITE_ENABLE_DEVTOOLS === 'true',
   enableAnalytics: import.meta.env.VITE_ENABLE_ANALYTICS === 'true',

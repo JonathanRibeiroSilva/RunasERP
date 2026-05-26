@@ -1,10 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '@/services/auth/authService';
-import { tokenService } from '@/services/auth/tokenService';
 import type { User, UserRole, AuthContextType } from '@/types/auth';
 import { toast } from 'react-toastify';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -17,20 +16,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Verificar se usuário está autenticado ao carregar
   useEffect(() => {
     const initAuth = async () => {
-      if (tokenService.hasTokens()) {
-        try {
-          const currentUser = await authService.getCurrentUser();
-          setUser(currentUser);
-        } catch (error) {
-          console.error('Erro ao carregar usuário:', error);
-          tokenService.clearTokens();
-        }
+      console.log('[AuthContext] Iniciando verificação de autenticação...');
+      
+      // Com cookies HTTP-only, sempre tentamos buscar o usuário
+      // Se houver cookie válido, o backend retornará o usuário
+      // Se não houver, retornará 401
+      try {
+        console.log('[AuthContext] Buscando usuário atual...');
+        const currentUser = await authService.getCurrentUser();
+        console.log('[AuthContext] Usuário carregado:', currentUser);
+        setUser(currentUser);
+      } catch (error) {
+        console.error('[AuthContext] Erro ao carregar usuário:', error);
+        // Usuário não autenticado ou erro na requisição
+        // Isso é esperado se não houver cookie válido
       }
       setIsLoading(false);
+      console.log('[AuthContext] Verificação concluída, isLoading = false');
     };
 
     initAuth();
-  }, []);
+  }, []); // Array vazio para executar apenas uma vez
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -41,6 +47,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Erro ao fazer login:', error);
       throw error;
     }
+  };
+
+  const setAuthUser = (userData: User): void => {
+    console.log('[AuthContext] setAuthUser chamado com:', userData);
+    setUser(userData);
+    console.log('[AuthContext] Estado do usuário atualizado');
   };
 
   const logout = async (): Promise<void> => {
@@ -65,16 +77,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     logout,
+    setAuthUser,
     hasRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

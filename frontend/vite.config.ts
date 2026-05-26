@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,10 +24,26 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: '0.0.0.0',
+    strictPort: false,
+    watch: {
+      usePolling: true,
+      interval: 50,
+      binaryInterval: 100,
+      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+    },
+    hmr: {
+      host: 'localhost',
+      port: 3000,
+      protocol: 'ws',
+      timeout: 60000,
+    },
+    middlewareMode: false,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },

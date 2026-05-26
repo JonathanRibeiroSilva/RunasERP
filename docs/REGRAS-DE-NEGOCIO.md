@@ -990,6 +990,6 @@
 
 **Última atualização**: 2026-05-21  
 **Versão**: 1.0.0  
-**Autor**: Equipe Runas  
+**Autor**: Equipe Deneb Corp  
 **Status**: ✅ Completo
 

@@ -31,10 +31,13 @@ class UsuarioRepository:
     
     async def criar(self, data: UsuarioCreate) -> Usuario:
         """Cria um novo usuário."""
+        # Para usuários OAuth, senha pode ser vazia
+        senha_hash = self.hash_password(data.senha) if data.senha else ""
+        
         usuario = Usuario(
             nome=data.nome,
             email=data.email,
-            senha_hash=self.hash_password(data.senha),
+            senha_hash=senha_hash,
             role=data.role
         )
         self.db.add(usuario)

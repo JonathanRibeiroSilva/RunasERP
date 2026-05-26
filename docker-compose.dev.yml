@@ -1,9 +1,500 @@
 # Docker Compose para Desenvolvimento
-# Usa Dockerfile.dev com hot reload
+# Baseado no docker-compose.yml principal, adaptado para desenvolvimento
 
-version: '3.8'
+networks:
+  erp-network:
+    driver: bridge
+
+volumes:
+  pgadmin_data:
+  rabbitmq_data:
+  redis_data:
+  db_gateway_data:
+  db_clientes_data:
+  db_produtos_data:
+  db_estoque_data:
+  db_vendas_data:
+  db_financeiro_data:
+  db_notificacoes_data:
+  db_evolution_data:
 
 services:
+  # ============================================
+  # INFRAESTRUTURA
+  # ============================================
+  
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: erp-rabbitmq-dev
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: erp-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # ============================================
+  # DATABASES
+  # ============================================
+
+  db-gateway:
+    image: postgres:15-alpine
+    container_name: erp-db-gateway-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: gateway
+    volumes:
+      - db_gateway_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d gateway"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-clientes:
+    image: postgres:15-alpine
+    container_name: erp-db-clientes-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: clientes
+    volumes:
+      - db_clientes_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d clientes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-produtos:
+    image: postgres:15-alpine
+    container_name: erp-db-produtos-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: produtos
+    volumes:
+      - db_produtos_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d produtos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-estoque:
+    image: postgres:15-alpine
+    container_name: erp-db-estoque-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: estoque
+    volumes:
+      - db_estoque_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d estoque"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-vendas:
+    image: postgres:15-alpine
+    container_name: erp-db-vendas-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: vendas
+    volumes:
+      - db_vendas_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d vendas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-financeiro:
+    image: postgres:15-alpine
+    container_name: erp-db-financeiro-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: financeiro
+    volumes:
+      - db_financeiro_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d financeiro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-notificacoes:
+    image: postgres:15-alpine
+    container_name: erp-db-notificacoes-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: notificacoes
+    volumes:
+      - db_notificacoes_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d notificacoes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-evolution:
+    image: postgres:15-alpine
+    container_name: erp-db-evolution-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: evolution
+    volumes:
+      - db_evolution_data:/var/lib/postgresql/data
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp -d evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # PGADMIN
+  # ============================================
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: erp-pgadmin-dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@runas.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/tmp/pgpass:ro
+    depends_on:
+      - db-gateway
+      - db-clientes
+      - db-produtos
+      - db-estoque
+      - db-vendas
+      - db-financeiro
+      - db-notificacoes
+    networks:
+      - erp-network
+    entrypoint: >
+      /bin/sh -c "
+      mkdir -p /var/lib/pgadmin/storage/admin_runas.com &&
+      cp /tmp/pgpass /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+      chmod 600 /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+      chown -R pgadmin:root /var/lib/pgadmin/storage &&
+      /entrypoint.sh
+      "
+
+  # ============================================
+  # EVOLUTION API (WhatsApp)
+  # ============================================
+
+  evolution-api:
+    image: atendai/evolution-api:latest
+    container_name: erp-evolution-api-dev
+    environment:
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://erp:erp@db-evolution:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_api
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-change-me}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-evolution
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # MICROSSERVIÇOS
+  # ============================================
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: erp-api-gateway-dev
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_GATEWAY}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
+      PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
+      ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
+      VENDAS_URL: ${VENDAS_URL:-http://vendas:8004}
+      FINANCEIRO_URL: ${FINANCEIRO_URL:-http://financeiro:8005}
+      NOTIFICACOES_URL: ${NOTIFICACOES_URL:-http://notificacoes:8006}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@runas.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+    depends_on:
+      db-gateway:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./api-gateway:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  clientes:
+    build:
+      context: ./services/clientes
+      dockerfile: Dockerfile
+    container_name: erp-clientes-dev
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_CLIENTES}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db-clientes:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/clientes:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+
+  produtos:
+    build:
+      context: ./services/produtos
+      dockerfile: Dockerfile
+    container_name: erp-produtos-dev
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_PRODUTOS}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db-produtos:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/produtos:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+
+  estoque:
+    build:
+      context: ./services/estoque
+      dockerfile: Dockerfile
+    container_name: erp-estoque-dev
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_ESTOQUE}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db-estoque:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/estoque:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+
+  vendas:
+    build:
+      context: ./services/vendas
+      dockerfile: Dockerfile
+    container_name: erp-vendas-dev
+    ports:
+      - "8004:8004"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_VENDAS}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db-vendas:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/vendas:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8004 --reload
+
+  financeiro:
+    build:
+      context: ./services/financeiro
+      dockerfile: Dockerfile
+    container_name: erp-financeiro-dev
+    ports:
+      - "8005:8005"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_FINANCEIRO}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db-financeiro:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/financeiro:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8005 --reload
+
+  notificacoes:
+    build:
+      context: ./services/notificacoes
+      dockerfile: Dockerfile
+    container_name: erp-notificacoes-dev
+    ports:
+      - "8006:8006"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_NOTIFICACOES}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      EVOLUTION_URL: ${EVOLUTION_URL:-http://evolution-api:8080}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-runas}
+    depends_on:
+      db-notificacoes:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/notificacoes:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8006 --reload
+
+  # ============================================
+  # FRONTEND
+  # ============================================
+
   frontend-dev:
     build:
       context: ./frontend
@@ -12,11 +503,20 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_ENABLE_DEVTOOLS=true
+      VITE_API_URL: http://localhost:8000
+      VITE_OAUTH_REDIRECT_URI: http://localhost:3000/auth/callback
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+      VITE_MICROSOFT_CLIENT_ID: ${VITE_MICROSOFT_CLIENT_ID}
+      VITE_MICROSOFT_TENANT_ID: ${VITE_MICROSOFT_TENANT_ID:-common}
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "50"
+      VITE_HMR_HOST: localhost
+      VITE_HMR_PORT: 3000
+      VITE_HMR_PROTOCOL: ws
     depends_on:
       - api-gateway
     networks:
@@ -24,7 +524,3 @@ services:
     stdin_open: true
     tty: true
     restart: unless-stopped
-
-networks:
-  erp-network:
-    external: true

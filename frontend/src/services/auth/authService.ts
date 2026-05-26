@@ -2,6 +2,12 @@ import { api } from '@/services/api/axios';
 import { tokenService } from './tokenService';
 import type { LoginRequest, LoginResponse, User } from '@/types/auth';
 
+interface RegisterRequest {
+  nome: string;
+  email: string;
+  senha: string;
+}
+
 export const authService = {
   async login(email: string, password: string): Promise<LoginResponse> {
     // API espera form data para OAuth2
@@ -15,23 +21,26 @@ export const authService = {
       },
     });
 
-    const { access_token, refresh_token } = response.data;
+    // Tokens agora são gerenciados via cookies HTTP-only pelo backend
+    // Não é necessário salvar manualmente
 
-    // Salvar tokens
-    tokenService.setAccessToken(access_token);
-    tokenService.setRefreshToken(refresh_token);
+    return response.data;
+  },
 
+  async register(data: RegisterRequest): Promise<User> {
+    const response = await api.post<User>('/auth/register', data);
     return response.data;
   },
 
   async logout(): Promise<void> {
     try {
+      // O backend vai limpar os cookies HTTP-only
       await api.post('/auth/logout');
     } catch (error) {
       // Ignorar erros de logout
       console.error('Erro ao fazer logout:', error);
     } finally {
-      // Sempre limpar tokens localmente
+      // Limpar localStorage legado
       tokenService.clearTokens();
     }
   },
@@ -42,13 +51,9 @@ export const authService = {
   },
 
   async refreshToken(refreshToken: string): Promise<string> {
-    const response = await api.post<{ access_token: string }>('/auth/refresh', {
-      refresh_token: refreshToken,
-    });
-
-    const { access_token } = response.data;
-    tokenService.setAccessToken(access_token);
-
-    return access_token;
+    // Com cookies HTTP-only, o refresh é automático
+    // Este método não é mais necessário mas mantido para compatibilidade
+    console.warn('[authService] refreshToken is deprecated with HTTP-only cookies');
+    return '';
   },
 };

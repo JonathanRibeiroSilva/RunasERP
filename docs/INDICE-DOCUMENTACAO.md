@@ -284,5 +284,5 @@ Para dúvidas sobre a documentação:
 
 **Última atualização**: 2026-05-21  
 **Versão**: 2.0.0  
-**Mantido por**: Equipe Runas
+**Mantido por**: Equipe Deneb Corp
 

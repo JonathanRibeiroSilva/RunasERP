@@ -6,8 +6,7 @@ export interface User {
   nome: string;
   role: UserRole;
   ativo: boolean;
-  created_at: string;
-  updated_at: string;
+  criado_em: string;
 }
 
 export type UserRole = 'ADMIN' | 'OPERADOR';
@@ -39,5 +38,6 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  setAuthUser: (user: User) => void;
   hasRole: (role: UserRole) => boolean;
 }
