@@ -26,12 +26,6 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     strictPort: false,
-    allowedHosts: [
-      'localhost',
-      '127.0.0.1',
-      '.ngrok-free.dev',
-      '.ngrok.io',
-    ],
     watch: {
       usePolling: true,
       interval: 50,
@@ -39,9 +33,9 @@ export default defineConfig({
       ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
     },
     hmr: {
+      host: 'localhost',
+      port: 3000,
       protocol: 'ws',
-      host: process.env.VITE_HMR_HOST || 'localhost',
-      port: parseInt(process.env.VITE_HMR_PORT || '3000'),
       timeout: 60000,
     },
     middlewareMode: false,
@@ -52,10 +46,6 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
-  },
-  preview: {
-    host: '0.0.0.0',
-    port: 3000,
   },
   build: {
     outDir: 'dist',

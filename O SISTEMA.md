@@ -1,4 +1,4 @@
-# 🏪 Runas
+# 🏪 ERP Runas
 
 > Sistema ERP completo para comércio de alimentos e bebidas com arquitetura de microsserviços
 
@@ -13,7 +13,7 @@
 
 ## 📋 Sobre o Projeto
 
-O **Runas** é uma solução completa para gestão de pequenos e médios comércios de alimentos e bebidas, oferecendo:
+O **ERP Runas** é uma solução completa para gestão de pequenos e médios comércios de alimentos e bebidas, oferecendo:
 
 - ✅ **Gestão de Clientes** com crédito fiado e múltiplos endereços
 - ✅ **Catálogo de Produtos** com variantes e fornecedores
@@ -433,15 +433,15 @@ Para suporte técnico:
 ---
 
 **Versão**: 1.0.0-MVP  
-**Última atualização**: 26 de Maio de 2026  
+**Última atualização**: 2026-05-14  
 **Status**: ✅ MVP 100% Funcional e Pronto para Testes
 
 ---
 
 <div align="center">
 
-**[⬆ Voltar ao topo](#-runas)**
+**[⬆ Voltar ao topo](#-erp-runas)**
 
-Desenvolvido por **Equipe DenebCorp**
+Feito com ❤️ pela equipe **Runas**
 
 </div>

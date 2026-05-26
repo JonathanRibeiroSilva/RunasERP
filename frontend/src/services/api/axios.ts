@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { env } from '@/config/env';
-import { tokenService } from '@/services/auth/tokenService';
 import type { ApiError, RefreshTokenResponse } from '@/types/auth';
 
 // Criar instância do Axios
@@ -54,26 +53,16 @@ api.interceptors.response.use(
 
     // Se erro 401 e não é tentativa de refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Não fazer refresh se for requisição de login/register/me
-      // /auth/me é chamado durante inicialização e pode retornar 401 legitimamente
-      if (
-        originalRequest.url?.includes('/auth/login') ||
-        originalRequest.url?.includes('/auth/register') ||
-        originalRequest.url?.includes('/auth/me')
-      ) {
+      // Não fazer refresh se for requisição de login/register
+      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register')) {
         return Promise.reject(error);
       }
 
       // Com cookies HTTP-only, o refresh é automático
       // Se chegou aqui com 401, significa que o refresh também falhou
-      // Redirecionar para login APENAS se não estamos já na página de login
+      // Redirecionar para login
       tokenService.clearTokens(); // Limpar localStorage legado
-      
-      // Evitar redirect infinito: só redirecionar se não estamos em /login
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
-      
+      window.location.href = '/login';
       return Promise.reject(error);
     }
 
