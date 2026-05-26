@@ -1,0 +1,42 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.main-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  transition: margin-left $transition-base;
+
+  &.sidebar-open {
+    margin-left: 260px;
+
+    @include media-xs {
+      margin-left: 0;
+    }
+  }
+
+  &.sidebar-closed {
+    margin-left: 0;
+  }
+}
+
+.content-wrapper {
+  padding: $spacer-4;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @include media-xs {
+    padding: $spacer-3;
+  }
+}

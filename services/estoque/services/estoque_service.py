@@ -4,6 +4,7 @@ Contém a lógica de negócio para gestão de estoque.
 """
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Tuple
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 import structlog
@@ -39,7 +40,7 @@ class EstoqueService:
     """Service para operações de estoque."""
 
     @staticmethod
-    async def verificar_produto_existe(produto_id: int, variante_id: Optional[int] = None) -> bool:
+    async def verificar_produto_existe(produto_id: UUID, variante_id: Optional[UUID] = None) -> bool:
         """Verifica se produto/variante existe no serviço de produtos."""
         try:
             async with httpx.AsyncClient() as client:
@@ -51,7 +52,7 @@ class EstoqueService:
                 response = await client.get(url, timeout=5.0)
                 return response.status_code == 200
         except Exception as e:
-            log.error("erro_verificar_produto", error=str(e), produto_id=produto_id)
+            log.error("erro_verificar_produto", error=str(e), produto_id=str(produto_id))
             return False
 
     @staticmethod
@@ -76,7 +77,7 @@ class EstoqueService:
         return EstoqueResponse.model_validate(estoque)
 
     @staticmethod
-    async def buscar_estoque(db: AsyncSession, estoque_id: int) -> Optional[EstoqueComAlerta]:
+    async def buscar_estoque(db: AsyncSession, estoque_id: UUID) -> Optional[EstoqueComAlerta]:
         """Busca estoque por ID com alertas."""
         estoque = await EstoqueRepository.buscar_por_id(db, estoque_id)
         if not estoque:
@@ -116,7 +117,7 @@ class EstoqueService:
     @staticmethod
     async def atualizar_estoque(
         db: AsyncSession,
-        estoque_id: int,
+        estoque_id: UUID,
         data: EstoqueUpdate
     ) -> Optional[EstoqueResponse]:
         """Atualiza configurações de estoque."""
@@ -124,7 +125,7 @@ class EstoqueService:
         if not estoque:
             return None
         
-        log.info("estoque_atualizado", estoque_id=estoque_id)
+        log.info("estoque_atualizado", estoque_id=str(estoque_id))
         
         return EstoqueResponse.model_validate(estoque)
 
@@ -132,8 +133,8 @@ class EstoqueService:
     async def entrada_estoque(
         db: AsyncSession,
         data: EntradaEstoqueRequest,
-        usuario_id: Optional[int] = None
-    ) -> Tuple[EstoqueResponse, Optional[int]]:
+        usuario_id: Optional[UUID] = None
+    ) -> Tuple[EstoqueResponse, Optional[UUID]]:
         """Registra entrada de estoque."""
         # Buscar ou criar estoque
         estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
@@ -206,7 +207,7 @@ class EstoqueService:
     async def saida_estoque(
         db: AsyncSession,
         data: SaidaEstoqueRequest,
-        usuario_id: Optional[int] = None
+        usuario_id: Optional[UUID] = None
     ) -> EstoqueResponse:
         """Registra saída de estoque."""
         # Buscar estoque
@@ -267,7 +268,7 @@ class EstoqueService:
     async def ajustar_estoque(
         db: AsyncSession,
         data: AjusteEstoqueRequest,
-        usuario_id: Optional[int] = None
+        usuario_id: Optional[UUID] = None
     ) -> EstoqueResponse:
         """Ajusta estoque (inventário)."""
         estoque = await EstoqueRepository.buscar_por_id(db, data.estoque_id)

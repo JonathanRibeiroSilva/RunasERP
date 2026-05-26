@@ -3,6 +3,7 @@ Repository de Estoque.
 """
 from datetime import datetime, date, timedelta
 from typing import List, Optional
+from uuid import UUID
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -32,7 +33,7 @@ class EstoqueRepository:
         return estoque
 
     @staticmethod
-    async def buscar_por_id(db: AsyncSession, estoque_id: int) -> Optional[Estoque]:
+    async def buscar_por_id(db: AsyncSession, estoque_id: UUID) -> Optional[Estoque]:
         """Busca estoque por ID."""
         result = await db.execute(
             select(Estoque).where(Estoque.id == estoque_id)
@@ -42,8 +43,8 @@ class EstoqueRepository:
     @staticmethod
     async def buscar_por_produto(
         db: AsyncSession,
-        produto_id: int,
-        variante_id: Optional[int] = None
+        produto_id: UUID,
+        variante_id: Optional[UUID] = None
     ) -> Optional[Estoque]:
         """Busca estoque por produto e variante."""
         query = select(Estoque).where(Estoque.produto_id == produto_id)
@@ -85,7 +86,7 @@ class EstoqueRepository:
     @staticmethod
     async def atualizar(
         db: AsyncSession,
-        estoque_id: int,
+        estoque_id: UUID,
         **kwargs
     ) -> Optional[Estoque]:
         """Atualiza um estoque."""
@@ -105,7 +106,7 @@ class EstoqueRepository:
     @staticmethod
     async def atualizar_quantidade(
         db: AsyncSession,
-        estoque_id: int,
+        estoque_id: UUID,
         quantidade: float
     ) -> Optional[Estoque]:
         """Atualiza a quantidade de estoque."""
@@ -124,7 +125,7 @@ class EstoqueRepository:
     @staticmethod
     async def reservar(
         db: AsyncSession,
-        estoque_id: int,
+        estoque_id: UUID,
         quantidade: float
     ) -> Optional[Estoque]:
         """Reserva quantidade de estoque."""
@@ -146,7 +147,7 @@ class EstoqueRepository:
     @staticmethod
     async def liberar_reserva(
         db: AsyncSession,
-        estoque_id: int,
+        estoque_id: UUID,
         quantidade: float
     ) -> Optional[Estoque]:
         """Libera reserva de estoque."""
@@ -216,7 +217,7 @@ class MovimentacaoRepository:
         return movimentacao
 
     @staticmethod
-    async def buscar_por_id(db: AsyncSession, movimentacao_id: int) -> Optional[Movimentacao]:
+    async def buscar_por_id(db: AsyncSession, movimentacao_id: UUID) -> Optional[Movimentacao]:
         """Busca movimentação por ID."""
         result = await db.execute(
             select(Movimentacao).where(Movimentacao.id == movimentacao_id)
@@ -226,7 +227,7 @@ class MovimentacaoRepository:
     @staticmethod
     async def listar(
         db: AsyncSession,
-        estoque_id: Optional[int] = None,
+        estoque_id: Optional[UUID] = None,
         tipo: Optional[TipoMovimentacao] = None,
         data_inicio: Optional[datetime] = None,
         data_fim: Optional[datetime] = None,
@@ -306,7 +307,7 @@ class LoteRepository:
         return lote
 
     @staticmethod
-    async def buscar_por_id(db: AsyncSession, lote_id: int) -> Optional[Lote]:
+    async def buscar_por_id(db: AsyncSession, lote_id: UUID) -> Optional[Lote]:
         """Busca lote por ID."""
         result = await db.execute(
             select(Lote).where(Lote.id == lote_id)
@@ -324,7 +325,7 @@ class LoteRepository:
     @staticmethod
     async def listar(
         db: AsyncSession,
-        estoque_id: Optional[int] = None,
+        estoque_id: Optional[UUID] = None,
         status: Optional[StatusLote] = None,
         vencendo: bool = False,
         skip: int = 0,
@@ -355,7 +356,7 @@ class LoteRepository:
         return list(result.scalars().all())
 
     @staticmethod
-    async def atualizar(db: AsyncSession, lote_id: int, **kwargs) -> Optional[Lote]:
+    async def atualizar(db: AsyncSession, lote_id: UUID, **kwargs) -> Optional[Lote]:
         """Atualiza um lote."""
         lote = await LoteRepository.buscar_por_id(db, lote_id)
         if not lote:
@@ -371,7 +372,7 @@ class LoteRepository:
         return lote
 
     @staticmethod
-    async def atualizar_quantidade(db: AsyncSession, lote_id: int, quantidade: float) -> Optional[Lote]:
+    async def atualizar_quantidade(db: AsyncSession, lote_id: UUID, quantidade: float) -> Optional[Lote]:
         """Atualiza quantidade do lote."""
         lote = await LoteRepository.buscar_por_id(db, lote_id)
         if not lote:
@@ -427,7 +428,7 @@ class InventarioRepository:
         return inventario
 
     @staticmethod
-    async def buscar_por_id(db: AsyncSession, inventario_id: int) -> Optional[Inventario]:
+    async def buscar_por_id(db: AsyncSession, inventario_id: UUID) -> Optional[Inventario]:
         """Busca inventário por ID."""
         result = await db.execute(
             select(Inventario)
@@ -455,7 +456,7 @@ class InventarioRepository:
         return list(result.scalars().all())
 
     @staticmethod
-    async def finalizar(db: AsyncSession, inventario_id: int) -> Optional[Inventario]:
+    async def finalizar(db: AsyncSession, inventario_id: UUID) -> Optional[Inventario]:
         """Finaliza um inventário."""
         inventario = await InventarioRepository.buscar_por_id(db, inventario_id)
         if not inventario:
@@ -479,7 +480,7 @@ class InventarioRepository:
         return item
 
     @staticmethod
-    async def marcar_item_ajustado(db: AsyncSession, item_id: int) -> Optional[ItemInventario]:
+    async def marcar_item_ajustado(db: AsyncSession, item_id: UUID) -> Optional[ItemInventario]:
         """Marca item como ajustado."""
         result = await db.execute(
             select(ItemInventario).where(ItemInventario.id == item_id)

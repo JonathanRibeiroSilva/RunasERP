@@ -1,5 +1,5 @@
 """
-Serviço Vendas - ERP Runas
+Serviço Vendas - Runas
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="ERP Runas - Vendas",
+    title="Runas - Vendas",
     description="Microsserviço de vendas",
     version="1.0.0",
     lifespan=lifespan

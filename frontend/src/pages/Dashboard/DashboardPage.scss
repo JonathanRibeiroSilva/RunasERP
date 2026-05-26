@@ -1,0 +1,233 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.dashboard-page {
+  @include fade-in;
+}
+
+.dashboard-header {
+  margin-bottom: $spacer-5;
+
+  .page-title {
+    font-size: $h2-font-size;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin-bottom: $spacer-1;
+  }
+
+  .page-subtitle {
+    font-size: $font-size-base;
+    color: $text-secondary;
+    margin: 0;
+  }
+}
+
+// Stats Grid
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: $spacer-4;
+  margin-bottom: $spacer-5;
+
+  @include media-xs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  @include card;
+  display: flex;
+  gap: $spacer-3;
+  padding: $spacer-4;
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .stat-content {
+    flex: 1;
+    min-width: 0;
+
+    .stat-title {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin-bottom: $spacer-1;
+    }
+
+    .stat-value {
+      font-size: $h4-font-size;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      margin-bottom: $spacer-1;
+    }
+
+    .stat-change {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-medium;
+
+      &.positive {
+        color: $success;
+      }
+
+      &.negative {
+        color: $error;
+      }
+    }
+  }
+
+  // Variantes de cor
+  &.stat-primary .stat-icon {
+    background: $primary-light;
+    color: $primary;
+  }
+
+  &.stat-secondary .stat-icon {
+    background: $secondary-light;
+    color: $secondary;
+  }
+
+  &.stat-success .stat-icon {
+    background: $success-light;
+    color: $success;
+  }
+
+  &.stat-warning .stat-icon {
+    background: $warning-light;
+    color: $warning;
+  }
+}
+
+// Alerts Section
+.alerts-section {
+  margin-bottom: $spacer-5;
+
+  .section-title {
+    font-size: $h4-font-size;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin-bottom: $spacer-4;
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+
+    svg {
+      color: $warning;
+    }
+  }
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacer-3;
+}
+
+.alert-item {
+  @include card;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacer-3;
+  gap: $spacer-3;
+
+  @include media-xs {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .alert-content {
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+    flex: 1;
+
+    .alert-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .alert-message {
+      font-size: $font-size-sm;
+      color: $text-primary;
+    }
+  }
+
+  .alert-action {
+    @include button-base;
+    padding: $spacer-1 $spacer-3;
+    font-size: $font-size-xs;
+    background: transparent;
+    color: $primary;
+    border: 1px solid $primary;
+
+    &:hover {
+      background: $primary-light;
+    }
+
+    @include media-xs {
+      width: 100%;
+    }
+  }
+
+  // Variantes de alerta
+  &.alert-warning {
+    border-left: 3px solid $warning;
+
+    .alert-icon {
+      color: $warning;
+    }
+  }
+
+  &.alert-error {
+    border-left: 3px solid $error;
+
+    .alert-icon {
+      color: $error;
+    }
+  }
+
+  &.alert-info {
+    border-left: 3px solid $info;
+
+    .alert-icon {
+      color: $info;
+    }
+  }
+}
+
+// Charts Section
+.charts-section {
+  .chart-card {
+    @include card;
+    padding: $spacer-4;
+
+    .chart-title {
+      font-size: $h5-font-size;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+      margin-bottom: $spacer-4;
+    }
+
+    .chart-placeholder {
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: $surface-hover;
+      border-radius: $border-radius;
+      border: 2px dashed $border-default;
+
+      .text-muted {
+        color: $text-tertiary;
+        font-size: $font-size-sm;
+      }
+    }
+  }
+}

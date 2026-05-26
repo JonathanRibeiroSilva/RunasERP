@@ -1,6 +1,6 @@
-# 🚀 Features Futuras - ERP Runas
+# 🚀 Features Futuras - Runas
 
-**Última atualização**: 2026-05-14  
+**Última atualização**: 26 de Maio de 2026  
 **Versão**: 1.0.0-MVP
 
 ---
@@ -501,7 +501,7 @@ Para dúvidas sobre o roadmap:
 
 ---
 
-**Última atualização**: 2026-05-14  
+**Última atualização**: 26 de Maio de 2026  
 **Versão**: 1.0.0-MVP  
 **Próxima revisão**: 2026-06-01
 
@@ -509,8 +509,8 @@ Para dúvidas sobre o roadmap:
 
 <div align="center">
 
-**[⬆ Voltar ao topo](#-features-futuras---erp-runas)**
+**[⬆ Voltar ao topo](#-features-futuras---runas)**
 
-Feito com ❤️ pela equipe **Runas**
+Desenvolvido por **Equipe DenebCorp**
 
 </div>
