@@ -12,9 +12,17 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initAuthRef = React.useRef(false);
 
   // Verificar se usuário está autenticado ao carregar
   useEffect(() => {
+    // Evitar múltiplas execuções em StrictMode
+    if (initAuthRef.current) {
+      console.log('[AuthContext] initAuth já foi executado, ignorando');
+      return;
+    }
+    initAuthRef.current = true;
+
     const initAuth = async () => {
       console.log('[AuthContext] Iniciando verificação de autenticação...');
       
@@ -30,9 +38,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('[AuthContext] Erro ao carregar usuário:', error);
         // Usuário não autenticado ou erro na requisição
         // Isso é esperado se não houver cookie válido
+        // Não fazer nada - deixar user como null
+      } finally {
+        setIsLoading(false);
+        console.log('[AuthContext] Verificação concluída, isLoading = false');
       }
-      setIsLoading(false);
-      console.log('[AuthContext] Verificação concluída, isLoading = false');
     };
 
     initAuth();
