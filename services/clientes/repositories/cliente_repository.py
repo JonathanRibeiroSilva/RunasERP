@@ -3,7 +3,7 @@ Repository para operações de Cliente no banco de dados.
 """
 from uuid import UUID
 from decimal import Decimal
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.cliente import Cliente, Endereco
 from schemas.cliente import ClienteCreate, ClienteUpdate, EnderecoCreate, EnderecoUpdate
@@ -28,8 +28,9 @@ class ClienteRepository:
             data_nasc=data.data_nasc
         )
         self.db.add(cliente)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(cliente)
+        await self.db.commit()
         log.info("cliente.criado", cliente_id=str(cliente.id))
         return cliente
     
@@ -53,15 +54,34 @@ class ClienteRepository:
         limit: int = 100,
         nome: str | None = None,
         cpf: str | None = None,
-        bloqueado: bool | None = None
+        bloqueado: bool | None = None,
+        ativo: bool | None = None
     ) -> tuple[list[Cliente], int]:
         """Lista clientes com filtros."""
-        query = select(Cliente).where(Cliente.ativo == True)
+        query = select(Cliente)
+        
+        # Filtro de ativo (padrão: apenas ativos)
+        if ativo is not None:
+            query = query.where(Cliente.ativo == ativo)
+        else:
+            query = query.where(Cliente.ativo == True)
         
         if nome:
-            query = query.where(Cliente.nome.ilike(f"%{nome}%"))
+            # Tentar detectar se é CPF (apenas números)
+            nome_limpo = ''.join(filter(str.isdigit, nome))
+            if len(nome_limpo) >= 3:  # Se tem pelo menos 3 dígitos, buscar por CPF também
+                query = query.where(
+                    (Cliente.nome.ilike(f"%{nome}%")) | 
+                    (Cliente.cpf.like(f"%{nome_limpo}%"))
+                )
+            else:
+                query = query.where(Cliente.nome.ilike(f"%{nome}%"))
+        
         if cpf:
-            query = query.where(Cliente.cpf == cpf)
+            # Remover formatação do CPF
+            cpf_limpo = ''.join(filter(str.isdigit, cpf))
+            query = query.where(Cliente.cpf == cpf_limpo)
+        
         if bloqueado is not None:
             query = query.where(Cliente.bloqueado == bloqueado)
         

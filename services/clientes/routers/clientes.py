@@ -59,9 +59,10 @@ async def listar_clientes(
     service: Annotated[ClienteService, Depends(get_cliente_service)],
     skip: int = Query(0, ge=0, description="Número de registros a pular"),
     limit: int = Query(100, ge=1, le=100, description="Número máximo de registros"),
-    nome: str | None = Query(None, description="Filtrar por nome (busca parcial)"),
-    cpf: str | None = Query(None, description="Filtrar por CPF"),
-    bloqueado: bool | None = Query(None, description="Filtrar por status de bloqueio")
+    nome: str | None = Query(None, description="Filtrar por nome ou CPF (busca parcial)"),
+    cpf: str | None = Query(None, description="Filtrar por CPF exato"),
+    bloqueado: bool | None = Query(None, description="Filtrar por status de bloqueio"),
+    ativo: bool | None = Query(None, description="Filtrar por status ativo/inativo")
 ):
     """
     Lista clientes com paginação e filtros.
@@ -72,13 +73,13 @@ async def listar_clientes(
     - **skip**: Offset usado
     - **limit**: Limite usado
     """
-    clientes, total = await service.listar_clientes(skip, limit, nome, cpf, bloqueado)
+    clientes, total = await service.listar_clientes(skip, limit, nome, cpf, bloqueado, ativo)
     
     # Converter modelos SQLAlchemy para schemas Pydantic
     clientes_response = [ClienteResponse.model_validate(cliente) for cliente in clientes]
     
     return {
-        "items": clientes_response,
+        "clientes": clientes_response,
         "total": total,
         "skip": skip,
         "limit": limit
