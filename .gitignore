@@ -75,4 +75,8 @@ dump.rdb
 
 # Documentação
 REORGANIZACAO-COMPLETA.md
+CHECKLIST_DESENVOLVIMENTO.md
 
+# Dev Scripts (Windows batch files for local development)
+dev-scripts/
+*.bat
