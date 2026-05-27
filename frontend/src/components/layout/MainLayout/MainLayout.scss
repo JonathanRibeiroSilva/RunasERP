@@ -5,16 +5,18 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: $background;
 }
 
 .layout-container {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  position: relative;
 }
 
 .main-content {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   transition: margin-left $transition-base;
 
@@ -35,6 +37,7 @@
   padding: $spacer-4;
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
 
   @include media-xs {
     padding: $spacer-3;

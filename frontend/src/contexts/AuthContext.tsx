@@ -14,39 +14,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const initAuthRef = React.useRef(false);
 
-  // Verificar se usuário está autenticado ao carregar
   useEffect(() => {
-    // Evitar múltiplas execuções em StrictMode
-    if (initAuthRef.current) {
-      console.log('[AuthContext] initAuth já foi executado, ignorando');
-      return;
-    }
+    if (initAuthRef.current) return;
     initAuthRef.current = true;
 
     const initAuth = async () => {
-      console.log('[AuthContext] Iniciando verificação de autenticação...');
-      
-      // Com cookies HTTP-only, sempre tentamos buscar o usuário
-      // Se houver cookie válido, o backend retornará o usuário
-      // Se não houver, retornará 401
       try {
-        console.log('[AuthContext] Buscando usuário atual...');
         const currentUser = await authService.getCurrentUser();
-        console.log('[AuthContext] Usuário carregado:', currentUser);
         setUser(currentUser);
       } catch (error) {
-        console.error('[AuthContext] Erro ao carregar usuário:', error);
-        // Usuário não autenticado ou erro na requisição
-        // Isso é esperado se não houver cookie válido
-        // Não fazer nada - deixar user como null
+        // Usuário não autenticado — esperado quando não há cookie válido
       } finally {
         setIsLoading(false);
-        console.log('[AuthContext] Verificação concluída, isLoading = false');
       }
     };
 
     initAuth();
-  }, []); // Array vazio para executar apenas uma vez
+  }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -60,9 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const setAuthUser = (userData: User): void => {
-    console.log('[AuthContext] setAuthUser chamado com:', userData);
     setUser(userData);
-    console.log('[AuthContext] Estado do usuário atualizado');
   };
 
   const logout = async (): Promise<void> => {
