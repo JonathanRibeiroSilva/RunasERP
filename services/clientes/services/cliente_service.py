@@ -88,10 +88,11 @@ class ClienteService:
         limit: int = 100,
         nome: str | None = None,
         cpf: str | None = None,
-        bloqueado: bool | None = None
+        bloqueado: bool | None = None,
+        ativo: bool | None = None
     ) -> tuple[list[Cliente], int]:
         """Lista clientes com filtros."""
-        return await self.cliente_repo.listar(skip, limit, nome, cpf, bloqueado)
+        return await self.cliente_repo.listar(skip, limit, nome, cpf, bloqueado, ativo)
     
     async def atualizar_cliente(
         self,
