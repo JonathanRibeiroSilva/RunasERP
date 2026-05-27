@@ -39,19 +39,22 @@ export default defineConfig({
       ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
     },
     hmr: {
-      protocol: 'ws',
+      protocol: process.env.VITE_HMR_PROTOCOL || 'ws',
       host: process.env.VITE_HMR_HOST || 'localhost',
       port: parseInt(process.env.VITE_HMR_PORT || '3000'),
       timeout: 60000,
     },
     middlewareMode: false,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+    // Proxy condicional - apenas para desenvolvimento local
+    ...(process.env.VITE_USE_PROXY !== 'false' && {
+      proxy: {
+        '/api': {
+          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
       },
-    },
+    }),
   },
   preview: {
     host: '0.0.0.0',
