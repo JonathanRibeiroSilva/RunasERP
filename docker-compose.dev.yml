@@ -507,16 +507,17 @@ services:
       - ./frontend/public:/app/public
       - /app/node_modules
     environment:
-      VITE_API_URL: http://localhost:8000
-      VITE_OAUTH_REDIRECT_URI: http://localhost:3000/auth/callback
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      VITE_OAUTH_REDIRECT_URI: ${VITE_OAUTH_REDIRECT_URI:-http://localhost:3000/auth/callback}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
       VITE_MICROSOFT_CLIENT_ID: ${VITE_MICROSOFT_CLIENT_ID}
       VITE_MICROSOFT_TENANT_ID: ${VITE_MICROSOFT_TENANT_ID:-common}
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "50"
-      VITE_HMR_HOST: localhost
-      VITE_HMR_PORT: 3000
-      VITE_HMR_PROTOCOL: ws
+      VITE_HMR_HOST: ${VITE_HMR_HOST:-localhost}
+      VITE_HMR_PORT: ${VITE_HMR_PORT:-3000}
+      VITE_HMR_PROTOCOL: ${VITE_HMR_PROTOCOL:-ws}
+      VITE_USE_PROXY: ${VITE_USE_PROXY:-true}
     depends_on:
       - api-gateway
     networks:
