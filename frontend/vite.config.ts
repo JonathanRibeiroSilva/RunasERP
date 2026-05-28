@@ -8,6 +8,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Silenciar deprecation warnings do Sass (darken, @import legado)
+        // que causam recompilação em loop no Vite
+        silenceDeprecations: ['color-functions', 'import', 'global-builtin', 'legacy-js-api'],
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -34,15 +43,32 @@ export default defineConfig({
     ],
     watch: {
       usePolling: true,
-      interval: 50,
-      binaryInterval: 100,
-      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+      interval: 1000, // Aumentado de 50ms para 1s — reduz falsos positivos no Windows/Docker
+      binaryInterval: 300,
+      ignored: [
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/dist/**',
+        '**/.vscode/**',
+        '**/.idea/**',
+        '**/coverage/**',
+        '**/*.log',
+        // Ignorar arquivos temporários do Windows que causam reload falso
+        '**/*~',
+        '**/*.swp',
+        '**/*.swo',
+        '**/.DS_Store',
+        '**/Thumbs.db',
+      ],
     },
     hmr: {
-      protocol: process.env.VITE_HMR_PROTOCOL || 'ws',
-      host: process.env.VITE_HMR_HOST || 'localhost',
-      port: parseInt(process.env.VITE_HMR_PORT || '3000'),
+      // HMR via nginx/ngrok:
+      // - Vite faz bind em 0.0.0.0:3000 (padrão quando host não é especificado)
+      // - Browser conecta em wss://ngrok:443/@vite/client
+      // - Nginx faz proxy reverso para ws://frontend:3000
+      // NÃO especificar host/port aqui — deixar o Vite usar defaults locais
       timeout: 60000,
+      overlay: false,
     },
     middlewareMode: false,
     // Proxy condicional - apenas para desenvolvimento local
