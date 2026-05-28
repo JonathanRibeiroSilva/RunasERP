@@ -91,12 +91,6 @@ async def proxy_produtos_root(
     request: Request,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
-    """
-    Proxy para serviço de produtos (autenticado).
-    
-    - GET: Lista produtos com filtros opcionais
-    - POST: Cria novo produto
-    """
     return await ServiceProxy.proxy_request(request, "/produtos")
 
 
@@ -112,15 +106,94 @@ async def proxy_produtos_path(
     path: str,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
-    """
-    Proxy para serviço de produtos (autenticado).
-    
-    - GET /produtos/{id}: Busca produto por ID
-    - PUT /produtos/{id}: Atualiza produto
-    - DELETE /produtos/{id}: Desativa produto
-    - POST /produtos/{id}/variantes: Adiciona variante
-    """
     full_path = f"/produtos/{path}"
+    return await ServiceProxy.proxy_request(request, full_path)
+
+
+# Rotas de categorias
+@router.api_route(
+    "/categorias",
+    methods=["GET", "POST"],
+    tags=["Produtos"],
+    summary="Listar ou criar categorias"
+)
+async def proxy_categorias_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    return await ServiceProxy.proxy_request(request, "/categorias")
+
+
+@router.api_route(
+    "/categorias/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Produtos"],
+    summary="Operações com categoria específica"
+)
+async def proxy_categorias_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/categorias/{path}"
+    return await ServiceProxy.proxy_request(request, full_path)
+
+
+# Rotas de variantes
+@router.api_route(
+    "/variantes",
+    methods=["GET", "POST"],
+    tags=["Produtos"],
+    summary="Listar ou criar variantes"
+)
+async def proxy_variantes_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    return await ServiceProxy.proxy_request(request, "/variantes")
+
+
+@router.api_route(
+    "/variantes/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Produtos"],
+    summary="Operações com variante específica"
+)
+async def proxy_variantes_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/variantes/{path}"
+    return await ServiceProxy.proxy_request(request, full_path)
+
+
+# Rotas de fornecedores
+@router.api_route(
+    "/fornecedores",
+    methods=["GET", "POST"],
+    tags=["Produtos"],
+    summary="Listar ou criar fornecedores"
+)
+async def proxy_fornecedores_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    return await ServiceProxy.proxy_request(request, "/fornecedores")
+
+
+@router.api_route(
+    "/fornecedores/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Produtos"],
+    summary="Operações com fornecedor específico"
+)
+async def proxy_fornecedores_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/fornecedores/{path}"
     return await ServiceProxy.proxy_request(request, full_path)
 
 

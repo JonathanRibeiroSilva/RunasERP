@@ -35,6 +35,25 @@ class Settings(BaseSettings):
     MICROSOFT_CLIENT_ID: str | None = None
     MICROSOFT_CLIENT_SECRET: str | None = None
     MICROSOFT_TENANT_ID: str = "common"
+
+    # Email SMTP
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_NAME: str = "Runas ERP"
+    FRONTEND_URL: str = "http://localhost:5173"
+    
+    # Email (SMTP)
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str | None = None
+    SMTP_FROM_NAME: str = "Runas"
+    
+    # Frontend URL (para links de reset de senha)
+    FRONTEND_URL: str = "http://localhost:5173"
     
     model_config = SettingsConfigDict(
         env_file=".env",
