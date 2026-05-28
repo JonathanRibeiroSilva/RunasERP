@@ -1,5 +1,6 @@
 # Docker Compose para Desenvolvimento
 # Baseado no docker-compose.yml principal, adaptado para desenvolvimento
+# BuildKit habilitado para cache de pip (builds muito mais rápidos)
 
 networks:
   erp-network:
@@ -292,6 +293,12 @@ services:
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET}
       MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Runas ERP}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       db-gateway:
         condition: service_healthy
@@ -507,17 +514,20 @@ services:
       - ./frontend/public:/app/public
       - /app/node_modules
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # ATENÇÃO: Estas variáveis são lidas do .env na raiz do projeto.
+      # Se mudar a URL do ngrok, atualize o .env e rode: docker compose up -d --force-recreate frontend-dev
+      # NÃO use "docker restart" pois ele não relê o .env.
+      VITE_API_URL: ${VITE_API_URL:?VITE_API_URL nao definida no .env}
       VITE_OAUTH_REDIRECT_URI: ${VITE_OAUTH_REDIRECT_URI:-http://localhost:3000/auth/callback}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
       VITE_MICROSOFT_CLIENT_ID: ${VITE_MICROSOFT_CLIENT_ID}
       VITE_MICROSOFT_TENANT_ID: ${VITE_MICROSOFT_TENANT_ID:-common}
+      # Chokidar: polling para watch funcionar no Docker/Windows
+      # Intervalo aumentado para 1000ms reduz falsos positivos de mudança
       CHOKIDAR_USEPOLLING: "true"
-      CHOKIDAR_INTERVAL: "50"
-      VITE_HMR_HOST: ${VITE_HMR_HOST:-localhost}
-      VITE_HMR_PORT: ${VITE_HMR_PORT:-3000}
-      VITE_HMR_PROTOCOL: ${VITE_HMR_PROTOCOL:-ws}
-      VITE_USE_PROXY: ${VITE_USE_PROXY:-true}
+      CHOKIDAR_INTERVAL: "1000"
+      # VITE_HMR_* não são mais necessárias — o Vite usa defaults e o nginx faz proxy
+      VITE_USE_PROXY: ${VITE_USE_PROXY:-false}
     depends_on:
       - api-gateway
     networks:

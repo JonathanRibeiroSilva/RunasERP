@@ -22,12 +22,13 @@ COPY . .
 # Expor porta do Vite
 EXPOSE 3000
 
-# Variáveis de ambiente para melhor watch em Docker
+# Variáveis fixas de watch (não dependem do ambiente)
+# Polling necessário para watch funcionar no Docker
+# Intervalo de 1000ms (1s) reduz falsos positivos no Windows/Docker
 ENV CHOKIDAR_USEPOLLING=true
-ENV CHOKIDAR_INTERVAL=50
-ENV VITE_HMR_HOST=localhost
-ENV VITE_HMR_PORT=3000
-ENV VITE_HMR_PROTOCOL=ws
+ENV CHOKIDAR_INTERVAL=1000
+# VITE_HMR_HOST, VITE_HMR_PORT e VITE_HMR_PROTOCOL são injetados pelo docker-compose
+# via .env da raiz — NÃO definir aqui para não sobrescrever os valores do compose
 
 # Comando para iniciar em modo desenvolvimento
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
