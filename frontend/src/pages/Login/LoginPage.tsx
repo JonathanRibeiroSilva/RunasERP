@@ -155,7 +155,7 @@ const LoginPage = () => {
       <div className="login-right">
         <div className="login-form-wrapper">
           <div className="form-header">
-            <h1>Seja Mal-vindo</h1>
+            <h1>Seja Bem-vindo</h1>
             <p>Faça login para acessar sua plataforma</p>
           </div>
 
