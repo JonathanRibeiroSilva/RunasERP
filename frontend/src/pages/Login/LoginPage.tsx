@@ -7,18 +7,61 @@ import { useAuth } from '@/hooks/useAuth';
 import { getErrorMessage } from '@/services/api/axios';
 import { oauthService } from '@/services/auth/oauthService';
 import { toast } from 'react-toastify';
-import { FiMail, FiLock, FiLogIn, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiLock, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { SiMicrosoft } from 'react-icons/si';
 import './LoginPage.scss';
 
-// Schema de validação para login
 const loginSchema = z.object({
   email: z.string().email('Email inválido').min(1, 'Email é obrigatório'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+// Logo Runas em SVG inline
+const RunasLogo = () => (
+  <svg viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="runas-logo-svg">
+    {/* Letra R esquerda */}
+    <polygon points="30,40 50,40 50,180 30,180" fill="url(#logoGrad)" />
+    <polygon points="50,40 95,40 110,60 95,80 50,80" fill="url(#logoGrad)" />
+    <polygon points="80,80 110,60 140,180 118,180" fill="url(#logoGrad)" />
+    {/* Diagonal superior esquerda */}
+    <polygon points="30,40 80,10 88,24 38,54" fill="url(#logoGrad)" opacity="0.85" />
+
+    {/* Letra R direita (espelhada) */}
+    <polygon points="170,40 150,40 150,180 170,180" fill="url(#logoGrad)" />
+    <polygon points="150,40 105,40 90,60 105,80 150,80" fill="url(#logoGrad)" />
+    <polygon points="120,80 90,60 60,180 82,180" fill="url(#logoGrad)" />
+    {/* Diagonal superior direita */}
+    <polygon points="170,40 120,10 112,24 162,54" fill="url(#logoGrad)" opacity="0.85" />
+
+    <defs>
+      <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#3b82f6" />
+        <stop offset="100%" stopColor="#22d3ee" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const features = [
+  {
+    icon: '📊',
+    title: 'Análise em Tempo Real',
+    desc: 'Monitore métricas e KPIs instantaneamente',
+  },
+  {
+    icon: '🔒',
+    title: 'Segurança Avançada',
+    desc: 'Proteção multicamadas e auditoria completa',
+  },
+  {
+    icon: '💡',
+    title: 'Inteligência de Dados',
+    desc: 'Insights e relatórios automatizados',
+  },
+];
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -27,48 +70,33 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // Form para login
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  // Limpar erro quando o usuário começa a digitar
   useEffect(() => {
     const subscription = loginForm.watch(() => {
-      if (loginError) {
-        setLoginError(null);
-      }
+      if (loginError) setLoginError(null);
     });
-
     return () => subscription.unsubscribe();
   }, [loginError, loginForm]);
 
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setLoginError(null);
-    console.log('[LoginPage] Tentando fazer login com:', data.email);
     try {
       await login(data.email, data.password);
-      console.log('[LoginPage] Login bem-sucedido, redirecionando para dashboard');
       navigate('/dashboard');
     } catch (error) {
-      console.log('[LoginPage] Erro ao fazer login:', error);
       const message = getErrorMessage(error);
-      
-      // Mensagens de erro mais específicas
       let errorMessage = message;
-      
       if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
-        errorMessage = 'Email ou senha incorretos. Verifique seus dados e tente novamente.';
-      } else if (message.toLowerCase().includes('not found') || message.toLowerCase().includes('não encontrado')) {
-        errorMessage = 'Usuário não encontrado. Verifique o email ou crie uma nova conta.';
-      } else if (message.toLowerCase().includes('unauthorized') || message.toLowerCase().includes('não autorizado')) {
-        errorMessage = 'Acesso negado. Verifique suas credenciais.';
-      } else if (message.toLowerCase().includes('network') || message.toLowerCase().includes('conexão')) {
-        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        errorMessage = 'Email ou senha incorretos.';
+      } else if (message.toLowerCase().includes('not found')) {
+        errorMessage = 'Usuário não encontrado.';
+      } else if (message.toLowerCase().includes('network')) {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
       }
-      
-      console.log('[LoginPage] Mensagem de erro:', errorMessage);
       setLoginError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -89,130 +117,140 @@ const LoginPage = () => {
     }
   };
 
-  // Verificar quais providers estão configurados
   const configuredProviders = oauthService.getConfiguredProviders();
   const hasOAuthProviders = configuredProviders.length > 0;
 
   return (
     <div className="login-page">
-      <div className="login-container">
-        <div className="login-card">
-          {/* Logo e Título */}
-          <div className="login-header">
-            <h1 className="login-title">Runas</h1>
-            <p className="login-subtitle">Runas - Sistema de Gestão Empresarial</p>
+      {/* Painel esquerdo — apresentação */}
+      <div className="login-left">
+        <div className="left-content">
+          <div className="brand">
+            <RunasLogo />
+            <span className="brand-name">RUNAS</span>
           </div>
 
-          {/* Mensagem de Erro */}
-          {loginError && (
-            <div className="alert alert-error">
-              <FiAlertCircle className="alert-icon" />
-              <div className="alert-content">
-                <p className="alert-message">{loginError}</p>
+          <div className="left-text">
+            <h2> Sistema de Gestão Comercial</h2>
+          </div>
+
+          <div className="features">
+            {features.map((f) => (
+              <div className="feature-item" key={f.title}>
+                <div className="feature-icon">{f.icon}</div>
+                <div className="feature-text">
+                  <strong>{f.title}</strong>
+                  <span>{f.desc}</span>
+                </div>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Efeito de fundo decorativo */}
+        <div className="left-glow" />
+      </div>
+
+      {/* Painel direito — formulário */}
+      <div className="login-right">
+        <div className="login-form-wrapper">
+          <div className="form-header">
+            <h1>Seja Mal-vindo</h1>
+            <p>Faça login para acessar sua plataforma</p>
+          </div>
+
+          {loginError && (
+            <div className="login-error">
+              <span>{loginError}</span>
             </div>
           )}
 
-          {/* Formulário de Login */}
-          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="auth-form">
-            {/* Email */}
-            <div className="form-group">
-              <label htmlFor="login-email" className="form-label">
-                Email
-              </label>
-              <div className="input-group">
-                <span className="input-icon">
-                  <FiMail />
-                </span>
+          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="login-form" noValidate>
+            <div className="field-group">
+              <label htmlFor="email">Usuário</label>
+              <div className="field-input">
+                <FiUser className="field-icon" />
                 <input
-                  id="login-email"
+                  id="email"
                   type="email"
-                  className={`form-control ${loginForm.formState.errors.email ? 'is-invalid' : ''}`}
                   placeholder="seu@email.com"
+                  autoComplete="email"
                   {...loginForm.register('email')}
                   disabled={isLoading}
+                  className={loginForm.formState.errors.email ? 'invalid' : ''}
                 />
               </div>
               {loginForm.formState.errors.email && (
-                <div className="invalid-feedback">{loginForm.formState.errors.email.message}</div>
+                <span className="field-error">{loginForm.formState.errors.email.message}</span>
               )}
             </div>
 
-            {/* Senha */}
-            <div className="form-group">
-              <label htmlFor="login-password" className="form-label">
-                Senha
-              </label>
-              <div className="input-group">
-                <span className="input-icon">
-                  <FiLock />
-                </span>
+            <div className="field-group">
+              <label htmlFor="password">Senha</label>
+              <div className="field-input">
+                <FiLock className="field-icon" />
                 <input
-                  id="login-password"
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
-                  className={`form-control ${loginForm.formState.errors.password ? 'is-invalid' : ''}`}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   {...loginForm.register('password')}
                   disabled={isLoading}
+                  className={loginForm.formState.errors.password ? 'invalid' : ''}
                 />
                 <button
                   type="button"
-                  className="password-toggle"
+                  className="toggle-password"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
+                  tabIndex={-1}
                 >
                   {showPassword ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>
               {loginForm.formState.errors.password && (
-                <div className="invalid-feedback">{loginForm.formState.errors.password.message}</div>
+                <span className="field-error">{loginForm.formState.errors.password.message}</span>
               )}
             </div>
 
-            {/* Botão Submit */}
-            <button type="submit" className="btn btn-primary btn-auth" disabled={isLoading}>
+            <div className="form-options">
+              <label className="remember-me">
+                <input type="checkbox" />
+                <span>Manter conectado</span>
+              </label>
+              <Link to="/forgot-password" className="forgot-link">Esqueceu a senha?</Link>
+            </div>
+
+            <button type="submit" className="btn-login" disabled={isLoading}>
               {isLoading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" />
-                  Entrando...
-                </>
-              ) : (
-                <>
-                  <FiLogIn />
-                  Entrar
-                </>
-              )}
+                <span className="spinner" />
+              ) : null}
+              {isLoading ? 'Entrando...' : 'Acessar Plataforma'}
             </button>
           </form>
 
-          {/* OAuth Buttons */}
           {hasOAuthProviders && (
             <>
-              <div className="divider">
-                <span>ou continue com</span>
-              </div>
-
+              <div className="divider"><span>ou continue com</span></div>
               <div className="oauth-buttons">
                 {configuredProviders.includes('google') && (
                   <button
                     type="button"
-                    className="btn-oauth btn-google"
+                    className="btn-oauth"
                     onClick={() => handleOAuthLogin('google')}
                     disabled={isLoading}
                   >
-                    <FcGoogle size={20} />
+                    <FcGoogle size={18} />
                     <span>Google</span>
                   </button>
                 )}
-
                 {configuredProviders.includes('microsoft') && (
                   <button
                     type="button"
-                    className="btn-oauth btn-microsoft"
+                    className="btn-oauth"
                     onClick={() => handleOAuthLogin('microsoft')}
                     disabled={isLoading}
                   >
-                    <SiMicrosoft size={18} />
+                    <SiMicrosoft size={16} />
                     <span>Microsoft</span>
                   </button>
                 )}
@@ -220,13 +258,15 @@ const LoginPage = () => {
             </>
           )}
 
-          {/* Link para registro */}
-          <div className="auth-link">
-            <p>
+          <div className="form-footer">
+            <div className="ssl-badge">
+              <FiShield />
+              <span>CONEXÃO SEGURA SSL</span>
+            </div>
+            <p className="copyright">© 2025 Runas . Todos os direitos reservados.</p>
+            <p className="register-link">
               Não tem conta?{' '}
-              <Link to="/register" className="link-primary">
-                Criar conta
-              </Link>
+              <Link to="/register">Criar conta</Link>
             </p>
           </div>
         </div>

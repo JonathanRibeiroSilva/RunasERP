@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FiArrowLeft, FiSave } from 'react-icons/fi';
+import { FiArrowLeft, FiSave, FiMapPin } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { api } from '@/services/api/axios';
 import './ClienteFormPage.scss';
@@ -17,6 +17,14 @@ const clienteSchema = z.object({
   data_nasc: z.string().optional().or(z.literal('')),
   limite_credito: z.number().min(0, 'Limite de crédito não pode ser negativo'),
   dia_vencimento: z.number().min(1).max(28, 'Dia deve estar entre 1 e 28').optional(),
+  // Endereço (opcional)
+  cep: z.string().regex(/^\d{8}$/, 'CEP deve ter 8 dígitos').optional().or(z.literal('')),
+  logradouro: z.string().min(3, 'Logradouro deve ter no mínimo 3 caracteres').optional().or(z.literal('')),
+  numero: z.string().optional().or(z.literal('')),
+  complemento: z.string().optional().or(z.literal('')),
+  bairro: z.string().min(2, 'Bairro deve ter no mínimo 2 caracteres').optional().or(z.literal('')),
+  cidade: z.string().min(2, 'Cidade deve ter no mínimo 2 caracteres').optional().or(z.literal('')),
+  uf: z.string().length(2, 'UF deve ter 2 caracteres').optional().or(z.literal('')),
 });
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
@@ -40,12 +48,10 @@ const ClienteFormPage = () => {
     handleSubmit,
     formState: { errors },
     reset,
-    watch,
+    setValue,
   } = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
   });
-
-  const telefone = watch('telefone');
 
   useEffect(() => {
     if (id) {
@@ -56,9 +62,31 @@ const ClienteFormPage = () => {
   const carregarCliente = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/clientes/${id}`);
-      setCliente(response.data);
-      reset(response.data);
+      const [clienteRes, enderecosRes] = await Promise.all([
+        api.get(`/clientes/${id}`),
+        api.get(`/clientes/${id}/enderecos`),
+      ]);
+      
+      setCliente(clienteRes.data);
+      
+      // Carregar endereço principal se existir
+      const enderecos = enderecosRes.data;
+      const enderecoPrincipal = enderecos.find((e: any) => e.principal);
+      
+      if (enderecoPrincipal) {
+        reset({
+          ...clienteRes.data,
+          cep: enderecoPrincipal.cep,
+          logradouro: enderecoPrincipal.logradouro,
+          numero: enderecoPrincipal.numero,
+          complemento: enderecoPrincipal.complemento || '',
+          bairro: enderecoPrincipal.bairro,
+          cidade: enderecoPrincipal.cidade,
+          uf: enderecoPrincipal.uf,
+        });
+      } else {
+        reset(clienteRes.data);
+      }
     } catch (error) {
       toast.error('Erro ao carregar cliente');
       console.error(error);
@@ -68,18 +96,79 @@ const ClienteFormPage = () => {
     }
   };
 
+  const buscarCEP = async (cep: string) => {
+    if (cep.length !== 8) return;
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+
+      if (data.erro) {
+        toast.error('CEP não encontrado');
+        return;
+      }
+
+      setValue('logradouro', data.logradouro);
+      setValue('bairro', data.bairro);
+      setValue('cidade', data.localidade);
+      setValue('uf', data.uf);
+      toast.success('CEP encontrado!');
+    } catch (error) {
+      toast.error('Erro ao buscar CEP');
+      console.error(error);
+    }
+  };
+
   const onSubmit = async (data: ClienteFormData) => {
     try {
       setSubmitting(true);
 
+      // Separar dados do cliente e endereço
+      const { cep, logradouro, numero, complemento, bairro, cidade, uf, ...clienteData } = data;
+
+      let clienteId = id;
+
       if (id) {
-        // Editar
-        await api.put(`/clientes/${id}`, data);
+        // Editar cliente
+        await api.put(`/clientes/${id}`, clienteData);
         toast.success('Cliente atualizado com sucesso');
       } else {
-        // Criar
-        await api.post('/clientes', data);
+        // Criar cliente
+        const response = await api.post('/clientes', clienteData);
+        clienteId = response.data.id;
         toast.success('Cliente criado com sucesso');
+      }
+
+      // Se tem endereço preenchido, criar/atualizar
+      if (cep && logradouro && numero && bairro && cidade && uf) {
+        const enderecoData = {
+          cep,
+          logradouro,
+          numero,
+          complemento: complemento || '',
+          bairro,
+          cidade,
+          uf,
+          principal: true,
+        };
+
+        try {
+          // Verificar se já existe endereço principal
+          const enderecosResponse = await api.get(`/clientes/${clienteId}/enderecos`);
+          const enderecos = enderecosResponse.data;
+          const enderecoPrincipal = enderecos.find((e: any) => e.principal);
+
+          if (enderecoPrincipal) {
+            // Atualizar endereço principal existente
+            await api.put(`/clientes/${clienteId}/enderecos/${enderecoPrincipal.id}`, enderecoData);
+          } else {
+            // Criar novo endereço principal
+            await api.post(`/clientes/${clienteId}/enderecos`, enderecoData);
+          }
+        } catch (error) {
+          console.error('Erro ao salvar endereço:', error);
+          toast.warning('Cliente salvo, mas houve erro ao salvar o endereço');
+        }
       }
 
       navigate('/clientes');
@@ -105,6 +194,10 @@ const ClienteFormPage = () => {
     return value.replace(/\D/g, '').slice(0, 11);
   };
 
+  const formatarCEP = (value: string) => {
+    return value.replace(/\D/g, '').slice(0, 8);
+  };
+
   if (loading) {
     return (
       <div className="cliente-form-page">
@@ -124,6 +217,11 @@ const ClienteFormPage = () => {
           <FiArrowLeft /> Voltar
         </button>
         <h1>{id ? 'Editar Cliente' : 'Novo Cliente'}</h1>
+        {id && (
+          <Link to={`/clientes/${id}/enderecos`} className="btn-enderecos">
+            <FiMapPin /> Gerenciar Endereços
+          </Link>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="cliente-form">
@@ -150,7 +248,7 @@ const ClienteFormPage = () => {
                 type="text"
                 placeholder="00000000000"
                 {...register('cpf', {
-                  onChange: (e) => {
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                     e.target.value = formatarCPF(e.target.value);
                   },
                 })}
@@ -166,7 +264,7 @@ const ClienteFormPage = () => {
                 type="text"
                 placeholder="(00) 00000-0000"
                 {...register('telefone', {
-                  onChange: (e) => {
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                     e.target.value = formatarTelefone(e.target.value);
                   },
                 })}
@@ -254,6 +352,112 @@ const ClienteFormPage = () => {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="form-section">
+          <h2>Endereço Principal (Opcional)</h2>
+          <p className="section-description">
+            Você pode adicionar o endereço principal agora ou depois em "Gerenciar Endereços"
+          </p>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="cep">CEP</label>
+              <input
+                id="cep"
+                type="text"
+                placeholder="00000000"
+                {...register('cep', {
+                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                    const cep = formatarCEP(e.target.value);
+                    e.target.value = cep;
+                    if (cep.length === 8) {
+                      buscarCEP(cep);
+                    }
+                  },
+                })}
+                className={errors.cep ? 'is-invalid' : ''}
+              />
+              {errors.cep && <span className="error-message">{errors.cep.message}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="uf">UF</label>
+              <input
+                id="uf"
+                type="text"
+                placeholder="SP"
+                maxLength={2}
+                {...register('uf')}
+                className={errors.uf ? 'is-invalid' : ''}
+              />
+              {errors.uf && <span className="error-message">{errors.uf.message}</span>}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="logradouro">Logradouro</label>
+            <input
+              id="logradouro"
+              type="text"
+              placeholder="Rua, Avenida, etc."
+              {...register('logradouro')}
+              className={errors.logradouro ? 'is-invalid' : ''}
+            />
+            {errors.logradouro && (
+              <span className="error-message">{errors.logradouro.message}</span>
+            )}
+          </div>
+
+          <div className="form-row">
+            <div className="form-group" style={{ flex: 1 }}>
+              <label htmlFor="numero">Número</label>
+              <input
+                id="numero"
+                type="text"
+                placeholder="123"
+                {...register('numero')}
+                className={errors.numero ? 'is-invalid' : ''}
+              />
+              {errors.numero && <span className="error-message">{errors.numero.message}</span>}
+            </div>
+
+            <div className="form-group" style={{ flex: 2 }}>
+              <label htmlFor="complemento">Complemento</label>
+              <input
+                id="complemento"
+                type="text"
+                placeholder="Apto, Bloco, etc."
+                {...register('complemento')}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="bairro">Bairro</label>
+              <input
+                id="bairro"
+                type="text"
+                placeholder="Bairro"
+                {...register('bairro')}
+                className={errors.bairro ? 'is-invalid' : ''}
+              />
+              {errors.bairro && <span className="error-message">{errors.bairro.message}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="cidade">Cidade</label>
+              <input
+                id="cidade"
+                type="text"
+                placeholder="Cidade"
+                {...register('cidade')}
+                className={errors.cidade ? 'is-invalid' : ''}
+              />
+              {errors.cidade && <span className="error-message">{errors.cidade.message}</span>}
+            </div>
+          </div>
         </div>
 
         <div className="form-actions">

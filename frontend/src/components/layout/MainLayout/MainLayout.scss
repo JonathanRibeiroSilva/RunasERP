@@ -2,15 +2,17 @@
 @import '@/styles/mixins';
 
 .main-layout {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: $background;
+  overflow: hidden;
 }
 
 .layout-container {
   display: flex;
   flex: 1;
+  overflow: hidden;
   position: relative;
 }
 
