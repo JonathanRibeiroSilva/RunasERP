@@ -17,7 +17,10 @@ class ServiceProxy:
     SERVICE_URLS = {
         "/clientes": settings.CLIENTES_URL,
         "/produtos": settings.PRODUTOS_URL,
-        "/catalogo": settings.PRODUTOS_URL,  # Catálogo público também vai para produtos
+        "/categorias": settings.PRODUTOS_URL,
+        "/variantes": settings.PRODUTOS_URL,
+        "/fornecedores": settings.PRODUTOS_URL,
+        "/catalogo": settings.PRODUTOS_URL,
         "/estoque": settings.ESTOQUE_URL,
         "/carrinho": settings.VENDAS_URL,
         "/pedidos": settings.VENDAS_URL,

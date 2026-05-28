@@ -16,9 +16,10 @@ from repositories.usuario_repository import UsuarioRepository
 from auth.jwt import create_access_token, create_refresh_token, verify_token
 from auth.oauth2 import get_current_user
 from auth.redis_client import get_redis
-from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioResponse, LoginResponse
+from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioResponse, LoginResponse, ForgotPasswordRequest, ResetPasswordRequest
 from models.usuario import Usuario, RoleEnum
 from config import settings
+from services.email_service import send_reset_password_email
 
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -251,6 +252,101 @@ async def logout(
     log.info("logout.success", user_id=str(current_user.id))
     
     return None
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)]
+):
+    """
+    Solicita reset de senha. Gera um token, salva no Redis e envia email.
+    Sempre retorna sucesso para evitar enumeration attacks.
+    """
+    repo = UsuarioRepository(db)
+    usuario = await repo.buscar_por_email(request.email)
+
+    if usuario and usuario.ativo:
+        # Gerar token aleatório
+        reset_token = secrets.token_urlsafe(32)
+
+        # Salvar token no Redis (expira em 1 hora)
+        await redis.setex(
+            f"password_reset:{reset_token}",
+            3600,
+            str(usuario.id)
+        )
+
+        # Enviar email com link de reset
+        await send_reset_password_email(
+            to_email=usuario.email,
+            reset_token=reset_token,
+            nome=usuario.nome
+        )
+
+        log.info("forgot_password.email_sent",
+                 user_id=str(usuario.id),
+                 email=usuario.email)
+    else:
+        log.warning("forgot_password.user_not_found", email=request.email)
+
+    return {
+        "message": "Se o email existir, você receberá instruções para resetar sua senha."
+    }
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    request: ResetPasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)]
+):
+    """
+    Reseta a senha usando o token recebido por email.
+    """
+    user_id_str = await redis.get(f"password_reset:{request.token}")
+
+    if not user_id_str:
+        log.warning("reset_password.invalid_token", token=request.token[:10] + "...")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token inválido ou expirado"
+        )
+
+    if isinstance(user_id_str, bytes):
+        user_id_str = user_id_str.decode('utf-8')
+
+    repo = UsuarioRepository(db)
+    success = await repo.atualizar_senha(user_id_str, request.nova_senha)
+
+    if not success:
+        log.error("reset_password.user_not_found", user_id=user_id_str)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Erro ao resetar senha"
+        )
+
+    # Token de uso único — remover do Redis
+    await redis.delete(f"password_reset:{request.token}")
+
+    # Invalidar refresh tokens (forçar novo login)
+    await redis.delete(f"refresh:{user_id_str}")
+
+    log.info("reset_password.success", user_id=user_id_str)
+
+    return {
+        "message": "Senha resetada com sucesso. Faça login com sua nova senha."
+    }
+    
+    # Invalidar todos os refresh tokens do usuário (forçar novo login)
+    await redis.delete(f"refresh:{user_id_str}")
+    
+    log.info("reset_password.success", user_id=user_id_str)
+    
+    return {
+        "message": "Senha resetada com sucesso. Faça login com sua nova senha."
+    }
 
 
 # ==================== OAUTH ROUTES ====================
@@ -588,3 +684,4 @@ async def oauth_microsoft_callback(
             "role": usuario.role.value
         }
     }
+

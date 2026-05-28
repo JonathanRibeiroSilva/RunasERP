@@ -96,3 +96,23 @@ class UsuarioRepository:
         usuario.ativo = False
         await self.db.commit()
         return True
+    
+    async def atualizar_senha(self, user_id: UUID, nova_senha: str) -> bool:
+        """Atualiza a senha de um usuário."""
+        usuario = await self.buscar_por_id(user_id)
+        if not usuario:
+            return False
+        
+        usuario.senha_hash = self.hash_password(nova_senha)
+        await self.db.commit()
+        return True
+    
+    async def atualizar_senha(self, user_id: UUID, nova_senha: str) -> bool:
+        """Atualiza a senha de um usuário."""
+        usuario = await self.buscar_por_id(user_id)
+        if not usuario:
+            return False
+        
+        usuario.senha_hash = self.hash_password(nova_senha)
+        await self.db.commit()
+        return True
