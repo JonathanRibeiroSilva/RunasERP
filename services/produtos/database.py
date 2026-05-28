@@ -31,10 +31,12 @@ class Base(DeclarativeBase):
 async def get_db() -> AsyncSession:
     """Dependency para obter sessão do banco de dados."""
     async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+        async with session.begin():
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
 
 
 async def init_db():

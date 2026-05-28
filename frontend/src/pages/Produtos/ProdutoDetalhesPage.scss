@@ -1,0 +1,219 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.produto-detalhes-page {
+  padding: 2rem;
+  min-height: calc(100vh - 64px);
+  background: $background;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: transparent;
+      color: $text-secondary;
+      border: 1px solid $border-default;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: $text-primary;
+        border-color: $primary;
+        background-color: rgba($primary, 0.05);
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+
+      .btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+
+        &.btn-warning {
+          background-color: $warning;
+          color: white;
+
+          &:hover {
+            background-color: darken($warning, 10%);
+            box-shadow: 0 4px 12px rgba($warning, 0.3);
+          }
+        }
+
+        &.btn-danger {
+          background-color: $error;
+          color: white;
+
+          &:hover {
+            background-color: darken($error, 10%);
+            box-shadow: 0 4px 12px rgba($error, 0.3);
+          }
+        }
+      }
+    }
+  }
+
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+      border: 0.25rem solid rgba($primary, 0.2);
+      border-right-color: $primary;
+      border-radius: 50%;
+      animation: spinner-border 0.75s linear infinite;
+    }
+
+    @keyframes spinner-border {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: $text-secondary;
+    font-size: 1.1rem;
+  }
+
+  .produto-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    background-color: $surface;
+    border: 1px solid $border-default;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+
+    .produto-icon {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, $primary, $secondary);
+      border-radius: 1rem;
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .produto-info {
+      flex: 1;
+
+      h1 {
+        margin: 0 0 1rem 0;
+        font-size: 2rem;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .status-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+
+        .badge {
+          padding: 0.25rem 0.75rem;
+          border-radius: 0.25rem;
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+
+          &.badge-success {
+            background-color: rgba($success, 0.2);
+            color: $success;
+          }
+
+          &.badge-secondary {
+            background-color: rgba($text-secondary, 0.2);
+            color: $text-secondary;
+          }
+        }
+      }
+    }
+  }
+
+  .produto-content {
+    display: grid;
+    gap: 2rem;
+
+    .info-section {
+      background-color: $surface;
+      border: 1px solid $border-default;
+      border-radius: 0.75rem;
+      padding: 2rem;
+
+      h2 {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: $text-primary;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid $border-default;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+
+        .info-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+
+          &.full-width {
+            grid-column: 1 / -1;
+          }
+
+          .label {
+            color: $text-secondary;
+            font-weight: 500;
+            font-size: 0.9rem;
+          }
+
+          .value {
+            color: $text-primary;
+            font-size: 1rem;
+
+            &.mono {
+              font-family: 'Courier New', monospace;
+              font-size: 0.9rem;
+            }
+          }
+        }
+      }
+
+      .empty-state-small {
+        text-align: center;
+        padding: 2rem;
+        color: $text-secondary;
+        font-size: 0.95rem;
+      }
+    }
+  }
+}
