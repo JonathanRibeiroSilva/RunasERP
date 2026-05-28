@@ -97,6 +97,7 @@ class ProdutoRepository:
             select(Produto)
             .where(Produto.id == produto_id)
             .options(
+                selectinload(Produto.categoria),
                 selectinload(Produto.variantes).selectinload(Variante.atributos),
                 selectinload(Produto.catalogo_config),
                 selectinload(Produto.catalogo_fotos),
@@ -148,6 +149,7 @@ class ProdutoRepository:
         # Buscar com paginação
         result = await self.session.execute(
             query.offset(skip).limit(limit).options(
+                selectinload(Produto.categoria),
                 selectinload(Produto.variantes),
                 selectinload(Produto.catalogo_config)
             )

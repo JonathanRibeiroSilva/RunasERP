@@ -41,23 +41,10 @@ class CategoriaService:
 
     async def criar_categoria(self, dados: CategoriaCreate):
         """Cria uma nova categoria com transação atômica."""
-        try:
-            async with self.session.begin_nested():
-                # Validar se categoria já existe
-                existente = await self.repo.obter_por_nome(dados.nome)
-                if existente:
-                    raise ValueError(f"Categoria '{dados.nome}' já existe")
-
-                categoria = await self.repo.criar(nome=dados.nome, descricao=dados.descricao)
-            
-            await self.session.commit()
-            return categoria
-        except ValueError:
-            await self.session.rollback()
-            raise
-        except Exception as e:
-            await self.session.rollback()
-            raise
+        existente = await self.repo.obter_por_nome(dados.nome)
+        if existente:
+            raise ValueError(f"Categoria '{dados.nome}' já existe")
+        return await self.repo.criar(nome=dados.nome, descricao=dados.descricao)
 
     async def obter_categoria(self, categoria_id: UUID):
         """Obtém uma categoria por ID."""
@@ -71,52 +58,24 @@ class CategoriaService:
         return await self.repo.listar_todas(skip=skip, limit=limit)
 
     async def atualizar_categoria(self, categoria_id: UUID, dados: CategoriaUpdate):
-        """Atualiza uma categoria com transação atômica."""
-        try:
-            async with self.session.begin_nested():
-                categoria = await self.repo.obter_por_id(categoria_id)
-                if not categoria:
-                    raise ValueError(f"Categoria com ID {categoria_id} não encontrada")
+        """Atualiza uma categoria."""
+        categoria = await self.repo.obter_por_id(categoria_id)
+        if not categoria:
+            raise ValueError(f"Categoria com ID {categoria_id} não encontrada")
 
-                # Validar nome único se mudou
-                if dados.nome and dados.nome != categoria.nome:
-                    existente = await self.repo.obter_por_nome(dados.nome)
-                    if existente:
-                        raise ValueError(f"Categoria '{dados.nome}' já existe")
+        if dados.nome and dados.nome != categoria.nome:
+            existente = await self.repo.obter_por_nome(dados.nome)
+            if existente:
+                raise ValueError(f"Categoria '{dados.nome}' já existe")
 
-                categoria_atualizada = await self.repo.atualizar(
-                    categoria_id,
-                    nome=dados.nome,
-                    descricao=dados.descricao,
-                )
-            
-            await self.session.commit()
-            return categoria_atualizada
-        except ValueError:
-            await self.session.rollback()
-            raise
-        except Exception:
-            await self.session.rollback()
-            raise
+        return await self.repo.atualizar(categoria_id, nome=dados.nome, descricao=dados.descricao)
 
     async def deletar_categoria(self, categoria_id: UUID):
-        """Deleta uma categoria com transação atômica."""
-        try:
-            async with self.session.begin_nested():
-                categoria = await self.repo.obter_por_id(categoria_id)
-                if not categoria:
-                    raise ValueError(f"Categoria com ID {categoria_id} não encontrada")
-
-                resultado = await self.repo.deletar(categoria_id)
-            
-            await self.session.commit()
-            return resultado
-        except ValueError:
-            await self.session.rollback()
-            raise
-        except Exception:
-            await self.session.rollback()
-            raise
+        """Deleta uma categoria."""
+        categoria = await self.repo.obter_por_id(categoria_id)
+        if not categoria:
+            raise ValueError(f"Categoria com ID {categoria_id} não encontrada")
+        return await self.repo.deletar(categoria_id)
 
 
 class ProdutoService:
@@ -128,34 +87,22 @@ class ProdutoService:
         self.categoria_repo = CategoriaRepository(session)
 
     async def criar_produto(self, dados: ProdutoCreate):
-        """Cria um novo produto com transação atômica."""
-        try:
-            async with self.session.begin_nested():
-                # Validar categoria
-                categoria = await self.categoria_repo.obter_por_id(dados.categoria_id)
-                if not categoria:
-                    raise ValueError(f"Categoria com ID {dados.categoria_id} não encontrada")
+        """Cria um novo produto."""
+        categoria = await self.categoria_repo.obter_por_id(dados.categoria_id)
+        if not categoria:
+            raise ValueError(f"Categoria com ID {dados.categoria_id} não encontrada")
 
-                produto = await self.produto_repo.criar(
-                    categoria_id=dados.categoria_id,
-                    nome=dados.nome,
-                    descricao=dados.descricao,
-                )
-            
-            await self.session.commit()
-            return produto
-        except ValueError:
-            await self.session.rollback()
-            raise
-        except Exception:
-            await self.session.rollback()
-            raise
+        return await self.produto_repo.criar(
+            categoria_id=dados.categoria_id,
+            nome=dados.nome,
+            descricao=dados.descricao,
+        )
 
     async def obter_produto(self, produto_id: UUID):
         """Obtém um produto por ID."""
         produto = await self.produto_repo.obter_por_id(produto_id)
         if not produto:
-            raise ValueError(f"Produto com ID {produto_id} não encontrada")
+            raise ValueError(f"Produto com ID {produto_id} não encontrado")
         return produto
 
     async def listar_produtos(self, skip: int = 0, limit: int = 10, apenas_ativos: bool = True):
@@ -166,11 +113,9 @@ class ProdutoService:
 
     async def listar_por_categoria(self, categoria_id: UUID, skip: int = 0, limit: int = 10):
         """Lista produtos de uma categoria."""
-        # Validar categoria
         categoria = await self.categoria_repo.obter_por_id(categoria_id)
         if not categoria:
             raise ValueError(f"Categoria com ID {categoria_id} não encontrada")
-
         return await self.produto_repo.listar_por_categoria(categoria_id, skip=skip, limit=limit)
 
     async def buscar_por_nome(self, nome: str):
@@ -180,54 +125,30 @@ class ProdutoService:
         return await self.produto_repo.obter_por_nome(nome)
 
     async def atualizar_produto(self, produto_id: UUID, dados: ProdutoUpdate):
-        """Atualiza um produto com transação atômica."""
-        try:
-            async with self.session.begin_nested():
-                produto = await self.produto_repo.obter_por_id(produto_id)
-                if not produto:
-                    raise ValueError(f"Produto com ID {produto_id} não encontrada")
+        """Atualiza um produto."""
+        produto = await self.produto_repo.obter_por_id(produto_id)
+        if not produto:
+            raise ValueError(f"Produto com ID {produto_id} não encontrado")
 
-                # Validar nova categoria se foi mudada
-                if dados.categoria_id and dados.categoria_id != produto.categoria_id:
-                    categoria = await self.categoria_repo.obter_por_id(dados.categoria_id)
-                    if not categoria:
-                        raise ValueError(f"Categoria com ID {dados.categoria_id} não encontrada")
+        if dados.categoria_id and dados.categoria_id != produto.categoria_id:
+            categoria = await self.categoria_repo.obter_por_id(dados.categoria_id)
+            if not categoria:
+                raise ValueError(f"Categoria com ID {dados.categoria_id} não encontrada")
 
-                produto_atualizado = await self.produto_repo.atualizar(
-                    produto_id,
-                    nome=dados.nome,
-                    categoria_id=dados.categoria_id,
-                    descricao=dados.descricao,
-                    ativo=dados.ativo,
-                )
-            
-            await self.session.commit()
-            return produto_atualizado
-        except ValueError:
-            await self.session.rollback()
-            raise
-        except Exception:
-            await self.session.rollback()
-            raise
+        return await self.produto_repo.atualizar(
+            produto_id,
+            nome=dados.nome,
+            categoria_id=dados.categoria_id,
+            descricao=dados.descricao,
+            ativo=dados.ativo,
+        )
 
     async def deletar_produto(self, produto_id: UUID):
-        """Deleta um produto com transação atômica."""
-        try:
-            async with self.session.begin_nested():
-                produto = await self.produto_repo.obter_por_id(produto_id)
-                if not produto:
-                    raise ValueError(f"Produto com ID {produto_id} não encontrada")
-
-                resultado = await self.produto_repo.deletar(produto_id)
-            
-            await self.session.commit()
-            return resultado
-        except ValueError:
-            await self.session.rollback()
-            raise
-        except Exception:
-            await self.session.rollback()
-            raise
+        """Deleta um produto."""
+        produto = await self.produto_repo.obter_por_id(produto_id)
+        if not produto:
+            raise ValueError(f"Produto com ID {produto_id} não encontrado")
+        return await self.produto_repo.deletar(produto_id)
 
 
 class VarianteService:
@@ -240,50 +161,34 @@ class VarianteService:
         self.produto_repo = ProdutoRepository(session)
 
     async def criar_variante(self, dados: VarianteCreate):
-        """Cria uma nova variante com transação atômica."""
-        try:
-            async with self.session.begin_nested():
-                # Validar produto
-                produto = await self.produto_repo.obter_por_id(dados.produto_id)
-                if not produto:
-                    raise ValueError(f"Produto com ID {dados.produto_id} não encontrada")
+        """Cria uma nova variante."""
+        produto = await self.produto_repo.obter_por_id(dados.produto_id)
+        if not produto:
+            raise ValueError(f"Produto com ID {dados.produto_id} não encontrado")
 
-                # Verificar SKU único
-                existente = await self.variante_repo.obter_por_sku(dados.sku)
-                if existente:
-                    raise ValueError(f"SKU '{dados.sku}' já existe")
+        existente = await self.variante_repo.obter_por_sku(dados.sku)
+        if existente:
+            raise ValueError(f"SKU '{dados.sku}' já existe")
 
-                # Validar preço
-                if dados.preco_venda < dados.preco_custo:
-                    raise ValueError("Preço de venda não pode ser menor que preço de custo")
+        if dados.preco_venda < dados.preco_custo:
+            raise ValueError("Preço de venda não pode ser menor que preço de custo")
 
-                # Criar variante
-                variante = await self.variante_repo.criar(
-                    produto_id=dados.produto_id,
-                    sku=dados.sku,
-                    preco_custo=dados.preco_custo,
-                    markup_pct=dados.markup_pct,
-                    preco_venda=dados.preco_venda,
-                )
+        variante = await self.variante_repo.criar(
+            produto_id=dados.produto_id,
+            sku=dados.sku,
+            preco_custo=dados.preco_custo,
+            markup_pct=dados.markup_pct,
+            preco_venda=dados.preco_venda,
+        )
 
-                # Criar atributos se fornecidos
-                for atributo in dados.atributos:
-                    await self.atributo_repo.criar(
-                        variante_id=variante.id,
-                        chave=atributo.chave,
-                        valor=atributo.valor,
-                    )
+        for atributo in dados.atributos:
+            await self.atributo_repo.criar(
+                variante_id=variante.id,
+                chave=atributo.chave,
+                valor=atributo.valor,
+            )
 
-                await self.session.flush()
-            
-            await self.session.commit()
-            return variante
-        except ValueError:
-            await self.session.rollback()
-            raise
-        except Exception:
-            await self.session.rollback()
-            raise
+        return variante
 
     async def obter_variante(self, variante_id: UUID):
         """Obtém uma variante por ID."""
