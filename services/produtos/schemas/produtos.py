@@ -59,9 +59,9 @@ class AtributoVarianteRead(AtributoVarianteBase):
 class VarianteBase(BaseModel):
     """Schema base de Variante."""
     sku: str = Field(..., min_length=1, max_length=100)
-    preco_custo: Decimal = Field(..., gt=0, decimal_places=2)
-    markup_pct: Decimal = Field(..., ge=0, decimal_places=2)
-    preco_venda: Decimal = Field(..., gt=0, decimal_places=2)
+    preco_custo: Decimal = Field(..., gt=0)
+    markup_pct: Decimal = Field(..., ge=0)
+    preco_venda: Decimal = Field(..., gt=0)
     ativo: bool = True
 
 
@@ -74,9 +74,9 @@ class VarianteCreate(VarianteBase):
 class VarianteUpdate(BaseModel):
     """Schema para atualizar Variante."""
     sku: str | None = Field(default=None, min_length=1, max_length=100)
-    preco_custo: Decimal | None = Field(default=None, gt=0, decimal_places=2)
-    markup_pct: Decimal | None = Field(default=None, ge=0, decimal_places=2)
-    preco_venda: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    preco_custo: Decimal | None = Field(default=None, gt=0)
+    markup_pct: Decimal | None = Field(default=None, ge=0)
+    preco_venda: Decimal | None = Field(default=None, gt=0)
     ativo: bool | None = None
 
 
@@ -193,7 +193,7 @@ class FornecedorRead(FornecedorBase):
 class FornecedorProdutoBase(BaseModel):
     """Schema base de FornecedorProduto."""
     codigo_fornecedor: str | None = Field(default=None, max_length=100)
-    preco_fornecedor: Decimal = Field(..., gt=0, decimal_places=2)
+    preco_fornecedor: Decimal = Field(..., gt=0)
     prazo_entrega_dias: int = Field(default=0, ge=0)
     quantidade_minima: int = Field(default=1, ge=1)
     ativo: bool = True
@@ -208,7 +208,7 @@ class FornecedorProdutoCreate(FornecedorProdutoBase):
 class FornecedorProdutoUpdate(BaseModel):
     """Schema para atualizar FornecedorProduto."""
     codigo_fornecedor: str | None = Field(default=None, max_length=100)
-    preco_fornecedor: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    preco_fornecedor: Decimal | None = Field(default=None, gt=0)
     prazo_entrega_dias: int | None = Field(default=None, ge=0)
     quantidade_minima: int | None = Field(default=None, ge=1)
     ativo: bool | None = None
@@ -250,6 +250,7 @@ class ProdutoRead(ProdutoBase):
     """Schema para ler Produto."""
     id: UUID
     categoria_id: UUID
+    categoria: CategoriaRead | None = None
     criado_em: datetime
     variantes: list[VarianteRead] = Field(default_factory=list)
     catalogo_config: CatalogoConfigRead | None = None
