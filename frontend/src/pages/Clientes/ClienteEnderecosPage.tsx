@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,7 +15,7 @@ const enderecoSchema = z.object({
   complemento: z.string().optional().or(z.literal('')),
   bairro: z.string().min(2, 'Bairro deve ter no mínimo 2 caracteres'),
   cidade: z.string().min(2, 'Cidade deve ter no mínimo 2 caracteres'),
-  estado: z.string().length(2, 'Estado deve ter 2 caracteres'),
+  uf: z.string().length(2, 'UF deve ter 2 caracteres'),
   cep: z.string().regex(/^\d{8}$/, 'CEP deve ter 8 dígitos'),
   principal: z.boolean().default(false),
 });
@@ -92,7 +92,7 @@ const ClienteEnderecosPage = () => {
       setValue('logradouro', data.logradouro);
       setValue('bairro', data.bairro);
       setValue('cidade', data.localidade);
-      setValue('estado', data.uf);
+      setValue('uf', data.uf);
       toast.success('CEP encontrado!');
     } catch (error) {
       toast.error('Erro ao buscar CEP');
@@ -155,7 +155,7 @@ const ClienteEnderecosPage = () => {
       complemento: '',
       bairro: '',
       cidade: '',
-      estado: '',
+      uf: '',
       cep: '',
       principal: false,
     });
@@ -218,7 +218,7 @@ const ClienteEnderecosPage = () => {
                   type="text"
                   placeholder="00000000"
                   {...register('cep', {
-                    onChange: (e) => {
+                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                       const cep = formatarCEP(e.target.value);
                       e.target.value = cep;
                       if (cep.length === 8) {
@@ -232,16 +232,16 @@ const ClienteEnderecosPage = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="estado">Estado *</label>
+                <label htmlFor="uf">UF *</label>
                 <input
-                  id="estado"
+                  id="uf"
                   type="text"
                   placeholder="UF"
                   maxLength={2}
-                  {...register('estado')}
-                  className={errors.estado ? 'is-invalid' : ''}
+                  {...register('uf')}
+                  className={errors.uf ? 'is-invalid' : ''}
                 />
-                {errors.estado && <span className="error-message">{errors.estado.message}</span>}
+                {errors.uf && <span className="error-message">{errors.uf.message}</span>}
               </div>
             </div>
 
@@ -338,7 +338,7 @@ const ClienteEnderecosPage = () => {
           </div>
         ) : (
           <div className="enderecos-grid">
-            {enderecos.map((endereco) => (
+            {enderecos.map((endereco: Endereco) => (
               <div key={endereco.id} className={`endereco-card ${endereco.principal ? 'principal' : ''}`}>
                 {endereco.principal && <span className="badge-principal">Principal</span>}
                 <div className="endereco-content">
@@ -347,7 +347,7 @@ const ClienteEnderecosPage = () => {
                     {endereco.complemento && ` - ${endereco.complemento}`}
                   </p>
                   <p className="endereco-linha">
-                    {endereco.bairro} - {endereco.cidade}/{endereco.estado}
+                    {endereco.bairro} - {endereco.cidade}/{endereco.uf}
                   </p>
                   <p className="endereco-cep">CEP: {endereco.cep.replace(/(\d{5})(\d{3})/, '$1-$2')}</p>
                 </div>

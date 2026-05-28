@@ -77,7 +77,7 @@ const RegisterPage = () => {
           {/* Logo e Título */}
           <div className="register-header">
             <h1 className="register-title">Criar Conta</h1>
-            <p className="register-subtitle">Runas - Sistema de Gestão Empresarial</p>
+            <p className="register-subtitle">Runas - Sistema de Gestão Comercial</p>
           </div>
 
           {/* Formulário de Registro */}

@@ -237,6 +237,14 @@
                   }
                 }
 
+                &.btn-secondary {
+                  color: $secondary;
+
+                  &:hover {
+                    background-color: rgba($secondary, 0.1);
+                  }
+                }
+
                 &.btn-danger {
                   color: $error;
 

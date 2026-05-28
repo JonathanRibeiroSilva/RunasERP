@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiMapPin } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { api } from '@/services/api/axios';
 import './ClientesPage.scss';
@@ -293,6 +293,13 @@ const ClientesPage = () => {
                         title="Editar"
                       >
                         <FiEdit2 />
+                      </button>
+                      <button
+                        className="btn-icon btn-secondary"
+                        onClick={() => navigate(`/clientes/${cliente.id}/enderecos`)}
+                        title="Endereços"
+                      >
+                        <FiMapPin />
                       </button>
                       <button
                         className="btn-icon btn-danger"

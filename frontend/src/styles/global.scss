@@ -17,6 +17,7 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100%;
 }
 
 body {
@@ -26,7 +27,8 @@ body {
   line-height: $line-height-base;
   color: $text-primary;
   background-color: $background;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 // ========================================
