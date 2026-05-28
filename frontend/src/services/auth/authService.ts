@@ -56,4 +56,14 @@ export const authService = {
     console.warn('[authService] refreshToken is deprecated with HTTP-only cookies');
     return '';
   },
+
+  async forgotPassword(email: string): Promise<{ message: string; token?: string }> {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  async resetPassword(token: string, nova_senha: string): Promise<{ message: string }> {
+    const response = await api.post('/auth/reset-password', { token, nova_senha });
+    return response.data;
+  },
 };

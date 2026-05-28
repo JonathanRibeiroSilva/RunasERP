@@ -3,11 +3,14 @@ import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/Login/LoginPage';
 import RegisterPage from '@/pages/Register/RegisterPage';
 import OAuthCallbackPage from '@/pages/Auth/OAuthCallbackPage';
+import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/Auth/ResetPasswordPage';
 import DashboardPage from '@/pages/Dashboard/DashboardPage';
 import ClientesPage from '@/pages/Clientes/ClientesPage';
 import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
 import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
+import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
 
 // Loading component
@@ -91,6 +94,17 @@ function App() {
         {/* OAuth Callback Route */}
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
+        {/* Password Recovery Routes */}
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          }
+        />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
         {/* Protected Routes */}
         <Route
           path="/"
@@ -114,13 +128,12 @@ function App() {
           {/* <Route path="clientes/:id/historico" element={<ClienteHistoricoPage />} /> */}
           
           {/* Rotas de Produtos - Sprint 2 */}
-          {/* TODO: Implementar páginas de produtos */}
-          {/* <Route path="produtos" element={<ProdutosPage />} /> */}
-          {/* <Route path="produtos/novo" element={<ProdutoFormPage />} /> */}
-          {/* <Route path="produtos/:id" element={<ProdutoFormPage />} /> */}
-          {/* <Route path="produtos/:id/editar" element={<ProdutoFormPage />} /> */}
-          {/* <Route path="produtos/:id/variantes" element={<ProdutoVariantesPage />} /> */}
-          {/* <Route path="categorias" element={<CategoriasPage />} /> */}
+          <Route path="produtos" element={<ProdutosPage />} />
+          <Route path="produtos/novo" element={<ProdutoFormPage />} />
+          <Route path="produtos/:id" element={<ProdutoDetalhesPage />} />
+          <Route path="produtos/:id/editar" element={<ProdutoFormPage />} />
+          <Route path="produtos/:id/variantes" element={<ProdutoVariantesPage />} />
+          <Route path="categorias" element={<CategoriasPage />} />
           
           {/* Rotas de Estoque - Sprint 3 */}
           {/* TODO: Implementar páginas de estoque */}
