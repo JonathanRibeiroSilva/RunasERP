@@ -9,6 +9,8 @@ export const api = axios.create({
   timeout: env.apiTimeout,
   headers: {
     'Content-Type': 'application/json',
+    // Necessário para bypassar o aviso de browser do ngrok em ambiente de dev
+    'ngrok-skip-browser-warning': 'true',
   },
   withCredentials: true, // Importante: envia cookies em requisições cross-origin
 });
