@@ -30,6 +30,26 @@
       }
     }
 
+    .btn-enderecos {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid $secondary;
+      border-radius: 0.5rem;
+      background-color: transparent;
+      color: $secondary;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      margin-left: auto;
+
+      &:hover {
+        background-color: rgba($secondary, 0.1);
+      }
+    }
+
     h1 {
       margin: 0;
       font-size: 1.8rem;
@@ -65,6 +85,13 @@
         margin: 0 0 1.5rem 0;
         padding-bottom: 1rem;
         border-bottom: 2px solid $border-default;
+      }
+
+      .section-description {
+        margin: -1rem 0 1.5rem 0;
+        color: $text-secondary;
+        font-size: 0.9rem;
+        font-style: italic;
       }
 
       .form-group {
