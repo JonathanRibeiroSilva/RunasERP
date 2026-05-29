@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiSearch, FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiEye, FiTrash2, FiShare2, FiCopy } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { api } from '@/services/api/axios';
 import './ProdutosPage.scss';
@@ -36,12 +36,15 @@ const ProdutosPage = () => {
   const [categoriaFilter, setCategoriaFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'ativos' | 'inativos'>('ativos');
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  
+  const [linkCopiado, setLinkCopiado] = useState(false);
+
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const limit = 10;
+
+  const catalogoUrl = `${window.location.origin}/c/default`;
 
   useEffect(() => {
     carregarCategorias();
@@ -150,6 +153,14 @@ const ProdutosPage = () => {
     }
   };
 
+  const handleCopiarLink = () => {
+    navigator.clipboard.writeText(catalogoUrl).then(() => {
+      setLinkCopiado(true);
+      toast.success('Link do catálogo copiado!');
+      setTimeout(() => setLinkCopiado(false), 2000);
+    });
+  };
+
   return (
     <div className="produtos-page">
       <div className="page-header">
@@ -157,9 +168,19 @@ const ProdutosPage = () => {
           <h1>Produtos</h1>
           <p>Gerencie o catálogo de produtos</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/produtos/novo')}>
-          <FiPlus /> Novo Produto
-        </button>
+        <div className="header-actions">
+          <button
+            className="btn btn-catalogo"
+            onClick={handleCopiarLink}
+            title={catalogoUrl}
+          >
+            {linkCopiado ? <FiCopy /> : <FiShare2 />}
+            {linkCopiado ? 'Link copiado!' : 'Compartilhar Catálogo'}
+          </button>
+          <button className="btn btn-primary" onClick={() => navigate('/produtos/novo')}>
+            <FiPlus /> Novo Produto
+          </button>
+        </div>
       </div>
 
       <div className="filters-section">
