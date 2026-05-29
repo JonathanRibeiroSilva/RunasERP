@@ -13,6 +13,7 @@ from routers.produtos import (
     router_produtos,
     router_variantes,
     router_catalogo,
+    router_catalogo_publico,
     router_fornecedores,
     router_fornecedor_produtos,
 )
@@ -78,5 +79,6 @@ app.include_router(router_categorias)
 app.include_router(router_produtos)
 app.include_router(router_variantes)
 app.include_router(router_catalogo)
+app.include_router(router_catalogo_publico)  # Rotas públicas (sem autenticação)
 app.include_router(router_fornecedores)
 app.include_router(router_fornecedor_produtos)

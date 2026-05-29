@@ -267,3 +267,30 @@ class ProdutoReadSimples(ProdutoBase):
     criado_em: datetime
     
     model_config = ConfigDict(from_attributes=True)
+
+
+# ======================== SCHEMAS CATÁLOGO PÚBLICO ========================
+
+class VarianteCatalogoRead(BaseModel):
+    """Schema de variante para o catálogo público (sem dados internos)."""
+    id: UUID
+    sku: str
+    preco_venda: Decimal
+    ativo: bool
+    atributos: list[AtributoVarianteBase] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProdutoCatalogoRead(BaseModel):
+    """Schema de produto para o catálogo público (sem custo, markup, fornecedores)."""
+    id: UUID
+    nome: str
+    descricao: str | None = None
+    ativo: bool
+    categoria_id: UUID
+    categoria: CategoriaRead | None = None
+    criado_em: datetime
+    variantes: list[VarianteCatalogoRead] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
