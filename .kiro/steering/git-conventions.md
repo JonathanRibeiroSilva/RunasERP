@@ -2,6 +2,19 @@
 inclusion: always
 ---
 
+# Language Conventions
+
+## Chat
+Always respond to the user in **Brazilian Portuguese (PT-BR)**.
+
+## Code
+- Identifiers, variable names, function names, class names: **English**
+- Code comments: **PT-BR** is allowed and preferred
+- Commit messages: **English** (see below)
+- Documentation files (`.md`): follow the existing file's language
+
+---
+
 # Git Commit Conventions
 
 All commits must follow the **Conventional Commits** specification in **English**.
