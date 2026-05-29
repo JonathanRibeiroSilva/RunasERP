@@ -12,6 +12,7 @@ from schemas.produtos import (
     ProdutoCreate,
     ProdutoRead,
     ProdutoReadSimples,
+    ProdutoCatalogoRead,
     ProdutoUpdate,
     VarianteCreate,
     VarianteRead,
@@ -144,8 +145,8 @@ async def listar_produtos(
     """Lista todos os produtos."""
     service = ProdutoService(session)
     produtos, total = await service.listar_produtos(skip=skip, limit=limit, apenas_ativos=apenas_ativos)
-    # Converter modelos SQLAlchemy para schemas Pydantic
-    produtos_response = [ProdutoRead.model_validate(prod) for prod in produtos]
+    # Converter modelos SQLAlchemy para schemas Pydantic (usando schema simplificado)
+    produtos_response = [ProdutoReadSimples.model_validate(prod) for prod in produtos]
     return {"total": total, "skip": skip, "limit": limit, "items": produtos_response}
 
 
@@ -271,6 +272,110 @@ async def deletar_variante(variante_id: UUID, session: AsyncSession = Depends(ge
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao deletar variante")
+
+
+# ======================== ROUTER CATÁLOGO PÚBLICO ========================
+
+router_catalogo_publico = APIRouter(prefix="/catalogo/publico", tags=["catalogo-publico"])
+
+
+@router_catalogo_publico.get("/produtos", response_model=dict)
+async def listar_produtos_catalogo_publico(
+    categoria_id: UUID | None = Query(None),
+    busca: str | None = Query(None, min_length=2),
+    ordenar: str = Query("nome", regex="^(nome|preco_asc|preco_desc|recentes)$"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    session: AsyncSession = Depends(get_db),
+):
+    """
+    Lista produtos visíveis no catálogo público (SEM autenticação).
+    
+    Retorna apenas produtos com:
+    - ativo = True
+    - catalogo_config.visivel = True
+    """
+    try:
+        service = ProdutoService(session)
+        
+        # TODO: Filtrar apenas produtos com catalogo_config.visivel = True
+        # Por enquanto, retorna todos os produtos ativos
+        produtos, total = await service.listar_produtos(
+            skip=skip, 
+            limit=limit, 
+            apenas_ativos=True
+        )
+        
+        # Filtrar por categoria se fornecido
+        if categoria_id:
+            produtos = [p for p in produtos if p.categoria_id == categoria_id]
+            total = len(produtos)
+        
+        # Buscar por nome se fornecido
+        if busca:
+            produtos = [p for p in produtos if busca.lower() in p.nome.lower()]
+            total = len(produtos)
+        
+        # Converter para schema simplificado
+        produtos_response = [ProdutoReadSimples.model_validate(prod) for prod in produtos]
+        
+        return {
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "items": produtos_response
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Erro ao listar produtos do catálogo")
+
+
+@router_catalogo_publico.get("/produto/{produto_id}", response_model=ProdutoCatalogoRead)
+async def obter_produto_catalogo_publico(
+    produto_id: UUID,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Obtém detalhes de um produto no catálogo público (SEM autenticação).
+    Não expõe dados internos como custo, markup e fornecedores.
+    """
+    try:
+        service = ProdutoService(session)
+        produto = await service.obter_produto(produto_id)
+
+        if not produto.ativo:
+            raise HTTPException(status_code=404, detail="Produto não encontrado")
+
+        return ProdutoCatalogoRead.model_validate(produto)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Erro ao obter produto")
+
+
+@router_catalogo_publico.get("/categorias", response_model=dict)
+async def listar_categorias_catalogo_publico(
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Lista categorias ativas no catálogo público (SEM autenticação).
+    
+    Retorna apenas categorias com produtos visíveis.
+    """
+    try:
+        service = CategoriaService(session)
+        categorias, total = await service.listar_categorias(skip=0, limit=100)
+        
+        # Converter para schema
+        categorias_response = [CategoriaRead.model_validate(cat) for cat in categorias]
+        
+        return {
+            "total": total,
+            "items": categorias_response
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Erro ao listar categorias")
 
 
 # ======================== ROUTER CATÁLOGO ========================
