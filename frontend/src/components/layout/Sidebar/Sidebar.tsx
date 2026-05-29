@@ -6,6 +6,7 @@ import {
   FiShoppingCart,
   FiBox,
   FiDollarSign,
+  FiFolder,
 } from 'react-icons/fi';
 import './Sidebar.scss';
 
@@ -23,6 +24,7 @@ const navItems: NavItem[] = [
   { path: '/dashboard', icon: <FiHome />, label: 'Dashboard' },
   { path: '/clientes', icon: <FiUsers />, label: 'Clientes' },
   { path: '/produtos', icon: <FiPackage />, label: 'Produtos' },
+  { path: '/categorias', icon: <FiFolder />, label: 'Categorias' },
   { path: '/vendas', icon: <FiShoppingCart />, label: 'Vendas' },
   { path: '/estoque', icon: <FiBox />, label: 'Estoque' },
   { path: '/financeiro', icon: <FiDollarSign />, label: 'Financeiro' },
