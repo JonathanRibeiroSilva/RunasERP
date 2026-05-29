@@ -13,11 +13,12 @@ class CatalogoConfig(Base):
     """Configuração de exibição do produto no catálogo público."""
     
     __tablename__ = "catalogo_config"
+    __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     produto_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("produtos.id", ondelete="CASCADE"),
+        ForeignKey("produtos.produtos.id", ondelete="CASCADE"),
         unique=True,
         nullable=False,
         index=True
@@ -40,14 +41,15 @@ class CatalogoConfig(Base):
 
 
 class CatalogoFoto(Base):
-    """Fotos do produto para exibição no catálogo."""
+    """Fotos do produto no catálogo."""
     
     __tablename__ = "catalogo_fotos"
+    __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     produto_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("produtos.id", ondelete="CASCADE"),
+        ForeignKey("produtos.produtos.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )

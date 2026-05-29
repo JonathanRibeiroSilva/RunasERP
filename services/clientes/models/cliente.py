@@ -14,6 +14,7 @@ class Cliente(Base):
     """Modelo de Cliente."""
     
     __tablename__ = "clientes"
+    __table_args__ = {"schema": "clientes"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     cpf: Mapped[str] = mapped_column(String(11), unique=True, nullable=False, index=True)
@@ -43,9 +44,10 @@ class Endereco(Base):
     """Modelo de Endereço."""
     
     __tablename__ = "enderecos"
+    __table_args__ = {"schema": "clientes"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    cliente_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clientes.id", ondelete="CASCADE"))
+    cliente_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clientes.clientes.id", ondelete="CASCADE"))
     cep: Mapped[str] = mapped_column(String(8), nullable=False)
     logradouro: Mapped[str] = mapped_column(String(255), nullable=False)
     numero: Mapped[str] = mapped_column(String(20), nullable=False)

@@ -1,6 +1,5 @@
 import { env } from '@/config/env';
 import { api } from '@/services/api/axios';
-import { tokenService } from './tokenService';
 import type { LoginResponse } from '@/types/auth';
 
 export type OAuthProvider = 'google' | 'microsoft';

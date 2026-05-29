@@ -41,3 +41,9 @@ export interface AuthContextType {
   setAuthUser: (user: User) => void;
   hasRole: (role: UserRole) => boolean;
 }
+
+export interface ApiError {
+  message: string;
+  status?: number;
+  detail?: string;
+}
