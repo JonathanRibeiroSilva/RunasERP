@@ -1,6 +1,9 @@
 export const env = {
-  // API URL - usar variável de ambiente diretamente
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  // API URL
+  // - Docker + Nginx: VITE_API_URL=/api  (URL relativa, Nginx faz o proxy)
+  // - Local sem Docker: VITE_API_URL=http://localhost:8000 (direto no backend)
+  // O valor vem sempre do docker-compose.nginx.yml (seção environment:)
+  apiUrl: import.meta.env.VITE_API_URL || '/api',
   apiTimeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
   appName: import.meta.env.VITE_APP_NAME || 'Runas',
   appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
