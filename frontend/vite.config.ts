@@ -71,11 +71,13 @@ export default defineConfig({
       overlay: false,
     },
     middlewareMode: false,
-    // Proxy condicional - apenas para desenvolvimento local
+    // Proxy condicional - apenas para desenvolvimento local (sem Nginx)
+    // Quando VITE_USE_PROXY=false (Docker + Nginx), o Nginx faz o proxy de /api
+    // Quando VITE_USE_PROXY=true (local sem Docker), o Vite faz o proxy de /api
     ...(process.env.VITE_USE_PROXY !== 'false' && {
       proxy: {
         '/api': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
+          target: 'http://localhost:8000',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
