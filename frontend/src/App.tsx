@@ -11,6 +11,7 @@ import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
 import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
 import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
+import { CatalogoPage, ProdutoDetalhePage } from '@/pages/CatalogoPublico';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
 
 // Loading component
@@ -90,6 +91,10 @@ function App() {
             </PublicRoute>
           }
         />
+
+        {/* Catálogo Público (sem autenticação) */}
+        <Route path="/c/:empresaSlug" element={<CatalogoPage />} />
+        <Route path="/c/:empresaSlug/produto/:produtoId" element={<ProdutoDetalhePage />} />
 
         {/* OAuth Callback Route */}
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />
