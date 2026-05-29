@@ -26,6 +26,7 @@ class Produto(Base):
     descricao: Mapped[str | None] = mapped_column(Text)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    deletado_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     
     # Relacionamentos
     categoria: Mapped["Categoria"] = relationship("Categoria", back_populates="produtos")

@@ -92,7 +92,7 @@ class ProdutoRepository:
         return produto
 
     async def obter_por_id(self, produto_id: UUID) -> Produto | None:
-        """Obtém um produto por ID."""
+        """Obtém um produto por ID (incluindo deletados)."""
         result = await self.session.execute(
             select(Produto)
             .where(Produto.id == produto_id)
@@ -136,14 +136,40 @@ class ProdutoRepository:
         )
         return result.scalars().all(), total
 
-    async def listar_todos(self, skip: int = 0, limit: int = 10, apenas_ativos: bool = True) -> tuple[list[Produto], int]:
-        """Lista todos os produtos."""
+    async def listar_todos(
+        self, 
+        skip: int = 0, 
+        limit: int = 10, 
+        apenas_ativos: bool | None = None,
+        apenas_deletados: bool = False
+    ) -> tuple[list[Produto], int]:
+        """
+        Lista todos os produtos com filtros opcionais.
+        
+        Args:
+            skip: Offset para paginação
+            limit: Limite de resultados
+            apenas_ativos: True = só ativos, False = só inativos, None = todos (ativos e inativos)
+            apenas_deletados: True = só deletados, False = não deletados
+        """
         query = select(Produto)
-        if apenas_ativos:
-            query = query.where(Produto.ativo.is_(True))
+        count_query = select(func.count(Produto.id))
+        
+        # Filtro de deletados
+        if apenas_deletados:
+            query = query.where(Produto.deletado_em.isnot(None))
+            count_query = count_query.where(Produto.deletado_em.isnot(None))
+        else:
+            query = query.where(Produto.deletado_em.is_(None))
+            count_query = count_query.where(Produto.deletado_em.is_(None))
+        
+        # Filtro de ativo/inativo (só aplica se não estiver buscando deletados)
+        if not apenas_deletados and apenas_ativos is not None:
+            query = query.where(Produto.ativo.is_(apenas_ativos))
+            count_query = count_query.where(Produto.ativo.is_(apenas_ativos))
 
-        # Contar total
-        count_result = await self.session.execute(select(func.count(Produto.id)))
+        # Contar total com os mesmos filtros
+        count_result = await self.session.execute(count_query)
         total = count_result.scalar()
 
         # Buscar com paginação
@@ -182,12 +208,26 @@ class ProdutoRepository:
         return produto
 
     async def deletar(self, produto_id: UUID) -> bool:
-        """Deleta um produto."""
+        """Soft delete de um produto (marca como deletado)."""
         produto = await self.obter_por_id(produto_id)
         if not produto:
             return False
 
-        await self.session.delete(produto)
+        from datetime import datetime
+        produto.deletado_em = datetime.utcnow()
+        await self.session.flush()
+        return True
+    
+    async def restaurar(self, produto_id: UUID) -> bool:
+        """Restaura um produto deletado."""
+        result = await self.session.execute(
+            select(Produto).where(Produto.id == produto_id)
+        )
+        produto = result.scalars().first()
+        if not produto or produto.deletado_em is None:
+            return False
+        
+        produto.deletado_em = None
         await self.session.flush()
         return True
 

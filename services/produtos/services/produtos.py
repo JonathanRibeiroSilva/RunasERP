@@ -105,10 +105,25 @@ class ProdutoService:
             raise ValueError(f"Produto com ID {produto_id} não encontrado")
         return produto
 
-    async def listar_produtos(self, skip: int = 0, limit: int = 10, apenas_ativos: bool = True):
-        """Lista todos os produtos."""
+    async def listar_produtos(
+        self, 
+        skip: int = 0, 
+        limit: int = 10, 
+        apenas_deletados: bool = False
+    ):
+        """
+        Lista produtos.
+        
+        Args:
+            skip: Offset para paginação
+            limit: Limite de resultados
+            apenas_deletados: True = só deletados, False = todos não deletados
+        """
         return await self.produto_repo.listar_todos(
-            skip=skip, limit=limit, apenas_ativos=apenas_ativos
+            skip=skip, 
+            limit=limit, 
+            apenas_ativos=None,  # Não filtra por ativo/inativo
+            apenas_deletados=apenas_deletados
         )
 
     async def listar_por_categoria(self, categoria_id: UUID, skip: int = 0, limit: int = 10):
@@ -144,11 +159,22 @@ class ProdutoService:
         )
 
     async def deletar_produto(self, produto_id: UUID):
-        """Deleta um produto."""
+        """Soft delete de um produto."""
         produto = await self.produto_repo.obter_por_id(produto_id)
         if not produto:
             raise ValueError(f"Produto com ID {produto_id} não encontrado")
+        if produto.deletado_em is not None:
+            raise ValueError("Produto já está deletado")
         return await self.produto_repo.deletar(produto_id)
+    
+    async def restaurar_produto(self, produto_id: UUID):
+        """Restaura um produto deletado."""
+        produto = await self.produto_repo.obter_por_id(produto_id)
+        if not produto:
+            raise ValueError(f"Produto com ID {produto_id} não encontrado")
+        if produto.deletado_em is None:
+            raise ValueError("Produto não está deletado")
+        return await self.produto_repo.restaurar(produto_id)
 
 
 class VarianteService:
