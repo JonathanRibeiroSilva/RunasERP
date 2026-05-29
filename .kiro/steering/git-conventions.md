@@ -8,8 +8,8 @@ inclusion: always
 Always respond to the user in **Brazilian Portuguese (PT-BR)**.
 
 ## Code
-- Identifiers, variable names, function names, class names: **English**
-- Code comments: **PT-BR** is allowed and preferred
+- Identifiers, variable names, function names, class names: **keep as-is in the existing codebase** (project uses PT-BR identifiers — do not change them)
+- Code comments: **PT-BR**
 - Commit messages: **English** (see below)
 - Documentation files (`.md`): follow the existing file's language
 
