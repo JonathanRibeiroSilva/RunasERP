@@ -36,17 +36,16 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         refresh_token: JWT refresh token
     """
     # Detectar se está em HTTPS (ngrok, produção) ou HTTP (desenvolvimento local)
-    # Em produção com ngrok, sempre usar secure=True
-    secure = True  # Sempre True para ngrok/produção
+    is_https = settings.FRONTEND_URL.startswith("https://")
     
     # Access token - expira em 30 minutos
     response.set_cookie(
         key="access_token",
         value=access_token,
-        httponly=True,  # Não acessível via JavaScript
-        secure=secure,  # True em produção/ngrok (HTTPS only)
-        samesite="lax",  # Proteção CSRF
-        max_age=30 * 60,  # 30 minutos em segundos
+        httponly=True,
+        secure=is_https,   # True em HTTPS (ngrok/produção), False em HTTP local
+        samesite="lax",
+        max_age=30 * 60,
         path="/"
     )
     
@@ -55,9 +54,9 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=secure,
+        secure=is_https,
         samesite="lax",
-        max_age=7 * 24 * 60 * 60,  # 7 dias em segundos
+        max_age=7 * 24 * 60 * 60,
         path="/"
     )
 
@@ -335,15 +334,6 @@ async def reset_password(
 
     log.info("reset_password.success", user_id=user_id_str)
 
-    return {
-        "message": "Senha resetada com sucesso. Faça login com sua nova senha."
-    }
-    
-    # Invalidar todos os refresh tokens do usuário (forçar novo login)
-    await redis.delete(f"refresh:{user_id_str}")
-    
-    log.info("reset_password.success", user_id=user_id_str)
-    
     return {
         "message": "Senha resetada com sucesso. Faça login com sua nova senha."
     }

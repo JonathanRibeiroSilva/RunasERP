@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { env } from '@/config/env';
 import { tokenService } from '@/services/auth/tokenService';
-import type { ApiError, RefreshTokenResponse } from '@/types/auth';
+import type { ApiError } from '@/types/auth';
 
 // Criar instância do Axios
 export const api = axios.create({
@@ -14,26 +14,6 @@ export const api = axios.create({
   },
   withCredentials: true, // Importante: envia cookies em requisições cross-origin
 });
-
-// Flag para evitar múltiplas tentativas de refresh
-// DEPRECATED: Com cookies HTTP-only, não é mais necessário
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-const processQueue = (error: Error | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve();
-    }
-  });
-
-  failedQueue = [];
-};
 
 // Interceptor de Request - Cookies são enviados automaticamente
 api.interceptors.request.use(

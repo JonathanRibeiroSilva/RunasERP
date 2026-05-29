@@ -13,11 +13,12 @@ class Variante(Base):
     """Modelo de Variante de Produto."""
     
     __tablename__ = "variantes"
+    __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     produto_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("produtos.id", ondelete="CASCADE"),
+        ForeignKey("produtos.produtos.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
@@ -47,11 +48,12 @@ class AtributoVariante(Base):
     """Modelo de Atributo de Variante (ex: cor, tamanho)."""
     
     __tablename__ = "atributos_variante"
+    __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     variante_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("variantes.id", ondelete="CASCADE"),
+        ForeignKey("produtos.variantes.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )

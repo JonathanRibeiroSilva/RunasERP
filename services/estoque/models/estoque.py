@@ -33,6 +33,7 @@ class Estoque(Base):
     Controla a quantidade disponível de cada produto/variante.
     """
     __tablename__ = "estoque"
+    __table_args__ = {"schema": "estoque"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
     produto_id = Column(UUID(as_uuid=True), nullable=False, index=True)
@@ -62,10 +63,11 @@ class Movimentacao(Base):
     Registra todas as entradas e saídas de estoque.
     """
     __tablename__ = "movimentacoes"
+    __table_args__ = {"schema": "estoque"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
-    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.id"), nullable=False, index=True)
-    lote_id = Column(UUID(as_uuid=True), ForeignKey("lotes.id"), nullable=True, index=True)
+    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.estoque.id"), nullable=False, index=True)
+    lote_id = Column(UUID(as_uuid=True), ForeignKey("estoque.lotes.id"), nullable=True, index=True)
     
     tipo = Column(String(20), nullable=False, index=True)  # TipoMovimentacao
     quantidade = Column(Float, nullable=False)
@@ -94,9 +96,10 @@ class Lote(Base):
     Controla lotes de produtos com data de validade.
     """
     __tablename__ = "lotes"
+    __table_args__ = {"schema": "estoque"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
-    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.id"), nullable=False, index=True)
+    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.estoque.id"), nullable=False, index=True)
     
     codigo = Column(String(100), nullable=False, unique=True, index=True)
     quantidade = Column(Float, nullable=False, default=0.0)
@@ -126,6 +129,7 @@ class Inventario(Base):
     Registra contagens físicas de estoque.
     """
     __tablename__ = "inventarios"
+    __table_args__ = {"schema": "estoque"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
     
@@ -149,10 +153,11 @@ class ItemInventario(Base):
     Registra a contagem de cada produto no inventário.
     """
     __tablename__ = "itens_inventario"
+    __table_args__ = {"schema": "estoque"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
-    inventario_id = Column(UUID(as_uuid=True), ForeignKey("inventarios.id"), nullable=False, index=True)
-    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.id"), nullable=False, index=True)
+    inventario_id = Column(UUID(as_uuid=True), ForeignKey("estoque.inventarios.id"), nullable=False, index=True)
+    estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.estoque.id"), nullable=False, index=True)
     
     quantidade_sistema = Column(Float, nullable=False)
     quantidade_contada = Column(Float, nullable=False)

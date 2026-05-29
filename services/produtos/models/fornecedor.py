@@ -14,6 +14,7 @@ class Fornecedor(Base):
     """Modelo de Fornecedor."""
 
     __tablename__ = "fornecedores"
+    __table_args__ = {"schema": "produtos"}
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -46,17 +47,18 @@ class FornecedorProduto(Base):
     """Modelo de Associação entre Fornecedor e Produto."""
 
     __tablename__ = "fornecedor_produtos"
+    __table_args__ = {"schema": "produtos"}
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     fornecedor_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("fornecedores.id", ondelete="CASCADE"),
+        ForeignKey("produtos.fornecedores.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
     produto_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("produtos.id", ondelete="CASCADE"),
+        ForeignKey("produtos.produtos.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )

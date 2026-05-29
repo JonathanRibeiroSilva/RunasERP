@@ -13,11 +13,12 @@ class Produto(Base):
     """Modelo de Produto."""
     
     __tablename__ = "produtos"
+    __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     categoria_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("categorias.id", ondelete="RESTRICT"),
+        ForeignKey("produtos.categorias.id", ondelete="RESTRICT"),
         nullable=False,
         index=True
     )
