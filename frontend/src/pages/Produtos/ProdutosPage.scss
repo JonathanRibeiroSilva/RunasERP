@@ -32,6 +32,32 @@
       }
     }
 
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-catalogo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background-color: transparent;
+      color: $primary;
+      border: 1px solid $primary;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+
+      &:hover {
+        background-color: rgba($primary, 0.08);
+      }
+    }
+
     .btn-primary {
       display: flex;
       align-items: center;
