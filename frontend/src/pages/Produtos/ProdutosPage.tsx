@@ -34,7 +34,7 @@ const ProdutosPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'todos' | 'ativos' | 'inativos'>('ativos');
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'excluidos'>('todos');
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [linkCopiado, setLinkCopiado] = useState(false);
 
@@ -70,14 +70,8 @@ const ProdutosPage = () => {
       const params: Record<string, string | number | boolean> = {
         skip: (currentPage - 1) * limit,
         limit,
+        apenas_deletados: statusFilter === 'excluidos',
       };
-
-      if (statusFilter === 'ativos') {
-        params.apenas_ativos = true;
-      } else if (statusFilter === 'inativos') {
-        params.apenas_ativos = false;
-      }
-      // 'todos' não envia o parâmetro — backend lista todos
 
       const response = await api.get<ProdutosResponse>('/produtos', { params });
       
@@ -116,38 +110,38 @@ const ProdutosPage = () => {
     setCurrentPage(1);
   };
 
-  const handleStatusFilter = (status: 'todos' | 'ativos' | 'inativos') => {
+  const handleStatusFilter = (status: 'todos' | 'excluidos') => {
     setStatusFilter(status);
     setCurrentPage(1);
   };
 
   const handleDelete = async (id: string, nome: string) => {
-    if (!confirm(`Tem certeza que deseja desativar o produto "${nome}"?`)) {
+    if (!confirm(`Tem certeza que deseja excluir o produto "${nome}"?`)) {
       return;
     }
 
     try {
       await api.delete(`/produtos/${id}`);
-      toast.success('Produto desativado com sucesso');
+      toast.success('Produto excluído com sucesso');
       carregarProdutos();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao desativar produto';
+      const message = error.response?.data?.detail || 'Erro ao excluir produto';
       toast.error(message);
       console.error(error);
     }
   };
 
-  const handleReactivate = async (id: string, nome: string) => {
-    if (!confirm(`Tem certeza que deseja reativar o produto "${nome}"?`)) {
+  const handleRestore = async (id: string, nome: string) => {
+    if (!confirm(`Tem certeza que deseja restaurar o produto "${nome}"?`)) {
       return;
     }
 
     try {
-      await api.patch(`/produtos/${id}/reativar`);
-      toast.success('Produto reativado com sucesso');
+      await api.patch(`/produtos/${id}/restaurar`);
+      toast.success('Produto restaurado com sucesso');
       carregarProdutos();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao reativar produto';
+      const message = error.response?.data?.detail || 'Erro ao restaurar produto';
       toast.error(message);
       console.error(error);
     }
@@ -215,16 +209,10 @@ const ProdutosPage = () => {
             Todos
           </button>
           <button
-            className={`filter-btn ${statusFilter === 'ativos' ? 'active' : ''}`}
-            onClick={() => handleStatusFilter('ativos')}
+            className={`filter-btn ${statusFilter === 'excluidos' ? 'active' : ''}`}
+            onClick={() => handleStatusFilter('excluidos')}
           >
-            Ativos
-          </button>
-          <button
-            className={`filter-btn ${statusFilter === 'inativos' ? 'active' : ''}`}
-            onClick={() => handleStatusFilter('inativos')}
-          >
-            Inativos
+            Excluídos
           </button>
         </div>
       </div>
@@ -254,7 +242,7 @@ const ProdutosPage = () => {
               </thead>
               <tbody>
                 {produtos.map((produto) => (
-                  <tr key={produto.id} className={!produto.ativo ? 'inactive' : ''}>
+                  <tr key={produto.id}>
                     <td className="nome">{produto.nome}</td>
                     <td>{produto.categoria?.nome || '-'}</td>
                     <td className="descricao">
@@ -270,44 +258,48 @@ const ProdutosPage = () => {
                     </td>
                     <td>
                       <div className="status-badges">
-                        <span className={`badge ${produto.ativo ? 'badge-success' : 'badge-secondary'}`}>
-                          {produto.ativo ? 'Ativo' : 'Inativo'}
-                        </span>
+                        {statusFilter === 'excluidos' ? (
+                          <span className="badge badge-danger">Excluído</span>
+                        ) : (
+                          <span className={`badge ${produto.ativo ? 'badge-success' : 'badge-warning'}`}>
+                            {produto.ativo ? 'Ativo' : 'Inativo'}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="acoes">
-                      <button
-                        className="btn-icon btn-info"
-                        onClick={() => navigate(`/produtos/${produto.id}`)}
-                        title="Ver detalhes"
-                      >
-                        <FiEye />
-                      </button>
-                      {produto.ativo && (
-                        <button
-                          className="btn-icon btn-warning"
-                          onClick={() => navigate(`/produtos/${produto.id}/editar`)}
-                          title="Editar"
-                        >
-                          <FiEdit2 />
-                        </button>
-                      )}
-                      {produto.ativo ? (
-                        <button
-                          className="btn-icon btn-danger"
-                          onClick={() => handleDelete(produto.id, produto.nome)}
-                          title="Desativar"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      ) : (
+                      {statusFilter === 'excluidos' ? (
                         <button
                           className="btn-icon btn-success"
-                          onClick={() => handleReactivate(produto.id, produto.nome)}
-                          title="Reativar"
+                          onClick={() => handleRestore(produto.id, produto.nome)}
+                          title="Restaurar"
                         >
                           <FiPlus />
                         </button>
+                      ) : (
+                        <>
+                          <button
+                            className="btn-icon btn-info"
+                            onClick={() => navigate(`/produtos/${produto.id}`)}
+                            title="Ver detalhes"
+                          >
+                            <FiEye />
+                          </button>
+                          <button
+                            className="btn-icon btn-warning"
+                            onClick={() => navigate(`/produtos/${produto.id}/editar`)}
+                            title="Editar"
+                          >
+                            <FiEdit2 />
+                          </button>
+                          <button
+                            className="btn-icon btn-danger"
+                            onClick={() => handleDelete(produto.id, produto.nome)}
+                            title="Excluir"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>

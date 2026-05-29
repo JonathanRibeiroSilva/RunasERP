@@ -139,12 +139,21 @@ async def obter_produto(produto_id: UUID, session: AsyncSession = Depends(get_db
 async def listar_produtos(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    apenas_ativos: bool = Query(True),
+    apenas_deletados: bool = Query(False),
     session: AsyncSession = Depends(get_db),
 ):
-    """Lista todos os produtos."""
+    """
+    Lista produtos.
+    
+    Args:
+        apenas_deletados: False = todos não deletados, True = apenas deletados
+    """
     service = ProdutoService(session)
-    produtos, total = await service.listar_produtos(skip=skip, limit=limit, apenas_ativos=apenas_ativos)
+    produtos, total = await service.listar_produtos(
+        skip=skip, 
+        limit=limit, 
+        apenas_deletados=apenas_deletados
+    )
     # Converter modelos SQLAlchemy para schemas Pydantic (usando schema simplificado)
     produtos_response = [ProdutoReadSimples.model_validate(prod) for prod in produtos]
     return {"total": total, "skip": skip, "limit": limit, "items": produtos_response}
@@ -197,7 +206,7 @@ async def atualizar_produto(
 
 @router_produtos.delete("/{produto_id}", status_code=204)
 async def deletar_produto(produto_id: UUID, session: AsyncSession = Depends(get_db)):
-    """Deleta um produto."""
+    """Soft delete de um produto."""
     try:
         service = ProdutoService(session)
         await service.deletar_produto(produto_id)
@@ -205,6 +214,18 @@ async def deletar_produto(produto_id: UUID, session: AsyncSession = Depends(get_
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao deletar produto")
+
+
+@router_produtos.patch("/{produto_id}/restaurar", status_code=204)
+async def restaurar_produto(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+    """Restaura um produto deletado."""
+    try:
+        service = ProdutoService(session)
+        await service.restaurar_produto(produto_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Erro ao restaurar produto")
 
 
 # ======================== ROUTER VARIANTES ========================
