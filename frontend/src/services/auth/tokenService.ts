@@ -13,7 +13,7 @@ export const tokenService = {
   },
 
   // DEPRECATED: Tokens são definidos pelo backend via cookies
-  setAccessToken(token: string): void {
+  setAccessToken(_token: string): void {
     // Não faz nada - cookies são gerenciados pelo backend
     console.warn('[tokenService] setAccessToken is deprecated - tokens are now managed via HTTP-only cookies');
   },
@@ -24,7 +24,7 @@ export const tokenService = {
   },
 
   // DEPRECATED: Tokens são definidos pelo backend via cookies
-  setRefreshToken(token: string): void {
+  setRefreshToken(_token: string): void {
     // Não faz nada - cookies são gerenciados pelo backend
     console.warn('[tokenService] setRefreshToken is deprecated - tokens are now managed via HTTP-only cookies');
   },

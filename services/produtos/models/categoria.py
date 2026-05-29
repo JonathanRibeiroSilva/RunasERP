@@ -12,6 +12,7 @@ class Categoria(Base):
     """Modelo de Categoria de Produtos."""
     
     __tablename__ = "categorias"
+    __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)

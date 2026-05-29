@@ -39,18 +39,18 @@ class ClienteService:
         - Telefone já normalizado no schema
         """
         try:
-            async with self.db.begin_nested():
-                # Verificar se CPF já existe
-                cliente_existente = await self.cliente_repo.buscar_por_cpf(data.cpf)
-                if cliente_existente:
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="CPF já cadastrado"
-                    )
-                
-                cliente = await self.cliente_repo.criar(data)
+            # Verificar se CPF já existe
+            cliente_existente = await self.cliente_repo.buscar_por_cpf(data.cpf)
+            if cliente_existente:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="CPF já cadastrado"
+                )
             
+            cliente = await self.cliente_repo.criar(data)
             await self.db.commit()
+            await self.db.refresh(cliente)
+            
             log.info("cliente.criado", cliente_id=str(cliente.id), cpf=data.cpf)
             return cliente
             
@@ -101,15 +101,15 @@ class ClienteService:
     ) -> Cliente:
         """Atualiza dados do cliente com transação atômica."""
         try:
-            async with self.db.begin_nested():
-                cliente = await self.cliente_repo.atualizar(cliente_id, data)
-                if not cliente:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Cliente não encontrado"
-                    )
+            cliente = await self.cliente_repo.atualizar(cliente_id, data)
+            if not cliente:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Cliente não encontrado"
+                )
             
             await self.db.commit()
+            await self.db.refresh(cliente)
             log.info("cliente.atualizado", cliente_id=str(cliente_id))
             return cliente
             
@@ -314,15 +314,15 @@ class ClienteService:
         cliente_id: UUID,
         data: EnderecoCreate
     ) -> Endereco:
-        """Adiciona um endereço ao cliente com transação atômica."""
+        """Adiciona um endereço ao cliente."""
         try:
-            async with self.db.begin_nested():
-                # Verificar se cliente existe
-                await self.buscar_cliente(cliente_id)
-                
-                endereco = await self.endereco_repo.criar(cliente_id, data)
+            # Verificar se cliente existe
+            await self.buscar_cliente(cliente_id)
             
+            endereco = await self.endereco_repo.criar(cliente_id, data)
             await self.db.commit()
+            await self.db.refresh(endereco)
+            
             log.info("endereco.criado", cliente_id=str(cliente_id), endereco_id=str(endereco.id))
             return endereco
             
@@ -349,26 +349,26 @@ class ClienteService:
     ) -> Endereco:
         """Atualiza um endereço com transação atômica."""
         try:
-            async with self.db.begin_nested():
-                # Verificar se cliente existe
-                await self.buscar_cliente(cliente_id)
-                
-                # Verificar se endereço pertence ao cliente
-                endereco = await self.endereco_repo.buscar_por_id(endereco_id)
-                if not endereco or endereco.cliente_id != cliente_id:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Endereço não encontrado"
-                    )
-                
-                endereco_atualizado = await self.endereco_repo.atualizar(endereco_id, data)
-                if not endereco_atualizado:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Endereço não encontrado"
-                    )
+            # Verificar se cliente existe
+            await self.buscar_cliente(cliente_id)
+            
+            # Verificar se endereço pertence ao cliente
+            endereco = await self.endereco_repo.buscar_por_id(endereco_id)
+            if not endereco or endereco.cliente_id != cliente_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Endereço não encontrado"
+                )
+            
+            endereco_atualizado = await self.endereco_repo.atualizar(endereco_id, data)
+            if not endereco_atualizado:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Endereço não encontrado"
+                )
             
             await self.db.commit()
+            await self.db.refresh(endereco_atualizado)
             log.info("endereco.atualizado", endereco_id=str(endereco_id))
             return endereco_atualizado
             
@@ -387,24 +387,23 @@ class ClienteService:
     ) -> None:
         """Remove um endereço com transação atômica."""
         try:
-            async with self.db.begin_nested():
-                # Verificar se cliente existe
-                await self.buscar_cliente(cliente_id)
-                
-                # Verificar se endereço pertence ao cliente
-                endereco = await self.endereco_repo.buscar_por_id(endereco_id)
-                if not endereco or endereco.cliente_id != cliente_id:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Endereço não encontrado"
-                    )
-                
-                sucesso = await self.endereco_repo.deletar(endereco_id)
-                if not sucesso:
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Erro ao remover endereço"
-                    )
+            # Verificar se cliente existe
+            await self.buscar_cliente(cliente_id)
+            
+            # Verificar se endereço pertence ao cliente
+            endereco = await self.endereco_repo.buscar_por_id(endereco_id)
+            if not endereco or endereco.cliente_id != cliente_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Endereço não encontrado"
+                )
+            
+            sucesso = await self.endereco_repo.deletar(endereco_id)
+            if not sucesso:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Erro ao remover endereço"
+                )
             
             await self.db.commit()
             log.info("endereco.removido", endereco_id=str(endereco_id))
