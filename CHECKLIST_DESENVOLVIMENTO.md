@@ -396,13 +396,84 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 #### Próximas Otimizações Sugeridas
 - 🔴 **PgBouncer**: Connection pooling para melhor performance
-- 🔴 **Redis Cache**: Cache de queries frequentes
+- 🔴 **Redis Cache**: Cache de queries frequentes (categorias, configurações, CEPs)
 - 🔴 **CDN**: Servir assets estáticos via CDN
 - 🔴 **Lazy Loading**: Carregar componentes sob demanda no frontend
-- 🔴 **Database Indexes**: Otimizar queries com índices apropriados
+- 🔴 **Database Indexes**: Otimizar queries com índices apropriados (ver seção abaixo)
 - 🔴 **Query Optimization**: Analisar e otimizar queries lentas
 - 🔴 **Image Optimization**: Comprimir e otimizar imagens de produtos
 - 🔴 **API Response Caching**: Cache de respostas da API
+- 🔴 **Uvicorn Workers**: Ajustar `workers=1` em ambientes de baixo recurso
+- 🔴 **Pool de Conexões**: Reduzir `pool_size` e `max_overflow` para VPS pequenas
+- 🔴 **Imagens Alpine**: Migrar Dockerfiles para `python:3.11-alpine` (~50-100 MB por container)
+- 🔴 **Limites Docker**: Adicionar `deploy.resources.limits` no docker-compose para prevenir overconsumption
+
+---
+
+## 🔧 QUALIDADE E SEGURANÇA DO BACKEND
+
+> Melhorias técnicas a implementar antes de ir para produção. Não são funcionalidades novas, mas garantem estabilidade, segurança e manutenibilidade.
+
+### ERROR HANDLING PADRONIZADO 🔴
+
+- 🔴 **Handlers específicos por exceção**: `ValidationError` → 400, `NotFoundError` → 404, `ConflictError` → 409, `UnauthorizedError` → 401, `ForbiddenError` → 403
+- 🔴 **Handler para HTTPException do FastAPI**: Padronizar formato de resposta
+- 🔴 **Handler global com request_id**: Rastrear erros entre microsserviços (UUID por requisição)
+- 🔴 **Formato de resposta padronizado**: `{"error": "tipo", "message": "...", "details": {...}}`
+- 🔴 **Logs estruturados por nível**: WARNING para 4xx, ERROR para 5xx, INFO para 404
+- 🔴 **Não expor stack traces**: Retornar apenas `request_id` em erros 500
+- 🔴 **Implementar em todos os microsserviços**: Gateway, Clientes, Produtos, Estoque, Vendas, Financeiro
+
+### AUDITORIA E RASTREABILIDADE 🔴
+
+- 🔴 **Tabela `audit_log`**: Registrar todas as operações de escrita (CREATE, UPDATE, DELETE)
+- 🔴 **Campos `criado_por` / `atualizado_por`**: Em todas as tabelas principais
+- 🔴 **Dados antes/depois**: Armazenar JSON com estado anterior e novo
+- 🔴 **IP e User-Agent**: Registrar origem da requisição
+- 🔴 **Endpoint de consulta**: `GET /auditoria?tabela=clientes&registro_id=...`
+
+### ÍNDICES DE BANCO DE DADOS 🔴
+
+- 🔴 **Clientes**: `idx_clientes_cpf`, `idx_clientes_nome`, `idx_clientes_ativo`
+- 🔴 **Produtos**: `idx_produtos_sku`, `idx_produtos_nome`, `idx_produtos_categoria`, `idx_produtos_ativo`
+- 🔴 **Estoque**: `idx_estoque_produto`, `idx_estoque_variante`
+- 🔴 **Vendas**: `idx_vendas_cliente`, `idx_vendas_status`, `idx_vendas_data`
+- 🔴 **Financeiro**: `idx_contas_cliente`, `idx_contas_vencimento`, `idx_contas_status`
+- 🔴 **Testar com volume**: Seed com 10k+ registros para validar performance
+
+### VALIDAÇÃO DE CEP NO BACKEND 🔴
+
+- 🔴 **ViaCepService**: Validar CEP via API ViaCEP no backend (frontend já valida, mas nunca confiar só no frontend)
+- 🔴 **Cache Redis**: Cachear CEPs consultados por 30 dias
+- 🔴 **Fallback gracioso**: Se API cair, aceitar o CEP mas logar warning
+
+### RATE LIMITING POR USUÁRIO 🔴
+
+- 🔴 **Por `usuario_id`**: Limitar requisições por usuário autenticado
+- 🔴 **Limites diferenciados**: Login (5/min), cadastro (10/min), consulta (200/min), relatório (10/min)
+- 🔴 **Headers de resposta**: Retornar `X-RateLimit-Remaining` e `X-RateLimit-Reset`
+- 🔴 **Whitelist**: IPs confiáveis sem limite
+
+### TESTES AUTOMATIZADOS 🔴
+
+- 🔴 **Testes unitários**: Services e validators — meta 80% de cobertura
+- 🔴 **Testes de integração**: Endpoints principais de cada microsserviço
+- 🔴 **Testes de carga**: k6 ou Locust para simular picos
+- 🔴 **CI/CD**: GitHub Actions rodando testes a cada push
+
+### DOCUMENTAÇÃO SWAGGER/OPENAPI 🔴
+
+- 🔴 **Docstrings em endpoints**: Descrição, parâmetros, exemplos de request/response
+- 🔴 **Documentar códigos de erro**: Quais exceções cada endpoint pode lançar
+- 🔴 **Exemplos de requisição**: Facilitar testes manuais e integração frontend
+
+### BACKUP AUTOMATIZADO 🔴
+
+- 🔴 **Script de backup diário**: `pg_dump` com compressão
+- 🔴 **Upload para storage externo**: S3 ou Google Cloud Storage
+- 🔴 **Política de retenção**: 7 dias diários, 4 semanais, 12 mensais
+- 🔴 **Alerta de falha**: Notificar se backup não executar
+- 🔴 **Testar restore**: Validar periodicamente que o backup é restaurável
 
 ---
 
@@ -852,6 +923,75 @@ Produto (1) ----< (N) FornecedorProduto
 8. � **Implementar Catálogo Público** (Sprint 2.5 - EM PROGRESSO)
 9. �🔴 **Implementar frontend de Estoque** (Sprint 3)
 9. 🔴 **Implementar backend de Vendas** (Sprint 4)
+
+---
+
+## 🎯 PRIORIDADE 4: Longo Prazo (Pós-MVP)
+
+> Features planejadas para após a conclusão do MVP completo. Não há dependências bloqueantes com os módulos atuais.
+
+### 12. MÓDULO DE DELIVERY 🔴
+
+**Estimativa**: 60-80 horas
+
+- 🔴 Integração com iFood, Rappi, Uber Eats
+- 🔴 Gestão de pedidos delivery (painel unificado)
+- 🔴 Rastreamento de entrega em tempo real
+- 🔴 Cálculo de frete (Correios + Google Maps)
+- 🔴 Notificações de status ao cliente
+
+### 13. MÓDULO DE FIDELIDADE 🔴
+
+**Estimativa**: 40-50 horas
+
+- 🔴 Programa de pontos por compra
+- 🔴 Cashback configurável
+- 🔴 Cupons de desconto
+- 🔴 Promoções personalizadas por segmento de cliente
+- 🔴 Gamificação (níveis, badges)
+
+### 14. BI E ANALYTICS 🔴
+
+**Estimativa**: 60-80 horas
+
+- 🔴 Data warehouse (PostgreSQL analítico)
+- 🔴 ETL de dados (Apache Airflow)
+- 🔴 Dashboards analíticos (Metabase ou Superset)
+- 🔴 Previsão de vendas com Machine Learning (Scikit-learn)
+- 🔴 Análise de comportamento de clientes (curva ABC, RFM)
+
+### 15. INTEGRAÇÕES ADICIONAIS 🔴
+
+**Estimativa**: 40-60 horas
+
+- 🔴 **Contabilidade**: Conta Azul, Omie
+- 🔴 **Nota Fiscal**: Emissão de NF-e e NFC-e
+- 🔴 **Boletos**: Integração com bancos (Itaú, Bradesco, BB)
+- 🔴 **Cartões**: Stone, Cielo (além do Mercado Pago)
+- 🔴 **ERP Externo**: API aberta para integração com outros sistemas
+
+### 16. INFRAESTRUTURA AVANÇADA 🔴
+
+**Estimativa**: 60h
+
+- 🔴 **RabbitMQ**: Eventos assíncronos entre serviços (`venda.criada`, `estoque.baixo`, etc.)
+- 🔴 **Celery + Celery Beat**: Jobs agendados (cobranças, relatórios, lembretes)
+- 🔴 **PgBouncer**: Connection pooling para melhor performance em produção
+- 🔴 **Prometheus + Grafana**: Métricas e dashboards de monitoramento
+- 🔴 **ELK Stack**: Logs centralizados (Elasticsearch, Logstash, Kibana)
+- 🔴 **CI/CD Pipeline**: GitHub Actions com deploy automatizado
+- 🔴 **Testes de carga**: k6 ou Locust
+
+### 17. APP MOBILE 🔴
+
+**Estimativa**: 120-150 horas
+
+- 🔴 App para vendedores (Android/iOS) — React Native + Expo
+- 🔴 PDV mobile (vender pelo celular)
+- 🔴 Consulta de estoque e preços
+- 🔴 Criação de vendas offline com sincronização automática
+- 🔴 Leitor de código de barras
+- 🔴 Notificações push
 
 ---
 
