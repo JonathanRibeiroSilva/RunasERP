@@ -1,4 +1,4 @@
-# ⚡ Quick Start - ERP Runas MVP
+# ⚡ Quick Start - Runas 
 
 **Tempo estimado**: 5 minutos  
 **Pré-requisitos**: Docker e Docker Compose instalados
@@ -249,5 +249,87 @@ PostgreSQL:
 
 ---
 
-**Última atualização**: 2026-05-14  
+## 🌐 Acesso Externo via ngrok
+
+### Por que usar ngrok?
+
+O ngrok permite expor seu servidor local para a internet, essencial para:
+- ✅ **Webhooks**: Receber notificações do Mercado Pago e WhatsApp
+- ✅ **OAuth**: Callbacks de autenticação externa
+- ✅ **Testes Mobile**: Acessar a API de dispositivos móveis
+- ✅ **Demonstrações**: Mostrar o sistema para clientes remotos
+
+### Instalação do ngrok
+
+```bash
+# Windows (com Chocolatey)
+choco install ngrok
+
+# macOS (com Homebrew)
+brew install ngrok
+
+# Linux (com Snap)
+snap install ngrok
+
+# Ou baixe diretamente de https://ngrok.com/download
+```
+
+### Uso Básico
+
+```bash
+# 1. Expor o API Gateway (porta 8000)
+ngrok http 8000
+
+# O ngrok fornecerá uma URL pública, exemplo:
+# Forwarding: https://abc123.ngrok.io -> http://localhost:8000
+```
+
+### Configuração para OAuth
+
+Quando usar ngrok com OAuth (Google, Microsoft, etc.), você precisa:
+
+1. **Copiar a URL pública do ngrok** (ex: `https://abc123.ngrok.io`)
+
+2. **Atualizar as variáveis de ambiente**:
+```bash
+# .env ou .env.ngrok
+FRONTEND_URL=https://abc123.ngrok.io
+BACKEND_URL=https://abc123.ngrok.io
+```
+
+3. **Atualizar o redirect URI no provedor OAuth**:
+   - Google Cloud Console: Adicionar `https://abc123.ngrok.io/auth/google/callback`
+   - Microsoft Azure: Adicionar `https://abc123.ngrok.io/auth/microsoft/callback`
+
+4. **Reiniciar o API Gateway**:
+```bash
+docker-compose restart api-gateway
+```
+
+### Ngrok com Docker Compose
+
+Para facilitar, você pode usar o arquivo `docker-compose.ngrok.yml`:
+
+```bash
+# Subir com ngrok integrado
+docker-compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d
+
+# Ver a URL pública nos logs
+docker-compose logs ngrok
+```
+
+### Troubleshooting OAuth com ngrok
+
+Se encontrar problemas com OAuth ao usar ngrok:
+
+📖 **Guia completo**: [docs/09-troubleshooting/oauth-issues.md](./docs/09-troubleshooting/oauth-issues.md)
+
+Problemas comuns:
+- ❌ Redirect URI mismatch → Atualizar no provedor OAuth
+- ❌ CORS errors → Adicionar URL do ngrok no CORS_ORIGINS
+- ❌ Cookie issues → Usar HTTPS (ngrok fornece automaticamente)
+
+---
+
+**Última atualização**: 26 de Maio de 2026  
 **Versão**: 1.0.0-MVP

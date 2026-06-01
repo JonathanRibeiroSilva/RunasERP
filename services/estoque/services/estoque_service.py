@@ -4,6 +4,7 @@ Contém a lógica de negócio para gestão de estoque.
 """
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Tuple
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 import structlog
@@ -39,7 +40,7 @@ class EstoqueService:
     """Service para operações de estoque."""
 
     @staticmethod
-    async def verificar_produto_existe(produto_id: int, variante_id: Optional[int] = None) -> bool:
+    async def verificar_produto_existe(produto_id: UUID, variante_id: Optional[UUID] = None) -> bool:
         """Verifica se produto/variante existe no serviço de produtos."""
         try:
             async with httpx.AsyncClient() as client:
@@ -51,7 +52,7 @@ class EstoqueService:
                 response = await client.get(url, timeout=5.0)
                 return response.status_code == 200
         except Exception as e:
-            log.error("erro_verificar_produto", error=str(e), produto_id=produto_id)
+            log.error("erro_verificar_produto", error=str(e), produto_id=str(produto_id))
             return False
 
     @staticmethod
@@ -61,22 +62,32 @@ class EstoqueService:
         if not await EstoqueService.verificar_produto_existe(data.produto_id, data.variante_id):
             raise ValueError("Produto ou variante não encontrado")
         
-        # Verificar se já existe estoque para este produto/variante
-        estoque_existente = await EstoqueRepository.buscar_por_produto(
-            db, data.produto_id, data.variante_id
-        )
-        if estoque_existente:
-            raise ValueError("Já existe estoque cadastrado para este produto/variante")
-        
-        # Criar estoque
-        estoque = await EstoqueRepository.criar(db, **data.model_dump())
-        
-        log.info("estoque_criado", estoque_id=estoque.id, produto_id=data.produto_id)
-        
-        return EstoqueResponse.model_validate(estoque)
+        try:
+            async with db.begin_nested():
+                # Verificar se já existe estoque para este produto/variante
+                estoque_existente = await EstoqueRepository.buscar_por_produto(
+                    db, data.produto_id, data.variante_id
+                )
+                if estoque_existente:
+                    raise ValueError("Já existe estoque cadastrado para este produto/variante")
+                
+                # Criar estoque
+                estoque = await EstoqueRepository.criar(db, **data.model_dump())
+                
+            await db.commit()
+            log.info("estoque_criado", estoque_id=estoque.id, produto_id=data.produto_id)
+            
+            return EstoqueResponse.model_validate(estoque)
+        except ValueError:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_criar_estoque", error=str(e))
+            raise
 
     @staticmethod
-    async def buscar_estoque(db: AsyncSession, estoque_id: int) -> Optional[EstoqueComAlerta]:
+    async def buscar_estoque(db: AsyncSession, estoque_id: UUID) -> Optional[EstoqueComAlerta]:
         """Busca estoque por ID com alertas."""
         estoque = await EstoqueRepository.buscar_por_id(db, estoque_id)
         if not estoque:
@@ -116,234 +127,300 @@ class EstoqueService:
     @staticmethod
     async def atualizar_estoque(
         db: AsyncSession,
-        estoque_id: int,
+        estoque_id: UUID,
         data: EstoqueUpdate
     ) -> Optional[EstoqueResponse]:
-        """Atualiza configurações de estoque."""
-        estoque = await EstoqueRepository.atualizar(db, estoque_id, **data.model_dump(exclude_unset=True))
-        if not estoque:
-            return None
-        
-        log.info("estoque_atualizado", estoque_id=estoque_id)
-        
-        return EstoqueResponse.model_validate(estoque)
+        """Atualiza configurações de estoque com transação atômica."""
+        try:
+            async with db.begin_nested():
+                estoque = await EstoqueRepository.atualizar(db, estoque_id, **data.model_dump(exclude_unset=True))
+                if not estoque:
+                    return None
+            
+            await db.commit()
+            log.info("estoque_atualizado", estoque_id=str(estoque_id))
+            
+            return EstoqueResponse.model_validate(estoque)
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_atualizar_estoque", error=str(e))
+            raise
 
     @staticmethod
     async def entrada_estoque(
         db: AsyncSession,
         data: EntradaEstoqueRequest,
-        usuario_id: Optional[int] = None
-    ) -> Tuple[EstoqueResponse, Optional[int]]:
-        """Registra entrada de estoque."""
-        # Buscar ou criar estoque
-        estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
-        
-        if not estoque:
-            # Verificar se produto existe
-            if not await EstoqueService.verificar_produto_existe(data.produto_id, data.variante_id):
-                raise ValueError("Produto ou variante não encontrado")
+        usuario_id: Optional[UUID] = None
+    ) -> Tuple[EstoqueResponse, Optional[UUID]]:
+        """Registra entrada de estoque com transação atômica."""
+        try:
+            async with db.begin_nested():
+                # Buscar ou criar estoque
+                estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
+                
+                if not estoque:
+                    # Verificar se produto existe
+                    if not await EstoqueService.verificar_produto_existe(data.produto_id, data.variante_id):
+                        raise ValueError("Produto ou variante não encontrado")
+                    
+                    # Criar estoque
+                    estoque = await EstoqueRepository.criar(
+                        db,
+                        produto_id=data.produto_id,
+                        variante_id=data.variante_id,
+                        quantidade=0.0,
+                        estoque_minimo=0.0
+                    )
+                
+                # Registrar movimentação
+                quantidade_anterior = estoque.quantidade
+                quantidade_posterior = quantidade_anterior + data.quantidade
+                
+                movimentacao = await MovimentacaoRepository.criar(
+                    db,
+                    estoque_id=estoque.id,
+                    tipo=TipoMovimentacao.ENTRADA.value,
+                    quantidade=data.quantidade,
+                    quantidade_anterior=quantidade_anterior,
+                    quantidade_posterior=quantidade_posterior,
+                    motivo=data.motivo,
+                    observacao=data.observacao,
+                    documento=data.documento,
+                    custo_unitario=data.custo_unitario,
+                    usuario_id=usuario_id
+                )
+                
+                # Atualizar quantidade
+                estoque = await EstoqueRepository.atualizar_quantidade(db, estoque.id, quantidade_posterior)
+                
+                # Criar lote se solicitado
+                lote_id = None
+                if data.criar_lote and data.codigo_lote:
+                    lote = await LoteRepository.criar(
+                        db,
+                        estoque_id=estoque.id,
+                        codigo=data.codigo_lote,
+                        quantidade=data.quantidade,
+                        data_fabricacao=data.data_fabricacao,
+                        data_validade=data.data_validade,
+                        fornecedor=data.fornecedor,
+                        nota_fiscal=data.nota_fiscal,
+                        custo_unitario=data.custo_unitario
+                    )
+                    lote_id = lote.id
+                    
+                    # Atualizar movimentação com lote
+                    movimentacao.lote_id = lote_id
             
-            # Criar estoque
-            estoque = await EstoqueRepository.criar(
-                db,
-                produto_id=data.produto_id,
-                variante_id=data.variante_id,
-                quantidade=0.0,
-                estoque_minimo=0.0
-            )
-        
-        # Registrar movimentação
-        quantidade_anterior = estoque.quantidade
-        quantidade_posterior = quantidade_anterior + data.quantidade
-        
-        movimentacao = await MovimentacaoRepository.criar(
-            db,
-            estoque_id=estoque.id,
-            tipo=TipoMovimentacao.ENTRADA.value,
-            quantidade=data.quantidade,
-            quantidade_anterior=quantidade_anterior,
-            quantidade_posterior=quantidade_posterior,
-            motivo=data.motivo,
-            observacao=data.observacao,
-            documento=data.documento,
-            custo_unitario=data.custo_unitario,
-            usuario_id=usuario_id
-        )
-        
-        # Atualizar quantidade
-        estoque = await EstoqueRepository.atualizar_quantidade(db, estoque.id, quantidade_posterior)
-        
-        # Criar lote se solicitado
-        lote_id = None
-        if data.criar_lote and data.codigo_lote:
-            lote = await LoteRepository.criar(
-                db,
-                estoque_id=estoque.id,
-                codigo=data.codigo_lote,
-                quantidade=data.quantidade,
-                data_fabricacao=data.data_fabricacao,
-                data_validade=data.data_validade,
-                fornecedor=data.fornecedor,
-                nota_fiscal=data.nota_fiscal,
-                custo_unitario=data.custo_unitario
-            )
-            lote_id = lote.id
-            
-            # Atualizar movimentação com lote
-            movimentacao.lote_id = lote_id
+            # Commit da transação principal
             await db.commit()
-        
-        log.info(
-            "entrada_estoque",
-            estoque_id=estoque.id,
-            quantidade=data.quantidade,
-            lote_id=lote_id
-        )
-        
-        return EstoqueResponse.model_validate(estoque), lote_id
+            
+            log.info(
+                "entrada_estoque",
+                estoque_id=estoque.id,
+                quantidade=data.quantidade,
+                lote_id=lote_id
+            )
+            
+            return EstoqueResponse.model_validate(estoque), lote_id
+        except ValueError:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_entrada_estoque", error=str(e))
+            raise
 
     @staticmethod
     async def saida_estoque(
         db: AsyncSession,
         data: SaidaEstoqueRequest,
-        usuario_id: Optional[int] = None
+        usuario_id: Optional[UUID] = None
     ) -> EstoqueResponse:
-        """Registra saída de estoque."""
-        # Buscar estoque
-        estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
-        if not estoque:
-            raise ValueError("Estoque não encontrado para este produto/variante")
-        
-        # Verificar disponibilidade
-        if estoque.quantidade_disponivel < data.quantidade:
-            raise ValueError(
-                f"Quantidade disponível insuficiente. "
-                f"Disponível: {estoque.quantidade_disponivel}, Solicitado: {data.quantidade}"
+        """Registra saída de estoque com transação atômica."""
+        try:
+            async with db.begin_nested():
+                # Buscar estoque
+                estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
+                if not estoque:
+                    raise ValueError("Estoque não encontrado para este produto/variante")
+                
+                # Verificar disponibilidade
+                if estoque.quantidade_disponivel < data.quantidade:
+                    raise ValueError(
+                        f"Quantidade disponível insuficiente. "
+                        f"Disponível: {estoque.quantidade_disponivel}, Solicitado: {data.quantidade}"
+                    )
+                
+                # Se especificou lote, verificar e atualizar
+                if data.lote_id:
+                    lote = await LoteRepository.buscar_por_id(db, data.lote_id)
+                    if not lote or lote.estoque_id != estoque.id:
+                        raise ValueError("Lote não encontrado ou não pertence a este estoque")
+                    
+                    if lote.quantidade < data.quantidade:
+                        raise ValueError(f"Quantidade insuficiente no lote. Disponível: {lote.quantidade}")
+                    
+                    # Atualizar quantidade do lote
+                    await LoteRepository.atualizar_quantidade(db, lote.id, lote.quantidade - data.quantidade)
+                
+                # Registrar movimentação
+                quantidade_anterior = estoque.quantidade
+                quantidade_posterior = quantidade_anterior - data.quantidade
+                
+                await MovimentacaoRepository.criar(
+                    db,
+                    estoque_id=estoque.id,
+                    lote_id=data.lote_id,
+                    tipo=TipoMovimentacao.SAIDA.value,
+                    quantidade=data.quantidade,
+                    quantidade_anterior=quantidade_anterior,
+                    quantidade_posterior=quantidade_posterior,
+                    motivo=data.motivo,
+                    observacao=data.observacao,
+                    documento=data.documento,
+                    usuario_id=usuario_id
+                )
+                
+                # Atualizar quantidade
+                estoque = await EstoqueRepository.atualizar_quantidade(db, estoque.id, quantidade_posterior)
+            
+            # Commit da transação principal
+            await db.commit()
+            
+            log.info(
+                "saida_estoque",
+                estoque_id=estoque.id,
+                quantidade=data.quantidade,
+                lote_id=data.lote_id
             )
-        
-        # Se especificou lote, verificar e atualizar
-        if data.lote_id:
-            lote = await LoteRepository.buscar_por_id(db, data.lote_id)
-            if not lote or lote.estoque_id != estoque.id:
-                raise ValueError("Lote não encontrado ou não pertence a este estoque")
             
-            if lote.quantidade < data.quantidade:
-                raise ValueError(f"Quantidade insuficiente no lote. Disponível: {lote.quantidade}")
-            
-            # Atualizar quantidade do lote
-            await LoteRepository.atualizar_quantidade(db, lote.id, lote.quantidade - data.quantidade)
-        
-        # Registrar movimentação
-        quantidade_anterior = estoque.quantidade
-        quantidade_posterior = quantidade_anterior - data.quantidade
-        
-        await MovimentacaoRepository.criar(
-            db,
-            estoque_id=estoque.id,
-            lote_id=data.lote_id,
-            tipo=TipoMovimentacao.SAIDA.value,
-            quantidade=data.quantidade,
-            quantidade_anterior=quantidade_anterior,
-            quantidade_posterior=quantidade_posterior,
-            motivo=data.motivo,
-            observacao=data.observacao,
-            documento=data.documento,
-            usuario_id=usuario_id
-        )
-        
-        # Atualizar quantidade
-        estoque = await EstoqueRepository.atualizar_quantidade(db, estoque.id, quantidade_posterior)
-        
-        log.info(
-            "saida_estoque",
-            estoque_id=estoque.id,
-            quantidade=data.quantidade,
-            lote_id=data.lote_id
-        )
-        
-        return EstoqueResponse.model_validate(estoque)
+            return EstoqueResponse.model_validate(estoque)
+        except ValueError:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_saida_estoque", error=str(e))
+            raise
 
     @staticmethod
     async def ajustar_estoque(
         db: AsyncSession,
         data: AjusteEstoqueRequest,
-        usuario_id: Optional[int] = None
+        usuario_id: Optional[UUID] = None
     ) -> EstoqueResponse:
-        """Ajusta estoque (inventário)."""
-        estoque = await EstoqueRepository.buscar_por_id(db, data.estoque_id)
-        if not estoque:
-            raise ValueError("Estoque não encontrado")
-        
-        quantidade_anterior = estoque.quantidade
-        quantidade_posterior = data.quantidade_nova
-        quantidade_ajuste = quantidade_posterior - quantidade_anterior
-        
-        # Registrar movimentação
-        await MovimentacaoRepository.criar(
-            db,
-            estoque_id=estoque.id,
-            tipo=TipoMovimentacao.AJUSTE.value,
-            quantidade=abs(quantidade_ajuste),
-            quantidade_anterior=quantidade_anterior,
-            quantidade_posterior=quantidade_posterior,
-            motivo=data.motivo,
-            observacao=data.observacao,
-            usuario_id=usuario_id
-        )
-        
-        # Atualizar quantidade
-        estoque = await EstoqueRepository.atualizar_quantidade(db, estoque.id, quantidade_posterior)
-        
-        log.info(
-            "ajuste_estoque",
-            estoque_id=estoque.id,
-            quantidade_anterior=quantidade_anterior,
-            quantidade_posterior=quantidade_posterior
-        )
-        
-        return EstoqueResponse.model_validate(estoque)
+        """Ajusta estoque (inventário) com transação atômica."""
+        try:
+            async with db.begin_nested():
+                estoque = await EstoqueRepository.buscar_por_id(db, data.estoque_id)
+                if not estoque:
+                    raise ValueError("Estoque não encontrado")
+                
+                quantidade_anterior = estoque.quantidade
+                quantidade_posterior = data.quantidade_nova
+                quantidade_ajuste = quantidade_posterior - quantidade_anterior
+                
+                # Registrar movimentação
+                await MovimentacaoRepository.criar(
+                    db,
+                    estoque_id=estoque.id,
+                    tipo=TipoMovimentacao.AJUSTE.value,
+                    quantidade=abs(quantidade_ajuste),
+                    quantidade_anterior=quantidade_anterior,
+                    quantidade_posterior=quantidade_posterior,
+                    motivo=data.motivo,
+                    observacao=data.observacao,
+                    usuario_id=usuario_id
+                )
+                
+                # Atualizar quantidade
+                estoque = await EstoqueRepository.atualizar_quantidade(db, estoque.id, quantidade_posterior)
+            
+            # Commit da transação principal
+            await db.commit()
+            
+            log.info(
+                "ajuste_estoque",
+                estoque_id=estoque.id,
+                quantidade_anterior=quantidade_anterior,
+                quantidade_posterior=quantidade_posterior
+            )
+            
+            return EstoqueResponse.model_validate(estoque)
+        except ValueError:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_ajuste_estoque", error=str(e))
+            raise
 
     @staticmethod
     async def reservar_estoque(
         db: AsyncSession,
         data: ReservaEstoqueRequest
     ) -> EstoqueResponse:
-        """Reserva estoque para venda."""
-        estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
-        if not estoque:
-            raise ValueError("Estoque não encontrado para este produto/variante")
-        
-        estoque = await EstoqueRepository.reservar(db, estoque.id, data.quantidade)
-        
-        log.info(
-            "estoque_reservado",
-            estoque_id=estoque.id,
-            quantidade=data.quantidade,
-            documento=data.documento
-        )
-        
-        return EstoqueResponse.model_validate(estoque)
+        """Reserva estoque para venda com transação atômica."""
+        try:
+            async with db.begin_nested():
+                estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
+                if not estoque:
+                    raise ValueError("Estoque não encontrado para este produto/variante")
+                
+                estoque = await EstoqueRepository.reservar(db, estoque.id, data.quantidade)
+            
+            # Commit da transação principal
+            await db.commit()
+            
+            log.info(
+                "estoque_reservado",
+                estoque_id=estoque.id,
+                quantidade=data.quantidade,
+                documento=data.documento
+            )
+            
+            return EstoqueResponse.model_validate(estoque)
+        except ValueError:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_reservar_estoque", error=str(e))
+            raise
 
     @staticmethod
     async def liberar_reserva(
         db: AsyncSession,
         data: LiberarReservaRequest
     ) -> EstoqueResponse:
-        """Libera reserva de estoque."""
-        estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
-        if not estoque:
-            raise ValueError("Estoque não encontrado para este produto/variante")
-        
-        estoque = await EstoqueRepository.liberar_reserva(db, estoque.id, data.quantidade)
-        
-        log.info(
-            "reserva_liberada",
-            estoque_id=estoque.id,
-            quantidade=data.quantidade,
-            documento=data.documento
-        )
-        
-        return EstoqueResponse.model_validate(estoque)
+        """Libera reserva de estoque com transação atômica."""
+        try:
+            async with db.begin_nested():
+                estoque = await EstoqueRepository.buscar_por_produto(db, data.produto_id, data.variante_id)
+                if not estoque:
+                    raise ValueError("Estoque não encontrado para este produto/variante")
+                
+                estoque = await EstoqueRepository.liberar_reserva(db, estoque.id, data.quantidade)
+            
+            # Commit da transação principal
+            await db.commit()
+            
+            log.info(
+                "reserva_liberada",
+                estoque_id=estoque.id,
+                quantidade=data.quantidade,
+                documento=data.documento
+            )
+            
+            return EstoqueResponse.model_validate(estoque)
+        except ValueError:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_liberar_reserva", error=str(e))
+            raise
 
     @staticmethod
     async def gerar_relatorio(db: AsyncSession) -> RelatorioEstoque:

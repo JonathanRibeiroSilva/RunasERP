@@ -35,48 +35,138 @@ async def proxy_carrinho_publico(request: Request, path: str):
 
 
 # Rotas protegidas (requerem autenticação)
+
+# Rota específica para listar/criar clientes
+@router.api_route(
+    "/clientes",
+    methods=["GET", "POST"],
+    tags=["Clientes"],
+    summary="Listar ou criar clientes"
+)
+async def proxy_clientes_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    """
+    Proxy para serviço de clientes (autenticado).
+    
+    - GET: Lista clientes com filtros opcionais
+    - POST: Cria novo cliente
+    """
+    return await ServiceProxy.proxy_request(request, "/clientes")
+
+
+# Rota para operações com ID específico
 @router.api_route(
     "/clientes/{path:path}",
-    methods=["GET", "POST", "PATCH", "DELETE"],
-    tags=["Clientes"]
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Clientes"],
+    summary="Operações com cliente específico"
 )
-async def proxy_clientes(
+async def proxy_clientes_path(
     request: Request,
     path: str,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
-    """Proxy para serviço de clientes (autenticado)."""
-    full_path = f"/clientes/{path}" if path else "/clientes"
+    """
+    Proxy para serviço de clientes (autenticado).
+    
+    - GET /clientes/{id}: Busca cliente por ID
+    - PUT /clientes/{id}: Atualiza cliente
+    - DELETE /clientes/{id}: Desativa cliente
+    - POST /clientes/{id}/enderecos: Adiciona endereço
+    """
+    full_path = f"/clientes/{path}"
     return await ServiceProxy.proxy_request(request, full_path)
 
 
+# Rota específica para listar/criar produtos
+@router.api_route(
+    "/produtos",
+    methods=["GET", "POST"],
+    tags=["Produtos"],
+    summary="Listar ou criar produtos"
+)
+async def proxy_produtos_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    """
+    Proxy para serviço de produtos (autenticado).
+    
+    - GET: Lista produtos com filtros opcionais
+    - POST: Cria novo produto
+    """
+    return await ServiceProxy.proxy_request(request, "/produtos")
+
+
+# Rota para operações com ID específico
 @router.api_route(
     "/produtos/{path:path}",
-    methods=["GET", "POST", "PATCH", "DELETE"],
-    tags=["Produtos"]
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Produtos"],
+    summary="Operações com produto específico"
 )
-async def proxy_produtos(
+async def proxy_produtos_path(
     request: Request,
     path: str,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
-    """Proxy para serviço de produtos (autenticado)."""
-    full_path = f"/produtos/{path}" if path else "/produtos"
+    """
+    Proxy para serviço de produtos (autenticado).
+    
+    - GET /produtos/{id}: Busca produto por ID
+    - PUT /produtos/{id}: Atualiza produto
+    - DELETE /produtos/{id}: Desativa produto
+    - POST /produtos/{id}/variantes: Adiciona variante
+    """
+    full_path = f"/produtos/{path}"
     return await ServiceProxy.proxy_request(request, full_path)
 
 
+# Rota específica para listar/criar estoque
+@router.api_route(
+    "/estoque",
+    methods=["GET", "POST"],
+    tags=["Estoque"],
+    summary="Listar ou criar registros de estoque"
+)
+async def proxy_estoque_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(require_admin)]
+):
+    """
+    Proxy para serviço de estoque (apenas admin).
+    
+    - GET: Lista registros de estoque
+    - POST: Cria novo registro de estoque
+    """
+    return await ServiceProxy.proxy_request(request, "/estoque")
+
+
+# Rota para operações com ID específico
 @router.api_route(
     "/estoque/{path:path}",
-    methods=["GET", "POST", "PATCH", "DELETE"],
-    tags=["Estoque"]
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Estoque"],
+    summary="Operações de estoque"
 )
-async def proxy_estoque(
+async def proxy_estoque_path(
     request: Request,
     path: str,
     current_user: Annotated[Usuario, Depends(require_admin)]
 ):
-    """Proxy para serviço de estoque (apenas admin)."""
-    full_path = f"/estoque/{path}" if path else "/estoque"
+    """
+    Proxy para serviço de estoque (apenas admin).
+    
+    - GET /estoque/{id}: Busca estoque por ID
+    - POST /estoque/entrada: Entrada de mercadoria
+    - POST /estoque/saida: Saída de mercadoria
+    - POST /estoque/reservar: Reservar estoque
+    - POST /estoque/confirmar-reserva: Confirmar reserva
+    - POST /estoque/liberar-reserva: Liberar reserva
+    """
+    full_path = f"/estoque/{path}"
     return await ServiceProxy.proxy_request(request, full_path)
 
 

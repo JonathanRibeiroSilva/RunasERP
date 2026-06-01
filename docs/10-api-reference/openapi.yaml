@@ -1,0 +1,1141 @@
+openapi: 3.0.3
+info:
+  title: Runas API
+  description: |
+    API completa do sistema ERP Runas para gestão de pequenos comércios.
+    
+    ## Autenticação
+    A maioria dos endpoints requer autenticação via Bearer Token (JWT).
+    
+    Para obter um token:
+    1. Faça login em `POST /auth/login`
+    2. Use o `access_token` retornado no header `Authorization: Bearer <token>`
+    
+    ## Ambientes
+    - **Desenvolvimento**: http://localhost:8000
+    - **Produção**: https://api.runas.com
+    
+    ## Rate Limiting
+    - Anônimo: 100 requisições/minuto
+    - Autenticado: 500 requisições/minuto
+    
+  version: 1.0.0
+  contact:
+    name: Equipe DenebCorp
+    email: dev@denebcorp.com
+  license:
+    name: Proprietary
+    url: https://runas.com/license
+
+servers:
+  - url: http://localhost:8000
+    description: Desenvolvimento
+  - url: https://api.runas.com
+    description: Produção
+
+tags:
+  - name: Autenticação
+    description: Endpoints de autenticação e autorização
+  - name: Clientes
+    description: Gestão de clientes e endereços
+  - name: Produtos
+    description: Gestão de produtos, variantes e catálogo
+  - name: Estoque
+    description: Controle de estoque e movimentações
+  - name: Vendas
+    description: Carrinho, pedidos e pagamentos
+  - name: Financeiro
+    description: Contas a receber e pagamentos fiados
+
+paths:
+  # ==================== AUTENTICAÇÃO ====================
+  /auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login
+      description: Autentica usuário e retorna tokens JWT
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  format: email
+                  example: admin@runas.local
+                password:
+                  type: string
+                  format: password
+                  example: admin123
+      responses:
+        '200':
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Autenticação
+      summary: Renovar Token
+      description: Renova o access_token usando o refresh_token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Refresh token inválido ou expirado
+
+  /auth/logout:
+    post:
+      tags:
+        - Autenticação
+      summary: Logout
+      description: Invalida o refresh_token
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logout bem-sucedido
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== CLIENTES ====================
+  /clientes:
+    get:
+      tags:
+        - Clientes
+      summary: Listar Clientes
+      description: Lista todos os clientes com paginação e filtros
+      operationId: listarClientes
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: nome
+          in: query
+          schema:
+            type: string
+          description: Filtrar por nome
+        - name: cpf
+          in: query
+          schema:
+            type: string
+          description: Filtrar por CPF
+        - name: bloqueado
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por status de bloqueio
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Cliente'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Clientes
+      summary: Criar Cliente
+      description: Cria um novo cliente
+      operationId: criarCliente
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteCreate'
+      responses:
+        '201':
+          description: Cliente criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: CPF já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /clientes/{id}:
+    get:
+      tags:
+        - Clientes
+      summary: Buscar Cliente
+      description: Busca cliente por ID
+      operationId: buscarCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Clientes
+      summary: Atualizar Cliente
+      description: Atualiza dados do cliente
+      operationId: atualizarCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteUpdate'
+      responses:
+        '200':
+          description: Cliente atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Clientes
+      summary: Desativar Cliente
+      description: Desativa cliente (soft delete)
+      operationId: desativarCliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '204':
+          description: Cliente desativado
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Cliente possui pendências
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ==================== PRODUTOS ====================
+  /produtos:
+    get:
+      tags:
+        - Produtos
+      summary: Listar Produtos
+      operationId: listarProdutos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: categoria_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: ativo
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lista de produtos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Produto'
+
+    post:
+      tags:
+        - Produtos
+      summary: Criar Produto
+      operationId: criarProduto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoCreate'
+      responses:
+        '201':
+          description: Produto criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+
+  /catalogo:
+    get:
+      tags:
+        - Produtos
+      summary: Catálogo Público
+      description: Lista produtos visíveis no catálogo (sem autenticação)
+      operationId: listarCatalogo
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Produtos do catálogo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProdutoCatalogo'
+
+  # ==================== ESTOQUE ====================
+  /estoque:
+    get:
+      tags:
+        - Estoque
+      summary: Listar Estoque
+      operationId: listarEstoque
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: abaixo_minimo
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lista de estoque
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Estoque'
+
+  /estoque/{variante_id}/entrada:
+    post:
+      tags:
+        - Estoque
+      summary: Registrar Entrada
+      operationId: registrarEntrada
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: variante_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimentacaoCreate'
+      responses:
+        '201':
+          description: Entrada registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Movimentacao'
+
+  # ==================== VENDAS ====================
+  /carrinho:
+    post:
+      tags:
+        - Vendas
+      summary: Criar Carrinho
+      description: Cria um novo carrinho (sem autenticação)
+      operationId: criarCarrinho
+      responses:
+        '201':
+          description: Carrinho criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  token:
+                    type: string
+                  expira_em:
+                    type: string
+                    format: date-time
+
+  /carrinho/{token}:
+    get:
+      tags:
+        - Vendas
+      summary: Consultar Carrinho
+      operationId: consultarCarrinho
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Carrinho encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carrinho'
+
+  /carrinho/{token}/checkout:
+    post:
+      tags:
+        - Vendas
+      summary: Finalizar Compra
+      operationId: checkout
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '201':
+          description: Pedido criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+
+  /pedidos:
+    get:
+      tags:
+        - Vendas
+      summary: Listar Pedidos
+      operationId: listarPedidos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/StatusPedido'
+      responses:
+        '200':
+          description: Lista de pedidos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Pedido'
+
+  # ==================== FINANCEIRO ====================
+  /contas:
+    get:
+      tags:
+        - Financeiro
+      summary: Listar Contas a Receber
+      operationId: listarContas
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/StatusConta'
+      responses:
+        '200':
+          description: Lista de contas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ContaReceber'
+
+  /contas/{id}/pagamentos:
+    post:
+      tags:
+        - Financeiro
+      summary: Registrar Pagamento
+      operationId: registrarPagamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PagamentoFiadoCreate'
+      responses:
+        '201':
+          description: Pagamento registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagamentoFiado'
+
+# ==================== COMPONENTS ====================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Número da página
+    
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Itens por página
+    
+    ClienteId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: ID do cliente
+
+  responses:
+    Unauthorized:
+      description: Não autenticado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    ValidationError:
+      description: Erro de validação
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    loc:
+                      type: array
+                      items:
+                        type: string
+                    msg:
+                      type: string
+                    type:
+                      type: string
+
+  schemas:
+    # ==================== COMMON ====================
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Erro ao processar requisição
+    
+    PaginatedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items: {}
+        total:
+          type: integer
+          example: 100
+        page:
+          type: integer
+          example: 1
+        size:
+          type: integer
+          example: 20
+        pages:
+          type: integer
+          example: 5
+
+    # ==================== AUTH ====================
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        expires_in:
+          type: integer
+          example: 1800
+
+    # ==================== CLIENTES ====================
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cpf:
+          type: string
+          example: "12345678909"
+        nome:
+          type: string
+          example: "João Silva"
+        telefone:
+          type: string
+          example: "+5511999999999"
+        email:
+          type: string
+          format: email
+          nullable: true
+        data_nasc:
+          type: string
+          format: date
+          nullable: true
+        limite_credito:
+          type: number
+          format: decimal
+          example: 1000.00
+        credito_disponivel:
+          type: number
+          format: decimal
+          example: 800.00
+        dia_vencimento:
+          type: integer
+          minimum: 1
+          maximum: 28
+          nullable: true
+        bloqueado:
+          type: boolean
+        ativo:
+          type: boolean
+        criado_em:
+          type: string
+          format: date-time
+
+    ClienteCreate:
+      type: object
+      required:
+        - cpf
+        - nome
+        - telefone
+      properties:
+        cpf:
+          type: string
+        nome:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+          format: email
+        data_nasc:
+          type: string
+          format: date
+        limite_credito:
+          type: number
+          format: decimal
+        dia_vencimento:
+          type: integer
+
+    ClienteUpdate:
+      type: object
+      properties:
+        nome:
+          type: string
+        telefone:
+          type: string
+        email:
+          type: string
+
+    # ==================== PRODUTOS ====================
+    Produto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        categoria_id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        descricao:
+          type: string
+          nullable: true
+        ativo:
+          type: boolean
+        variantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variante'
+
+    ProdutoCreate:
+      type: object
+      required:
+        - categoria_id
+        - nome
+      properties:
+        categoria_id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        descricao:
+          type: string
+
+    Variante:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        produto_id:
+          type: string
+          format: uuid
+        sku:
+          type: string
+        preco_custo:
+          type: number
+          format: decimal
+        markup_pct:
+          type: number
+          format: decimal
+        preco_venda:
+          type: number
+          format: decimal
+        ativo:
+          type: boolean
+
+    ProdutoCatalogo:
+      allOf:
+        - $ref: '#/components/schemas/Produto'
+        - type: object
+          properties:
+            fotos:
+              type: array
+              items:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  ordem:
+                    type: integer
+
+    # ==================== ESTOQUE ====================
+    Estoque:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        variante_id:
+          type: string
+          format: uuid
+        quantidade:
+          type: integer
+        quantidade_minima:
+          type: integer
+        atualizado_em:
+          type: string
+          format: date-time
+
+    Movimentacao:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        variante_id:
+          type: string
+          format: uuid
+        tipo:
+          type: string
+          enum: [ENTRADA, SAIDA, AJUSTE, DEVOLUCAO]
+        quantidade:
+          type: integer
+        motivo:
+          type: string
+        referencia_id:
+          type: string
+          format: uuid
+          nullable: true
+        criado_em:
+          type: string
+          format: date-time
+
+    MovimentacaoCreate:
+      type: object
+      required:
+        - quantidade
+        - motivo
+      properties:
+        quantidade:
+          type: integer
+        motivo:
+          type: string
+
+    # ==================== VENDAS ====================
+    Carrinho:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cliente_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+          enum: [ATIVO, FINALIZADO, ABANDONADO, EXPIRADO]
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemCarrinho'
+        criado_em:
+          type: string
+          format: date-time
+        expira_em:
+          type: string
+          format: date-time
+
+    ItemCarrinho:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        variante_id:
+          type: string
+          format: uuid
+        quantidade:
+          type: integer
+        preco_unitario:
+          type: number
+          format: decimal
+
+    CheckoutRequest:
+      type: object
+      required:
+        - modalidade_pagto
+        - modalidade_entrega
+        - nome_comprador
+        - telefone_comprador
+      properties:
+        cliente_id:
+          type: string
+          format: uuid
+        modalidade_pagto:
+          type: string
+          enum: [A_VISTA, FIADO]
+        modalidade_entrega:
+          type: string
+          enum: [RETIRADA, ENTREGA]
+        nome_comprador:
+          type: string
+        telefone_comprador:
+          type: string
+        metodo:
+          type: string
+          enum: [DINHEIRO, PIX, CARTAO, FIADO]
+        valor_recebido:
+          type: number
+          format: decimal
+        endereco_entrega:
+          $ref: '#/components/schemas/EnderecoEntrega'
+
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cliente_id:
+          type: string
+          format: uuid
+          nullable: true
+        origem:
+          type: string
+          enum: [CATALOGO, BALCAO]
+        nome_comprador:
+          type: string
+        telefone_comprador:
+          type: string
+        modalidade_pagto:
+          type: string
+          enum: [A_VISTA, FIADO]
+        modalidade_entrega:
+          type: string
+          enum: [RETIRADA, ENTREGA]
+        status:
+          $ref: '#/components/schemas/StatusPedido'
+        subtotal:
+          type: number
+          format: decimal
+        desconto:
+          type: number
+          format: decimal
+        frete:
+          type: number
+          format: decimal
+        total:
+          type: number
+          format: decimal
+        criado_em:
+          type: string
+          format: date-time
+
+    StatusPedido:
+      type: string
+      enum:
+        - PENDENTE
+        - CONFIRMADO
+        - SEPARANDO
+        - ENVIADO
+        - ENTREGUE
+        - CANCELADO
+
+    EnderecoEntrega:
+      type: object
+      required:
+        - logradouro
+        - numero
+        - bairro
+        - cidade
+        - uf
+        - cep
+      properties:
+        logradouro:
+          type: string
+        numero:
+          type: string
+        complemento:
+          type: string
+        bairro:
+          type: string
+        cidade:
+          type: string
+        uf:
+          type: string
+          minLength: 2
+          maxLength: 2
+        cep:
+          type: string
+
+    # ==================== FINANCEIRO ====================
+    ContaReceber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cliente_id:
+          type: string
+          format: uuid
+        pedido_id:
+          type: string
+          format: uuid
+        valor_original:
+          type: number
+          format: decimal
+        valor_pago:
+          type: number
+          format: decimal
+        saldo_devedor:
+          type: number
+          format: decimal
+        data_vencimento:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/StatusConta'
+        criado_em:
+          type: string
+          format: date-time
+        quitado_em:
+          type: string
+          format: date-time
+          nullable: true
+
+    StatusConta:
+      type: string
+      enum:
+        - ABERTO
+        - PARCIAL
+        - QUITADO
+        - VENCIDO
+
+    PagamentoFiado:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conta_id:
+          type: string
+          format: uuid
+        valor:
+          type: number
+          format: decimal
+        forma:
+          type: string
+          enum: [DINHEIRO, PIX, CARTAO]
+        observacao:
+          type: string
+          nullable: true
+        pago_em:
+          type: string
+          format: date-time
+
+    PagamentoFiadoCreate:
+      type: object
+      required:
+        - valor
+        - forma
+      properties:
+        valor:
+          type: number
+          format: decimal
+        forma:
+          type: string
+          enum: [DINHEIRO, PIX, CARTAO]
+        observacao:
+          type: string

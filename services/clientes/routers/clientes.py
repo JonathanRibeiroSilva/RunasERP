@@ -53,7 +53,6 @@ async def criar_cliente(
 
 @router.get(
     "",
-    response_model=dict,
     summary="Listar clientes"
 )
 async def listar_clientes(
@@ -75,8 +74,11 @@ async def listar_clientes(
     """
     clientes, total = await service.listar_clientes(skip, limit, nome, cpf, bloqueado)
     
+    # Converter modelos SQLAlchemy para schemas Pydantic
+    clientes_response = [ClienteResponse.model_validate(cliente) for cliente in clientes]
+    
     return {
-        "items": clientes,
+        "items": clientes_response,
         "total": total,
         "skip": skip,
         "limit": limit

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TESTE JAVASCRIPT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 50px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .box {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>🔴 TESTE DE JAVASCRIPT</h1>
+    
+    <div class="box">
+        <h2>Status:</h2>
+        <p id="status" class="error">❌ JavaScript NÃO está funcionando</p>
+    </div>
+
+    <div class="box">
+        <h2>Teste de API:</h2>
+        <button onclick="testarAPI()">Testar Login no Backend</button>
+        <pre id="resultado"></pre>
+    </div>
+
+    <script>
+        // Este script DEVE executar
+        console.log('🔴🔴🔴 TESTE: JavaScript FUNCIONANDO! 🔴🔴🔴');
+        console.log('Timestamp:', new Date().toISOString());
+        
+        document.getElementById('status').innerHTML = '✅ JavaScript ESTÁ funcionando!';
+        document.getElementById('status').className = 'success';
+        
+        async function testarAPI() {
+            const resultado = document.getElementById('resultado');
+            resultado.textContent = 'Testando...';
+            
+            try {
+                const response = await fetch('http://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'username=admin@runas.com&password=Admin@123'
+                });
+                
+                const data = await response.json();
+                
+                resultado.textContent = JSON.stringify(data, null, 2);
+                console.log('✅ Login bem-sucedido:', data);
+                
+                if (data.access_token) {
+                    alert('✅ LOGIN FUNCIONOU! Token recebido.');
+                }
+            } catch (error) {
+                resultado.textContent = 'ERRO: ' + error.message;
+                console.error('❌ Erro no login:', error);
+            }
+        }
+        
+        // Alerta para garantir que o usuário veja
+        alert('✅ JAVASCRIPT ESTÁ FUNCIONANDO!\n\nSe você está vendo este alerta, o JavaScript está OK.\n\nAgora clique no botão para testar a API.');
+    </script>
+</body>
+</html>

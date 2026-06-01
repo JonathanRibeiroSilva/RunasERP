@@ -51,12 +51,10 @@ async def criar_categoria(dados: CategoriaCreate, session: AsyncSession = Depend
     try:
         service = CategoriaService(session)
         categoria = await service.criar_categoria(dados)
-        await session.commit()
         return categoria
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao criar categoria")
 
 
@@ -75,7 +73,9 @@ async def listar_categorias(skip: int = Query(0, ge=0), limit: int = Query(10, g
     """Lista todas as categorias."""
     service = CategoriaService(session)
     categorias, total = await service.listar_categorias(skip=skip, limit=limit)
-    return {"total": total, "skip": skip, "limit": limit, "items": categorias}
+    # Converter modelos SQLAlchemy para schemas Pydantic
+    categorias_response = [CategoriaRead.model_validate(cat) for cat in categorias]
+    return {"total": total, "skip": skip, "limit": limit, "items": categorias_response}
 
 
 @router_categorias.put("/{categoria_id}", response_model=CategoriaRead)
@@ -86,12 +86,10 @@ async def atualizar_categoria(
     try:
         service = CategoriaService(session)
         categoria = await service.atualizar_categoria(categoria_id, dados)
-        await session.commit()
         return categoria
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao atualizar categoria")
 
 
@@ -101,11 +99,9 @@ async def deletar_categoria(categoria_id: UUID, session: AsyncSession = Depends(
     try:
         service = CategoriaService(session)
         await service.deletar_categoria(categoria_id)
-        await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao deletar categoria")
 
 
@@ -120,13 +116,11 @@ async def criar_produto(dados: ProdutoCreate, session: AsyncSession = Depends(ge
     try:
         service = ProdutoService(session)
         produto = await service.criar_produto(dados)
-        await session.commit()
         # Recarregar para incluir relacionamentos
         return await service.obter_produto(produto.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao criar produto")
 
 
@@ -150,7 +144,9 @@ async def listar_produtos(
     """Lista todos os produtos."""
     service = ProdutoService(session)
     produtos, total = await service.listar_produtos(skip=skip, limit=limit, apenas_ativos=apenas_ativos)
-    return {"total": total, "skip": skip, "limit": limit, "items": produtos}
+    # Converter modelos SQLAlchemy para schemas Pydantic
+    produtos_response = [ProdutoRead.model_validate(prod) for prod in produtos]
+    return {"total": total, "skip": skip, "limit": limit, "items": produtos_response}
 
 
 @router_produtos.get("/categoria/{categoria_id}", response_model=dict)
@@ -164,7 +160,9 @@ async def listar_por_categoria(
     try:
         service = ProdutoService(session)
         produtos, total = await service.listar_por_categoria(categoria_id, skip=skip, limit=limit)
-        return {"total": total, "skip": skip, "limit": limit, "items": produtos}
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        produtos_response = [ProdutoRead.model_validate(prod) for prod in produtos]
+        return {"total": total, "skip": skip, "limit": limit, "items": produtos_response}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -174,7 +172,9 @@ async def buscar_por_nome(nome: str = Query(..., min_length=3), session: AsyncSe
     """Busca produtos por nome."""
     try:
         service = ProdutoService(session)
-        return await service.buscar_por_nome(nome)
+        produtos = await service.buscar_por_nome(nome)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [ProdutoReadSimples.model_validate(prod) for prod in produtos]
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -187,12 +187,10 @@ async def atualizar_produto(
     try:
         service = ProdutoService(session)
         produto = await service.atualizar_produto(produto_id, dados)
-        await session.commit()
         return await service.obter_produto(produto_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao atualizar produto")
 
 
@@ -202,11 +200,9 @@ async def deletar_produto(produto_id: UUID, session: AsyncSession = Depends(get_
     try:
         service = ProdutoService(session)
         await service.deletar_produto(produto_id)
-        await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao deletar produto")
 
 
@@ -221,12 +217,10 @@ async def criar_variante(dados: VarianteCreate, session: AsyncSession = Depends(
     try:
         service = VarianteService(session)
         variante = await service.criar_variante(dados)
-        await session.commit()
         return await service.obter_variante(variante.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao criar variante")
 
 
@@ -245,7 +239,9 @@ async def listar_variantes_produto(produto_id: UUID, session: AsyncSession = Dep
     """Lista variantes de um produto."""
     try:
         service = VarianteService(session)
-        return await service.listar_por_produto(produto_id)
+        variantes = await service.listar_por_produto(produto_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [VarianteRead.model_validate(var) for var in variantes]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -258,12 +254,10 @@ async def atualizar_variante(
     try:
         service = VarianteService(session)
         variante = await service.atualizar_variante(variante_id, dados)
-        await session.commit()
         return await service.obter_variante(variante_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao atualizar variante")
 
 
@@ -273,11 +267,9 @@ async def deletar_variante(variante_id: UUID, session: AsyncSession = Depends(ge
     try:
         service = VarianteService(session)
         await service.deletar_variante(variante_id)
-        await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao deletar variante")
 
 
@@ -292,12 +284,10 @@ async def criar_config_catalogo(dados: CatalogoConfigCreate, session: AsyncSessi
     try:
         service = CatalogoService(session)
         config = await service.criar_config(dados)
-        await session.commit()
         return config
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao criar config de catálogo")
 
 
@@ -319,12 +309,10 @@ async def atualizar_config_catalogo(
     try:
         service = CatalogoService(session)
         config = await service.atualizar_config(catalogo_id, dados)
-        await session.commit()
         return config
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao atualizar config de catálogo")
 
 
@@ -334,12 +322,10 @@ async def adicionar_foto_catalogo(dados: CatalogoFotoCreate, session: AsyncSessi
     try:
         service = CatalogoService(session)
         foto = await service.adicionar_foto(dados)
-        await session.commit()
         return foto
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao adicionar foto")
 
 
@@ -348,7 +334,9 @@ async def listar_fotos_catalogo(produto_id: UUID, session: AsyncSession = Depend
     """Lista fotos de um produto."""
     try:
         service = CatalogoService(session)
-        return await service.listar_fotos(produto_id)
+        fotos = await service.listar_fotos(produto_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [CatalogoFotoRead.model_validate(foto) for foto in fotos]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -361,12 +349,10 @@ async def atualizar_foto_catalogo(
     try:
         service = CatalogoService(session)
         foto = await service.atualizar_foto(foto_id, dados)
-        await session.commit()
         return foto
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao atualizar foto")
 
 
@@ -376,11 +362,9 @@ async def deletar_foto_catalogo(foto_id: UUID, session: AsyncSession = Depends(g
     try:
         service = CatalogoService(session)
         await service.deletar_foto(foto_id)
-        await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao deletar foto")
 
 
@@ -395,12 +379,10 @@ async def criar_fornecedor(dados: FornecedorCreate, session: AsyncSession = Depe
     try:
         service = FornecedorService(session)
         fornecedor = await service.criar_fornecedor(dados)
-        await session.commit()
         return fornecedor
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao criar fornecedor")
 
 
@@ -424,7 +406,9 @@ async def listar_fornecedores(
     """Lista todos os fornecedores."""
     service = FornecedorService(session)
     fornecedores, total = await service.listar_fornecedores(skip=skip, limit=limit, apenas_ativos=apenas_ativos)
-    return {"total": total, "skip": skip, "limit": limit, "items": fornecedores}
+    # Converter modelos SQLAlchemy para schemas Pydantic
+    fornecedores_response = [FornecedorRead.model_validate(forn) for forn in fornecedores]
+    return {"total": total, "skip": skip, "limit": limit, "items": fornecedores_response}
 
 
 @router_fornecedores.put("/{fornecedor_id}", response_model=FornecedorRead)
@@ -435,12 +419,10 @@ async def atualizar_fornecedor(
     try:
         service = FornecedorService(session)
         fornecedor = await service.atualizar_fornecedor(fornecedor_id, dados)
-        await session.commit()
         return fornecedor
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao atualizar fornecedor")
 
 
@@ -450,11 +432,9 @@ async def deletar_fornecedor(fornecedor_id: UUID, session: AsyncSession = Depend
     try:
         service = FornecedorService(session)
         await service.deletar_fornecedor(fornecedor_id)
-        await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao deletar fornecedor")
 
 
@@ -469,12 +449,10 @@ async def vincular_fornecedor_produto(dados: FornecedorProdutoCreate, session: A
     try:
         service = FornecedorProdutoService(session)
         vinculo = await service.vincular_fornecedor(dados)
-        await session.commit()
         return vinculo
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao vincular fornecedor")
 
 
@@ -493,7 +471,9 @@ async def listar_fornecedores_produto(produto_id: UUID, session: AsyncSession = 
     """Lista fornecedores de um produto."""
     try:
         service = FornecedorProdutoService(session)
-        return await service.listar_fornecedores_produto(produto_id)
+        vinculos = await service.listar_fornecedores_produto(produto_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [FornecedorProdutoRead.model_validate(vinc) for vinc in vinculos]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -503,7 +483,9 @@ async def listar_produtos_fornecedor(fornecedor_id: UUID, session: AsyncSession 
     """Lista produtos de um fornecedor."""
     try:
         service = FornecedorProdutoService(session)
-        return await service.listar_produtos_fornecedor(fornecedor_id)
+        vinculos = await service.listar_produtos_fornecedor(fornecedor_id)
+        # Converter modelos SQLAlchemy para schemas Pydantic
+        return [FornecedorProdutoRead.model_validate(vinc) for vinc in vinculos]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -516,12 +498,10 @@ async def atualizar_vinculo(
     try:
         service = FornecedorProdutoService(session)
         vinculo = await service.atualizar_vinculo(vinculo_id, dados)
-        await session.commit()
         return vinculo
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao atualizar vínculo")
 
 
@@ -531,9 +511,7 @@ async def deletar_vinculo(vinculo_id: UUID, session: AsyncSession = Depends(get_
     try:
         service = FornecedorProdutoService(session)
         await service.deletar_vinculo(vinculo_id)
-        await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        await session.rollback()
         raise HTTPException(status_code=500, detail="Erro ao deletar vínculo")
