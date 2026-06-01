@@ -1,9 +1,9 @@
 """
 Configuração OAuth2 e dependências de autenticação.
 """
-from typing import Annotated
+from typing import Annotated, Optional
 from uuid import UUID
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
@@ -14,11 +14,46 @@ from models.usuario import Usuario, RoleEnum
 from auth.redis_client import get_redis
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+async def get_token_from_cookie_or_header(
+    request: Request,
+    token_from_header: Annotated[Optional[str], Depends(oauth2_scheme)]
+) -> str:
+    """
+    Obtém o token do cookie HTTP-only ou do header Authorization.
+    Prioriza o cookie para maior segurança.
+    
+    Args:
+        request: Request object do FastAPI
+        token_from_header: Token do header Authorization (opcional)
+        
+    Returns:
+        Token JWT
+        
+    Raises:
+        HTTPException: Se nenhum token for encontrado
+    """
+    # Tentar obter do cookie primeiro (mais seguro)
+    token = request.cookies.get("access_token")
+    
+    # Se não tiver no cookie, tentar do header (para compatibilidade)
+    if not token:
+        token = token_from_header
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token não fornecido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return token
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str, Depends(get_token_from_cookie_or_header)],
     db: Annotated[AsyncSession, Depends(get_db)],
     redis: Annotated[Redis, Depends(get_redis)]
 ) -> Usuario:

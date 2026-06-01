@@ -1,0 +1,80 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.sidebar {
+  width: 260px;
+  background: $surface;
+  border-right: 1px solid $border-default;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  bottom: 0;
+  overflow-y: auto;
+  transition: transform $transition-base;
+  z-index: $z-index-fixed;
+
+  &.closed {
+    transform: translateX(-100%);
+  }
+
+  &.open {
+    transform: translateX(0);
+  }
+
+  @include media-xs {
+    &.open {
+      box-shadow: $box-shadow-xl;
+    }
+  }
+}
+
+.sidebar-nav {
+  padding: $spacer-3;
+  display: flex;
+  flex-direction: column;
+  gap: $spacer-1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: $spacer-3;
+  padding: $spacer-3;
+  border-radius: $border-radius;
+  color: $text-secondary;
+  text-decoration: none;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  transition: $transition-base;
+  cursor: pointer;
+
+  .nav-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-label {
+    flex: 1;
+  }
+
+  &:hover {
+    background: $surface-hover;
+    color: $text-primary;
+  }
+
+  &.active {
+    background: $primary-light;
+    color: $primary;
+    font-weight: $font-weight-semibold;
+
+    .nav-icon {
+      color: $primary;
+    }
+  }
+
+  &:focus-visible {
+    @include focus-ring-shadow;
+  }
+}

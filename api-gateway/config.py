@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     FINANCEIRO_URL: str
     NOTIFICACOES_URL: str
     
+    # OAuth Google
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    
+    # OAuth Microsoft
+    MICROSOFT_CLIENT_ID: str | None = None
+    MICROSOFT_CLIENT_SECRET: str | None = None
+    MICROSOFT_TENANT_ID: str = "common"
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
