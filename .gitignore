@@ -76,3 +76,6 @@ dump.rdb
 # Documentação
 REORGANIZACAO-COMPLETA.md
 
+#Ngrok
+.env.ngrok
+
