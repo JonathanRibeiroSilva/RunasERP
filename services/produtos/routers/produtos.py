@@ -1,10 +1,12 @@
 """
 Routers FastAPI para Produtos.
 """
+from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
+from utils.tenant import get_empresa_id
 from schemas.produtos import (
     CategoriaCreate,
     CategoriaRead,
@@ -47,11 +49,19 @@ router_categorias = APIRouter(prefix="/categorias", tags=["categorias"])
 
 
 @router_categorias.post("", response_model=CategoriaRead, status_code=201)
-async def criar_categoria(dados: CategoriaCreate, session: AsyncSession = Depends(get_db)):
+async def criar_categoria(
+    dados: CategoriaCreate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Cria uma nova categoria."""
+    # Validar que empresa_id do body corresponde ao header
+    if dados.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+    
     try:
         service = CategoriaService(session)
-        categoria = await service.criar_categoria(dados)
+        categoria = await service.criar_categoria(empresa_id, dados)
         return categoria
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -60,20 +70,29 @@ async def criar_categoria(dados: CategoriaCreate, session: AsyncSession = Depend
 
 
 @router_categorias.get("/{categoria_id}", response_model=CategoriaRead)
-async def obter_categoria(categoria_id: UUID, session: AsyncSession = Depends(get_db)):
+async def obter_categoria(
+    categoria_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Obtém uma categoria por ID."""
     try:
         service = CategoriaService(session)
-        return await service.obter_categoria(categoria_id)
+        return await service.obter_categoria(empresa_id, categoria_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router_categorias.get("", response_model=dict)
-async def listar_categorias(skip: int = Query(0, ge=0), limit: int = Query(10, ge=1, le=100), session: AsyncSession = Depends(get_db)):
+async def listar_categorias(
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    session: AsyncSession = Depends(get_db)
+):
     """Lista todas as categorias."""
     service = CategoriaService(session)
-    categorias, total = await service.listar_categorias(skip=skip, limit=limit)
+    categorias, total = await service.listar_categorias(empresa_id=empresa_id, skip=skip, limit=limit)
     # Converter modelos SQLAlchemy para schemas Pydantic
     categorias_response = [CategoriaRead.model_validate(cat) for cat in categorias]
     return {"total": total, "skip": skip, "limit": limit, "items": categorias_response}
@@ -81,12 +100,15 @@ async def listar_categorias(skip: int = Query(0, ge=0), limit: int = Query(10, g
 
 @router_categorias.put("/{categoria_id}", response_model=CategoriaRead)
 async def atualizar_categoria(
-    categoria_id: UUID, dados: CategoriaUpdate, session: AsyncSession = Depends(get_db)
+    categoria_id: UUID,
+    dados: CategoriaUpdate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
 ):
     """Atualiza uma categoria."""
     try:
         service = CategoriaService(session)
-        categoria = await service.atualizar_categoria(categoria_id, dados)
+        categoria = await service.atualizar_categoria(empresa_id, categoria_id, dados)
         return categoria
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -95,11 +117,15 @@ async def atualizar_categoria(
 
 
 @router_categorias.delete("/{categoria_id}", status_code=204)
-async def deletar_categoria(categoria_id: UUID, session: AsyncSession = Depends(get_db)):
+async def deletar_categoria(
+    categoria_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Deleta uma categoria."""
     try:
         service = CategoriaService(session)
-        await service.deletar_categoria(categoria_id)
+        await service.deletar_categoria(empresa_id, categoria_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -112,13 +138,21 @@ router_produtos = APIRouter(prefix="/produtos", tags=["produtos"])
 
 
 @router_produtos.post("", response_model=ProdutoRead, status_code=201)
-async def criar_produto(dados: ProdutoCreate, session: AsyncSession = Depends(get_db)):
+async def criar_produto(
+    dados: ProdutoCreate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Cria um novo produto."""
+    # Validar que empresa_id do body corresponde ao header
+    if dados.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+    
     try:
         service = ProdutoService(session)
-        produto = await service.criar_produto(dados)
+        produto = await service.criar_produto(empresa_id, dados)
         # Recarregar para incluir relacionamentos
-        return await service.obter_produto(produto.id)
+        return await service.obter_produto(empresa_id, produto.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -126,17 +160,22 @@ async def criar_produto(dados: ProdutoCreate, session: AsyncSession = Depends(ge
 
 
 @router_produtos.get("/{produto_id}", response_model=ProdutoRead)
-async def obter_produto(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def obter_produto(
+    produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Obtém um produto por ID."""
     try:
         service = ProdutoService(session)
-        return await service.obter_produto(produto_id)
+        return await service.obter_produto(empresa_id, produto_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router_produtos.get("", response_model=dict)
 async def listar_produtos(
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     apenas_deletados: bool = Query(False),
@@ -150,6 +189,7 @@ async def listar_produtos(
     """
     service = ProdutoService(session)
     produtos, total = await service.listar_produtos(
+        empresa_id=empresa_id,
         skip=skip, 
         limit=limit, 
         apenas_deletados=apenas_deletados
@@ -162,6 +202,7 @@ async def listar_produtos(
 @router_produtos.get("/categoria/{categoria_id}", response_model=dict)
 async def listar_por_categoria(
     categoria_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db),
@@ -169,7 +210,7 @@ async def listar_por_categoria(
     """Lista produtos de uma categoria."""
     try:
         service = ProdutoService(session)
-        produtos, total = await service.listar_por_categoria(categoria_id, skip=skip, limit=limit)
+        produtos, total = await service.listar_por_categoria(empresa_id, categoria_id, skip=skip, limit=limit)
         # Converter modelos SQLAlchemy para schemas Pydantic
         produtos_response = [ProdutoRead.model_validate(prod) for prod in produtos]
         return {"total": total, "skip": skip, "limit": limit, "items": produtos_response}
@@ -178,11 +219,15 @@ async def listar_por_categoria(
 
 
 @router_produtos.get("/buscar/nome", response_model=list)
-async def buscar_por_nome(nome: str = Query(..., min_length=3), session: AsyncSession = Depends(get_db)):
+async def buscar_por_nome(
+    nome: str = Query(..., min_length=3),
+    empresa_id: Annotated[int, Depends(get_empresa_id)] = None,
+    session: AsyncSession = Depends(get_db)
+):
     """Busca produtos por nome."""
     try:
         service = ProdutoService(session)
-        produtos = await service.buscar_por_nome(nome)
+        produtos = await service.buscar_por_nome(empresa_id, nome)
         # Converter modelos SQLAlchemy para schemas Pydantic
         return [ProdutoReadSimples.model_validate(prod) for prod in produtos]
     except ValueError as e:
@@ -191,13 +236,16 @@ async def buscar_por_nome(nome: str = Query(..., min_length=3), session: AsyncSe
 
 @router_produtos.put("/{produto_id}", response_model=ProdutoRead)
 async def atualizar_produto(
-    produto_id: UUID, dados: ProdutoUpdate, session: AsyncSession = Depends(get_db)
+    produto_id: UUID,
+    dados: ProdutoUpdate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
 ):
     """Atualiza um produto."""
     try:
         service = ProdutoService(session)
-        produto = await service.atualizar_produto(produto_id, dados)
-        return await service.obter_produto(produto_id)
+        produto = await service.atualizar_produto(empresa_id, produto_id, dados)
+        return await service.obter_produto(empresa_id, produto_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -205,11 +253,15 @@ async def atualizar_produto(
 
 
 @router_produtos.delete("/{produto_id}", status_code=204)
-async def deletar_produto(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def deletar_produto(
+    produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Soft delete de um produto."""
     try:
         service = ProdutoService(session)
-        await service.deletar_produto(produto_id)
+        await service.deletar_produto(empresa_id, produto_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -217,11 +269,15 @@ async def deletar_produto(produto_id: UUID, session: AsyncSession = Depends(get_
 
 
 @router_produtos.patch("/{produto_id}/restaurar", status_code=204)
-async def restaurar_produto(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def restaurar_produto(
+    produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Restaura um produto deletado."""
     try:
         service = ProdutoService(session)
-        await service.restaurar_produto(produto_id)
+        await service.restaurar_produto(empresa_id, produto_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -234,12 +290,20 @@ router_variantes = APIRouter(prefix="/variantes", tags=["variantes"])
 
 
 @router_variantes.post("", response_model=VarianteRead, status_code=201)
-async def criar_variante(dados: VarianteCreate, session: AsyncSession = Depends(get_db)):
+async def criar_variante(
+    dados: VarianteCreate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Cria uma nova variante."""
+    # Validar que empresa_id do body corresponde ao header
+    if dados.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+    
     try:
         service = VarianteService(session)
-        variante = await service.criar_variante(dados)
-        return await service.obter_variante(variante.id)
+        variante = await service.criar_variante(empresa_id, dados)
+        return await service.obter_variante(empresa_id, variante.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -247,21 +311,29 @@ async def criar_variante(dados: VarianteCreate, session: AsyncSession = Depends(
 
 
 @router_variantes.get("/{variante_id}", response_model=VarianteRead)
-async def obter_variante(variante_id: UUID, session: AsyncSession = Depends(get_db)):
+async def obter_variante(
+    variante_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Obtém uma variante por ID."""
     try:
         service = VarianteService(session)
-        return await service.obter_variante(variante_id)
+        return await service.obter_variante(empresa_id, variante_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router_variantes.get("/produto/{produto_id}", response_model=list)
-async def listar_variantes_produto(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def listar_variantes_produto(
+    produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Lista variantes de um produto."""
     try:
         service = VarianteService(session)
-        variantes = await service.listar_por_produto(produto_id)
+        variantes = await service.listar_por_produto(empresa_id, produto_id)
         # Converter modelos SQLAlchemy para schemas Pydantic
         return [VarianteRead.model_validate(var) for var in variantes]
     except ValueError as e:
@@ -270,13 +342,16 @@ async def listar_variantes_produto(produto_id: UUID, session: AsyncSession = Dep
 
 @router_variantes.put("/{variante_id}", response_model=VarianteRead)
 async def atualizar_variante(
-    variante_id: UUID, dados: VarianteUpdate, session: AsyncSession = Depends(get_db)
+    variante_id: UUID,
+    dados: VarianteUpdate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
 ):
     """Atualiza uma variante."""
     try:
         service = VarianteService(session)
-        variante = await service.atualizar_variante(variante_id, dados)
-        return await service.obter_variante(variante_id)
+        variante = await service.atualizar_variante(empresa_id, variante_id, dados)
+        return await service.obter_variante(empresa_id, variante_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -284,11 +359,15 @@ async def atualizar_variante(
 
 
 @router_variantes.delete("/{variante_id}", status_code=204)
-async def deletar_variante(variante_id: UUID, session: AsyncSession = Depends(get_db)):
+async def deletar_variante(
+    variante_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Deleta uma variante."""
     try:
         service = VarianteService(session)
-        await service.deletar_variante(variante_id)
+        await service.deletar_variante(empresa_id, variante_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -302,6 +381,7 @@ router_catalogo_publico = APIRouter(prefix="/catalogo/publico", tags=["catalogo-
 
 @router_catalogo_publico.get("/produtos", response_model=dict)
 async def listar_produtos_catalogo_publico(
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
     categoria_id: UUID | None = Query(None),
     busca: str | None = Query(None, min_length=2),
     ordenar: str = Query("nome", regex="^(nome|preco_asc|preco_desc|recentes)$"),
@@ -310,7 +390,7 @@ async def listar_produtos_catalogo_publico(
     session: AsyncSession = Depends(get_db),
 ):
     """
-    Lista produtos visíveis no catálogo público (SEM autenticação).
+    Lista produtos visíveis no catálogo público.
     
     Retorna apenas produtos com:
     - ativo = True
@@ -322,6 +402,7 @@ async def listar_produtos_catalogo_publico(
         # TODO: Filtrar apenas produtos com catalogo_config.visivel = True
         # Por enquanto, retorna todos os produtos ativos
         produtos, total = await service.listar_produtos(
+            empresa_id=empresa_id,
             skip=skip, 
             limit=limit, 
             apenas_ativos=True
@@ -353,15 +434,16 @@ async def listar_produtos_catalogo_publico(
 @router_catalogo_publico.get("/produto/{produto_id}", response_model=ProdutoCatalogoRead)
 async def obter_produto_catalogo_publico(
     produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Obtém detalhes de um produto no catálogo público (SEM autenticação).
+    Obtém detalhes de um produto no catálogo público.
     Não expõe dados internos como custo, markup e fornecedores.
     """
     try:
         service = ProdutoService(session)
-        produto = await service.obter_produto(produto_id)
+        produto = await service.obter_produto(empresa_id, produto_id)
 
         if not produto.ativo:
             raise HTTPException(status_code=404, detail="Produto não encontrado")
@@ -377,16 +459,17 @@ async def obter_produto_catalogo_publico(
 
 @router_catalogo_publico.get("/categorias", response_model=dict)
 async def listar_categorias_catalogo_publico(
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Lista categorias ativas no catálogo público (SEM autenticação).
+    Lista categorias ativas no catálogo público.
     
     Retorna apenas categorias com produtos visíveis.
     """
     try:
         service = CategoriaService(session)
-        categorias, total = await service.listar_categorias(skip=0, limit=100)
+        categorias, total = await service.listar_categorias(empresa_id=empresa_id, skip=0, limit=100)
         
         # Converter para schema
         categorias_response = [CategoriaRead.model_validate(cat) for cat in categorias]
@@ -405,11 +488,15 @@ router_catalogo = APIRouter(prefix="/catalogo", tags=["catalogo"])
 
 
 @router_catalogo.post("/config", response_model=CatalogoConfigRead, status_code=201)
-async def criar_config_catalogo(dados: CatalogoConfigCreate, session: AsyncSession = Depends(get_db)):
+async def criar_config_catalogo(
+    dados: CatalogoConfigCreate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Cria configuração de catálogo."""
     try:
         service = CatalogoService(session)
-        config = await service.criar_config(dados)
+        config = await service.criar_config(empresa_id, dados)
         return config
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -418,23 +505,30 @@ async def criar_config_catalogo(dados: CatalogoConfigCreate, session: AsyncSessi
 
 
 @router_catalogo.get("/config/{produto_id}", response_model=CatalogoConfigRead)
-async def obter_config_catalogo(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def obter_config_catalogo(
+    produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Obtém configuração de catálogo."""
     try:
         service = CatalogoService(session)
-        return await service.obter_config(produto_id)
+        return await service.obter_config(empresa_id, produto_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router_catalogo.put("/config/{catalogo_id}", response_model=CatalogoConfigRead)
 async def atualizar_config_catalogo(
-    catalogo_id: UUID, dados: CatalogoConfigUpdate, session: AsyncSession = Depends(get_db)
+    catalogo_id: UUID,
+    dados: CatalogoConfigUpdate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
 ):
     """Atualiza configuração de catálogo."""
     try:
         service = CatalogoService(session)
-        config = await service.atualizar_config(catalogo_id, dados)
+        config = await service.atualizar_config(empresa_id, catalogo_id, dados)
         return config
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -443,11 +537,15 @@ async def atualizar_config_catalogo(
 
 
 @router_catalogo.post("/fotos", response_model=CatalogoFotoRead, status_code=201)
-async def adicionar_foto_catalogo(dados: CatalogoFotoCreate, session: AsyncSession = Depends(get_db)):
+async def adicionar_foto_catalogo(
+    dados: CatalogoFotoCreate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Adiciona foto ao catálogo."""
     try:
         service = CatalogoService(session)
-        foto = await service.adicionar_foto(dados)
+        foto = await service.adicionar_foto(empresa_id, dados)
         return foto
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -456,11 +554,15 @@ async def adicionar_foto_catalogo(dados: CatalogoFotoCreate, session: AsyncSessi
 
 
 @router_catalogo.get("/fotos/{produto_id}", response_model=list)
-async def listar_fotos_catalogo(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def listar_fotos_catalogo(
+    produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Lista fotos de um produto."""
     try:
         service = CatalogoService(session)
-        fotos = await service.listar_fotos(produto_id)
+        fotos = await service.listar_fotos(empresa_id, produto_id)
         # Converter modelos SQLAlchemy para schemas Pydantic
         return [CatalogoFotoRead.model_validate(foto) for foto in fotos]
     except ValueError as e:
@@ -469,12 +571,15 @@ async def listar_fotos_catalogo(produto_id: UUID, session: AsyncSession = Depend
 
 @router_catalogo.put("/fotos/{foto_id}", response_model=CatalogoFotoRead)
 async def atualizar_foto_catalogo(
-    foto_id: UUID, dados: CatalogoFotoUpdate, session: AsyncSession = Depends(get_db)
+    foto_id: UUID,
+    dados: CatalogoFotoUpdate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
 ):
     """Atualiza uma foto."""
     try:
         service = CatalogoService(session)
-        foto = await service.atualizar_foto(foto_id, dados)
+        foto = await service.atualizar_foto(empresa_id, foto_id, dados)
         return foto
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -483,11 +588,15 @@ async def atualizar_foto_catalogo(
 
 
 @router_catalogo.delete("/fotos/{foto_id}", status_code=204)
-async def deletar_foto_catalogo(foto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def deletar_foto_catalogo(
+    foto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Deleta uma foto."""
     try:
         service = CatalogoService(session)
-        await service.deletar_foto(foto_id)
+        await service.deletar_foto(empresa_id, foto_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -500,11 +609,19 @@ router_fornecedores = APIRouter(prefix="/fornecedores", tags=["fornecedores"])
 
 
 @router_fornecedores.post("", response_model=FornecedorRead, status_code=201)
-async def criar_fornecedor(dados: FornecedorCreate, session: AsyncSession = Depends(get_db)):
+async def criar_fornecedor(
+    dados: FornecedorCreate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Cria um novo fornecedor."""
+    # Validar que empresa_id do body corresponde ao header
+    if dados.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+    
     try:
         service = FornecedorService(session)
-        fornecedor = await service.criar_fornecedor(dados)
+        fornecedor = await service.criar_fornecedor(empresa_id, dados)
         return fornecedor
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -513,17 +630,22 @@ async def criar_fornecedor(dados: FornecedorCreate, session: AsyncSession = Depe
 
 
 @router_fornecedores.get("/{fornecedor_id}", response_model=FornecedorRead)
-async def obter_fornecedor(fornecedor_id: UUID, session: AsyncSession = Depends(get_db)):
+async def obter_fornecedor(
+    fornecedor_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Obtém um fornecedor por ID."""
     try:
         service = FornecedorService(session)
-        return await service.obter_fornecedor(fornecedor_id)
+        return await service.obter_fornecedor(empresa_id, fornecedor_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router_fornecedores.get("", response_model=dict)
 async def listar_fornecedores(
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     apenas_ativos: bool = Query(True),
@@ -531,7 +653,7 @@ async def listar_fornecedores(
 ):
     """Lista todos os fornecedores."""
     service = FornecedorService(session)
-    fornecedores, total = await service.listar_fornecedores(skip=skip, limit=limit, apenas_ativos=apenas_ativos)
+    fornecedores, total = await service.listar_fornecedores(empresa_id=empresa_id, skip=skip, limit=limit, apenas_ativos=apenas_ativos)
     # Converter modelos SQLAlchemy para schemas Pydantic
     fornecedores_response = [FornecedorRead.model_validate(forn) for forn in fornecedores]
     return {"total": total, "skip": skip, "limit": limit, "items": fornecedores_response}
@@ -539,12 +661,15 @@ async def listar_fornecedores(
 
 @router_fornecedores.put("/{fornecedor_id}", response_model=FornecedorRead)
 async def atualizar_fornecedor(
-    fornecedor_id: UUID, dados: FornecedorUpdate, session: AsyncSession = Depends(get_db)
+    fornecedor_id: UUID,
+    dados: FornecedorUpdate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
 ):
     """Atualiza um fornecedor."""
     try:
         service = FornecedorService(session)
-        fornecedor = await service.atualizar_fornecedor(fornecedor_id, dados)
+        fornecedor = await service.atualizar_fornecedor(empresa_id, fornecedor_id, dados)
         return fornecedor
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -553,11 +678,15 @@ async def atualizar_fornecedor(
 
 
 @router_fornecedores.delete("/{fornecedor_id}", status_code=204)
-async def deletar_fornecedor(fornecedor_id: UUID, session: AsyncSession = Depends(get_db)):
+async def deletar_fornecedor(
+    fornecedor_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Deleta um fornecedor."""
     try:
         service = FornecedorService(session)
-        await service.deletar_fornecedor(fornecedor_id)
+        await service.deletar_fornecedor(empresa_id, fornecedor_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -570,11 +699,15 @@ router_fornecedor_produtos = APIRouter(prefix="/fornecedor-produtos", tags=["for
 
 
 @router_fornecedor_produtos.post("", response_model=FornecedorProdutoRead, status_code=201)
-async def vincular_fornecedor_produto(dados: FornecedorProdutoCreate, session: AsyncSession = Depends(get_db)):
+async def vincular_fornecedor_produto(
+    dados: FornecedorProdutoCreate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Vincula um fornecedor a um produto."""
     try:
         service = FornecedorProdutoService(session)
-        vinculo = await service.vincular_fornecedor(dados)
+        vinculo = await service.vincular_fornecedor(empresa_id, dados)
         return vinculo
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -583,21 +716,29 @@ async def vincular_fornecedor_produto(dados: FornecedorProdutoCreate, session: A
 
 
 @router_fornecedor_produtos.get("/{vinculo_id}", response_model=FornecedorProdutoRead)
-async def obter_vinculo(vinculo_id: UUID, session: AsyncSession = Depends(get_db)):
+async def obter_vinculo(
+    vinculo_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Obtém um vínculo fornecedor-produto."""
     try:
         service = FornecedorProdutoService(session)
-        return await service.obter_vinculo(vinculo_id)
+        return await service.obter_vinculo(empresa_id, vinculo_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router_fornecedor_produtos.get("/produto/{produto_id}", response_model=list)
-async def listar_fornecedores_produto(produto_id: UUID, session: AsyncSession = Depends(get_db)):
+async def listar_fornecedores_produto(
+    produto_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Lista fornecedores de um produto."""
     try:
         service = FornecedorProdutoService(session)
-        vinculos = await service.listar_fornecedores_produto(produto_id)
+        vinculos = await service.listar_fornecedores_produto(empresa_id, produto_id)
         # Converter modelos SQLAlchemy para schemas Pydantic
         return [FornecedorProdutoRead.model_validate(vinc) for vinc in vinculos]
     except ValueError as e:
@@ -605,11 +746,15 @@ async def listar_fornecedores_produto(produto_id: UUID, session: AsyncSession = 
 
 
 @router_fornecedor_produtos.get("/fornecedor/{fornecedor_id}", response_model=list)
-async def listar_produtos_fornecedor(fornecedor_id: UUID, session: AsyncSession = Depends(get_db)):
+async def listar_produtos_fornecedor(
+    fornecedor_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Lista produtos de um fornecedor."""
     try:
         service = FornecedorProdutoService(session)
-        vinculos = await service.listar_produtos_fornecedor(fornecedor_id)
+        vinculos = await service.listar_produtos_fornecedor(empresa_id, fornecedor_id)
         # Converter modelos SQLAlchemy para schemas Pydantic
         return [FornecedorProdutoRead.model_validate(vinc) for vinc in vinculos]
     except ValueError as e:
@@ -618,12 +763,15 @@ async def listar_produtos_fornecedor(fornecedor_id: UUID, session: AsyncSession 
 
 @router_fornecedor_produtos.put("/{vinculo_id}", response_model=FornecedorProdutoRead)
 async def atualizar_vinculo(
-    vinculo_id: UUID, dados: FornecedorProdutoUpdate, session: AsyncSession = Depends(get_db)
+    vinculo_id: UUID,
+    dados: FornecedorProdutoUpdate,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
 ):
     """Atualiza um vínculo fornecedor-produto."""
     try:
         service = FornecedorProdutoService(session)
-        vinculo = await service.atualizar_vinculo(vinculo_id, dados)
+        vinculo = await service.atualizar_vinculo(empresa_id, vinculo_id, dados)
         return vinculo
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -632,11 +780,15 @@ async def atualizar_vinculo(
 
 
 @router_fornecedor_produtos.delete("/{vinculo_id}", status_code=204)
-async def deletar_vinculo(vinculo_id: UUID, session: AsyncSession = Depends(get_db)):
+async def deletar_vinculo(
+    vinculo_id: UUID,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
     """Deleta um vínculo fornecedor-produto."""
     try:
         service = FornecedorProdutoService(session)
-        await service.deletar_vinculo(vinculo_id)
+        await service.deletar_vinculo(empresa_id, vinculo_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
