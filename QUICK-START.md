@@ -5,7 +5,11 @@
 
 ---
 
-## 🚀 Iniciar o MVP (3 comandos)
+## 🚀 Escolha seu Método de Inicialização
+
+### 📍 Método 1: Localhost (Desenvolvimento Local)
+
+**Use quando**: Testar localmente sem precisar de acesso externo
 
 ```bash
 # 1. Subir todos os serviços
@@ -18,7 +22,53 @@ docker-compose ps
 bash tests/test-mvp.sh
 ```
 
-**Pronto!** Se todos os testes passarem, o MVP está funcionando. ✅
+**✅ Acesso**:
+- Frontend: http://localhost:80
+- API Gateway: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+---
+
+### 🌐 Método 2: Ngrok (Acesso Externo via Internet)
+
+**Use quando**: Precisa de webhooks, OAuth, testes mobile ou demonstrações remotas
+
+#### Pré-requisitos adicionais:
+1. Conta ngrok (gratuita): https://ngrok.com/
+2. Token de autenticação configurado no `.env.ngrok`
+
+```bash
+# 1. Configurar token do ngrok (primeira vez apenas)
+# Edite .env.ngrok e adicione seu token:
+# NGROK_AUTHTOKEN=seu-token-aqui
+
+# 2. Subir com nginx + ngrok
+docker-compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
+
+# 3. Aguardar ~30 segundos
+sleep 30
+
+# 4. Obter URL pública do ngrok
+docker-compose logs ngrok | grep "url="
+```
+
+**✅ Acesso**:
+- URL Pública: https://abc123-xyz456.ngrok-free.dev (copie dos logs)
+- Dashboard ngrok: http://localhost:4040
+- API via ngrok: https://abc123-xyz456.ngrok-free.dev/api
+
+**⚠️ Importante**: Após obter a URL do ngrok, atualize `FRONTEND_URL` no `.env` e reinicie o API Gateway:
+```bash
+# Edite .env e mude:
+FRONTEND_URL=https://abc123-xyz456.ngrok-free.dev
+
+# Reinicie o gateway
+docker-compose restart api-gateway
+```
+
+---
+
+**Pronto!** Escolha o método adequado e siga os passos. ✅
 
 ---
 
@@ -125,7 +175,9 @@ docker stats
 
 ## 🐛 Problemas Comuns
 
-### Container não sobe
+### Método Localhost
+
+#### Container não sobe
 
 ```bash
 # Ver o erro
@@ -135,7 +187,7 @@ docker-compose logs <nome-do-servico>
 docker-compose up -d --force-recreate <nome-do-servico>
 ```
 
-### Porta já em uso
+#### Porta já em uso
 
 ```bash
 # Descobrir qual processo está usando a porta
@@ -148,20 +200,60 @@ netstat -ano | findstr :8000
 # Matar o processo ou mudar a porta no docker-compose.yml
 ```
 
-### Banco de dados não conecta
+#### Banco de dados não conecta
 
 ```bash
 # Verificar se o banco está healthy
 docker-compose ps
 
 # Reiniciar o banco
-docker-compose restart db-gateway
+docker-compose restart db
 
 # Ver logs do banco
-docker-compose logs db-gateway
+docker-compose logs db
 ```
 
-### Token expirado (401 Unauthorized)
+### Método Ngrok
+
+#### ❌ "Bind for 0.0.0.0:80 failed: port is already allocated"
+
+```bash
+# Você subiu primeiro com docker-compose up -d
+# O frontend já está usando a porta 80
+
+# Solução: Parar tudo e subir com o método correto
+docker-compose down
+docker-compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
+```
+
+#### ❌ "nginx: host not found in upstream"
+
+```bash
+# O nginx não encontra o container do API Gateway
+# Verifique se o nome do container está correto
+
+# Ver containers rodando
+docker-compose ps
+
+# Deve ter: erp-api-gateway (sem -dev)
+```
+
+#### ❌ "Token inválido" ao subir ngrok
+
+```bash
+# Verificar seu token
+docker-compose logs ngrok
+
+# Se vir erro, regere o token em: https://dashboard.ngrok.com/get-started/your-authtoken
+# Atualize .env.ngrok e rode:
+docker-compose restart ngrok
+```
+
+### Ambos os Métodos
+
+### Ambos os Métodos
+
+#### Token expirado (401 Unauthorized)
 
 ```bash
 # Tokens expiram em 30 minutos
@@ -249,85 +341,138 @@ PostgreSQL:
 
 ---
 
-## 🌐 Acesso Externo via ngrok
+## 🌐 Configuração Avançada do Ngrok
 
 ### Por que usar ngrok?
 
 O ngrok permite expor seu servidor local para a internet, essencial para:
 - ✅ **Webhooks**: Receber notificações do Mercado Pago e WhatsApp
-- ✅ **OAuth**: Callbacks de autenticação externa
+- ✅ **OAuth**: Callbacks de autenticação externa (Google, Microsoft)
 - ✅ **Testes Mobile**: Acessar a API de dispositivos móveis
 - ✅ **Demonstrações**: Mostrar o sistema para clientes remotos
 
-### Instalação do ngrok
+---
 
-```bash
-# Windows (com Chocolatey)
-choco install ngrok
+### 📋 Checklist Completo de Setup
 
-# macOS (com Homebrew)
-brew install ngrok
+- [ ] 1. Criar conta ngrok (https://ngrok.com/)
+- [ ] 2. Copiar token de autenticação (https://dashboard.ngrok.com/get-started/your-authtoken)
+- [ ] 3. Atualizar `.env.ngrok` com seu token
+- [ ] 4. Subir com `docker-compose -f docker-compose.yml -f docker-compose.nginx.yml up -d`
+- [ ] 5. Obter URL pública: `docker-compose logs ngrok | grep "url="`
+- [ ] 6. Atualizar `FRONTEND_URL` no `.env` com a URL do ngrok
+- [ ] 7. Reiniciar API Gateway: `docker-compose restart api-gateway`
+- [ ] 8. Se usar OAuth, registrar redirect URIs nos provedores
 
-# Linux (com Snap)
-snap install ngrok
+---
 
-# Ou baixe diretamente de https://ngrok.com/download
+### 🔐 Configuração de OAuth (Opcional)
+
+Se você usa Google, Microsoft ou outro provedor OAuth:
+
+#### Google Cloud Console
+1. Acesse https://console.cloud.google.com/
+2. Vá para "Credenciais" → "OAuth 2.0 Client IDs"
+3. Edite seu cliente
+4. Em "URIs de redirecionamento autorizados", adicione:
+   ```
+   https://sua-url-ngrok.ngrok-free.dev/auth/google/callback
+   ```
+5. Salve
+
+#### Microsoft Azure
+1. Acesse https://portal.azure.com/
+2. Vá para "Azure Active Directory" → "App registrations"
+3. Edite seu app
+4. Em "Authentication" → "Redirect URIs", adicione:
+   ```
+   https://sua-url-ngrok.ngrok-free.dev/auth/microsoft/callback
+   ```
+5. Salve
+
+#### Atualizar `.env`
+```env
+# OAuth Credentials
+GOOGLE_CLIENT_ID=seu-client-id
+GOOGLE_CLIENT_SECRET=seu-secret
+MICROSOFT_CLIENT_ID=seu-client-id
+MICROSOFT_CLIENT_SECRET=seu-secret
+
+# Frontend URL (URL do ngrok)
+FRONTEND_URL=https://sua-url-ngrok.ngrok-free.dev
+
+# CORS Origins
+CORS_ORIGINS=https://sua-url-ngrok.ngrok-free.dev,http://localhost:3000
 ```
 
-### Uso Básico
+---
+
+### ✅ Verificação Rápida
+
+Testar se tudo está funcionando:
 
 ```bash
-# 1. Expor o API Gateway (porta 8000)
-ngrok http 8000
+# 1. Testar autenticação via ngrok
+curl -X POST https://sua-url-ngrok.ngrok-free.dev/api/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin@runas.com&password=Admin@123"
 
-# O ngrok fornecerá uma URL pública, exemplo:
-# Forwarding: https://abc123.ngrok.io -> http://localhost:8000
+# Deve retornar um token
+
+# 2. Testar endpoint público
+curl https://sua-url-ngrok.ngrok-free.dev/api/categorias
+
+# 3. Acessar dashboard do ngrok
+# URL: http://localhost:4040
+# Verá todas as requisições em tempo real
 ```
 
-### Configuração para OAuth
+---
 
-Quando usar ngrok com OAuth (Google, Microsoft, etc.), você precisa:
+### 🔧 Troubleshooting Ngrok
 
-1. **Copiar a URL pública do ngrok** (ex: `https://abc123.ngrok.io`)
+#### ❌ OAuth com erro "redirect_uri_mismatch"
+```
+A URL do ngrok no seu provedor (Google/Microsoft) é diferente da que você está usando.
 
-2. **Atualizar as variáveis de ambiente**:
-```bash
-# .env ou .env.ngrok
-FRONTEND_URL=https://abc123.ngrok.io
-BACKEND_URL=https://abc123.ngrok.io
+Solução:
+1. Verificar URL exata: docker-compose logs ngrok | grep "url="
+2. Registrar EXATAMENTE essa URL no provedor OAuth
+3. Usar EXATAMENTE essa URL no .env (FRONTEND_URL)
 ```
 
-3. **Atualizar o redirect URI no provedor OAuth**:
-   - Google Cloud Console: Adicionar `https://abc123.ngrok.io/auth/google/callback`
-   - Microsoft Azure: Adicionar `https://abc123.ngrok.io/auth/microsoft/callback`
+#### ❌ Cookies não funcionam
+```
+Certifique-se que:
+- FRONTEND_URL no .env está com https://
+- Cookie secure flag está configurado (já está por padrão)
+- Está acessando via URL do ngrok, não localhost
+```
 
-4. **Reiniciar o API Gateway**:
-```bash
+#### ❌ CORS errors
+```
+Adicionar URL do ngrok em CORS_ORIGINS no .env:
+CORS_ORIGINS=https://sua-url-ngrok.ngrok-free.dev,http://localhost:3000
+
+Reiniciar API Gateway:
 docker-compose restart api-gateway
 ```
 
-### Ngrok com Docker Compose
+#### ❌ URL do ngrok muda toda vez
+```
+Plano gratuito do ngrok gera URL aleatória a cada restart.
 
-Para facilitar, você pode usar o arquivo `docker-compose.ngrok.yml`:
-
-```bash
-# Subir com ngrok integrado
-docker-compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d
-
-# Ver a URL pública nos logs
-docker-compose logs ngrok
+Soluções:
+1. Usar ngrok pago (URL fixa)
+2. Ou atualizar .env e provedores OAuth toda vez que reiniciar
 ```
 
-### Troubleshooting OAuth com ngrok
+---
 
-Se encontrar problemas com OAuth ao usar ngrok:
+### 📚 Documentação Adicional
 
-📖 **Guia completo**: [docs/09-troubleshooting/oauth-issues.md](./docs/09-troubleshooting/oauth-issues.md)
-
-Problemas comuns:
-- ❌ Redirect URI mismatch → Atualizar no provedor OAuth
-- ❌ CORS errors → Adicionar URL do ngrok no CORS_ORIGINS
-- ❌ Cookie issues → Usar HTTPS (ngrok fornece automaticamente)
+Para mais detalhes sobre OAuth com ngrok:
+- **[docs/09-troubleshooting/oauth-issues.md](./docs/09-troubleshooting/oauth-issues.md)** - Guia completo de troubleshooting OAuth
 
 ---
 
