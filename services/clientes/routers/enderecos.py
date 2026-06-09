@@ -14,6 +14,7 @@ from schemas.cliente import (
     EnderecoUpdate,
     EnderecoResponse
 )
+from utils import get_empresa_id
 
 
 router = APIRouter(prefix="/clientes/{cliente_id}/enderecos", tags=["Endereços"])
@@ -34,10 +35,11 @@ def get_cliente_service(db: Annotated[AsyncSession, Depends(get_db)]) -> Cliente
 async def adicionar_endereco(
     cliente_id: UUID,
     data: EnderecoCreate,
-    service: Annotated[ClienteService, Depends(get_cliente_service)]
+    service: Annotated[ClienteService, Depends(get_cliente_service)],
+    empresa_id: Annotated[int, Depends(get_empresa_id)]
 ):
     """
-    Adiciona um novo endereço ao cliente.
+    Adiciona um novo endereço ao cliente (filtrado por empresa).
     
     - **cep**: CEP (8 dígitos)
     - **logradouro**: Rua, avenida, etc.
@@ -48,7 +50,7 @@ async def adicionar_endereco(
     - **uf**: Estado (2 letras)
     - **principal**: Se é o endereço principal (padrão: false)
     """
-    return await service.adicionar_endereco(cliente_id, data)
+    return await service.adicionar_endereco(cliente_id, empresa_id, data)
 
 
 @router.get(
@@ -58,10 +60,11 @@ async def adicionar_endereco(
 )
 async def listar_enderecos(
     cliente_id: UUID,
-    service: Annotated[ClienteService, Depends(get_cliente_service)]
+    service: Annotated[ClienteService, Depends(get_cliente_service)],
+    empresa_id: Annotated[int, Depends(get_empresa_id)]
 ):
-    """Lista todos os endereços de um cliente."""
-    return await service.listar_enderecos(cliente_id)
+    """Lista todos os endereços de um cliente (filtrado por empresa)."""
+    return await service.listar_enderecos(cliente_id, empresa_id)
 
 
 @router.patch(
@@ -73,14 +76,15 @@ async def atualizar_endereco(
     cliente_id: UUID,
     endereco_id: UUID,
     data: EnderecoUpdate,
-    service: Annotated[ClienteService, Depends(get_cliente_service)]
+    service: Annotated[ClienteService, Depends(get_cliente_service)],
+    empresa_id: Annotated[int, Depends(get_empresa_id)]
 ):
     """
-    Atualiza um endereço do cliente.
+    Atualiza um endereço do cliente (filtrado por empresa).
     
     Apenas os campos fornecidos serão atualizados.
     """
-    return await service.atualizar_endereco(cliente_id, endereco_id, data)
+    return await service.atualizar_endereco(cliente_id, empresa_id, endereco_id, data)
 
 
 @router.delete(
@@ -91,8 +95,9 @@ async def atualizar_endereco(
 async def remover_endereco(
     cliente_id: UUID,
     endereco_id: UUID,
-    service: Annotated[ClienteService, Depends(get_cliente_service)]
+    service: Annotated[ClienteService, Depends(get_cliente_service)],
+    empresa_id: Annotated[int, Depends(get_empresa_id)]
 ):
-    """Remove um endereço do cliente."""
-    await service.remover_endereco(cliente_id, endereco_id)
+    """Remove um endereço do cliente (filtrado por empresa)."""
+    await service.remover_endereco(cliente_id, empresa_id, endereco_id)
     return None
