@@ -237,23 +237,29 @@ class Model(Base):
 
 ## 🎯 PRIORIDADE 1: Funcionalidades Essenciais
 
-### 0. LOJA ONLINE 🟡 EM PROGRESSO
+### 0. LOJA ONLINE ✅ BACKEND 100% | 🟡 FRONTEND 30%
 
-#### Backend - Funcionalidades 🟡
+#### Backend - Funcionalidades ✅ 100% COMPLETO
 - ✅ CRUD de configuração da loja (visível, destaque, ordem)
 - ✅ CRUD de fotos de produtos
 - ✅ Service de catálogo/loja implementado
-- 🟡 **Rotas públicas (sem autenticação)** - EM IMPLEMENTAÇÃO
-- 🔴 Filtro de produtos visíveis na loja
-- 🔴 Busca e ordenação de produtos
-- 🔴 Carrinho de compras (sessão)
-- 🔴 Checkout simplificado
+- ✅ **Rotas públicas (sem autenticação)** - IMPLEMENTADO
+- ✅ **Carrinho de compras (Redis)** - IMPLEMENTADO
+- ✅ **Checkout simplificado** - IMPLEMENTADO
+- ✅ **Rastreamento de pedidos** - IMPLEMENTADO
+- ✅ **Área do cliente (meus pedidos)** - IMPLEMENTADO
+- ✅ Filtro de produtos visíveis na loja
+- ✅ Busca e ordenação de produtos
+- ✅ Integração com Vendas (conversão carrinho → pedido)
+- ✅ Sessão segura (cookies HttpOnly)
 
 #### Frontend - Rotas a Implementar 🟡
 - 🟡 `/loja/:empresaSlug` - Loja online (lista de produtos) - EM IMPLEMENTAÇÃO
 - 🟡 `/loja/:empresaSlug/produto/:id` - Detalhes do produto - EM IMPLEMENTAÇÃO
-- 🔴 `/loja/:empresaSlug/carrinho` - Carrinho de compras
-- 🔴 `/loja/:empresaSlug/checkout` - Finalizar pedido
+- 🔴 `/loja/:empresaSlug/carrinho` - Carrinho de compras - **BACKEND PRONTO**
+- 🔴 `/loja/:empresaSlug/checkout` - Finalizar pedido - **BACKEND PRONTO**
+- 🔴 `/loja/:empresaSlug/pedido/:numero` - Rastreamento - **BACKEND PRONTO**
+- 🔴 `/loja/:empresaSlug/minha-conta/pedidos` - Meus pedidos - **BACKEND PRONTO**
 - 🔴 Botão "Compartilhar Loja" no painel admin
 
 #### Frontend - Componentes Necessários 🟡
@@ -261,8 +267,10 @@ class Model(Base):
 - 🟡 `ProdutoDetalhePage` - Detalhes do produto - EM IMPLEMENTAÇÃO
 - 🟡 `ProdutoCard` - Card do produto - EM IMPLEMENTAÇÃO
 - 🟡 `FiltrosLoja` - Filtros e busca - EM IMPLEMENTAÇÃO
-- 🔴 `CarrinhoLoja` - Carrinho de compras
-- 🔴 `CheckoutLoja` - Finalização de pedido
+- 🔴 `CarrinhoLoja` - Carrinho de compras - **API PRONTA**
+- 🔴 `CheckoutLoja` - Finalização de pedido - **API PRONTA**
+- 🔴 `RastreamentoLoja` - Acompanhamento do pedido - **API PRONTA**
+- 🔴 `MeusPedidosLoja` - Lista de pedidos do cliente - **API PRONTA**
 
 #### Preparação Multi-Tenant 🟡
 - 🟡 URL com slug: `/loja/:empresaSlug` (preparado para múltiplas empresas)
@@ -271,7 +279,7 @@ class Model(Base):
 - ✅ Campo `slug` único por empresa
 - 🔴 Middleware de identificação de empresa por slug
 
-**🎯 Objetivo**: Criar loja online para visualização de produtos e vendas online (e-commerce básico)
+**🎯 Objetivo**: ✅ **Backend 100% completo!** Loja online funcional com carrinho (Redis), checkout e rastreamento. Frontend em andamento (30%).
 
 ---
 
@@ -1176,6 +1184,7 @@ Produto (1) ----< (N) FornecedorProduto
 - **Produtos**: 95% (falta histórico de preços, promoções, produtos compostos)
 - **Estoque**: 95% (falta notificações automáticas, FIFO/FEFO, transferências)
 - **Vendas**: 90% (implementação completa, falta integração com Financeiro e Devolução)
+- **Loja Online**: 100% ✅ (carrinho Redis, checkout, rastreamento)
 - **Financeiro**: 0% (não implementado)
 - **Notificações**: 75% (email service implementado, falta integrações WhatsApp/SMS)
 
@@ -1183,6 +1192,7 @@ Produto (1) ----< (N) FornecedorProduto
 - **Autenticação**: 100%
 - **Clientes**: 85% (falta histórico)
 - **Produtos**: 90% (falta fotos e fornecedores)
+- **Loja Online**: 30% (vitrine pronta, falta carrinho e checkout)
 - **Estoque**: 0%
 - **Vendas**: 0%
 - **Financeiro**: 0%
@@ -1196,12 +1206,12 @@ Produto (1) ----< (N) FornecedorProduto
 - **Financeiro**: 0% (a implementar)
 
 ### Geral
-- **Backend**: 70% concluído (↑25% - Vendas implementado)
-- **Frontend**: 48% concluído (Sprint 1 e Sprint 2 concluídas, Sprint 2.5 em progresso)
-- **Sistema Completo**: 59% concluído
-- **Sprint Atual**: Sprint 4 Concluído, Sprint 5 aguardando
+- **Backend**: 76% concluído (↑6% - Loja Online 100%)
+- **Frontend**: 52% concluído (Sprint 1 e Sprint 2 concluídas, Sprint 2.5 em progresso)
+- **Sistema Completo**: 64% concluído
+- **Sprint Atual**: Sprint 4 Concluído, Sprint 2.5 Backend Concluído
 - **Otimizações**: 1 implementada (Consolidação PostgreSQL)
-- **Commits recentes**: 3 (Produtos multi-tenancy, Estoque multi-tenancy, Vendas implementação completa)
+- **Commits recentes**: 4 (Produtos multi-tenancy, Estoque multi-tenancy, Vendas completa, Loja Online completa)
 
 ---
 
@@ -1216,11 +1226,12 @@ Produto (1) ----< (N) FornecedorProduto
 7. ✅ **Gestão de Categorias no frontend** (CRUD completo implementado)
 8. ✅ **Implementar Multi-Tenancy**: Produtos, Estoque, Vendas (100%)
 9. ✅ **Implementar backend de Vendas** (Sprint 4 - 100%)
-10. 🟡 **Implementar Loja Online / E-commerce** (Sprint 2.5 - 50% - falta carrinho e checkout)
-11. 🔴 **Aplicar Migrations**: Produtos, Estoque, Vendas
-12. 🔴 **Implementar frontend de Estoque** (Sprint 3)
-13. 🔴 **Implementar frontend de Vendas** (Sprint 5)
-14. 🔴 **Implementar backend de Financeiro** (Sprint 6)
+10. ✅ **Implementar Loja Online Backend** (Sprint 2.5 - 100% - carrinho, checkout, rastreamento)
+11. 🟡 **Implementar Loja Online Frontend** (Sprint 2.5 - 30% - falta carrinho e checkout)
+12. 🔴 **Aplicar Migrations**: Produtos, Estoque, Vendas
+13. 🔴 **Implementar frontend de Estoque** (Sprint 3)
+14. 🔴 **Implementar frontend de Vendas** (Sprint 5)
+15. 🔴 **Implementar backend de Financeiro** (Sprint 6)
 
 ---
 
