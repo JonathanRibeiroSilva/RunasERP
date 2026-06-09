@@ -12,6 +12,7 @@ from models.estoque import TipoMovimentacao, StatusLote
 
 class EstoqueBase(BaseModel):
     """Schema base de Estoque."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     produto_id: UUID = Field(..., description="ID do produto")
     variante_id: Optional[UUID] = Field(None, description="ID da variante (opcional)")
     quantidade: float = Field(0.0, ge=0, description="Quantidade em estoque")
@@ -90,6 +91,7 @@ class MovimentacaoResponse(MovimentacaoBase):
 
 class LoteBase(BaseModel):
     """Schema base de Lote."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     codigo: str = Field(..., max_length=100, description="Código do lote")
     quantidade: float = Field(..., gt=0, description="Quantidade do lote")
     data_fabricacao: Optional[date] = Field(None, description="Data de fabricação")
@@ -167,6 +169,7 @@ class ItemInventarioResponse(ItemInventarioBase):
 
 class InventarioBase(BaseModel):
     """Schema base de Inventário."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     responsavel: str = Field(..., max_length=200, description="Nome do responsável")
     observacao: Optional[str] = Field(None, description="Observações gerais")
 
@@ -199,6 +202,7 @@ class InventarioResponse(InventarioBase):
 
 class EntradaEstoqueRequest(BaseModel):
     """Schema para entrada de estoque."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     produto_id: UUID = Field(..., description="ID do produto")
     variante_id: Optional[UUID] = Field(None, description="ID da variante")
     quantidade: float = Field(..., gt=0, description="Quantidade a adicionar")
@@ -218,6 +222,7 @@ class EntradaEstoqueRequest(BaseModel):
 
 class SaidaEstoqueRequest(BaseModel):
     """Schema para saída de estoque."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     produto_id: UUID = Field(..., description="ID do produto")
     variante_id: Optional[UUID] = Field(None, description="ID da variante")
     quantidade: float = Field(..., gt=0, description="Quantidade a remover")
@@ -237,6 +242,7 @@ class AjusteEstoqueRequest(BaseModel):
 
 class ReservaEstoqueRequest(BaseModel):
     """Schema para reservar estoque."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     produto_id: UUID = Field(..., description="ID do produto")
     variante_id: Optional[UUID] = Field(None, description="ID da variante")
     quantidade: float = Field(..., gt=0, description="Quantidade a reservar")
@@ -245,6 +251,7 @@ class ReservaEstoqueRequest(BaseModel):
 
 class LiberarReservaRequest(BaseModel):
     """Schema para liberar reserva de estoque."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     produto_id: UUID = Field(..., description="ID do produto")
     variante_id: Optional[UUID] = Field(None, description="ID da variante")
     quantidade: float = Field(..., gt=0, description="Quantidade a liberar")

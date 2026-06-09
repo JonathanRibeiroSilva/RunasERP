@@ -4,7 +4,7 @@ Modelos de Estoque.
 from datetime import datetime, date
 from enum import Enum
 from uuid import uuid4
-from sqlalchemy import Column, String, Float, Boolean, DateTime, Date, ForeignKey, Text
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Date, ForeignKey, Text, Integer, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base
@@ -33,9 +33,23 @@ class Estoque(Base):
     Controla a quantidade disponível de cada produto/variante.
     """
     __tablename__ = "estoque"
-    __table_args__ = {"schema": "estoque"}
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'produto_id', 'variante_id', name='uq_estoque_empresa_produto_variante'),
+        Index('ix_estoque_empresa_id', 'empresa_id'),
+        Index('ix_estoque_empresa_id_ativo', 'empresa_id', 'ativo'),
+        {"schema": "estoque"}
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Multi-tenancy
+    empresa_id = Column(
+        Integer,
+        nullable=False,
+        index=True,
+        comment="ID da empresa (multi-tenancy)"
+    )
+    
     produto_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     variante_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     
@@ -96,12 +110,25 @@ class Lote(Base):
     Controla lotes de produtos com data de validade.
     """
     __tablename__ = "lotes"
-    __table_args__ = {"schema": "estoque"}
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'codigo', name='uq_lotes_empresa_codigo'),
+        Index('ix_lotes_empresa_id', 'empresa_id'),
+        {"schema": "estoque"}
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Multi-tenancy
+    empresa_id = Column(
+        Integer,
+        nullable=False,
+        index=True,
+        comment="ID da empresa (multi-tenancy)"
+    )
+    
     estoque_id = Column(UUID(as_uuid=True), ForeignKey("estoque.estoque.id"), nullable=False, index=True)
     
-    codigo = Column(String(100), nullable=False, unique=True, index=True)
+    codigo = Column(String(100), nullable=False, index=True)
     quantidade = Column(Float, nullable=False, default=0.0)
     quantidade_inicial = Column(Float, nullable=False)
     
@@ -129,9 +156,21 @@ class Inventario(Base):
     Registra contagens físicas de estoque.
     """
     __tablename__ = "inventarios"
-    __table_args__ = {"schema": "estoque"}
+    __table_args__ = (
+        Index('ix_inventarios_empresa_id', 'empresa_id'),
+        Index('ix_inventarios_empresa_id_data', 'empresa_id', 'data_inventario'),
+        {"schema": "estoque"}
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Multi-tenancy
+    empresa_id = Column(
+        Integer,
+        nullable=False,
+        index=True,
+        comment="ID da empresa (multi-tenancy)"
+    )
     
     data_inventario = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     responsavel = Column(String(200), nullable=False)
