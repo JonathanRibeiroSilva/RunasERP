@@ -1,0 +1,3 @@
+"""
+Testes do serviço empresas.
+"""
