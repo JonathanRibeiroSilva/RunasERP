@@ -34,24 +34,36 @@ class ClienteService:
         Cria um novo cliente com transação atômica.
         
         Regras:
-        - CPF deve ser único
+        - CPF deve ser único por empresa (multi-tenancy)
         - CPF já validado no schema
         - Telefone já normalizado no schema
         """
         try:
-            # Verificar se CPF já existe
-            cliente_existente = await self.cliente_repo.buscar_por_cpf(data.cpf)
+            # Verificar se CPF já existe para esta empresa
+            cliente_existente = await self.cliente_repo.buscar_por_cpf(data.cpf, data.empresa_id)
             if cliente_existente:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="CPF já cadastrado"
-                )
+                if cliente_existente.ativo:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="CPF já cadastrado para esta empresa"
+                    )
+                else:
+                    # Cliente inativo: reativar e atualizar dados
+                    log.info("cliente.reativando", cliente_id=str(cliente_existente.id), cpf=data.cpf)
+                    cliente_existente.ativo = True
+                    cliente_existente.nome = data.nome
+                    cliente_existente.telefone = data.telefone
+                    cliente_existente.email = data.email
+                    cliente_existente.data_nasc = data.data_nasc
+                    await self.db.commit()
+                    await self.db.refresh(cliente_existente)
+                    return cliente_existente
             
             cliente = await self.cliente_repo.criar(data)
             await self.db.commit()
             await self.db.refresh(cliente)
             
-            log.info("cliente.criado", cliente_id=str(cliente.id), cpf=data.cpf)
+            log.info("cliente.criado", cliente_id=str(cliente.id), cpf=data.cpf, empresa_id=data.empresa_id)
             return cliente
             
         except HTTPException:
@@ -62,9 +74,9 @@ class ClienteService:
             log.error("erro_criar_cliente", error=str(e))
             raise
     
-    async def buscar_cliente(self, cliente_id: UUID) -> Cliente:
-        """Busca cliente por ID."""
-        cliente = await self.cliente_repo.buscar_por_id(cliente_id)
+    async def buscar_cliente(self, cliente_id: UUID, empresa_id: int) -> Cliente:
+        """Busca cliente por ID (filtrado por empresa)."""
+        cliente = await self.cliente_repo.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -72,9 +84,9 @@ class ClienteService:
             )
         return cliente
     
-    async def buscar_por_cpf(self, cpf: str) -> Cliente:
-        """Busca cliente por CPF."""
-        cliente = await self.cliente_repo.buscar_por_cpf(cpf)
+    async def buscar_por_cpf(self, cpf: str, empresa_id: int) -> Cliente:
+        """Busca cliente por CPF (filtrado por empresa)."""
+        cliente = await self.cliente_repo.buscar_por_cpf(cpf, empresa_id)
         if not cliente:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -84,6 +96,7 @@ class ClienteService:
     
     async def listar_clientes(
         self,
+        empresa_id: int,
         skip: int = 0,
         limit: int = 100,
         nome: str | None = None,
@@ -91,17 +104,18 @@ class ClienteService:
         bloqueado: bool | None = None,
         ativo: bool | None = None
     ) -> tuple[list[Cliente], int]:
-        """Lista clientes com filtros."""
-        return await self.cliente_repo.listar(skip, limit, nome, cpf, bloqueado, ativo)
+        """Lista clientes com filtros (filtrado por empresa)."""
+        return await self.cliente_repo.listar(empresa_id, skip, limit, nome, cpf, bloqueado, ativo)
     
     async def atualizar_cliente(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         data: ClienteUpdate
     ) -> Cliente:
-        """Atualiza dados do cliente com transação atômica."""
+        """Atualiza dados do cliente com transação atômica (filtrado por empresa)."""
         try:
-            cliente = await self.cliente_repo.atualizar(cliente_id, data)
+            cliente = await self.cliente_repo.atualizar(cliente_id, empresa_id, data)
             if not cliente:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -110,7 +124,7 @@ class ClienteService:
             
             await self.db.commit()
             await self.db.refresh(cliente)
-            log.info("cliente.atualizado", cliente_id=str(cliente_id))
+            log.info("cliente.atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
             return cliente
             
         except HTTPException:
@@ -121,9 +135,9 @@ class ClienteService:
             log.error("erro_atualizar_cliente", error=str(e))
             raise
     
-    async def desativar_cliente(self, cliente_id: UUID) -> None:
+    async def desativar_cliente(self, cliente_id: UUID, empresa_id: int) -> None:
         """
-        Desativa um cliente (soft delete) com transação atômica.
+        Desativa um cliente (soft delete) com transação atômica (filtrado por empresa).
         
         Regras:
         - Não pode desativar se tiver pedidos em aberto
@@ -131,12 +145,12 @@ class ClienteService:
         """
         try:
             async with self.db.begin_nested():
-                cliente = await self.buscar_cliente(cliente_id)
+                cliente = await self.buscar_cliente(cliente_id, empresa_id)
                 
                 # TODO: Verificar pedidos em aberto (integração com serviço de vendas)
                 # TODO: Verificar contas pendentes (integração com serviço financeiro)
                 
-                sucesso = await self.cliente_repo.soft_delete(cliente_id)
+                sucesso = await self.cliente_repo.soft_delete(cliente_id, empresa_id)
                 if not sucesso:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -144,7 +158,7 @@ class ClienteService:
                     )
             
             await self.db.commit()
-            log.info("cliente.desativado", cliente_id=str(cliente_id))
+            log.info("cliente.desativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
             
         except HTTPException:
             await self.db.rollback()
@@ -157,10 +171,11 @@ class ClienteService:
     async def definir_credito(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         data: CreditoUpdate
     ) -> Cliente:
         """
-        Define limite de crédito e dia de vencimento com transação atômica.
+        Define limite de crédito e dia de vencimento com transação atômica (filtrado por empresa).
         
         Regras:
         - limite_credito >= 0
@@ -169,13 +184,14 @@ class ClienteService:
         """
         try:
             async with self.db.begin_nested():
-                cliente = await self.buscar_cliente(cliente_id)
+                cliente = await self.buscar_cliente(cliente_id, empresa_id)
                 
                 # TODO: Buscar saldo devedor do serviço financeiro
                 saldo_devedor = Decimal("0.00")  # Por enquanto
                 
                 cliente_atualizado = await self.cliente_repo.atualizar_credito(
                     cliente_id,
+                    empresa_id,
                     data.limite_credito,
                     data.dia_vencimento
                 )
@@ -190,6 +206,7 @@ class ClienteService:
             log.info(
                 "cliente.credito_definido",
                 cliente_id=str(cliente_id),
+                empresa_id=empresa_id,
                 limite=str(data.limite_credito)
             )
             
@@ -206,13 +223,15 @@ class ClienteService:
     async def ajustar_credito(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         delta: Decimal
     ) -> Cliente:
         """
-        Ajusta crédito disponível com transação atômica.
+        Ajusta crédito disponível com transação atômica (filtrado por empresa).
         
         Args:
             cliente_id: ID do cliente
+            empresa_id: ID da empresa
             delta: Valor a ajustar (positivo = crédito, negativo = débito)
             
         Regras:
@@ -220,11 +239,12 @@ class ClienteService:
         """
         try:
             async with self.db.begin_nested():
-                cliente = await self.buscar_cliente(cliente_id)
+                cliente = await self.buscar_cliente(cliente_id, empresa_id)
                 
                 try:
                     cliente_atualizado = await self.cliente_repo.ajustar_credito_disponivel(
                         cliente_id,
+                        empresa_id,
                         delta
                     )
                 except ValueError as e:
@@ -243,6 +263,7 @@ class ClienteService:
             log.info(
                 "cliente.credito_ajustado",
                 cliente_id=str(cliente_id),
+                empresa_id=empresa_id,
                 delta=str(delta)
             )
             
@@ -256,16 +277,16 @@ class ClienteService:
             log.error("erro_ajustar_credito", error=str(e))
             raise
     
-    async def bloquear_cliente(self, cliente_id: UUID) -> Cliente:
+    async def bloquear_cliente(self, cliente_id: UUID, empresa_id: int) -> Cliente:
         """
-        Bloqueia um cliente manualmente com transação atômica.
+        Bloqueia um cliente manualmente com transação atômica (filtrado por empresa).
         
         Regras:
         - Cliente bloqueado não pode fazer compras fiadas
         """
         try:
             async with self.db.begin_nested():
-                cliente = await self.cliente_repo.bloquear(cliente_id)
+                cliente = await self.cliente_repo.bloquear(cliente_id, empresa_id)
                 if not cliente:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
@@ -273,7 +294,7 @@ class ClienteService:
                     )
             
             await self.db.commit()
-            log.warning("cliente.bloqueado_manual", cliente_id=str(cliente_id))
+            log.warning("cliente.bloqueado_manual", cliente_id=str(cliente_id), empresa_id=empresa_id)
             return cliente
             
         except HTTPException:
@@ -284,11 +305,11 @@ class ClienteService:
             log.error("erro_bloquear_cliente", error=str(e))
             raise
     
-    async def desbloquear_cliente(self, cliente_id: UUID) -> Cliente:
-        """Desbloqueia um cliente com transação atômica."""
+    async def desbloquear_cliente(self, cliente_id: UUID, empresa_id: int) -> Cliente:
+        """Desbloqueia um cliente com transação atômica (filtrado por empresa)."""
         try:
             async with self.db.begin_nested():
-                cliente = await self.cliente_repo.desbloquear(cliente_id)
+                cliente = await self.cliente_repo.desbloquear(cliente_id, empresa_id)
                 if not cliente:
                     raise HTTPException(
                         status_code=status.HTTP_404_NOT_FOUND,
@@ -296,7 +317,7 @@ class ClienteService:
                     )
             
             await self.db.commit()
-            log.info("cliente.desbloqueado", cliente_id=str(cliente_id))
+            log.info("cliente.desbloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
             return cliente
             
         except HTTPException:
@@ -312,18 +333,19 @@ class ClienteService:
     async def adicionar_endereco(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         data: EnderecoCreate
     ) -> Endereco:
-        """Adiciona um endereço ao cliente."""
+        """Adiciona um endereço ao cliente (filtrado por empresa)."""
         try:
-            # Verificar se cliente existe
-            await self.buscar_cliente(cliente_id)
+            # Verificar se cliente existe e pertence à empresa
+            await self.buscar_cliente(cliente_id, empresa_id)
             
             endereco = await self.endereco_repo.criar(cliente_id, data)
             await self.db.commit()
             await self.db.refresh(endereco)
             
-            log.info("endereco.criado", cliente_id=str(cliente_id), endereco_id=str(endereco.id))
+            log.info("endereco.criado", cliente_id=str(cliente_id), endereco_id=str(endereco.id), empresa_id=empresa_id)
             return endereco
             
         except HTTPException:
@@ -334,23 +356,24 @@ class ClienteService:
             log.error("erro_adicionar_endereco", error=str(e))
             raise
     
-    async def listar_enderecos(self, cliente_id: UUID) -> list[Endereco]:
-        """Lista endereços de um cliente."""
-        # Verificar se cliente existe
-        await self.buscar_cliente(cliente_id)
+    async def listar_enderecos(self, cliente_id: UUID, empresa_id: int) -> list[Endereco]:
+        """Lista endereços de um cliente (filtrado por empresa)."""
+        # Verificar se cliente existe e pertence à empresa
+        await self.buscar_cliente(cliente_id, empresa_id)
         
         return await self.endereco_repo.listar_por_cliente(cliente_id)
     
     async def atualizar_endereco(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         endereco_id: UUID,
         data: EnderecoUpdate
     ) -> Endereco:
-        """Atualiza um endereço com transação atômica."""
+        """Atualiza um endereço com transação atômica (filtrado por empresa)."""
         try:
-            # Verificar se cliente existe
-            await self.buscar_cliente(cliente_id)
+            # Verificar se cliente existe e pertence à empresa
+            await self.buscar_cliente(cliente_id, empresa_id)
             
             # Verificar se endereço pertence ao cliente
             endereco = await self.endereco_repo.buscar_por_id(endereco_id)
@@ -369,7 +392,7 @@ class ClienteService:
             
             await self.db.commit()
             await self.db.refresh(endereco_atualizado)
-            log.info("endereco.atualizado", endereco_id=str(endereco_id))
+            log.info("endereco.atualizado", endereco_id=str(endereco_id), empresa_id=empresa_id)
             return endereco_atualizado
             
         except HTTPException:
@@ -383,12 +406,13 @@ class ClienteService:
     async def remover_endereco(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         endereco_id: UUID
     ) -> None:
-        """Remove um endereço com transação atômica."""
+        """Remove um endereço com transação atômica (filtrado por empresa)."""
         try:
-            # Verificar se cliente existe
-            await self.buscar_cliente(cliente_id)
+            # Verificar se cliente existe e pertence à empresa
+            await self.buscar_cliente(cliente_id, empresa_id)
             
             # Verificar se endereço pertence ao cliente
             endereco = await self.endereco_repo.buscar_por_id(endereco_id)
@@ -406,7 +430,7 @@ class ClienteService:
                 )
             
             await self.db.commit()
-            log.info("endereco.removido", endereco_id=str(endereco_id))
+            log.info("endereco.removido", endereco_id=str(endereco_id), empresa_id=empresa_id)
             
         except HTTPException:
             await self.db.rollback()

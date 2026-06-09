@@ -21,6 +21,7 @@ class ClienteRepository:
     async def criar(self, data: ClienteCreate) -> Cliente:
         """Cria um novo cliente."""
         cliente = Cliente(
+            empresa_id=data.empresa_id,
             cpf=data.cpf,
             nome=data.nome,
             telefone=data.telefone,
@@ -31,25 +32,32 @@ class ClienteRepository:
         await self.db.flush()
         await self.db.refresh(cliente)
         await self.db.commit()
-        log.info("cliente.criado", cliente_id=str(cliente.id))
+        log.info("cliente.criado", cliente_id=str(cliente.id), empresa_id=data.empresa_id)
         return cliente
     
-    async def buscar_por_id(self, cliente_id: UUID) -> Cliente | None:
-        """Busca cliente por ID."""
+    async def buscar_por_id(self, cliente_id: UUID, empresa_id: int) -> Cliente | None:
+        """Busca cliente por ID (filtrado por empresa)."""
         result = await self.db.execute(
-            select(Cliente).where(Cliente.id == cliente_id)
+            select(Cliente).where(
+                Cliente.id == cliente_id,
+                Cliente.empresa_id == empresa_id
+            )
         )
         return result.scalar_one_or_none()
     
-    async def buscar_por_cpf(self, cpf: str) -> Cliente | None:
-        """Busca cliente por CPF."""
+    async def buscar_por_cpf(self, cpf: str, empresa_id: int) -> Cliente | None:
+        """Busca cliente por CPF (filtrado por empresa)."""
         result = await self.db.execute(
-            select(Cliente).where(Cliente.cpf == cpf)
+            select(Cliente).where(
+                Cliente.cpf == cpf,
+                Cliente.empresa_id == empresa_id
+            )
         )
         return result.scalar_one_or_none()
     
     async def listar(
         self,
+        empresa_id: int,
         skip: int = 0,
         limit: int = 100,
         nome: str | None = None,
@@ -57,8 +65,8 @@ class ClienteRepository:
         bloqueado: bool | None = None,
         ativo: bool | None = None
     ) -> tuple[list[Cliente], int]:
-        """Lista clientes com filtros."""
-        query = select(Cliente)
+        """Lista clientes com filtros (filtrado por empresa)."""
+        query = select(Cliente).where(Cliente.empresa_id == empresa_id)
         
         # Filtro de ativo (padrão: apenas ativos)
         if ativo is not None:
@@ -96,9 +104,9 @@ class ClienteRepository:
         
         return clientes, total
     
-    async def atualizar(self, cliente_id: UUID, data: ClienteUpdate) -> Cliente | None:
-        """Atualiza um cliente."""
-        cliente = await self.buscar_por_id(cliente_id)
+    async def atualizar(self, cliente_id: UUID, empresa_id: int, data: ClienteUpdate) -> Cliente | None:
+        """Atualiza um cliente (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             return None
         
@@ -108,28 +116,29 @@ class ClienteRepository:
         
         await self.db.commit()
         await self.db.refresh(cliente)
-        log.info("cliente.atualizado", cliente_id=str(cliente_id))
+        log.info("cliente.atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
-    async def soft_delete(self, cliente_id: UUID) -> bool:
-        """Soft delete de um cliente."""
-        cliente = await self.buscar_por_id(cliente_id)
+    async def soft_delete(self, cliente_id: UUID, empresa_id: int) -> bool:
+        """Soft delete de um cliente (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             return False
         
         cliente.ativo = False
         await self.db.commit()
-        log.info("cliente.desativado", cliente_id=str(cliente_id))
+        log.info("cliente.desativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return True
     
     async def atualizar_credito(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         limite_credito: Decimal,
         dia_vencimento: int
     ) -> Cliente | None:
-        """Atualiza limite de crédito e dia de vencimento."""
-        cliente = await self.buscar_por_id(cliente_id)
+        """Atualiza limite de crédito e dia de vencimento (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             return None
         
@@ -140,16 +149,17 @@ class ClienteRepository:
         
         await self.db.commit()
         await self.db.refresh(cliente)
-        log.info("cliente.credito_atualizado", cliente_id=str(cliente_id))
+        log.info("cliente.credito_atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
     async def ajustar_credito_disponivel(
         self,
         cliente_id: UUID,
+        empresa_id: int,
         delta: Decimal
     ) -> Cliente | None:
-        """Ajusta crédito disponível (positivo = crédito, negativo = débito)."""
-        cliente = await self.buscar_por_id(cliente_id)
+        """Ajusta crédito disponível (positivo = crédito, negativo = débito) (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             return None
         
@@ -161,31 +171,31 @@ class ClienteRepository:
         cliente.credito_disponivel = novo_credito
         await self.db.commit()
         await self.db.refresh(cliente)
-        log.info("cliente.credito_ajustado", cliente_id=str(cliente_id), delta=str(delta))
+        log.info("cliente.credito_ajustado", cliente_id=str(cliente_id), empresa_id=empresa_id, delta=str(delta))
         return cliente
     
-    async def bloquear(self, cliente_id: UUID) -> Cliente | None:
-        """Bloqueia um cliente."""
-        cliente = await self.buscar_por_id(cliente_id)
+    async def bloquear(self, cliente_id: UUID, empresa_id: int) -> Cliente | None:
+        """Bloqueia um cliente (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             return None
         
         cliente.bloqueado = True
         await self.db.commit()
         await self.db.refresh(cliente)
-        log.info("cliente.bloqueado", cliente_id=str(cliente_id))
+        log.info("cliente.bloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
-    async def desbloquear(self, cliente_id: UUID) -> Cliente | None:
-        """Desbloqueia um cliente."""
-        cliente = await self.buscar_por_id(cliente_id)
+    async def desbloquear(self, cliente_id: UUID, empresa_id: int) -> Cliente | None:
+        """Desbloqueia um cliente (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             return None
         
         cliente.bloqueado = False
         await self.db.commit()
         await self.db.refresh(cliente)
-        log.info("cliente.desbloqueado", cliente_id=str(cliente_id))
+        log.info("cliente.desbloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
 
 
