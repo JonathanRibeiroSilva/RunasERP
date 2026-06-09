@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from database import init_db
+from routers import vendas_router
 
 
 structlog.configure(
@@ -46,6 +47,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registrar routers
+app.include_router(vendas_router)
 
 
 @app.get("/health")
