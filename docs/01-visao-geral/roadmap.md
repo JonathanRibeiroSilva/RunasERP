@@ -58,7 +58,7 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
 - 🚧 Histórico de alterações
 - 🚧 Testes unitários
 
-#### Serviço de Produtos (85% completo)
+#### Serviço de Produtos (95% completo)
 - ✅ CRUD de produtos
 - ✅ CRUD de categorias
 - ✅ Sistema de variantes
@@ -66,12 +66,15 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
 - ✅ Cálculo de markup
 - ✅ Soft delete
 - ✅ Transações ACID
-- 🚧 Catálogo público
-- 🚧 Gestão de fornecedores
-- 🚧 Upload de fotos
+- ✅ Multi-tenancy 100%
+- ✅ Loja online (API pública)
+- ✅ Gestão de fornecedores
+- ✅ Upload de fotos
+- 🚧 Histórico de preços
+- 🚧 Produtos compostos (kits)
 - 🚧 Testes unitários
 
-#### Serviço de Estoque (90% completo)
+#### Serviço de Estoque (95% completo)
 - ✅ Controle de estoque
 - ✅ Movimentações (entrada, saída, ajuste, devolução, perda)
 - ✅ Gestão de lotes
@@ -80,18 +83,31 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
 - ✅ Reserva de estoque
 - ✅ Localização física
 - ✅ Transações ACID
-- 🚧 Alertas de estoque mínimo
-- 🚧 Alertas de validade
+- ✅ Multi-tenancy 100%
+- ✅ Integração com Vendas (reserva/baixa automática)
+- ✅ Relatórios (geral, movimentações, baixo, zerado)
+- 🚧 Notificações automáticas (estoque baixo, lotes vencendo)
+- 🚧 Bloqueio de lotes vencidos
 - 🚧 FIFO/FEFO
 - 🚧 Testes unitários
 
-#### Serviço de Vendas (5% completo)
-- 🚧 Carrinho de compras
-- 🚧 Checkout
-- 🚧 Gestão de pedidos
-- 🚧 Validação de crédito
-- 🚧 Reserva de estoque
-- 🚧 Integração Mercado Pago
+#### Serviço de Vendas (90% completo)
+- ✅ Modelos completos (Venda, ItemVenda, PagamentoVenda, ReservaEstoqueVenda)
+- ✅ CRUD de vendas completo
+- ✅ Workflow completo (6 estados)
+- ✅ Múltiplas formas de pagamento
+- ✅ Validação de crédito
+- ✅ Reserva/liberação/baixa de estoque (integração HTTP)
+- ✅ Multi-tenancy 100% nativo
+- ✅ Cliente opcional (vendas de balcão)
+- ✅ Número de venda único por empresa
+- ✅ Snapshot de dados do produto
+- ✅ Migration completa
+- ✅ Seed com 6 cenários
+- 🚧 Integração com Financeiro (ContaReceber para FIADO)
+- 🚧 Devolução (nova entidade)
+- 🚧 Carrinho de compras (sessão para loja online)
+- 🚧 Checkout (loja online)
 - 🚧 Testes unitários
 
 #### Serviço Financeiro (5% completo)
@@ -112,7 +128,7 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
 - 🚧 Testes unitários
 
 **Prazo**: 30 de Junho de 2026  
-**Progresso Geral**: 62% completo
+**Progresso Geral**: 75% completo (↑13% - Multi-tenancy + Vendas implementados)
 
 ---
 
@@ -146,15 +162,27 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
   - ✅ Gestão de endereços
   - ✅ Gestão de crédito
   - 🚧 Histórico de compras
-- ✅ Produtos (80% - falta fotos e fornecedores)
+- ✅ Produtos (90% - falta histórico de preços, kits)
   - ✅ Lista com filtros
   - ✅ Cadastro
   - ✅ Edição
   - ✅ Detalhes
   - ✅ Gestão de variantes
   - ✅ Gestão de categorias
-  - 🚧 Upload de fotos
-  - 🚧 Gestão de fornecedores
+  - ✅ Upload de fotos
+  - ✅ Gestão de fornecedores
+  - 🚧 Histórico de preços
+  - 🚧 Produtos compostos (kits)
+- 🟡 Loja Online / E-commerce (50%)
+  - ✅ Vitrine de produtos (lista pública)
+  - ✅ Detalhes do produto
+  - ✅ Filtros e busca
+  - ✅ Design responsivo
+  - ✅ Compartilhamento (WhatsApp, link)
+  - 🚧 Carrinho de compras
+  - 🚧 Checkout
+  - 🚧 Área do cliente
+  - 🚧 Rastreamento de pedidos
 - 🔴 Estoque (0%)
   - 🚧 Visão geral
   - 🚧 Movimentações
@@ -181,7 +209,7 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
 - 🚧 Upload de arquivos
 
 **Prazo**: 31 de Julho de 2026  
-**Progresso Geral**: 44% completo
+**Progresso Geral**: 52% completo (↑8% - Loja Online iniciada)
 
 ---
 
@@ -344,20 +372,29 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
 - 🎯 99% uptime
 - 🎯 10 clientes beta ativos
 
-### Progresso Atual (Maio 2026)
+### Progresso Atual (Junho 2026)
 - ✅ API Gateway: 85% completo
 - ✅ Clientes Backend: 90% completo
-- ✅ Produtos Backend: 85% completo
-- ✅ Estoque Backend: 90% completo
+- ✅ Produtos Backend: 95% completo (↑10% - Multi-tenancy, fornecedores, fotos)
+- ✅ Estoque Backend: 95% completo (↑5% - Multi-tenancy, integração Vendas)
+- ✅ Vendas Backend: 90% completo (↑85% - Implementação completa)
 - ✅ Notificações: 75% completo
-- 🔴 Vendas Backend: 5% completo
-- 🔴 Financeiro Backend: 5% completo
+- 🔴 Financeiro Backend: 0% completo
 - ✅ Frontend Infraestrutura: 90% completo
 - ✅ Frontend Clientes: 85% completo
-- ✅ Frontend Produtos: 80% completo
+- ✅ Frontend Produtos: 90% completo (↑10%)
+- 🟡 Frontend Loja Online: 50% completo (↑50% - Vitrine implementada)
 - 🔴 Frontend Estoque: 0% completo
 - 🔴 Frontend Vendas: 0% completo
 - 🔴 Frontend Financeiro: 0% completo
+
+**Destaques da Última Atualização (09/06/2026)**:
+- ✅ Multi-tenancy 100% implementado em Produtos, Estoque, Vendas
+- ✅ Serviço de Vendas implementado completamente do zero (~2.620 linhas)
+- ✅ Workflow de vendas: 6 estados com transições automáticas
+- ✅ Integração Vendas ↔ Estoque (reserva, liberação, baixa automáticas)
+- ✅ Loja Online: Vitrine pública de produtos implementada
+- ✅ 4 commits de funcionalidades (Produtos, Estoque, Vendas multi-tenancy, bug fix)
 
 ### Pós-MVP (Fase 5-6)
 - 🎯 100 clientes ativos
@@ -406,6 +443,7 @@ Dúvidas sobre o roadmap?
 **Projeto:** Runas  
 **Equipe:** Equipe DenebCorp  
 **Data:** 26 de Maio de 2026  
-**Versão:** 1.1.0  
-**Última Atualização**: 27 de Maio de 2026  
-**Progresso Geral**: Backend 62% | Frontend 44% | Sistema 53%
+**Versão:** 1.2.0  
+**Última Atualização**: 09 de Junho de 2026  
+**Progresso Geral**: Backend 75% | Frontend 52% | Sistema 64%  
+**Commits Recentes**: 5 (Multi-tenancy Produtos, Estoque, Vendas + Checklist atualizado + Bug fix catálogo)
