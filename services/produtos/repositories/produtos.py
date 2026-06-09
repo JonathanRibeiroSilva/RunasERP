@@ -18,44 +18,53 @@ class CategoriaRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def criar(self, nome: str, descricao: str | None = None) -> Categoria:
+    async def criar(self, empresa_id: int, nome: str, descricao: str | None = None) -> Categoria:
         """Cria uma nova categoria."""
-        categoria = Categoria(nome=nome, descricao=descricao)
+        categoria = Categoria(empresa_id=empresa_id, nome=nome, descricao=descricao)
         self.session.add(categoria)
         await self.session.flush()
         return categoria
 
-    async def obter_por_id(self, categoria_id: UUID) -> Categoria | None:
+    async def obter_por_id(self, empresa_id: int, categoria_id: UUID) -> Categoria | None:
         """Obtém uma categoria por ID."""
         result = await self.session.execute(
-            select(Categoria).where(Categoria.id == categoria_id)
+            select(Categoria)
+            .where(Categoria.empresa_id == empresa_id)
+            .where(Categoria.id == categoria_id)
         )
         return result.scalars().first()
 
-    async def obter_por_nome(self, nome: str) -> Categoria | None:
+    async def obter_por_nome(self, empresa_id: int, nome: str) -> Categoria | None:
         """Obtém uma categoria por nome."""
         result = await self.session.execute(
-            select(Categoria).where(Categoria.nome == nome)
+            select(Categoria)
+            .where(Categoria.empresa_id == empresa_id)
+            .where(Categoria.nome == nome)
         )
         return result.scalars().first()
 
-    async def listar_todas(self, skip: int = 0, limit: int = 10) -> tuple[list[Categoria], int]:
+    async def listar_todas(self, empresa_id: int, skip: int = 0, limit: int = 10) -> tuple[list[Categoria], int]:
         """Lista todas as categorias com paginação."""
         # Contar total
-        count_result = await self.session.execute(select(func.count(Categoria.id)))
+        count_result = await self.session.execute(
+            select(func.count(Categoria.id)).where(Categoria.empresa_id == empresa_id)
+        )
         total = count_result.scalar()
 
         # Buscar com paginação
         result = await self.session.execute(
-            select(Categoria).offset(skip).limit(limit)
+            select(Categoria)
+            .where(Categoria.empresa_id == empresa_id)
+            .offset(skip)
+            .limit(limit)
         )
         return result.scalars().all(), total
 
     async def atualizar(
-        self, categoria_id: UUID, nome: str | None = None, descricao: str | None = None
+        self, empresa_id: int, categoria_id: UUID, nome: str | None = None, descricao: str | None = None
     ) -> Categoria | None:
         """Atualiza uma categoria."""
-        categoria = await self.obter_por_id(categoria_id)
+        categoria = await self.obter_por_id(empresa_id, categoria_id)
         if not categoria:
             return None
 
@@ -67,9 +76,9 @@ class CategoriaRepository:
         await self.session.flush()
         return categoria
 
-    async def deletar(self, categoria_id: UUID) -> bool:
+    async def deletar(self, empresa_id: int, categoria_id: UUID) -> bool:
         """Deleta uma categoria."""
-        categoria = await self.obter_por_id(categoria_id)
+        categoria = await self.obter_por_id(empresa_id, categoria_id)
         if not categoria:
             return False
 
@@ -84,17 +93,18 @@ class ProdutoRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def criar(self, categoria_id: UUID, nome: str, descricao: str | None = None) -> Produto:
+    async def criar(self, empresa_id: int, categoria_id: UUID, nome: str, descricao: str | None = None) -> Produto:
         """Cria um novo produto."""
-        produto = Produto(categoria_id=categoria_id, nome=nome, descricao=descricao)
+        produto = Produto(empresa_id=empresa_id, categoria_id=categoria_id, nome=nome, descricao=descricao)
         self.session.add(produto)
         await self.session.flush()
         return produto
 
-    async def obter_por_id(self, produto_id: UUID) -> Produto | None:
+    async def obter_por_id(self, empresa_id: int, produto_id: UUID) -> Produto | None:
         """Obtém um produto por ID (incluindo deletados)."""
         result = await self.session.execute(
             select(Produto)
+            .where(Produto.empresa_id == empresa_id)
             .where(Produto.id == produto_id)
             .options(
                 selectinload(Produto.categoria),
@@ -106,26 +116,31 @@ class ProdutoRepository:
         )
         return result.scalars().first()
 
-    async def obter_por_nome(self, nome: str) -> list[Produto]:
+    async def obter_por_nome(self, empresa_id: int, nome: str) -> list[Produto]:
         """Obtém produtos por nome (busca parcial)."""
         result = await self.session.execute(
-            select(Produto).where(Produto.nome.ilike(f"%{nome}%"))
+            select(Produto)
+            .where(Produto.empresa_id == empresa_id)
+            .where(Produto.nome.ilike(f"%{nome}%"))
         )
         return result.scalars().all()
 
     async def listar_por_categoria(
-        self, categoria_id: UUID, skip: int = 0, limit: int = 10
+        self, empresa_id: int, categoria_id: UUID, skip: int = 0, limit: int = 10
     ) -> tuple[list[Produto], int]:
         """Lista produtos de uma categoria."""
         # Contar total
         count_result = await self.session.execute(
-            select(func.count(Produto.id)).where(Produto.categoria_id == categoria_id)
+            select(func.count(Produto.id))
+            .where(Produto.empresa_id == empresa_id)
+            .where(Produto.categoria_id == categoria_id)
         )
         total = count_result.scalar()
 
         # Buscar com paginação
         result = await self.session.execute(
             select(Produto)
+            .where(Produto.empresa_id == empresa_id)
             .where(Produto.categoria_id == categoria_id)
             .offset(skip)
             .limit(limit)
@@ -138,6 +153,7 @@ class ProdutoRepository:
 
     async def listar_todos(
         self, 
+        empresa_id: int,
         skip: int = 0, 
         limit: int = 10, 
         apenas_ativos: bool | None = None,
@@ -147,13 +163,14 @@ class ProdutoRepository:
         Lista todos os produtos com filtros opcionais.
         
         Args:
+            empresa_id: ID da empresa (multi-tenancy)
             skip: Offset para paginação
             limit: Limite de resultados
             apenas_ativos: True = só ativos, False = só inativos, None = todos (ativos e inativos)
             apenas_deletados: True = só deletados, False = não deletados
         """
-        query = select(Produto)
-        count_query = select(func.count(Produto.id))
+        query = select(Produto).where(Produto.empresa_id == empresa_id)
+        count_query = select(func.count(Produto.id)).where(Produto.empresa_id == empresa_id)
         
         # Filtro de deletados
         if apenas_deletados:
@@ -184,6 +201,7 @@ class ProdutoRepository:
 
     async def atualizar(
         self,
+        empresa_id: int,
         produto_id: UUID,
         nome: str | None = None,
         categoria_id: UUID | None = None,
@@ -191,7 +209,7 @@ class ProdutoRepository:
         ativo: bool | None = None,
     ) -> Produto | None:
         """Atualiza um produto."""
-        produto = await self.obter_por_id(produto_id)
+        produto = await self.obter_por_id(empresa_id, produto_id)
         if not produto:
             return None
 
@@ -207,9 +225,9 @@ class ProdutoRepository:
         await self.session.flush()
         return produto
 
-    async def deletar(self, produto_id: UUID) -> bool:
+    async def deletar(self, empresa_id: int, produto_id: UUID) -> bool:
         """Soft delete de um produto (marca como deletado)."""
-        produto = await self.obter_por_id(produto_id)
+        produto = await self.obter_por_id(empresa_id, produto_id)
         if not produto:
             return False
 
@@ -218,10 +236,12 @@ class ProdutoRepository:
         await self.session.flush()
         return True
     
-    async def restaurar(self, produto_id: UUID) -> bool:
+    async def restaurar(self, empresa_id: int, produto_id: UUID) -> bool:
         """Restaura um produto deletado."""
         result = await self.session.execute(
-            select(Produto).where(Produto.id == produto_id)
+            select(Produto)
+            .where(Produto.empresa_id == empresa_id)
+            .where(Produto.id == produto_id)
         )
         produto = result.scalars().first()
         if not produto or produto.deletado_em is None:
@@ -240,6 +260,7 @@ class VarianteRepository:
 
     async def criar(
         self,
+        empresa_id: int,
         produto_id: UUID,
         sku: str,
         preco_custo: float,
@@ -248,6 +269,7 @@ class VarianteRepository:
     ) -> Variante:
         """Cria uma nova variante."""
         variante = Variante(
+            empresa_id=empresa_id,
             produto_id=produto_id,
             sku=sku,
             preco_custo=preco_custo,
@@ -258,26 +280,31 @@ class VarianteRepository:
         await self.session.flush()
         return variante
 
-    async def obter_por_id(self, variante_id: UUID) -> Variante | None:
+    async def obter_por_id(self, empresa_id: int, variante_id: UUID) -> Variante | None:
         """Obtém uma variante por ID."""
         result = await self.session.execute(
             select(Variante)
+            .where(Variante.empresa_id == empresa_id)
             .where(Variante.id == variante_id)
             .options(selectinload(Variante.atributos))
         )
         return result.scalars().first()
 
-    async def obter_por_sku(self, sku: str) -> Variante | None:
+    async def obter_por_sku(self, empresa_id: int, sku: str) -> Variante | None:
         """Obtém uma variante por SKU."""
         result = await self.session.execute(
-            select(Variante).where(Variante.sku == sku).options(selectinload(Variante.atributos))
+            select(Variante)
+            .where(Variante.empresa_id == empresa_id)
+            .where(Variante.sku == sku)
+            .options(selectinload(Variante.atributos))
         )
         return result.scalars().first()
 
-    async def listar_por_produto(self, produto_id: UUID) -> list[Variante]:
+    async def listar_por_produto(self, empresa_id: int, produto_id: UUID) -> list[Variante]:
         """Lista variantes de um produto."""
         result = await self.session.execute(
             select(Variante)
+            .where(Variante.empresa_id == empresa_id)
             .where(Variante.produto_id == produto_id)
             .options(selectinload(Variante.atributos))
         )
@@ -285,6 +312,7 @@ class VarianteRepository:
 
     async def atualizar(
         self,
+        empresa_id: int,
         variante_id: UUID,
         sku: str | None = None,
         preco_custo: float | None = None,
@@ -293,7 +321,7 @@ class VarianteRepository:
         ativo: bool | None = None,
     ) -> Variante | None:
         """Atualiza uma variante."""
-        variante = await self.obter_por_id(variante_id)
+        variante = await self.obter_por_id(empresa_id, variante_id)
         if not variante:
             return None
 
@@ -311,9 +339,9 @@ class VarianteRepository:
         await self.session.flush()
         return variante
 
-    async def deletar(self, variante_id: UUID) -> bool:
+    async def deletar(self, empresa_id: int, variante_id: UUID) -> bool:
         """Deleta uma variante."""
-        variante = await self.obter_por_id(variante_id)
+        variante = await self.obter_por_id(empresa_id, variante_id)
         if not variante:
             return False
 
@@ -499,6 +527,7 @@ class FornecedorRepository:
 
     async def criar(
         self,
+        empresa_id: int,
         nome: str,
         cnpj: str | None = None,
         email: str | None = None,
@@ -509,6 +538,7 @@ class FornecedorRepository:
     ) -> Fornecedor:
         """Cria um novo fornecedor."""
         fornecedor = Fornecedor(
+            empresa_id=empresa_id,
             nome=nome,
             cnpj=cnpj,
             email=email,
@@ -521,30 +551,37 @@ class FornecedorRepository:
         await self.session.flush()
         return fornecedor
 
-    async def obter_por_id(self, fornecedor_id: UUID) -> Fornecedor | None:
+    async def obter_por_id(self, empresa_id: int, fornecedor_id: UUID) -> Fornecedor | None:
         """Obtém um fornecedor por ID."""
         result = await self.session.execute(
-            select(Fornecedor).where(Fornecedor.id == fornecedor_id)
+            select(Fornecedor)
+            .where(Fornecedor.empresa_id == empresa_id)
+            .where(Fornecedor.id == fornecedor_id)
         )
         return result.scalars().first()
 
-    async def obter_por_cnpj(self, cnpj: str) -> Fornecedor | None:
+    async def obter_por_cnpj(self, empresa_id: int, cnpj: str) -> Fornecedor | None:
         """Obtém um fornecedor por CNPJ."""
         result = await self.session.execute(
-            select(Fornecedor).where(Fornecedor.cnpj == cnpj)
+            select(Fornecedor)
+            .where(Fornecedor.empresa_id == empresa_id)
+            .where(Fornecedor.cnpj == cnpj)
         )
         return result.scalars().first()
 
     async def listar_todos(
-        self, skip: int = 0, limit: int = 10, apenas_ativos: bool = True
+        self, empresa_id: int, skip: int = 0, limit: int = 10, apenas_ativos: bool = True
     ) -> tuple[list[Fornecedor], int]:
         """Lista todos os fornecedores."""
-        query = select(Fornecedor)
+        query = select(Fornecedor).where(Fornecedor.empresa_id == empresa_id)
+        count_query = select(func.count(Fornecedor.id)).where(Fornecedor.empresa_id == empresa_id)
+        
         if apenas_ativos:
             query = query.where(Fornecedor.ativo.is_(True))
+            count_query = count_query.where(Fornecedor.ativo.is_(True))
 
         # Contar total
-        count_result = await self.session.execute(select(func.count(Fornecedor.id)))
+        count_result = await self.session.execute(count_query)
         total = count_result.scalar()
 
         # Buscar com paginação
@@ -553,6 +590,7 @@ class FornecedorRepository:
 
     async def atualizar(
         self,
+        empresa_id: int,
         fornecedor_id: UUID,
         nome: str | None = None,
         cnpj: str | None = None,
@@ -564,7 +602,7 @@ class FornecedorRepository:
         ativo: bool | None = None,
     ) -> Fornecedor | None:
         """Atualiza um fornecedor."""
-        fornecedor = await self.obter_por_id(fornecedor_id)
+        fornecedor = await self.obter_por_id(empresa_id, fornecedor_id)
         if not fornecedor:
             return None
 
@@ -588,9 +626,9 @@ class FornecedorRepository:
         await self.session.flush()
         return fornecedor
 
-    async def deletar(self, fornecedor_id: UUID) -> bool:
+    async def deletar(self, empresa_id: int, fornecedor_id: UUID) -> bool:
         """Deleta um fornecedor."""
-        fornecedor = await self.obter_por_id(fornecedor_id)
+        fornecedor = await self.obter_por_id(empresa_id, fornecedor_id)
         if not fornecedor:
             return False
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class CategoriaBase(BaseModel):
     """Schema base de Categoria."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     nome: str = Field(..., min_length=1, max_length=100)
     descricao: str | None = Field(default=None, max_length=500)
 
@@ -58,6 +59,7 @@ class AtributoVarianteRead(AtributoVarianteBase):
 
 class VarianteBase(BaseModel):
     """Schema base de Variante."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     sku: str = Field(..., min_length=1, max_length=100)
     preco_custo: Decimal = Field(..., gt=0)
     markup_pct: Decimal = Field(..., ge=0)
@@ -152,6 +154,7 @@ class CatalogoConfigRead(CatalogoConfigBase):
 
 class FornecedorBase(BaseModel):
     """Schema base de Fornecedor."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     nome: str = Field(..., min_length=1, max_length=255)
     cnpj: str | None = Field(default=None, max_length=18)
     email: str | None = Field(default=None, max_length=255)
@@ -228,6 +231,7 @@ class FornecedorProdutoRead(FornecedorProdutoBase):
 
 class ProdutoBase(BaseModel):
     """Schema base de Produto."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     nome: str = Field(..., min_length=1, max_length=255)
     descricao: str | None = None
     ativo: bool = True

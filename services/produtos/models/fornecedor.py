@@ -4,7 +4,7 @@ Modelos de Fornecedor e FornecedorProduto.
 from datetime import datetime
 from decimal import Decimal
 from uuid import uuid4
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, Integer, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
@@ -14,12 +14,26 @@ class Fornecedor(Base):
     """Modelo de Fornecedor."""
 
     __tablename__ = "fornecedores"
-    __table_args__ = {"schema": "produtos"}
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'cnpj', name='uq_fornecedores_empresa_cnpj'),
+        Index('ix_fornecedores_empresa_id', 'empresa_id'),
+        Index('ix_fornecedores_empresa_id_ativo', 'empresa_id', 'ativo'),
+        {"schema": "produtos"}
+    )
 
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    
+    # Multi-tenancy
+    empresa_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        index=True,
+        comment="ID da empresa (multi-tenancy)"
+    )
+    
     nome: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    cnpj: Mapped[str | None] = mapped_column(String(18), unique=True, index=True)
-    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    cnpj: Mapped[str | None] = mapped_column(String(18), index=True)
+    email: Mapped[str | None] = mapped_column(String(255), index=True)
     telefone: Mapped[str | None] = mapped_column(String(20))
     endereco: Mapped[str | None] = mapped_column(Text)
     cidade: Mapped[str | None] = mapped_column(String(100), index=True)
