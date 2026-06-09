@@ -237,35 +237,41 @@ class Model(Base):
 
 ## 🎯 PRIORIDADE 1: Funcionalidades Essenciais
 
-### 0. CATÁLOGO PÚBLICO 🟡 EM PROGRESSO
+### 0. LOJA ONLINE 🟡 EM PROGRESSO
 
 #### Backend - Funcionalidades 🟡
-- ✅ CRUD de configuração de catálogo (visível, destaque, ordem)
+- ✅ CRUD de configuração da loja (visível, destaque, ordem)
 - ✅ CRUD de fotos de produtos
-- ✅ Service de catálogo implementado
+- ✅ Service de catálogo/loja implementado
 - 🟡 **Rotas públicas (sem autenticação)** - EM IMPLEMENTAÇÃO
-- 🔴 Filtro de produtos visíveis no catálogo
+- 🔴 Filtro de produtos visíveis na loja
 - 🔴 Busca e ordenação de produtos
+- 🔴 Carrinho de compras (sessão)
+- 🔴 Checkout simplificado
 
 #### Frontend - Rotas a Implementar 🟡
-- 🟡 `/c/default` - Catálogo público (lista de produtos) - EM IMPLEMENTAÇÃO
-- 🟡 `/c/default/produto/:id` - Detalhes do produto - EM IMPLEMENTAÇÃO
-- 🔴 Botão "Compartilhar Catálogo" no painel admin
+- 🟡 `/loja/:empresaSlug` - Loja online (lista de produtos) - EM IMPLEMENTAÇÃO
+- 🟡 `/loja/:empresaSlug/produto/:id` - Detalhes do produto - EM IMPLEMENTAÇÃO
+- 🔴 `/loja/:empresaSlug/carrinho` - Carrinho de compras
+- 🔴 `/loja/:empresaSlug/checkout` - Finalizar pedido
+- 🔴 Botão "Compartilhar Loja" no painel admin
 
 #### Frontend - Componentes Necessários 🟡
-- 🟡 `CatalogoPage` - Lista de produtos com filtros - EM IMPLEMENTAÇÃO
+- 🟡 `LojaPage` - Lista de produtos com filtros - EM IMPLEMENTAÇÃO
 - 🟡 `ProdutoDetalhePage` - Detalhes do produto - EM IMPLEMENTAÇÃO
 - 🟡 `ProdutoCard` - Card do produto - EM IMPLEMENTAÇÃO
-- 🟡 `FiltrosCatalogo` - Filtros e busca - EM IMPLEMENTAÇÃO
+- 🟡 `FiltrosLoja` - Filtros e busca - EM IMPLEMENTAÇÃO
+- 🔴 `CarrinhoLoja` - Carrinho de compras
+- 🔴 `CheckoutLoja` - Finalização de pedido
 
 #### Preparação Multi-Tenant 🟡
-- 🟡 URL com slug temporário: `/c/default`
-- 🟡 Código preparado para receber `empresa_id` no futuro
-- 🔴 Tabela `empresas` (implementar depois)
-- 🔴 Campo `slug` único por empresa
-- 🔴 Middleware de identificação de empresa
+- 🟡 URL com slug: `/loja/:empresaSlug` (preparado para múltiplas empresas)
+- 🟡 Código preparado para receber `empresa_id`
+- ✅ Tabela `empresas` implementada no API Gateway
+- ✅ Campo `slug` único por empresa
+- 🔴 Middleware de identificação de empresa por slug
 
-**🎯 Objetivo**: Criar catálogo público para visualização de produtos (sem vendas ainda)
+**🎯 Objetivo**: Criar loja online para visualização de produtos e vendas online (e-commerce básico)
 
 ---
 
@@ -319,7 +325,7 @@ class Model(Base):
 - ✅ **Multi-Tenancy 100%**: `empresa_id` em Produto, Categoria, Variante, Fornecedor
 - ✅ **Fornecedores**: CRUD completo implementado
 - ✅ **Associação Produto-Fornecedor**: Implementado (preço_custo, tempo_entrega)
-- ✅ **Catálogo Público**: Configuração completa (visível, destaque, ordem)
+- ✅ **Loja Online**: Configuração completa (visível, destaque, ordem)
 - ✅ **Fotos de Produtos**: Upload e gestão de imagens implementado
 - ✅ **Validação de SKU**: Unicidade por empresa garantida
 
@@ -770,20 +776,25 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 ## 🎯 PRIORIDADE 3: Funcionalidades Avançadas
 
-### 9. CATÁLOGO PÚBLICO 🔴
+### 9. LOJA ONLINE / E-COMMERCE 🟡
 
-#### Backend - A Implementar 🔴
-- 🔴 **API Pública**: Endpoints para catálogo
-- 🔴 **Configuração de Exibição**: Produtos visíveis no catálogo
-- 🔴 **Fotos**: Upload e gestão de imagens
-- 🔴 **Busca**: Busca por nome, categoria, preço
-- 🔴 **Filtros**: Filtrar por categoria, preço, atributos
+#### Backend - Implementado ✅
+- ✅ **API Pública**: Endpoints para loja sem autenticação
+- ✅ **Configuração de Exibição**: Produtos visíveis na loja
+- ✅ **Fotos**: Upload e gestão de imagens
+- 🔴 **Busca Avançada**: Busca por nome, categoria, preço
+- 🔴 **Filtros Avançados**: Filtrar por categoria, preço, atributos
+- 🔴 **Carrinho Backend**: API para gerenciar carrinho
+- 🔴 **Checkout Backend**: API para processar pedidos online
+- 🔴 **Pedido Convidado**: Permitir compras sem cadastro
 
-#### Frontend - A Implementar 🔴
-- 🔴 **Catálogo Público**: Site/app para clientes
-- 🔴 **Carrinho de Compras**: Adicionar produtos
-- 🔴 **Pedido Online**: Fazer pedido pelo catálogo
+#### Frontend - Em Implementação 🟡
+- 🟡 **Loja Online**: Site público para clientes (em desenvolvimento)
+- 🔴 **Carrinho de Compras**: Adicionar produtos e gerenciar carrinho
+- 🔴 **Checkout**: Finalizar pedido com dados de entrega
+- 🔴 **Pedido Online**: Fazer pedido pela loja
 - 🔴 **Rastreamento**: Acompanhar status do pedido
+- 🔴 **Área do Cliente**: Login e histórico de pedidos
 
 ### 10. INTEGRAÇÕES EXTERNAS 🔴
 
@@ -1063,27 +1074,38 @@ Produto (1) ----< (N) FornecedorProduto
 - [x] Implementar gestão de variantes
 - [x] **Implementar gestão de categorias (CRUD completo)**
 
-### Sprint 2.5 (1 semana) - Catálogo Público 🟡
+### Sprint 2.5 (1-2 semanas) - Loja Online (E-commerce Básico) 🟡
 - [x] **Backend**: Criar rotas públicas (sem autenticação)
   - [x] `GET /catalogo/publico/produtos` - Listar produtos visíveis
   - [x] `GET /catalogo/publico/produto/:id` - Detalhes do produto
   - [x] `GET /catalogo/publico/categorias` - Listar categorias
+  - [ ] `POST /loja/carrinho` - Adicionar ao carrinho (sessão)
+  - [ ] `GET /loja/carrinho` - Ver carrinho
+  - [ ] `POST /loja/checkout` - Processar pedido online
 - [x] **Frontend**: Criar páginas públicas
-  - [x] `CatalogoPage` - Lista de produtos com filtros
+  - [x] `LojaPage` - Lista de produtos com filtros
   - [x] `ProdutoDetalhePage` - Detalhes do produto
   - [x] Componente `ProdutoCard` - Card do produto
-- [x] **Funcionalidades**:
+  - [ ] `CarrinhoLoja` - Carrinho de compras
+  - [ ] `CheckoutLoja` - Finalização de pedido
+- [x] **Funcionalidades Implementadas**:
   - [x] Filtro por categoria
   - [x] Busca por nome
   - [x] Ordenação (nome, recentes)
   - [x] Design responsivo (mobile-first)
-  - [x] Botão "Compartilhar Catálogo" no painel admin
+  - [x] Botão "Compartilhar Loja" no painel admin
   - [x] Compartilhamento via WhatsApp
-  - [x] Copiar link do catálogo
+  - [x] Copiar link da loja
+- [ ] **Funcionalidades Pendentes**:
+  - [ ] Carrinho de compras funcional
+  - [ ] Checkout com dados de entrega
+  - [ ] Confirmação de pedido
+  - [ ] Integração com Vendas (criar venda a partir de pedido online)
 - [x] **Preparação Multi-Tenant**:
-  - [x] URL com slug: `/c/default` (preparado para `/c/:empresaSlug`)
+  - [x] URL com slug: `/loja/:empresaSlug`
   - [x] Schema `ProdutoCatalogoRead` sem dados internos (custo, markup, fornecedores)
-  - [x] Código preparado para receber `empresa_id` no futuro
+  - [x] Código preparado para receber `empresa_id`
+  - [x] Tabela `empresas` com campo `slug` único
 
 ### Sprint 3 (2 semanas) - Estoque Frontend
 - [ ] Criar rotas de estoque no frontend
@@ -1192,9 +1214,13 @@ Produto (1) ----< (N) FornecedorProduto
 5. ✅ **Otimização PostgreSQL** (Consolidação de 8 containers em 1)
 6. ✅ **Correções Críticas**: Nginx DNS dinâmico, SQLAlchemy 2.0.36, Transações ACID
 7. ✅ **Gestão de Categorias no frontend** (CRUD completo implementado)
-8. � **Implementar Catálogo Público** (Sprint 2.5 - EM PROGRESSO)
-9. �🔴 **Implementar frontend de Estoque** (Sprint 3)
-9. 🔴 **Implementar backend de Vendas** (Sprint 4)
+8. ✅ **Implementar Multi-Tenancy**: Produtos, Estoque, Vendas (100%)
+9. ✅ **Implementar backend de Vendas** (Sprint 4 - 100%)
+10. 🟡 **Implementar Loja Online / E-commerce** (Sprint 2.5 - 50% - falta carrinho e checkout)
+11. 🔴 **Aplicar Migrations**: Produtos, Estoque, Vendas
+12. 🔴 **Implementar frontend de Estoque** (Sprint 3)
+13. 🔴 **Implementar frontend de Vendas** (Sprint 5)
+14. 🔴 **Implementar backend de Financeiro** (Sprint 6)
 
 ---
 
