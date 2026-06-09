@@ -3,7 +3,7 @@ Modelo de Produto.
 """
 from datetime import datetime
 from uuid import uuid4
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, Integer, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
@@ -13,9 +13,22 @@ class Produto(Base):
     """Modelo de Produto."""
     
     __tablename__ = "produtos"
-    __table_args__ = {"schema": "produtos"}
+    __table_args__ = (
+        Index('ix_produtos_empresa_id_ativo', 'empresa_id', 'ativo'),
+        Index('ix_produtos_empresa_id_nome', 'empresa_id', 'nome'),
+        {"schema": "produtos"}
+    )
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    
+    # Multi-tenancy
+    empresa_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        index=True,
+        comment="ID da empresa (multi-tenancy)"
+    )
+    
     categoria_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("produtos.categorias.id", ondelete="RESTRICT"),
