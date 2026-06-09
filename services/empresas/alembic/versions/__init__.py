@@ -1,0 +1,3 @@
+"""
+Migrations do serviço empresas.
+"""
