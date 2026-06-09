@@ -10,6 +10,7 @@ from utils.validators import validar_cpf, normalizar_cpf, normalizar_telefone
 
 class ClienteBase(BaseModel):
     """Schema base de cliente."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     nome: str = Field(..., min_length=3, max_length=255)
     cpf: str = Field(..., min_length=11, max_length=14)
     telefone: str
