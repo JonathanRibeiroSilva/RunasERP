@@ -9,6 +9,7 @@ import structlog
 
 from database import init_db
 from routers import vendas_router
+from routers.loja import router as loja_router
 
 
 structlog.configure(
@@ -50,6 +51,7 @@ app.add_middleware(
 
 # Registrar routers
 app.include_router(vendas_router)
+app.include_router(loja_router)  # Loja Online (E-commerce)
 
 
 @app.get("/health")
