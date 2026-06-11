@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     VENDAS_URL: str = "http://vendas:8004"
     FINANCEIRO_URL: str = "http://financeiro:8005"
     
+    # URLs públicas (para Mercado Pago)
+    API_BASE_URL: str = "https://api.seudominio.com"  # URL pública da API
+    FRONTEND_URL: str = "https://loja.seudominio.com"  # URL pública do frontend
+    
+    # Evolution API (WhatsApp)
+    EVOLUTION_API_URL: str = ""  # URL da Evolution API (opcional)
+    EVOLUTION_API_KEY: str = ""  # API Key da Evolution API (opcional)
+    EVOLUTION_INSTANCE: str = ""  # Nome da instância (opcional)
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
