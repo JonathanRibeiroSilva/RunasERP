@@ -16,7 +16,9 @@ from models.venda import (
     PagamentoVenda,
     ReservaEstoqueVenda,
     StatusVenda,
-    FormaPagamento
+    FormaPagamento,
+    ConfiguracaoLoja,
+    FaixaEntrega
 )
 
 
@@ -286,3 +288,147 @@ class ReservaEstoqueVendaRepository:
         reserva.updated_at = datetime.utcnow()
         await db.flush()
         return reserva
+
+
+
+class ConfiguracaoLojaRepository:
+    """Repository para operações de ConfiguracaoLoja."""
+    
+    @staticmethod
+    async def criar(db: AsyncSession, **dados) -> ConfiguracaoLoja:
+        """Cria uma nova configuração de loja."""
+        config = ConfiguracaoLoja(**dados)
+        db.add(config)
+        await db.flush()
+        return config
+    
+    @staticmethod
+    async def buscar_por_empresa(
+        db: AsyncSession,
+        empresa_id: int
+    ) -> Optional[ConfiguracaoLoja]:
+        """Busca configuração da loja por empresa."""
+        query = select(ConfiguracaoLoja).where(
+            ConfiguracaoLoja.empresa_id == empresa_id
+        )
+        
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def atualizar(
+        db: AsyncSession,
+        config_id: UUID,
+        **dados
+    ) -> ConfiguracaoLoja:
+        """Atualiza configuração da loja."""
+        query = select(ConfiguracaoLoja).where(
+            ConfiguracaoLoja.id == config_id
+        )
+        
+        result = await db.execute(query)
+        config = result.scalar_one()
+        
+        for key, value in dados.items():
+            setattr(config, key, value)
+        
+        await db.flush()
+        return config
+
+
+class FaixaEntregaRepository:
+    """Repository para operações de FaixaEntrega."""
+    
+    @staticmethod
+    async def criar(db: AsyncSession, **dados) -> FaixaEntrega:
+        """Cria uma nova faixa de entrega."""
+        faixa = FaixaEntrega(**dados)
+        db.add(faixa)
+        await db.flush()
+        return faixa
+    
+    @staticmethod
+    async def buscar_por_id(
+        db: AsyncSession,
+        faixa_id: UUID
+    ) -> Optional[FaixaEntrega]:
+        """Busca faixa de entrega por ID."""
+        query = select(FaixaEntrega).where(
+            FaixaEntrega.id == faixa_id
+        )
+        
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def buscar_por_bairro(
+        db: AsyncSession,
+        empresa_id: int,
+        bairro: str
+    ) -> Optional[FaixaEntrega]:
+        """Busca faixa de entrega por empresa e bairro."""
+        query = select(FaixaEntrega).where(
+            and_(
+                FaixaEntrega.empresa_id == empresa_id,
+                FaixaEntrega.bairro.ilike(bairro),  # Case-insensitive
+                FaixaEntrega.ativo == True
+            )
+        )
+        
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def listar(
+        db: AsyncSession,
+        empresa_id: int,
+        apenas_ativas: bool = False
+    ) -> List[FaixaEntrega]:
+        """Lista faixas de entrega por empresa."""
+        query = select(FaixaEntrega).where(
+            FaixaEntrega.empresa_id == empresa_id
+        )
+        
+        if apenas_ativas:
+            query = query.where(FaixaEntrega.ativo == True)
+        
+        query = query.order_by(FaixaEntrega.bairro)
+        
+        result = await db.execute(query)
+        return result.scalars().all()
+    
+    @staticmethod
+    async def atualizar(
+        db: AsyncSession,
+        faixa_id: UUID,
+        **dados
+    ) -> FaixaEntrega:
+        """Atualiza faixa de entrega."""
+        query = select(FaixaEntrega).where(
+            FaixaEntrega.id == faixa_id
+        )
+        
+        result = await db.execute(query)
+        faixa = result.scalar_one()
+        
+        for key, value in dados.items():
+            setattr(faixa, key, value)
+        
+        await db.flush()
+        return faixa
+    
+    @staticmethod
+    async def deletar(
+        db: AsyncSession,
+        faixa_id: UUID
+    ) -> None:
+        """Deleta faixa de entrega."""
+        query = select(FaixaEntrega).where(
+            FaixaEntrega.id == faixa_id
+        )
+        
+        result = await db.execute(query)
+        faixa = result.scalar_one()
+        
+        await db.delete(faixa)
+        await db.flush()
