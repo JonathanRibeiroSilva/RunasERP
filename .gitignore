@@ -36,6 +36,9 @@ ENV/
 # Environment variables
 .env
 .env.local
+.env.ngrok
+*.env
+!.env.example
 
 # Database
 *.db
