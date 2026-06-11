@@ -13,11 +13,14 @@ from database import Base
 class StatusVenda(str, Enum):
     """Status do fluxo de venda."""
     PEDIDO = "PEDIDO"
+    PENDENTE_PAGAMENTO = "PENDENTE_PAGAMENTO"  # Aguardando pagamento online
     CONFIRMADA = "CONFIRMADA"
     SEPARADA = "SEPARADA"
+    EM_ENTREGA = "EM_ENTREGA"  # Apenas para DELIVERY
     ENTREGUE = "ENTREGUE"
     FINALIZADA = "FINALIZADA"
     CANCELADA = "CANCELADA"
+    REEMBOLSADA = "REEMBOLSADA"  # Devolução/reembolso
 
 
 class TipoEntrega(str, Enum):
@@ -88,6 +91,28 @@ class Venda(Base):
     # Workflow
     status = Column(String(20), nullable=False, default=StatusVenda.PEDIDO.value, index=True)
     tipo_entrega = Column(String(20), nullable=False, default=TipoEntrega.RETIRADA.value)
+    
+    # Mercado Pago (para pagamentos online)
+    mercadopago_preference_id = Column(String(100), nullable=True, index=True)
+    mercadopago_payment_id = Column(String(100), nullable=True, index=True)
+    
+    # Valor do frete (taxa de entrega)
+    valor_frete = Column(Numeric(10, 2), nullable=False, default=0.0)
+    
+    # Dados do cliente convidado (se cliente_id for NULL)
+    cliente_convidado_nome = Column(String(200), nullable=True)
+    cliente_convidado_telefone = Column(String(20), nullable=True)
+    cliente_convidado_email = Column(String(200), nullable=True)
+    cliente_convidado_cpf = Column(String(11), nullable=True)
+    
+    # Endereço de entrega (para DELIVERY)
+    endereco_logradouro = Column(String(200), nullable=True)
+    endereco_numero = Column(String(20), nullable=True)
+    endereco_complemento = Column(String(100), nullable=True)
+    endereco_bairro = Column(String(100), nullable=True)
+    endereco_cidade = Column(String(100), nullable=True)
+    endereco_estado = Column(String(2), nullable=True)
+    endereco_cep = Column(String(8), nullable=True)
     
     # Datas do workflow
     data_pedido = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -225,3 +250,183 @@ class ReservaEstoqueVenda(Base):
     
     # Relacionamentos
     venda = relationship("Venda", back_populates="reservas")
+
+
+class ReservaTemporaria(Base):
+    """
+    Modelo de Reserva Temporária de Estoque (Carrinho).
+    Reserva estoque quando item é adicionado ao carrinho (15min).
+    """
+    __tablename__ = "reservas_temporarias"
+    __table_args__ = (
+        Index('ix_reservas_temp_produto', 'produto_id', 'variante_id'),
+        Index('ix_reservas_temp_sessao', 'sessao_id'),
+        Index('ix_reservas_temp_expira', 'expira_em'),
+        {"schema": "vendas"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Produto
+    produto_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    variante_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    
+    # Quantidade reservada
+    quantidade = Column(Numeric(10, 3), nullable=False)
+    
+    # Sessão do carrinho
+    sessao_id = Column(String(255), nullable=False, index=True)
+    empresa_id = Column(Integer, nullable=False, index=True)
+    
+    # Controle de expiração
+    expira_em = Column(DateTime, nullable=False, index=True)
+    
+    # Auditoria
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class WebhookProcessado(Base):
+    """
+    Modelo para controle de idempotência de webhooks (Mercado Pago).
+    Garante que webhook não seja processado duas vezes.
+    """
+    __tablename__ = "webhooks_processados"
+    __table_args__ = (
+        Index('ix_webhooks_payment_id', 'payment_id'),
+        Index('ix_webhooks_tipo', 'tipo_evento'),
+        {"schema": "vendas"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Payment ID do Mercado Pago (único)
+    payment_id = Column(String(100), unique=True, nullable=False, index=True)
+    
+    # Tipo de evento
+    tipo_evento = Column(String(50), nullable=False, index=True)  # payment.approved, etc.
+    
+    # Venda associada
+    venda_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    
+    # Payload completo (para auditoria)
+    payload = Column(Text, nullable=True)
+    
+    # Auditoria
+    processado_em = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ConfiguracaoPagamento(Base):
+    """
+    Modelo de Configuração de Pagamento (Mercado Pago) por empresa.
+    Multi-tenant: cada empresa tem suas próprias credenciais.
+    """
+    __tablename__ = "configuracoes_pagamento"
+    __table_args__ = (
+        Index('ix_config_pag_empresa', 'empresa_id'),
+        {"schema": "vendas"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Multi-tenancy
+    empresa_id = Column(Integer, unique=True, nullable=False, index=True)
+    
+    # Credenciais Mercado Pago
+    mercadopago_access_token = Column(String(255), nullable=True)
+    mercadopago_public_key = Column(String(255), nullable=True)
+    
+    # Status
+    ativo = Column(Boolean, default=True, nullable=False)
+    
+    # Auditoria
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class FaixaEntrega(Base):
+    """
+    Modelo de Faixa de Entrega (taxa por bairro).
+    Permite configurar taxa diferente por bairro.
+    """
+    __tablename__ = "faixas_entrega"
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'bairro', name='uq_faixa_empresa_bairro'),
+        Index('ix_faixa_empresa', 'empresa_id'),
+        Index('ix_faixa_bairro', 'bairro'),
+        {"schema": "vendas"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Multi-tenancy
+    empresa_id = Column(Integer, nullable=False, index=True)
+    
+    # Bairro (extraído do CEP via ViaCEP)
+    bairro = Column(String(100), nullable=False, index=True)
+    
+    # Taxa de entrega
+    taxa = Column(Numeric(10, 2), nullable=False)
+    
+    # Status
+    ativo = Column(Boolean, default=True, nullable=False)
+    
+    # Auditoria
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class ConfiguracaoLoja(Base):
+    """
+    Modelo de Configuração da Loja (taxa padrão de entrega, etc).
+    """
+    __tablename__ = "configuracoes_loja"
+    __table_args__ = (
+        Index('ix_config_loja_empresa', 'empresa_id'),
+        {"schema": "vendas"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Multi-tenancy
+    empresa_id = Column(Integer, unique=True, nullable=False, index=True)
+    
+    # Taxa de entrega padrão
+    taxa_entrega_padrao = Column(Numeric(10, 2), nullable=False, default=0.0)
+    
+    # Cobrar taxa de entrega
+    cobrar_taxa_entrega = Column(Boolean, default=True, nullable=False)
+    
+    # Auditoria
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class HistoricoStatusVenda(Base):
+    """
+    Modelo de Histórico de Status da Venda.
+    Registra todas as mudanças de status para auditoria e rastreamento.
+    """
+    __tablename__ = "historico_status_venda"
+    __table_args__ = (
+        Index('ix_historico_venda', 'venda_id'),
+        Index('ix_historico_data', 'alterado_em'),
+        {"schema": "vendas"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+    
+    # Venda
+    venda_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    
+    # Status
+    status_anterior = Column(String(20), nullable=True)
+    status_novo = Column(String(20), nullable=False)
+    
+    # Quem alterou (NULL = sistema automático)
+    alterado_por = Column(UUID(as_uuid=True), nullable=True)
+    
+    # Observação (ex: motivo do cancelamento)
+    observacao = Column(Text, nullable=True)
+    
+    # Auditoria
+    alterado_em = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
