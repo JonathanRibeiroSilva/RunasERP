@@ -428,13 +428,18 @@ class VendaService:
         Confirma venda e registra pagamentos.
         Status: PEDIDO → CONFIRMADA
         """
+        from services.historico_status_service import HistoricoStatusService
+        from services.notificacao_service import NotificacaoService
+        
         try:
             async with db.begin_nested():
                 venda = await VendaRepository.buscar_por_id(db, empresa_id, venda_id)
                 if not venda:
                     raise ValueError("Venda não encontrada")
                 
-                if venda.status != StatusVenda.PEDIDO.value:
+                status_anterior = venda.status
+                
+                if venda.status not in [StatusVenda.PEDIDO.value, StatusVenda.PENDENTE_PAGAMENTO.value]:
                     raise ValueError(f"Venda não pode ser confirmada. Status atual: {venda.status}")
                 
                 # Validar soma dos pagamentos
@@ -474,6 +479,16 @@ class VendaService:
                     status=StatusVenda.CONFIRMADA.value,
                     data_confirmacao=datetime.utcnow()
                 )
+                
+                # Registrar histórico
+                await HistoricoStatusService.registrar_mudanca(
+                    db,
+                    venda.id,
+                    status_anterior,
+                    StatusVenda.CONFIRMADA.value,
+                    data.usuario_id if hasattr(data, 'usuario_id') else None,
+                    f"Pagamento confirmado. Total pago: R$ {total_pago}"
+                )
             
             await db.commit()
             
@@ -483,6 +498,19 @@ class VendaService:
                 empresa_id=empresa_id,
                 total_pago=float(total_pago)
             )
+            
+            # Enviar notificação WhatsApp
+            try:
+                telefone = venda.cliente_convidado_telefone if venda.cliente_convidado_telefone else None
+                if telefone:
+                    nome_cliente = venda.cliente_convidado_nome if venda.cliente_convidado_nome else None
+                    await NotificacaoService.enviar_pagamento_confirmado(
+                        telefone,
+                        venda.numero_venda,
+                        nome_cliente
+                    )
+            except Exception as e:
+                log.warning("erro_enviar_notificacao_pagamento", venda_id=str(venda_id), error=str(e))
             
             return await VendaService.buscar_venda(db, empresa_id, venda_id)
             
@@ -498,17 +526,23 @@ class VendaService:
     async def separar_venda(
         db: AsyncSession,
         empresa_id: int,
-        venda_id: UUID
+        venda_id: UUID,
+        usuario_id: Optional[UUID] = None
     ) -> VendaDetalhada:
         """
         Marca venda como separada.
         Status: CONFIRMADA → SEPARADA
         """
+        from services.historico_status_service import HistoricoStatusService
+        from services.notificacao_service import NotificacaoService
+        
         try:
             async with db.begin_nested():
                 venda = await VendaRepository.buscar_por_id(db, empresa_id, venda_id)
                 if not venda:
                     raise ValueError("Venda não encontrada")
+                
+                status_anterior = venda.status
                 
                 if venda.status != StatusVenda.CONFIRMADA.value:
                     raise ValueError(f"Venda deve estar CONFIRMADA. Status atual: {venda.status}")
@@ -520,9 +554,31 @@ class VendaService:
                     status=StatusVenda.SEPARADA.value,
                     data_separacao=datetime.utcnow()
                 )
+                
+                # Registrar histórico
+                await HistoricoStatusService.registrar_mudanca(
+                    db,
+                    venda.id,
+                    status_anterior,
+                    StatusVenda.SEPARADA.value,
+                    usuario_id,
+                    "Pedido separado e pronto para entrega/retirada"
+                )
             
             await db.commit()
             log.info("venda_separada", venda_id=str(venda_id), empresa_id=empresa_id)
+            
+            # Enviar notificação WhatsApp
+            try:
+                telefone = venda.cliente_convidado_telefone if venda.cliente_convidado_telefone else None
+                if telefone:
+                    await NotificacaoService.enviar_pedido_separado(
+                        telefone,
+                        venda.numero_venda,
+                        venda.tipo_entrega
+                    )
+            except Exception as e:
+                log.warning("erro_enviar_notificacao_separado", venda_id=str(venda_id), error=str(e))
             
             return await VendaService.buscar_venda(db, empresa_id, venda_id)
             
@@ -538,12 +594,16 @@ class VendaService:
     async def entregar_venda(
         db: AsyncSession,
         empresa_id: int,
-        venda_id: UUID
+        venda_id: UUID,
+        usuario_id: Optional[UUID] = None
     ) -> VendaDetalhada:
         """
         Marca venda como entregue e BAIXA ESTOQUE definitivamente.
         Status: SEPARADA → ENTREGUE
         """
+        from services.historico_status_service import HistoricoStatusService
+        from services.notificacao_service import NotificacaoService
+        
         try:
             async with db.begin_nested():
                 venda = await VendaRepository.buscar_por_id(
@@ -554,6 +614,8 @@ class VendaService:
                 )
                 if not venda:
                     raise ValueError("Venda não encontrada")
+                
+                status_anterior = venda.status
                 
                 if venda.status != StatusVenda.SEPARADA.value:
                     raise ValueError(f"Venda deve estar SEPARADA. Status atual: {venda.status}")
@@ -592,9 +654,32 @@ class VendaService:
                     status=StatusVenda.ENTREGUE.value,
                     data_entregue=datetime.utcnow()
                 )
+                
+                # Registrar histórico
+                tipo_entrega_texto = "entregue" if venda.tipo_entrega == "DELIVERY" else "retirado"
+                await HistoricoStatusService.registrar_mudanca(
+                    db,
+                    venda.id,
+                    status_anterior,
+                    StatusVenda.ENTREGUE.value,
+                    usuario_id,
+                    f"Pedido {tipo_entrega_texto}. Estoque baixado definitivamente."
+                )
             
             await db.commit()
             log.info("venda_entregue", venda_id=str(venda_id), empresa_id=empresa_id)
+            
+            # Enviar notificação WhatsApp
+            try:
+                telefone = venda.cliente_convidado_telefone if venda.cliente_convidado_telefone else None
+                if telefone:
+                    await NotificacaoService.enviar_pedido_entregue(
+                        telefone,
+                        venda.numero_venda,
+                        venda.tipo_entrega
+                    )
+            except Exception as e:
+                log.warning("erro_enviar_notificacao_entregue", venda_id=str(venda_id), error=str(e))
             
             return await VendaService.buscar_venda(db, empresa_id, venda_id)
             
@@ -610,12 +695,15 @@ class VendaService:
     async def finalizar_venda(
         db: AsyncSession,
         empresa_id: int,
-        venda_id: UUID
+        venda_id: UUID,
+        usuario_id: Optional[UUID] = None
     ) -> VendaDetalhada:
         """
         Finaliza venda e cria conta a receber se FIADO.
         Status: ENTREGUE → FINALIZADA
         """
+        from services.historico_status_service import HistoricoStatusService
+        
         try:
             async with db.begin_nested():
                 venda = await VendaRepository.buscar_por_id(
@@ -626,6 +714,8 @@ class VendaService:
                 )
                 if not venda:
                     raise ValueError("Venda não encontrada")
+                
+                status_anterior = venda.status
                 
                 if venda.status != StatusVenda.ENTREGUE.value:
                     raise ValueError(f"Venda deve estar ENTREGUE. Status atual: {venda.status}")
@@ -640,6 +730,16 @@ class VendaService:
                     venda_id,
                     status=StatusVenda.FINALIZADA.value,
                     data_finalizada=datetime.utcnow()
+                )
+                
+                # Registrar histórico
+                await HistoricoStatusService.registrar_mudanca(
+                    db,
+                    venda.id,
+                    status_anterior,
+                    StatusVenda.FINALIZADA.value,
+                    usuario_id,
+                    "Venda finalizada com sucesso"
                 )
             
             await db.commit()
