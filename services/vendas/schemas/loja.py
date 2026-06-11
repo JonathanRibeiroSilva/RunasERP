@@ -72,6 +72,12 @@ class ClienteCheckout(BaseModel):
     cpf: Optional[str] = Field(None, pattern=r'^\d{11}$')
 
 
+class PagamentoCheckout(BaseModel):
+    """Schema de pagamento no checkout."""
+    forma_pagamento: FormaPagamento = Field(..., description="Forma de pagamento")
+    valor: Decimal = Field(..., gt=0, description="Valor a ser pago nesta forma")
+
+
 class CheckoutRequest(BaseModel):
     """Schema para processar checkout."""
     # Cliente
@@ -85,8 +91,12 @@ class CheckoutRequest(BaseModel):
         description="Endereço de entrega (obrigatório para DELIVERY)"
     )
     
-    # Pagamento (simplificado - apenas forma)
-    forma_pagamento: FormaPagamento = Field(..., description="Forma de pagamento")
+    # Pagamento (pode ser múltiplo - pagamento misto)
+    pagamentos: List[PagamentoCheckout] = Field(
+        ...,
+        min_length=1,
+        description="Formas de pagamento (pode ser múltiplas para pagamento misto)"
+    )
     
     # Observações
     observacao: Optional[str] = Field(None, max_length=500)
@@ -109,6 +119,30 @@ class CheckoutRequest(BaseModel):
         if cliente_id and v:
             raise ValueError('Forneça apenas cliente_id OU cliente_novo, não ambos')
         return v
+    
+    @field_validator('pagamentos')
+    @classmethod
+    def validar_pagamentos(cls, v):
+        """Valida pagamentos (valores mínimos e formas)."""
+        if not v:
+            raise ValueError('Deve fornecer pelo menos uma forma de pagamento')
+        
+        # Validar valor mínimo de R$ 1,00 por pagamento
+        for pag in v:
+            if pag.valor < Decimal('1.00'):
+                raise ValueError('Valor mínimo por forma de pagamento é R$ 1,00')
+        
+        # Validar formas online (PIX, DEBITO, CREDITO) - devem ser únicas
+        formas_online = [p.forma_pagamento for p in v if p.forma_pagamento in [
+            FormaPagamento.PIX,
+            FormaPagamento.DEBITO,
+            FormaPagamento.CREDITO
+        ]]
+        
+        if len(formas_online) > 1:
+            raise ValueError('Apenas uma forma de pagamento online é permitida (PIX, DEBITO ou CREDITO)')
+        
+        return v
 
 
 class CheckoutResponse(BaseModel):
@@ -117,6 +151,7 @@ class CheckoutResponse(BaseModel):
     numero_venda: str
     status: str
     valor_total: Decimal
+    mercadopago_init_point: Optional[str] = None  # URL para pagamento online
     mensagem: str = "Pedido criado com sucesso! Aguarde confirmação do pagamento."
 
 
@@ -166,3 +201,24 @@ class BuscarPedidoRequest(BaseModel):
         if not numero_venda and not v:
             raise ValueError('Forneça numero_venda ou email')
         return v
+
+
+# ==================== CONFIGURAÇÃO DE PAGAMENTO ====================
+
+class ConfiguracaoPagamentoCreate(BaseModel):
+    """Schema para criar/atualizar configuração de pagamento."""
+    mercadopago_access_token: str = Field(..., min_length=10)
+    mercadopago_public_key: str = Field(..., min_length=10)
+    ativo: bool = Field(default=True)
+
+
+class ConfiguracaoPagamentoResponse(BaseModel):
+    """Schema de resposta de configuração de pagamento."""
+    id: UUID
+    empresa_id: int
+    mercadopago_public_key: str  # Não expor access_token por segurança
+    ativo: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = {"from_attributes": True}

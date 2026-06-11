@@ -104,11 +104,14 @@ class CarrinhoService:
     async def adicionar_item(
         sessao_id: str,
         empresa_id: int,
-        data: ItemCarrinhoCreate
+        data: ItemCarrinhoCreate,
+        db: AsyncSession  # ← NOVO: sessão do banco
     ) -> CarrinhoResponse:
         """
-        Adiciona ou atualiza item no carrinho.
+        Adiciona ou atualiza item no carrinho COM RESERVA DE ESTOQUE.
         """
+        from services.reserva_temporaria_service import ReservaTemporariaService
+        
         r = await CarrinhoService._get_redis()
         key = CarrinhoService._get_redis_key(sessao_id, empresa_id)
         
@@ -128,6 +131,22 @@ class CarrinhoService:
             
             if preco <= 0:
                 raise ValueError("Produto sem preço de venda definido")
+            
+            # ========== RESERVAR ESTOQUE (NOVO) ==========
+            sucesso, disponivel, erro = await ReservaTemporariaService.reservar(
+                db=db,
+                empresa_id=empresa_id,
+                produto_id=data.produto_id,
+                quantidade=data.quantidade,
+                sessao_id=sessao_id,
+                variante_id=data.variante_id
+            )
+            
+            if not sucesso:
+                # Retornar erro com quantidade disponível
+                raise ValueError(
+                    f"Estoque insuficiente. {erro if erro else f'Disponível: {disponivel}'}"
+                )
             
             # Obter carrinho atual
             carrinho = await CarrinhoService.obter_ou_criar_carrinho(sessao_id, empresa_id)
@@ -154,7 +173,7 @@ class CarrinhoService:
                     preco_unitario=preco,
                     quantidade=data.quantidade,
                     subtotal=data.quantidade * preco,
-                    estoque_disponivel=True  # TODO: Validar estoque real
+                    estoque_disponivel=True
                 )
                 carrinho.itens.append(novo_item)
             
@@ -171,11 +190,12 @@ class CarrinhoService:
             )
             
             log.info(
-                "item_adicionado_carrinho",
+                "item_adicionado_carrinho_com_reserva",
                 sessao_id=sessao_id,
                 empresa_id=empresa_id,
                 produto_id=str(data.produto_id),
-                quantidade=float(data.quantidade)
+                quantidade=float(data.quantidade),
+                disponivel=float(disponivel) if disponivel else None
             )
             
             return carrinho
