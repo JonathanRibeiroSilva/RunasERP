@@ -53,19 +53,30 @@ const CatalogoPage = () => {
     try {
       setLoading(true);
 
-      const params = new URLSearchParams({ limit: '100', ordenar: ordenacao });
+      // Carregar dados da empresa primeiro (sempre funciona)
+      try {
+        const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+        setEmpresaInfo(empresaRes.data);
+      } catch (err) {
+        console.error('Erro ao carregar empresa:', err);
+      }
+
+      // Carregar produtos e categorias (agora usando empresaSlug como query param)
+      const params = new URLSearchParams({ 
+        empresaSlug: empresaSlug!, 
+        limit: '100', 
+        ordenar: ordenacao 
+      });
       if (categoriaFiltro) params.append('categoria_id', categoriaFiltro);
       if (buscaParam && buscaParam.length >= 2) params.append('busca', buscaParam);
 
-      const [produtosRes, categoriasRes, empresaRes] = await Promise.all([
-        apiPublica.get(`/catalogo/publico/produtos?${params}`),
-        apiPublica.get('/catalogo/publico/categorias'),
-        apiPublica.get(`/empresas/publico/${empresaSlug}`), // Buscar dados públicos da empresa
+      const [produtosRes, categoriasRes] = await Promise.all([
+        apiPublica.get(`/catalogo/publico/produtos?${params}`).catch(() => ({ data: { items: [] } })),
+        apiPublica.get(`/catalogo/publico/categorias?empresaSlug=${empresaSlug}`).catch(() => ({ data: { items: [] } })),
       ]);
 
       setProdutos(produtosRes.data.items || []);
       setCategorias(categoriasRes.data.items || []);
-      setEmpresaInfo(empresaRes.data);
     } catch (error) {
       console.error('Erro ao carregar catálogo:', error);
     } finally {

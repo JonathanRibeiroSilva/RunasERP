@@ -379,9 +379,49 @@ async def deletar_variante(
 router_catalogo_publico = APIRouter(prefix="/catalogo/publico", tags=["catalogo-publico"])
 
 
+async def get_empresa_id_from_slug(
+    slug: str = Query(..., description="Slug da empresa (ex: distribuidora-central)"),
+    session: AsyncSession = Depends(get_db)
+) -> int:
+    """
+    Resolve o empresa_id a partir do slug da empresa.
+    
+    Consulta direto no banco de dados o schema empresas.
+    """
+    from sqlalchemy import text
+    
+    try:
+        # Query direto no schema empresas (cross-schema query)
+        query = text("""
+            SELECT id 
+            FROM empresas.empresas 
+            WHERE slug = :slug AND status = 'ATIVA'
+            LIMIT 1
+        """)
+        
+        result = await session.execute(query, {"slug": slug})
+        row = result.fetchone()
+        
+        if not row:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Empresa com slug '{slug}' não encontrada"
+            )
+        
+        return row[0]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail="Erro ao consultar empresa"
+        )
+
+
 @router_catalogo_publico.get("/produtos", response_model=dict)
 async def listar_produtos_catalogo_publico(
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresaSlug: str = Query(..., description="Slug da empresa"),
     categoria_id: UUID | None = Query(None),
     busca: str | None = Query(None, min_length=2),
     ordenar: str = Query("nome", regex="^(nome|preco_asc|preco_desc|recentes)$"),
@@ -395,8 +435,18 @@ async def listar_produtos_catalogo_publico(
     Retorna apenas produtos com:
     - ativo = True
     - catalogo_config.visivel = True
+    
+    Query params:
+    - empresaSlug: slug da empresa (obrigatório)
+    - categoria_id: filtrar por categoria (opcional)
+    - busca: buscar por nome (opcional)
+    - ordenar: nome|preco_asc|preco_desc|recentes (padrão: nome)
+    - skip/limit: paginação
     """
     try:
+        # Resolver empresa_id a partir do slug
+        empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
+        
         service = ProdutoService(session)
         
         # TODO: Filtrar apenas produtos com catalogo_config.visivel = True
@@ -427,6 +477,8 @@ async def listar_produtos_catalogo_publico(
             "limit": limit,
             "items": produtos_response
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao listar produtos do catálogo")
 
@@ -434,14 +486,20 @@ async def listar_produtos_catalogo_publico(
 @router_catalogo_publico.get("/produto/{produto_id}", response_model=ProdutoCatalogoRead)
 async def obter_produto_catalogo_publico(
     produto_id: UUID,
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresaSlug: str = Query(..., description="Slug da empresa"),
     session: AsyncSession = Depends(get_db)
 ):
     """
     Obtém detalhes de um produto no catálogo público.
     Não expõe dados internos como custo, markup e fornecedores.
+    
+    Query params:
+    - empresaSlug: slug da empresa (obrigatório)
     """
     try:
+        # Resolver empresa_id a partir do slug
+        empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
+        
         service = ProdutoService(session)
         produto = await service.obter_produto(empresa_id, produto_id)
 
@@ -459,15 +517,21 @@ async def obter_produto_catalogo_publico(
 
 @router_catalogo_publico.get("/categorias", response_model=dict)
 async def listar_categorias_catalogo_publico(
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresaSlug: str = Query(..., description="Slug da empresa"),
     session: AsyncSession = Depends(get_db)
 ):
     """
     Lista categorias ativas no catálogo público.
     
     Retorna apenas categorias com produtos visíveis.
+    
+    Query params:
+    - empresaSlug: slug da empresa (obrigatório)
     """
     try:
+        # Resolver empresa_id a partir do slug
+        empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
+        
         service = CategoriaService(session)
         categorias, total = await service.listar_categorias(empresa_id=empresa_id, skip=0, limit=100)
         
@@ -478,6 +542,8 @@ async def listar_categorias_catalogo_publico(
             "total": total,
             "items": categorias_response
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao listar categorias")
 
