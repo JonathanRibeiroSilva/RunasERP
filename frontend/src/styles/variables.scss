@@ -14,6 +14,7 @@ $surface-hover: #1f2430;
 $primary: #3b82f6;
 $primary-hover: #2563eb;
 $primary-active: #1d4ed8;
+$primary-dark: #1d4ed8;
 $primary-light: rgba(59, 130, 246, 0.1);
 $primary-glow: rgba(59, 130, 246, 0.2);
 
@@ -45,12 +46,17 @@ $warning-light: rgba(245, 158, 11, 0.1);
 $error: #ef4444;
 $error-light: rgba(239, 68, 68, 0.1);
 
+$danger: #ef4444;
+$danger-light: rgba(239, 68, 68, 0.1);
+$danger-dark: #dc2626;
+
 $info: #22d3ee;
 $info-light: rgba(34, 211, 238, 0.1);
 
 // Borders e Dividers
 $border-subtle: rgba(255, 255, 255, 0.05);
 $border-default: rgba(255, 255, 255, 0.1);
+$border-hover: rgba(255, 255, 255, 0.2);
 $border-strong: rgba(255, 255, 255, 0.2);
 
 // Overlays
@@ -75,6 +81,8 @@ $font-size-xs: 0.75rem; // 12px
 $font-size-sm: 0.875rem; // 14px
 $font-size-base: 1rem; // 16px
 $font-size-lg: 1.125rem; // 18px
+$font-size-xl: 1.25rem; // 20px
+$font-size-2xl: 1.5rem; // 24px
 
 // Headings
 $h1-font-size: 2.5rem; // 40px
