@@ -271,9 +271,14 @@ class EmpresaRepository:
         stmt = select(Empresa).where(
             Empresa.slug == slug.lower(),
             Empresa.ativo == True,
-            Empresa.status == StatusEmpresa.ATIVA,
             Empresa.catalogo_ativo == True
         )
         
         result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        empresa = result.scalar_one_or_none()
+        
+        # Filtrar status manualmente (workaround para problema de enum)
+        if empresa and empresa.status != StatusEmpresa.ATIVA:
+            return None
+            
+        return empresa

@@ -6,13 +6,17 @@ import OAuthCallbackPage from '@/pages/Auth/OAuthCallbackPage';
 import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/Auth/ResetPasswordPage';
 import DashboardPage from '@/pages/Dashboard/DashboardPage';
+import PerfilPage from '@/pages/Perfil/PerfilPage';
 import ClientesPage from '@/pages/Clientes/ClientesPage';
 import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
 import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
 import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
 import { CatalogoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/CatalogoPublico';
+import { CatalogoRedirectPage, PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
+import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
+import RoleProtectedRoute from '@/components/common/RoleProtectedRoute';
 
 // Loading component
 const LoadingScreen = () => (
@@ -126,6 +130,9 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           
+          {/* Rota de Perfil - Todos os usuários */}
+          <Route path="perfil" element={<PerfilPage />} />
+          
           {/* Rotas de Clientes */}
           <Route path="clientes" element={<ClientesPage />} />
           <Route path="clientes/novo" element={<ClienteFormPage />} />
@@ -133,10 +140,12 @@ function App() {
           <Route path="clientes/:id/editar" element={<ClienteFormPage />} />
           <Route path="clientes/:id/enderecos" element={<ClienteEnderecosPage />} />
           <Route path="clientes/:id/credito" element={<ClienteCreditoPage />} />
-          {/* TODO: Implementar página de histórico */}
-          {/* <Route path="clientes/:id/historico" element={<ClienteHistoricoPage />} /> */}
           
-          {/* Rotas de Produtos - Sprint 2 */}
+          {/* Rotas de Loja Online */}
+          <Route path="loja/pedidos" element={<PedidosOnlinePage />} />
+          <Route path="loja/configuracoes" element={<ConfiguracoesLojaPage />} />
+          
+          {/* Rotas de Produtos */}
           <Route path="produtos" element={<ProdutosPage />} />
           <Route path="produtos/novo" element={<ProdutoFormPage />} />
           <Route path="produtos/:id" element={<ProdutoDetalhesPage />} />
@@ -163,6 +172,32 @@ function App() {
           {/* <Route path="financeiro" element={<FinanceiroDashboard />} /> */}
           {/* <Route path="financeiro/contas-receber" element={<ContasReceberPage />} /> */}
           {/* <Route path="financeiro/contas-pagar" element={<ContasPagarPage />} /> */}
+          
+          {/* Rotas de Configurações - Apenas ADMIN */}
+          <Route 
+            path="configuracoes/empresa" 
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <EmpresaPage />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="configuracoes/usuarios" 
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <UsuariosPage />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="configuracoes/integracoes" 
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <IntegracoesPage />
+              </RoleProtectedRoute>
+            } 
+          />
         </Route>
 
         {/* 404 */}

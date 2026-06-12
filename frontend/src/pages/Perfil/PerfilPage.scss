@@ -1,0 +1,297 @@
+.perfil-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .page-header {
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+  }
+
+  .perfil-content {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .perfil-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+
+      h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .user-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        backdrop-filter: blur(10px);
+      }
+    }
+
+    .card-body {
+      padding: 2rem;
+    }
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+
+    .info-item {
+      label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+
+        svg {
+          color: #667eea;
+        }
+      }
+
+      p {
+        font-size: 1rem;
+        color: #1e293b;
+        font-weight: 500;
+      }
+
+      &.full-width {
+        grid-column: 1 / -1;
+      }
+    }
+  }
+
+  .role-badge {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.role-admin {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    &.role-operador {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+  }
+
+  .senha-form {
+    max-width: 500px;
+
+    .form-group {
+      margin-bottom: 1.5rem;
+
+      label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 0.5rem;
+      }
+
+      .password-input {
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        input {
+          width: 100%;
+          padding: 0.75rem 3rem 0.75rem 1rem;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          transition: all 0.2s;
+
+          &:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+          }
+
+          &:disabled {
+            background: #f1f5f9;
+            cursor: not-allowed;
+          }
+        }
+
+        .toggle-password {
+          position: absolute;
+          right: 0.75rem;
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color 0.2s;
+
+          &:hover {
+            color: #667eea;
+          }
+
+          svg {
+            width: 18px;
+            height: 18px;
+          }
+        }
+      }
+
+      .error-message {
+        display: block;
+        color: #ef4444;
+        font-size: 0.8rem;
+        margin-top: 0.375rem;
+      }
+
+      .password-requirements {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        background: #f8fafc;
+        border-radius: 6px;
+        border-left: 3px solid #667eea;
+
+        small {
+          display: block;
+          font-weight: 600;
+          color: #475569;
+          margin-bottom: 0.5rem;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+
+          li {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+            padding-left: 1.25rem;
+            position: relative;
+
+            &::before {
+              content: '•';
+              position: absolute;
+              left: 0.5rem;
+              color: #667eea;
+            }
+          }
+        }
+      }
+    }
+
+    .form-actions {
+      margin-top: 2rem;
+
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    font-size: 1.125rem;
+    color: #64748b;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    .page-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .perfil-card .card-body {
+      padding: 1.5rem;
+    }
+
+    .senha-form {
+      max-width: 100%;
+    }
+  }
+}

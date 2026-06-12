@@ -58,7 +58,7 @@ const ProdutoVariantesPage = () => {
   const carregarVariantes = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/produtos/${id}/variantes`);
+      const response = await api.get(`/variantes/produto/${id}`);
       setVariantes(response.data || []);
     } catch (error) {
       toast.error('Erro ao carregar variantes');
@@ -72,17 +72,25 @@ const ProdutoVariantesPage = () => {
     e.preventDefault();
 
     const data = {
+      produto_id: id,
+      empresa_id: 1, // Empresa padrão (virá do contexto de auth futuramente)
       sku: formData.sku,
       preco_custo: parseFloat(formData.preco_custo),
       markup_pct: parseFloat(formData.markup_pct),
+      preco_venda: parseFloat(formData.preco_custo) * (1 + parseFloat(formData.markup_pct) / 100),
     };
 
     try {
       if (editingVariante) {
-        await api.put(`/variantes/${editingVariante.id}`, data);
+        await api.put(`/variantes/${editingVariante.id}`, {
+          sku: formData.sku,
+          preco_custo: parseFloat(formData.preco_custo),
+          markup_pct: parseFloat(formData.markup_pct),
+          preco_venda: parseFloat(formData.preco_custo) * (1 + parseFloat(formData.markup_pct) / 100),
+        });
         toast.success('Variante atualizada com sucesso');
       } else {
-        await api.post(`/produtos/${id}/variantes`, data);
+        await api.post(`/variantes`, data);
         toast.success('Variante criada com sucesso');
       }
 
