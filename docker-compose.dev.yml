@@ -11,6 +11,7 @@ volumes:
   rabbitmq_data:
   redis_data:
   db_data:
+  nginx_logs:
 
 services:
   # ============================================
@@ -466,4 +467,50 @@ services:
       retries: 3
     stdin_open: true
     tty: true
+    restart: unless-stopped
+
+  # ============================================
+  # PROXY REVERSO (apenas com --profile proxy)
+  # ============================================
+
+  nginx:
+    profiles: ["proxy"]
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: erp-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend-dev
+      - api-gateway
+    networks:
+      - erp-network
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    environment:
+      - TZ=America/Sao_Paulo
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  ngrok:
+    profiles: ["proxy"]
+    image: ngrok/ngrok:latest
+    container_name: erp-ngrok
+    command: http nginx:80
+    ports:
+      - "4040:4040"  # ngrok web interface
+    depends_on:
+      - nginx
+    networks:
+      - erp-network
+    env_file:
+      - .env.ngrok
     restart: unless-stopped
