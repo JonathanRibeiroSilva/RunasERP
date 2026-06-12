@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '20260609_multitenancy'
-down_revision = None
+down_revision = '001_migrate_to_uuid'  # Depende da migração UUID
 branch_labels = None
 depends_on = None
 
