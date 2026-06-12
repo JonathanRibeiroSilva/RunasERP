@@ -39,6 +39,50 @@
         gap: 0.75rem;
         flex-wrap: wrap;
 
+        .btn-carrinho {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.6rem 1.25rem;
+          background: rgba(white, 0.2);
+          border: 1px solid rgba(white, 0.3);
+          color: white;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s;
+
+          &:hover {
+            background: rgba(white, 0.3);
+            border-color: rgba(white, 0.5);
+            transform: translateY(-1px);
+          }
+
+          svg {
+            font-size: 1.1rem;
+          }
+
+          .carrinho-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: $danger;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            padding: 0 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          }
+        }
+
         button {
           display: flex;
           align-items: center;

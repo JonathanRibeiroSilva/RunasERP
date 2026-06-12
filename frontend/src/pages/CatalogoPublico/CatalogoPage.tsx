@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSearch, FiFilter, FiShare2, FiCopy } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiShare2, FiCopy, FiShoppingCart } from 'react-icons/fi';
 import axios from 'axios';
 import ProdutoCard from './components/ProdutoCard';
+import { useCarrinho } from '@/hooks/useCarrinho';
 import './CatalogoPage.scss';
 
 // Instância axios pública (sem autenticação, sem interceptors de redirect)
@@ -29,6 +30,7 @@ interface Categoria {
 const CatalogoPage = () => {
   const navigate = useNavigate();
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
+  const { carrinho } = useCarrinho();
 
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -99,6 +101,17 @@ const CatalogoPage = () => {
             <p>Confira nossos produtos disponíveis</p>
           </div>
           <div className="header-actions">
+            {carrinho && carrinho.itens.length > 0 && (
+              <button
+                className="btn-carrinho"
+                onClick={() => navigate(`/c/${empresaSlug}/carrinho`)}
+                title="Ver carrinho"
+              >
+                <FiShoppingCart />
+                <span className="carrinho-badge">{carrinho.quantidade_total}</span>
+                Carrinho
+              </button>
+            )}
             <button
               className="btn-compartilhar"
               onClick={handleCopiarLink}

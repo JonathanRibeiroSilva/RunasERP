@@ -1,0 +1,453 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.rastreamento-page {
+  min-height: 100vh;
+  background: $background;
+  display: flex;
+  flex-direction: column;
+}
+
+// Header
+.rastreamento-header {
+  background: $surface;
+  border-bottom: 1px solid $border-default;
+  padding: $spacer-4;
+  
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-3 $spacer-2;
+  }
+
+  .header-info {
+    margin-top: $spacer-3;
+    display: flex;
+    align-items: center;
+    gap: $spacer-3;
+    flex-wrap: wrap;
+
+    h1 {
+      font-size: $font-size-2xl;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      margin: 0;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        font-size: $font-size-xl;
+      }
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacer-2;
+      padding: $spacer-2 $spacer-3;
+      border-radius: $border-radius;
+      color: white;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+
+      svg {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+// Container
+.rastreamento-container {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: $spacer-5;
+  width: 100%;
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-4 $spacer-2;
+  }
+}
+
+// Timeline
+.timeline-section {
+  background: $surface;
+  border: 1px solid $border-default;
+  border-radius: $border-radius;
+  padding: $spacer-5;
+  margin-bottom: $spacer-5;
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-4 $spacer-3;
+  }
+
+  h2 {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin: 0 0 $spacer-5 0;
+  }
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  .timeline-step {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacer-3;
+    position: relative;
+
+    .timeline-marker {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid $border-default;
+      background: $background;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $text-tertiary;
+      font-size: 20px;
+      z-index: 2;
+      transition: $transition-base;
+
+      &.completed {
+        border-color: $success;
+        background: $success;
+        color: white;
+      }
+
+      &.active {
+        border-color: $primary;
+        background: $primary;
+        color: white;
+        box-shadow: 0 0 0 4px rgba($primary, 0.2);
+      }
+    }
+
+    .timeline-content {
+      flex: 1;
+      padding: $spacer-2 0;
+
+      h4 {
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+        margin: 0 0 $spacer-1 0;
+      }
+
+      .timeline-date {
+        font-size: $font-size-sm;
+        color: $text-secondary;
+        margin: 0;
+      }
+    }
+
+    .timeline-line {
+      position: absolute;
+      left: 23px;
+      top: 48px;
+      width: 3px;
+      height: calc(100% + $spacer-2);
+      background: $border-default;
+      z-index: 1;
+      transition: $transition-base;
+
+      &.completed {
+        background: $success;
+      }
+    }
+
+    &:last-child .timeline-line {
+      display: none;
+    }
+  }
+}
+
+.status-cancelado {
+  text-align: center;
+  padding: $spacer-6;
+
+  svg {
+    margin-bottom: $spacer-3;
+  }
+
+  h3 {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin: 0 0 $spacer-2 0;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: $font-size-base;
+    margin: 0;
+  }
+}
+
+// Detalhes
+.detalhes-section {
+  background: $surface;
+  border: 1px solid $border-default;
+  border-radius: $border-radius;
+  padding: $spacer-5;
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-4 $spacer-3;
+  }
+
+  h3 {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin: 0 0 $spacer-4 0;
+  }
+
+  h4 {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin: $spacer-5 0 $spacer-3 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+}
+
+.info-card {
+  background: $background;
+  border-radius: $border-radius;
+  padding: $spacer-4;
+  margin-bottom: $spacer-4;
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: $spacer-2 0;
+    border-bottom: 1px solid $border-default;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+    }
+
+    .info-value {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+      text-align: right;
+    }
+  }
+}
+
+.itens-lista {
+  display: flex;
+  flex-direction: column;
+  gap: $spacer-2;
+  margin-bottom: $spacer-4;
+
+  .item-pedido {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacer-3;
+    background: $background;
+    border-radius: $border-radius;
+
+    .item-info {
+      display: flex;
+      align-items: center;
+      gap: $spacer-3;
+
+      .item-quantidade {
+        font-size: $font-size-base;
+        font-weight: $font-weight-bold;
+        color: $primary;
+        min-width: 30px;
+      }
+
+      .item-detalhes {
+        display: flex;
+        flex-direction: column;
+        gap: $spacer-1;
+
+        strong {
+          font-size: $font-size-base;
+          color: $text-primary;
+        }
+
+        small {
+          font-size: $font-size-xs;
+          color: $text-tertiary;
+        }
+      }
+    }
+
+    .item-preco {
+      font-size: $font-size-base;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+  }
+}
+
+.total-pedido {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacer-4;
+  background: $background;
+  border-radius: $border-radius;
+  border: 2px solid $primary;
+  margin-bottom: $spacer-4;
+
+  span {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  strong {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $primary;
+  }
+}
+
+// Histórico
+.historico-section {
+  .historico-lista {
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-3;
+  }
+
+  .historico-item {
+    padding: $spacer-3;
+    background: $background;
+    border-radius: $border-radius;
+    border-left: 3px solid $primary;
+
+    .historico-data {
+      display: block;
+      font-size: $font-size-xs;
+      color: $text-tertiary;
+      margin-bottom: $spacer-1;
+    }
+
+    .historico-mudanca {
+      display: flex;
+      align-items: center;
+      gap: $spacer-2;
+      flex-wrap: wrap;
+      margin-bottom: $spacer-1;
+
+      .status-anterior {
+        font-size: $font-size-sm;
+        color: $text-secondary;
+      }
+
+      .arrow {
+        color: $text-tertiary;
+      }
+
+      .status-novo {
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
+        color: $primary;
+      }
+    }
+
+    .historico-obs {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin: 0;
+    }
+  }
+}
+
+// Loading / Erro
+.loading,
+.erro-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacer-3;
+  padding: $spacer-6;
+  color: $text-secondary;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-default;
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .erro-icon {
+    font-size: 60px;
+  }
+
+  h2 {
+    color: $text-primary;
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+    padding: $spacer-3 $spacer-4;
+    background: $primary;
+    color: white;
+    border: none;
+    border-radius: $border-radius;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: $transition-base;
+
+    &:hover {
+      background: $primary-dark;
+    }
+  }
+}
+
+// Footer
+.catalogo-footer {
+  margin-top: auto;
+  padding: $spacer-4;
+  text-align: center;
+  border-top: 1px solid $border-default;
+  background: $surface;
+
+  p {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+
+    strong {
+      color: $primary;
+      font-weight: $font-weight-semibold;
+    }
+  }
+}
