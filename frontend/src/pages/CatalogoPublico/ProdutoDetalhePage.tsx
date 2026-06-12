@@ -53,7 +53,7 @@ const ProdutoDetalhePage = () => {
   const carregarProduto = async () => {
     try {
       setLoading(true);
-      const response = await apiPublica.get(`/catalogo/publico/produto/${produtoId}`);
+      const response = await apiPublica.get(`/catalogo/publico/produto/${produtoId}?empresaSlug=${empresaSlug}`);
       const data = response.data;
       setProduto(data);
 
