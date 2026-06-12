@@ -340,7 +340,7 @@
         justify-content: center;
         background: transparent;
         border: none;
-        border-radius: $border-radius - 2px;
+        border-radius: calc($border-radius - 2px);
         color: $text-secondary;
         cursor: pointer;
         transition: $transition-base;
