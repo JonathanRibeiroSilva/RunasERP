@@ -7,6 +7,7 @@
   flex-direction: column;
   background: $background;
   overflow: hidden;
+  position: relative;
 }
 
 .layout-container {
@@ -16,22 +17,40 @@
   position: relative;
 }
 
+// Backdrop para mobile (overlay escuro)
+.sidebar-backdrop {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $overlay-heavy;
+  z-index: $z-index-sticky;
+  animation: fadeIn 0.2s ease-in-out;
+  cursor: pointer;
+  
+  // Não mostrar no desktop
+  @include media-md {
+    display: none;
+  }
+}
+
 .main-content {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
   transition: margin-left $transition-base;
-
-  &.sidebar-open {
-    margin-left: 260px;
-
-    @include media-xs {
-      margin-left: 0;
+  
+  // Desktop: adiciona margem quando sidebar aberta
+  @include media-md {
+    &.sidebar-open {
+      margin-left: 260px;
     }
   }
-
-  &.sidebar-closed {
-    margin-left: 0;
+  
+  // Mobile: sempre sem margem (sidebar overlay)
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    margin-left: 0 !important;
   }
 }
 
@@ -41,7 +60,13 @@
   margin: 0 auto;
   width: 100%;
 
-  @include media-xs {
+  // Mobile: padding menor
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-3 $spacer-2;
+  }
+  
+  // Tablet: padding médio
+  @media (min-width: #{$breakpoint-sm}) and (max-width: #{$breakpoint-md - 1px}) {
     padding: $spacer-3;
   }
 }

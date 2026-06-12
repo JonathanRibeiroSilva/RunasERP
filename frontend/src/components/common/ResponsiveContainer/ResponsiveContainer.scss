@@ -1,0 +1,49 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.responsive-container {
+  width: 100%;
+  padding-right: $spacer-3;
+  padding-left: $spacer-3;
+  margin-right: auto;
+  margin-left: auto;
+
+  // Mobile
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding-right: $spacer-2;
+    padding-left: $spacer-2;
+  }
+
+  // Tablet
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-md - 1px}) {
+    padding-right: $spacer-3;
+    padding-left: $spacer-3;
+  }
+
+  // Desktop
+  @include media-lg {
+    padding-right: $spacer-4;
+    padding-left: $spacer-4;
+  }
+
+  // Larguras máximas
+  &.max-width-sm {
+    max-width: 540px;
+  }
+
+  &.max-width-md {
+    max-width: 720px;
+  }
+
+  &.max-width-lg {
+    max-width: 960px;
+  }
+
+  &.max-width-xl {
+    max-width: 1140px;
+  }
+
+  &.max-width-xxl {
+    max-width: 1320px;
+  }
+}
