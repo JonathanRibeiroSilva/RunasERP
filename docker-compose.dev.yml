@@ -121,19 +121,38 @@ services:
     image: atendai/evolution-api:latest
     container_name: erp-evolution-api-dev
     environment:
+      # Database
       DATABASE_PROVIDER: postgresql
       DATABASE_CONNECTION_URI: postgresql://erp:erp@db:5432/erp?schema=evolution
       DATABASE_CONNECTION_CLIENT_NAME: evolution_api
+      DATABASE_ENABLED: "true"
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      # Redis Cache
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/2
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      # Authentication
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-change-me}
+      # Server
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://localhost:8080}
+      DEL_INSTANCE: "false"
     ports:
       - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - erp-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
