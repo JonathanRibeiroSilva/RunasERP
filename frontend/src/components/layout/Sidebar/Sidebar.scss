@@ -95,6 +95,11 @@
   }
 }
 
+.nav-item-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -108,6 +113,10 @@
   transition: $transition-base;
   cursor: pointer;
   min-height: 44px; // Área mínima de toque para acessibilidade
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
 
   .nav-icon {
     font-size: 20px;
@@ -121,9 +130,22 @@
     flex: 1;
   }
 
+  .nav-arrow {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $text-tertiary;
+    transition: $transition-fast;
+  }
+
   &:hover {
     background: $surface-hover;
     color: $text-primary;
+    
+    .nav-arrow {
+      color: $text-secondary;
+    }
   }
 
   &.active {
@@ -148,6 +170,122 @@
     
     .nav-icon {
       font-size: 22px;
+    }
+  }
+}
+
+// Item pai (com submenu)
+.nav-item-parent {
+  &:hover {
+    .nav-arrow {
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Submenu
+.nav-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+  margin-top: 0;
+  
+  &.expanded {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: $spacer-1;
+  }
+}
+
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: $spacer-2;
+  padding: $spacer-2 $spacer-3;
+  padding-left: calc($spacer-3 + 20px + $spacer-3); // Indent = icon width + gap
+  border-radius: $border-radius;
+  color: $text-tertiary;
+  text-decoration: none;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  transition: $transition-base;
+  cursor: pointer;
+  min-height: 38px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  
+  .nav-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    opacity: 0.7;
+  }
+
+  .nav-label {
+    flex: 1;
+  }
+
+  &:hover {
+    background: $surface-hover;
+    color: $text-secondary;
+    
+    .nav-icon {
+      opacity: 1;
+    }
+  }
+
+  &.active {
+    background: rgba($primary, 0.08);
+    color: $primary;
+    font-weight: $font-weight-semibold;
+
+    .nav-icon {
+      color: $primary;
+      opacity: 1;
+    }
+  }
+  
+  // Item externo (Ver Minha Loja)
+  &.nav-subitem-external {
+    color: $primary;
+    font-weight: $font-weight-medium;
+    
+    .nav-icon {
+      color: $primary;
+      opacity: 1;
+    }
+    
+    &:hover {
+      background: $primary-light;
+      color: $primary;
+      
+      .nav-icon {
+        transform: translateX(2px);
+      }
+    }
+  }
+
+  &:focus-visible {
+    @include focus-ring-shadow;
+  }
+  
+  // Mobile
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-2 $spacer-3;
+    padding-left: calc($spacer-4 + 22px + $spacer-3);
+    font-size: $font-size-sm;
+    min-height: 42px;
+    
+    .nav-icon {
+      font-size: 18px;
     }
   }
 }

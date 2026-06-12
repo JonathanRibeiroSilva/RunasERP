@@ -18,9 +18,16 @@ export const api = axios.create({
 // Interceptor de Request - Cookies são enviados automaticamente
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Não precisa mais adicionar token manualmente
-    // Os cookies HTTP-only são enviados automaticamente pelo navegador
+    // Cookies HTTP-only são enviados automaticamente pelo navegador
     // devido ao withCredentials: true
+    
+    // Adicionar X-Empresa-ID se o usuário estiver autenticado
+    // O backend pega o empresa_id do token JWT, mas alguns endpoints podem precisar do header
+    const empresaId = localStorage.getItem('empresa_id');
+    if (empresaId && !config.url?.includes('/auth/')) {
+      config.headers['X-Empresa-ID'] = empresaId;
+    }
+    
     return config;
   },
   (error: AxiosError) => {

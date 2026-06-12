@@ -83,16 +83,16 @@ class OAuthCallbackRequest(BaseModel):
     state: str
 
 
-@router.post("/register", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def register(
     data: UsuarioCreate,
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
     """
-    Registra um novo usuário.
+    **DEPRECATED**: Use /auth/admin/usuarios para criar operadores.
     
-    Por padrão, cria usuários com role OPERADOR.
-    Para criar ADMIN, use role: "ADMIN" no body.
+    Este endpoint será removido em breve.
+    Registra um novo usuário operador (requer empresa_id).
     """
     repo = UsuarioRepository(db)
     
@@ -339,16 +339,19 @@ async def reset_password(
     }
 
 
-# ==================== OAUTH ROUTES ====================
+# ==================== OAUTH ROUTES (DEPRECATED) ====================
+# OAuth para OPERADORES está deprecated.
+# Use /auth/cliente/oauth/* para autenticação de clientes compradores.
 
-@router.post("/oauth/google")
+@router.post("/oauth/google", deprecated=True)
 async def oauth_google_init(
     request: OAuthInitRequest,
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Inicia o fluxo OAuth com Google.
-    Retorna a URL de autorização.
+    **DEPRECATED**: Use /auth/cliente/oauth/google/init para clientes.
+    
+    Este endpoint será removido em breve.
     """
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(
@@ -379,7 +382,7 @@ async def oauth_google_init(
     return {"auth_url": auth_url, "state": state}
 
 
-@router.post("/oauth/google/callback")
+@router.post("/oauth/google/callback", deprecated=True)
 async def oauth_google_callback(
     response: Response,
     callback: OAuthCallbackRequest,
@@ -387,8 +390,9 @@ async def oauth_google_callback(
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Processa o callback do Google OAuth.
-    Retorna tokens de acesso e define cookies HTTP-only.
+    **DEPRECATED**: Use /auth/cliente/oauth/google/callback para clientes.
+    
+    Este endpoint será removido em breve.
     """
     log.info("oauth.google.callback.start", code=callback.code[:20] + "...", state=callback.state)
     
@@ -475,14 +479,63 @@ async def oauth_google_callback(
     if not usuario:
         # Criar novo usuário
         log.info("oauth.google.callback.creating_user", email=email)
+        
+        # Criar empresa para o novo usuário com dados fictícios
+        async with httpx.AsyncClient() as client:
+            try:
+                # Gerar slug único baseado no email
+                slug = email.split("@")[0].lower().replace(".", "-").replace("_", "-")[:50]
+                
+                empresa_response = await client.post(
+                    f"{settings.EMPRESAS_URL}/empresas",
+                    json={
+                        "slug": slug,
+                        "razao_social": f"{nome} - ME",
+                        "nome_fantasia": f"Empresa de {nome}",
+                        "cnpj": "12.345.678/0001-90",  # CNPJ fictício válido
+                        "cep": "01310-100",  # CEP da Av. Paulista, São Paulo
+                        "logradouro": "Avenida Paulista",
+                        "numero": "1000",
+                        "complemento": "Sala 100",
+                        "bairro": "Bela Vista",
+                        "cidade": "São Paulo",
+                        "uf": "SP",
+                        "telefone": "(11) 3000-0000",
+                        "celular": "(11) 99999-9999",
+                        "email": email,
+                        "catalogo_ativo": True,
+                        "catalogo_titulo": f"Catálogo {nome}",
+                        "catalogo_descricao": "Bem-vindo ao nosso catálogo online!"
+                    },
+                    timeout=10.0
+                )
+                
+                if empresa_response.status_code == 201:
+                    empresa_data = empresa_response.json()
+                    empresa_id = empresa_data.get("id")
+                    log.info("oauth.google.empresa_created", empresa_id=empresa_id, nome=nome)
+                else:
+                    log.error("oauth.google.empresa_creation_failed", status=empresa_response.status_code, response=empresa_response.text)
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Erro ao criar empresa"
+                    )
+            except httpx.RequestError as e:
+                log.error("oauth.google.empresa_request_error", error=str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Erro ao comunicar com serviço de empresas"
+                )
+        
         usuario_create = UsuarioCreate(
             email=email,
             nome=nome,
             senha="",  # OAuth users não têm senha
-            role=RoleEnum.OPERADOR
+            role=RoleEnum.OPERADOR,
+            empresa_id=empresa_id
         )
         usuario = await repo.criar(usuario_create)
-        log.info("oauth.google.user_created", user_id=str(usuario.id), email=email)
+        log.info("oauth.google.user_created", user_id=str(usuario.id), email=email, empresa_id=empresa_id)
     else:
         log.info("oauth.google.user_login", user_id=str(usuario.id), email=email)
     
@@ -522,14 +575,15 @@ async def oauth_google_callback(
     return response_data
 
 
-@router.post("/oauth/microsoft")
+@router.post("/oauth/microsoft", deprecated=True)
 async def oauth_microsoft_init(
     request: OAuthInitRequest,
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Inicia o fluxo OAuth com Microsoft.
-    Retorna a URL de autorização.
+    **DEPRECATED**: Use /auth/cliente/oauth/microsoft/init para clientes.
+    
+    Este endpoint será removido em breve.
     """
     if not settings.MICROSOFT_CLIENT_ID or not settings.MICROSOFT_CLIENT_SECRET:
         raise HTTPException(
@@ -562,7 +616,7 @@ async def oauth_microsoft_init(
     return {"auth_url": auth_url, "state": state}
 
 
-@router.post("/oauth/microsoft/callback")
+@router.post("/oauth/microsoft/callback", deprecated=True)
 async def oauth_microsoft_callback(
     response: Response,
     callback: OAuthCallbackRequest,
@@ -570,8 +624,9 @@ async def oauth_microsoft_callback(
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Processa o callback do Microsoft OAuth.
-    Retorna tokens de acesso e define cookies HTTP-only.
+    **DEPRECATED**: Use /auth/cliente/oauth/microsoft/callback para clientes.
+    
+    Este endpoint será removido em breve.
     """
     # Verificar state (CSRF protection)
     redirect_uri = await redis.get(f"oauth:state:{callback.state}")
@@ -638,14 +693,63 @@ async def oauth_microsoft_callback(
     
     if not usuario:
         # Criar novo usuário
+        
+        # Criar empresa para o novo usuário com dados fictícios
+        async with httpx.AsyncClient() as client:
+            try:
+                # Gerar slug único baseado no email
+                slug = email.split("@")[0].lower().replace(".", "-").replace("_", "-")[:50]
+                
+                empresa_response = await client.post(
+                    f"{settings.EMPRESAS_URL}/empresas",
+                    json={
+                        "slug": slug,
+                        "razao_social": f"{nome} - ME",
+                        "nome_fantasia": f"Empresa de {nome}",
+                        "cnpj": "12.345.678/0001-90",  # CNPJ fictício válido
+                        "cep": "01310-100",  # CEP da Av. Paulista, São Paulo
+                        "logradouro": "Avenida Paulista",
+                        "numero": "1000",
+                        "complemento": "Sala 100",
+                        "bairro": "Bela Vista",
+                        "cidade": "São Paulo",
+                        "uf": "SP",
+                        "telefone": "(11) 3000-0000",
+                        "celular": "(11) 99999-9999",
+                        "email": email,
+                        "catalogo_ativo": True,
+                        "catalogo_titulo": f"Catálogo {nome}",
+                        "catalogo_descricao": "Bem-vindo ao nosso catálogo online!"
+                    },
+                    timeout=10.0
+                )
+                
+                if empresa_response.status_code == 201:
+                    empresa_data = empresa_response.json()
+                    empresa_id = empresa_data.get("id")
+                    log.info("oauth.microsoft.empresa_created", empresa_id=empresa_id, nome=nome)
+                else:
+                    log.error("oauth.microsoft.empresa_creation_failed", status=empresa_response.status_code, response=empresa_response.text)
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Erro ao criar empresa"
+                    )
+            except httpx.RequestError as e:
+                log.error("oauth.microsoft.empresa_request_error", error=str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Erro ao comunicar com serviço de empresas"
+                )
+        
         usuario_create = UsuarioCreate(
             email=email,
             nome=nome,
             senha="",  # OAuth users não têm senha
-            role=RoleEnum.OPERADOR
+            role=RoleEnum.OPERADOR,
+            empresa_id=empresa_id
         )
         usuario = await repo.criar(usuario_create)
-        log.info("oauth.microsoft.user_created", user_id=str(usuario.id), email=email)
+        log.info("oauth.microsoft.user_created", user_id=str(usuario.id), email=email, empresa_id=empresa_id)
     else:
         log.info("oauth.microsoft.user_login", user_id=str(usuario.id), email=email)
     

@@ -17,6 +17,7 @@ class UsuarioCreate(UsuarioBase):
     """Schema para criação de usuário."""
     senha: str = Field(..., min_length=0, max_length=100)  # min_length=0 para permitir OAuth (senha vazia)
     role: RoleEnum = RoleEnum.OPERADOR
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     
     @field_validator('senha')
     @classmethod
@@ -59,6 +60,7 @@ class UsuarioResponse(UsuarioBase):
     id: UUID
     role: RoleEnum
     ativo: bool
+    empresa_id: int
     criado_em: datetime
     
     model_config = {"from_attributes": True}

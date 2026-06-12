@@ -2,10 +2,11 @@
 Proxy HTTP para rotear requisições aos microsserviços.
 """
 import httpx
-from typing import Any
+from typing import Any, Optional
 from fastapi import Request, Response, HTTPException, status
 import structlog
 from config import settings
+from models.usuario import Usuario
 
 log = structlog.get_logger()
 
@@ -27,13 +28,15 @@ class ServiceProxy:
         "/pagamentos": settings.VENDAS_URL,
         "/contas": settings.FINANCEIRO_URL,
         "/notificacoes": settings.NOTIFICACOES_URL,
+        "/empresas": settings.EMPRESAS_URL,
     }
     
     @classmethod
     async def proxy_request(
         cls,
         request: Request,
-        path: str
+        path: str,
+        current_user: Optional[Usuario] = None
     ) -> Response:
         """
         Faz proxy da requisição para o microsserviço apropriado.
@@ -64,6 +67,10 @@ class ServiceProxy:
         # Copiar headers (exceto host)
         headers = dict(request.headers)
         headers.pop("host", None)
+        
+        # Adicionar header X-Empresa-Id se usuário autenticado
+        if current_user and hasattr(current_user, "empresa_id"):
+            headers["X-Empresa-Id"] = str(current_user.empresa_id)
         
         # Ler body se existir
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
