@@ -27,6 +27,12 @@ interface Categoria {
   nome: string;
 }
 
+interface EmpresaInfo {
+  nome_fantasia: string;
+  catalogo_titulo?: string;
+  catalogo_descricao?: string;
+}
+
 const CatalogoPage = () => {
   const navigate = useNavigate();
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
@@ -34,6 +40,7 @@ const CatalogoPage = () => {
 
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [empresaInfo, setEmpresaInfo] = useState<EmpresaInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [linkCopiado, setLinkCopiado] = useState(false);
 
@@ -50,19 +57,21 @@ const CatalogoPage = () => {
       if (categoriaFiltro) params.append('categoria_id', categoriaFiltro);
       if (buscaParam && buscaParam.length >= 2) params.append('busca', buscaParam);
 
-      const [produtosRes, categoriasRes] = await Promise.all([
+      const [produtosRes, categoriasRes, empresaRes] = await Promise.all([
         apiPublica.get(`/catalogo/publico/produtos?${params}`),
         apiPublica.get('/catalogo/publico/categorias'),
+        apiPublica.get(`/empresas/publico/${empresaSlug}`), // Buscar dados públicos da empresa
       ]);
 
       setProdutos(produtosRes.data.items || []);
       setCategorias(categoriasRes.data.items || []);
+      setEmpresaInfo(empresaRes.data);
     } catch (error) {
       console.error('Erro ao carregar catálogo:', error);
     } finally {
       setLoading(false);
     }
-  }, [categoriaFiltro, ordenacao]);
+  }, [categoriaFiltro, ordenacao, empresaSlug]);
 
   useEffect(() => {
     carregarDados();
@@ -97,8 +106,10 @@ const CatalogoPage = () => {
       <header className="catalogo-header">
         <div className="header-content">
           <div className="header-info">
-            <h1>🏪 Catálogo de Produtos</h1>
-            <p>Confira nossos produtos disponíveis</p>
+            <h1>
+              🏪 {empresaInfo?.catalogo_titulo || empresaInfo?.nome_fantasia || 'Catálogo de Produtos'}
+            </h1>
+            <p>{empresaInfo?.catalogo_descricao || 'Confira nossos produtos disponíveis'}</p>
           </div>
           <div className="header-actions">
             {carrinho && carrinho.itens.length > 0 && (

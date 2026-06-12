@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     REDIS_URL: str
 
     # URLs dos serviços internos
+    EMPRESAS_URL: str
     CLIENTES_URL: str
     PRODUTOS_URL: str
     ESTOQUE_URL: str

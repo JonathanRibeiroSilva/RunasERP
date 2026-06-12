@@ -37,25 +37,56 @@ async def seed_admin():
             
             if existing:
                 log.info("seed.admin_exists", email=admin_email)
-                return
+            else:
+                # Criar admin
+                senha_hash = UsuarioRepository.hash_password(admin_password)
+                admin = Usuario(
+                    nome=admin_name,
+                    email=admin_email,
+                    senha_hash=senha_hash,
+                    role=RoleEnum.ADMIN,
+                    ativo=True,
+                    empresa_id=1  # Empresa padrão
+                )
+                db.add(admin)
+                await db.commit()
+                
+                log.info(
+                    "seed.admin_created",
+                    email=admin_email,
+                    role="ADMIN",
+                    empresa_id=1
+                )
             
-            # Criar admin
-            senha_hash = UsuarioRepository.hash_password(admin_password)
-            admin = Usuario(
-                nome=admin_name,
-                email=admin_email,
-                senha_hash=senha_hash,
-                role=RoleEnum.ADMIN,
-                ativo=True
+            # Criar operador de teste
+            operador_email = "operador@runas.com"
+            result = await db.execute(
+                select(Usuario).where(Usuario.email == operador_email)
             )
-            db.add(admin)
-            await db.commit()
+            existing_op = result.scalar_one_or_none()
             
-            log.info(
-                "seed.admin_created",
-                email=admin_email,
-                role="ADMIN"
-            )
+            if not existing_op:
+                senha_hash = UsuarioRepository.hash_password("Operador@123")
+                operador = Usuario(
+                    nome="Operador Teste",
+                    email=operador_email,
+                    senha_hash=senha_hash,
+                    role=RoleEnum.OPERADOR,
+                    ativo=True,
+                    empresa_id=1
+                )
+                db.add(operador)
+                await db.commit()
+                
+                log.info(
+                    "seed.operador_created",
+                    email=operador_email,
+                    role="OPERADOR",
+                    empresa_id=1
+                )
+            else:
+                log.info("seed.operador_exists", email=operador_email)
+                
         except Exception as e:
-            log.error("seed.admin_error", error=str(e))
+            log.error("seed.error", error=str(e))
             await db.rollback()

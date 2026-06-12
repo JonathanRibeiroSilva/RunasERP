@@ -5,11 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { getErrorMessage } from '@/services/api/axios';
-import { oauthService } from '@/services/auth/oauthService';
 import { toast } from 'react-toastify';
 import { FiUser, FiLock, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
-import { SiMicrosoft } from 'react-icons/si';
 import './LoginPage.scss';
 
 const loginSchema = z.object({
@@ -103,22 +100,6 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-
-  const handleOAuthLogin = async (provider: 'google' | 'microsoft') => {
-    try {
-      setIsLoading(true);
-      setLoginError(null);
-      await oauthService.initiateOAuth(provider);
-    } catch (error) {
-      const message = getErrorMessage(error);
-      setLoginError(message);
-      toast.error(message);
-      setIsLoading(false);
-    }
-  };
-
-  const configuredProviders = oauthService.getConfiguredProviders();
-  const hasOAuthProviders = configuredProviders.length > 0;
 
   return (
     <div className="login-page">
@@ -228,46 +209,12 @@ const LoginPage = () => {
             </button>
           </form>
 
-          {hasOAuthProviders && (
-            <>
-              <div className="divider"><span>ou continue com</span></div>
-              <div className="oauth-buttons">
-                {configuredProviders.includes('google') && (
-                  <button
-                    type="button"
-                    className="btn-oauth"
-                    onClick={() => handleOAuthLogin('google')}
-                    disabled={isLoading}
-                  >
-                    <FcGoogle size={18} />
-                    <span>Google</span>
-                  </button>
-                )}
-                {configuredProviders.includes('microsoft') && (
-                  <button
-                    type="button"
-                    className="btn-oauth"
-                    onClick={() => handleOAuthLogin('microsoft')}
-                    disabled={isLoading}
-                  >
-                    <SiMicrosoft size={16} />
-                    <span>Microsoft</span>
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-
           <div className="form-footer">
             <div className="ssl-badge">
               <FiShield />
               <span>CONEXÃO SEGURA SSL</span>
             </div>
-            <p className="copyright">© 2025 Runas . Todos os direitos reservados.</p>
-            <p className="register-link">
-              Não tem conta?{' '}
-              <Link to="/register">Criar conta</Link>
-            </p>
+            <p className="copyright">© 2025 Runas. Todos os direitos reservados.</p>
           </div>
         </div>
       </div>

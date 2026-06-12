@@ -22,6 +22,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const currentUser = await authService.getCurrentUser();
         setUser(currentUser);
+        
+        // Salvar empresa_id no localStorage para uso no interceptor
+        if (currentUser.empresa_id) {
+          localStorage.setItem('empresa_id', currentUser.empresa_id.toString());
+        }
       } catch (error) {
         // Usuário não autenticado — esperado quando não há cookie válido
       } finally {
@@ -36,6 +41,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.login(email, password);
       setUser(response.user);
+      
+      // Salvar empresa_id no localStorage para uso no interceptor
+      if (response.user.empresa_id) {
+        localStorage.setItem('empresa_id', response.user.empresa_id.toString());
+      }
+      
       toast.success(`Bem-vindo, ${response.user.nome}!`);
     } catch (error) {
       console.error('Erro ao fazer login:', error);
@@ -45,17 +56,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const setAuthUser = (userData: User): void => {
     setUser(userData);
+    
+    // Salvar empresa_id no localStorage para uso no interceptor
+    if (userData.empresa_id) {
+      localStorage.setItem('empresa_id', userData.empresa_id.toString());
+    }
   };
 
   const logout = async (): Promise<void> => {
     try {
       await authService.logout();
       setUser(null);
+      localStorage.removeItem('empresa_id');
       toast.info('Você saiu do sistema');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       // Mesmo com erro, limpar estado local
       setUser(null);
+      localStorage.removeItem('empresa_id');
     }
   };
 
