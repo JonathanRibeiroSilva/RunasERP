@@ -4,16 +4,9 @@ Contém toda a lógica de negócio relacionada a empresas (multi-tenancy).
 """
 from typing import Optional, List
 import re
-import sys
-from pathlib import Path
-
-# Adicionar o diretório 'shared' ao path
-shared_path = Path(__file__).parent.parent.parent.parent / "shared"
-sys.path.insert(0, str(shared_path))
-
-from exceptions import ValidationError, NotFoundError, ConflictError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from exceptions import ValidationError, NotFoundError, ConflictError
 from models.empresa import Empresa, TipoEmpresa, StatusEmpresa
 from schemas.empresa import (
     EmpresaCreate,

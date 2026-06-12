@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from decimal import Decimal
 import redis.asyncio as redis
 import structlog
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from schemas.loja import (
     ItemCarrinhoCreate,

@@ -40,6 +40,7 @@ class Empresa(Base):
     Todos os dados de clientes, produtos, vendas, etc. são isolados por empresa_id.
     """
     __tablename__ = "empresas"
+    __table_args__ = {"schema": "empresas"}
 
     # Identificação
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

@@ -4,6 +4,7 @@
 
 -- Criar schemas
 CREATE SCHEMA IF NOT EXISTS gateway;
+CREATE SCHEMA IF NOT EXISTS empresas;
 CREATE SCHEMA IF NOT EXISTS clientes;
 CREATE SCHEMA IF NOT EXISTS produtos;
 CREATE SCHEMA IF NOT EXISTS estoque;
@@ -14,6 +15,7 @@ CREATE SCHEMA IF NOT EXISTS evolution;
 
 -- Garantir permissões para o usuário erp
 GRANT ALL ON SCHEMA gateway TO erp;
+GRANT ALL ON SCHEMA empresas TO erp;
 GRANT ALL ON SCHEMA clientes TO erp;
 GRANT ALL ON SCHEMA produtos TO erp;
 GRANT ALL ON SCHEMA estoque TO erp;
@@ -24,6 +26,7 @@ GRANT ALL ON SCHEMA evolution TO erp;
 
 -- Garantir permissões em objetos futuros
 ALTER DEFAULT PRIVILEGES IN SCHEMA gateway GRANT ALL ON TABLES TO erp;
+ALTER DEFAULT PRIVILEGES IN SCHEMA empresas GRANT ALL ON TABLES TO erp;
 ALTER DEFAULT PRIVILEGES IN SCHEMA clientes GRANT ALL ON TABLES TO erp;
 ALTER DEFAULT PRIVILEGES IN SCHEMA produtos GRANT ALL ON TABLES TO erp;
 ALTER DEFAULT PRIVILEGES IN SCHEMA estoque GRANT ALL ON TABLES TO erp;
@@ -33,6 +36,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA notificacoes GRANT ALL ON TABLES TO erp;
 ALTER DEFAULT PRIVILEGES IN SCHEMA evolution GRANT ALL ON TABLES TO erp;
 
 ALTER DEFAULT PRIVILEGES IN SCHEMA gateway GRANT ALL ON SEQUENCES TO erp;
+ALTER DEFAULT PRIVILEGES IN SCHEMA empresas GRANT ALL ON SEQUENCES TO erp;
 ALTER DEFAULT PRIVILEGES IN SCHEMA clientes GRANT ALL ON SEQUENCES TO erp;
 ALTER DEFAULT PRIVILEGES IN SCHEMA produtos GRANT ALL ON SEQUENCES TO erp;
 ALTER DEFAULT PRIVILEGES IN SCHEMA estoque GRANT ALL ON SEQUENCES TO erp;
@@ -44,5 +48,5 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA evolution GRANT ALL ON SEQUENCES TO erp;
 -- Log de sucesso
 DO $$
 BEGIN
-    RAISE NOTICE 'Schemas criados com sucesso: gateway, clientes, produtos, estoque, vendas, financeiro, notificacoes, evolution';
+    RAISE NOTICE 'Schemas criados com sucesso: gateway, empresas, clientes, produtos, estoque, vendas, financeiro, notificacoes, evolution';
 END $$;

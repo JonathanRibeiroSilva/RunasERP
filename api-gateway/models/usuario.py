@@ -20,6 +20,7 @@ class Usuario(Base):
     """Modelo de usuário."""
     
     __tablename__ = "usuarios"
+    __table_args__ = {"schema": "gateway"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)

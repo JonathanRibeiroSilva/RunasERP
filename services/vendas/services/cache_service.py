@@ -8,8 +8,8 @@ import json
 from decimal import Decimal
 import structlog
 import httpx
+import redis.asyncio as redis
 
-from auth.redis_client import redis_client
 from config import settings
 
 log = structlog.get_logger()
@@ -20,6 +20,15 @@ class CacheService:
     
     # TTL de 5 minutos
     CACHE_TTL = 300
+    
+    @staticmethod
+    async def _get_redis() -> redis.Redis:
+        """Retorna cliente Redis."""
+        return redis.from_url(
+            settings.REDIS_URL,
+            encoding="utf-8",
+            decode_responses=True
+        )
     
     @staticmethod
     def _get_cache_key(produto_id: UUID, variante_id: Optional[UUID] = None) -> str:
@@ -54,11 +63,12 @@ class CacheService:
         Returns:
             Optional[Dict[str, Any]]: Dados do produto ou None
         """
+        r = await CacheService._get_redis()
         try:
             cache_key = CacheService._get_cache_key(produto_id, variante_id)
             
             # Tentar obter do cache
-            cached = await redis_client.get(cache_key)
+            cached = await r.get(cache_key)
             if cached:
                 log.debug("produto_cache_hit", produto_id=str(produto_id))
                 return json.loads(cached)
@@ -73,7 +83,7 @@ class CacheService:
             
             if produto:
                 # Salvar no cache
-                await CacheService._salvar_cache(cache_key, produto)
+                await CacheService._salvar_cache(cache_key, produto, r)
             
             return produto
             
@@ -85,6 +95,8 @@ class CacheService:
             )
             # Em caso de erro, retornar None (não bloquear)
             return None
+        finally:
+            await r.aclose()
     
     @staticmethod
     async def _buscar_produto_servico(
@@ -130,18 +142,19 @@ class CacheService:
             return None
     
     @staticmethod
-    async def _salvar_cache(cache_key: str, produto: Dict[str, Any]) -> None:
+    async def _salvar_cache(cache_key: str, produto: Dict[str, Any], r: redis.Redis) -> None:
         """
         Salva produto no cache.
         
         Args:
             cache_key: Chave do Redis
             produto: Dados do produto
+            r: Cliente Redis
         """
         try:
             # Converter Decimal para string (JSON serialization)
             produto_str = json.dumps(produto, default=str)
-            await redis_client.setex(
+            await r.setex(
                 cache_key,
                 CacheService.CACHE_TTL,
                 produto_str
@@ -164,9 +177,10 @@ class CacheService:
             produto_id: ID do produto
             variante_id: ID da variante (opcional)
         """
+        r = await CacheService._get_redis()
         try:
             cache_key = CacheService._get_cache_key(produto_id, variante_id)
-            await redis_client.delete(cache_key)
+            await r.delete(cache_key)
             
             log.info("produto_cache_invalidado", produto_id=str(produto_id))
             
@@ -176,6 +190,8 @@ class CacheService:
                 produto_id=str(produto_id),
                 error=str(e)
             )
+        finally:
+            await r.aclose()
     
     @staticmethod
     async def limpar_cache_empresa(empresa_id: int) -> None:
@@ -185,20 +201,21 @@ class CacheService:
         Args:
             empresa_id: ID da empresa
         """
+        r = await CacheService._get_redis()
         try:
             # Buscar todas as chaves com padrão loja:produto:*
             pattern = "loja:produto:*"
             cursor = "0"
             
             while cursor != 0:
-                cursor, keys = await redis_client.scan(
+                cursor, keys = await r.scan(
                     cursor=int(cursor),
                     match=pattern,
                     count=100
                 )
                 
                 if keys:
-                    await redis_client.delete(*keys)
+                    await r.delete(*keys)
             
             log.info("cache_empresa_limpo", empresa_id=empresa_id)
             
@@ -208,3 +225,5 @@ class CacheService:
                 empresa_id=empresa_id,
                 error=str(e)
             )
+        finally:
+            await r.aclose()

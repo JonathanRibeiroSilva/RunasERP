@@ -3,7 +3,7 @@ Service de Validação de Cliente Convidado.
 Valida dados de clientes não cadastrados (compra sem cadastro).
 """
 import re
-from typing import Optional, tuple
+from typing import Optional, Tuple
 import structlog
 
 log = structlog.get_logger()
