@@ -18,19 +18,28 @@ depends_on = None
 
 def upgrade() -> None:
     """Adiciona campo deletado_em para soft delete."""
-    op.add_column(
-        'produtos',
-        sa.Column('deletado_em', sa.DateTime(), nullable=True),
-        schema='produtos'
-    )
+    # Verificar se coluna deletado_em já existe
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [col['name'] for col in inspector.get_columns('produtos', schema='produtos')]
     
-    # Adiciona índice para melhorar performance de queries
-    op.create_index(
-        'ix_produtos_deletado_em',
-        'produtos',
-        ['deletado_em'],
-        schema='produtos'
-    )
+    if 'deletado_em' not in columns:
+        op.add_column(
+            'produtos',
+            sa.Column('deletado_em', sa.DateTime(), nullable=True),
+            schema='produtos'
+        )
+    
+    # Adiciona índice para melhorar performance de queries (se não existir)
+    existing_indexes = [idx['name'] for idx in inspector.get_indexes('produtos', schema='produtos')]
+    
+    if 'ix_produtos_deletado_em' not in existing_indexes:
+        op.create_index(
+            'ix_produtos_deletado_em',
+            'produtos',
+            ['deletado_em'],
+            schema='produtos'
+        )
 
 
 def downgrade() -> None:

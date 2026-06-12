@@ -27,80 +27,86 @@ def upgrade() -> None:
     4. Adiciona unique constraint composto (empresa_id, cpf)
     5. Cria índices compostos para performance
     """
-    # 1. Adicionar coluna empresa_id (permite NULL temporariamente)
-    op.add_column(
-        'clientes',
-        sa.Column('empresa_id', sa.Integer(), nullable=True),
-        schema='clientes'
-    )
+    # Verificar se coluna empresa_id já existe
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns = [col['name'] for col in inspector.get_columns('clientes', schema='clientes')]
     
-    # 2. Definir empresa padrão (ID 1) para dados existentes
-    op.execute("""
-        UPDATE clientes.clientes 
-        SET empresa_id = 1 
-        WHERE empresa_id IS NULL
-    """)
-    
-    # 3. Tornar coluna obrigatória
-    op.alter_column(
-        'clientes',
-        'empresa_id',
-        nullable=False,
-        schema='clientes'
-    )
+    if 'empresa_id' not in columns:
+        # 1. Adicionar coluna empresa_id (permite NULL temporariamente)
+        op.add_column(
+            'clientes',
+            sa.Column('empresa_id', sa.Integer(), nullable=True),
+            schema='clientes'
+        )
+        
+        # 2. Definir empresa padrão (ID 1) para dados existentes
+        op.execute("""
+            UPDATE clientes.clientes 
+            SET empresa_id = 1 
+            WHERE empresa_id IS NULL
+        """)
+        
+        # 3. Tornar coluna obrigatória
+        op.alter_column(
+            'clientes',
+            'empresa_id',
+            nullable=False,
+            schema='clientes'
+        )
     
     # 4. Remover unique constraint do CPF (se existir)
-    # Nota: O nome da constraint pode variar dependendo de como foi criada
     try:
         op.drop_constraint('clientes_cpf_key', 'clientes', schema='clientes', type_='unique')
     except:
-        # Constraint pode não existir ou ter nome diferente
         pass
     
     # Remover index único do CPF (se existir)
     try:
         op.drop_index('ix_clientes_cpf', table_name='clientes', schema='clientes')
     except:
-        # Index pode não existir
         pass
     
-    # 5. Adicionar unique constraint composto (empresa_id, cpf)
-    op.create_unique_constraint(
-        'uq_clientes_empresa_cpf',
-        'clientes',
-        ['empresa_id', 'cpf'],
-        schema='clientes'
-    )
+    # 5. Adicionar unique constraint composto (empresa_id, cpf) se não existir
+    indexes = inspector.get_unique_constraints('clientes', schema='clientes')
+    constraint_exists = any(idx['name'] == 'uq_clientes_empresa_cpf' for idx in indexes)
     
-    # 6. Criar índice em empresa_id (simples)
-    op.create_index(
-        'ix_clientes_empresa_id',
-        'clientes',
-        ['empresa_id'],
-        schema='clientes'
-    )
+    if not constraint_exists:
+        op.create_unique_constraint(
+            'uq_clientes_empresa_cpf',
+            'clientes',
+            ['empresa_id', 'cpf'],
+            schema='clientes'
+        )
     
-    # 7. Criar índice composto (empresa_id, ativo) para filtros rápidos
-    op.create_index(
-        'ix_clientes_empresa_id_ativo',
-        'clientes',
-        ['empresa_id', 'ativo'],
-        schema='clientes'
-    )
+    # 6-8. Criar índices se não existirem
+    existing_indexes = [idx['name'] for idx in inspector.get_indexes('clientes', schema='clientes')]
     
-    # 8. Criar índice composto (empresa_id, nome) para buscas por nome
-    op.create_index(
-        'ix_clientes_empresa_id_nome',
-        'clientes',
-        ['empresa_id', 'nome'],
-        schema='clientes'
-    )
+    if 'ix_clientes_empresa_id' not in existing_indexes:
+        op.create_index(
+            'ix_clientes_empresa_id',
+            'clientes',
+            ['empresa_id'],
+            schema='clientes'
+        )
+    
+    if 'ix_clientes_empresa_id_ativo' not in existing_indexes:
+        op.create_index(
+            'ix_clientes_empresa_id_ativo',
+            'clientes',
+            ['empresa_id', 'ativo'],
+            schema='clientes'
+        )
+    
+    if 'ix_clientes_empresa_id_nome' not in existing_indexes:
+        op.create_index(
+            'ix_clientes_empresa_id_nome',
+            'clientes',
+            ['empresa_id', 'nome'],
+            schema='clientes'
+        )
     
     print("✅ Migration aplicada: Multi-tenancy habilitado no serviço de clientes")
-    print("   - empresa_id adicionado")
-    print("   - Dados existentes associados à empresa ID 1")
-    print("   - CPF agora é único por empresa")
-    print("   - Índices compostos criados")
 
 
 def downgrade() -> None:

@@ -19,65 +19,75 @@ depends_on = None
 def upgrade() -> None:
     """Cria schema e tabelas de vendas com multi-tenancy."""
     
+    # Conexão e inspector
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    
     # ========== CRIAR SCHEMA ==========
     op.execute('CREATE SCHEMA IF NOT EXISTS vendas')
     
+    # Verificar se tabela vendas já existe
+    existing_tables = inspector.get_table_names(schema='vendas')
+    
     # ========== CRIAR TABELA VENDAS ==========
-    op.create_table(
-        'vendas',
-        sa.Column('id', UUID(as_uuid=True), primary_key=True),
-        sa.Column('empresa_id', sa.Integer(), nullable=False),
-        sa.Column('numero_venda', sa.String(50), nullable=False),
-        sa.Column('cliente_id', UUID(as_uuid=True), nullable=True),
-        sa.Column('subtotal', sa.Numeric(10, 2), nullable=False, server_default='0.0'),
-        sa.Column('desconto_tipo', sa.String(20), nullable=True),
-        sa.Column('desconto_valor', sa.Numeric(10, 2), nullable=False, server_default='0.0'),
-        sa.Column('valor_total', sa.Numeric(10, 2), nullable=False, server_default='0.0'),
-        sa.Column('status', sa.String(20), nullable=False, server_default='PEDIDO'),
-        sa.Column('tipo_entrega', sa.String(20), nullable=False, server_default='RETIRADA'),
-        sa.Column('data_pedido', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('data_confirmacao', sa.DateTime(), nullable=True),
-        sa.Column('data_separacao', sa.DateTime(), nullable=True),
-        sa.Column('data_entregue', sa.DateTime(), nullable=True),
-        sa.Column('data_finalizada', sa.DateTime(), nullable=True),
-        sa.Column('data_cancelada', sa.DateTime(), nullable=True),
-        sa.Column('motivo_cancelamento', sa.Text(), nullable=True),
-        sa.Column('cancelada_por', UUID(as_uuid=True), nullable=True),
-        sa.Column('observacao', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        schema='vendas'
-    )
+    if 'vendas' not in existing_tables:
+        op.create_table(
+            'vendas',
+            sa.Column('id', UUID(as_uuid=True), primary_key=True),
+            sa.Column('empresa_id', sa.Integer(), nullable=False),
+            sa.Column('numero_venda', sa.String(50), nullable=False),
+            sa.Column('cliente_id', UUID(as_uuid=True), nullable=True),
+            sa.Column('subtotal', sa.Numeric(10, 2), nullable=False, server_default='0.0'),
+            sa.Column('desconto_tipo', sa.String(20), nullable=True),
+            sa.Column('desconto_valor', sa.Numeric(10, 2), nullable=False, server_default='0.0'),
+            sa.Column('valor_total', sa.Numeric(10, 2), nullable=False, server_default='0.0'),
+            sa.Column('status', sa.String(20), nullable=False, server_default='PEDIDO'),
+            sa.Column('tipo_entrega', sa.String(20), nullable=False, server_default='RETIRADA'),
+            sa.Column('data_pedido', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.Column('data_confirmacao', sa.DateTime(), nullable=True),
+            sa.Column('data_separacao', sa.DateTime(), nullable=True),
+            sa.Column('data_entregue', sa.DateTime(), nullable=True),
+            sa.Column('data_finalizada', sa.DateTime(), nullable=True),
+            sa.Column('data_cancelada', sa.DateTime(), nullable=True),
+            sa.Column('motivo_cancelamento', sa.Text(), nullable=True),
+            sa.Column('cancelada_por', UUID(as_uuid=True), nullable=True),
+            sa.Column('observacao', sa.Text(), nullable=True),
+            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            schema='vendas'
+        )
     
     # ========== CRIAR TABELA ITENS_VENDA ==========
-    op.create_table(
-        'itens_venda',
-        sa.Column('id', UUID(as_uuid=True), primary_key=True),
-        sa.Column('venda_id', UUID(as_uuid=True), nullable=False),
-        sa.Column('produto_id', UUID(as_uuid=True), nullable=False),
-        sa.Column('variante_id', UUID(as_uuid=True), nullable=True),
-        sa.Column('codigo_produto', sa.String(100), nullable=True),
-        sa.Column('descricao_produto', sa.String(500), nullable=False),
-        sa.Column('quantidade', sa.Numeric(10, 3), nullable=False),
-        sa.Column('preco_unitario', sa.Numeric(10, 2), nullable=False),
-        sa.Column('subtotal', sa.Numeric(10, 2), nullable=False),
-        sa.Column('estoque_reservado', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('estoque_baixado', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.ForeignKeyConstraint(['venda_id'], ['vendas.vendas.id'], ondelete='CASCADE'),
-        schema='vendas'
-    )
+    if 'itens_venda' not in existing_tables:
+        op.create_table(
+            'itens_venda',
+            sa.Column('id', UUID(as_uuid=True), primary_key=True),
+            sa.Column('venda_id', UUID(as_uuid=True), nullable=False),
+            sa.Column('produto_id', UUID(as_uuid=True), nullable=False),
+            sa.Column('variante_id', UUID(as_uuid=True), nullable=True),
+            sa.Column('codigo_produto', sa.String(100), nullable=True),
+            sa.Column('descricao_produto', sa.String(500), nullable=False),
+            sa.Column('quantidade', sa.Numeric(10, 3), nullable=False),
+            sa.Column('preco_unitario', sa.Numeric(10, 2), nullable=False),
+            sa.Column('subtotal', sa.Numeric(10, 2), nullable=False),
+            sa.Column('estoque_reservado', sa.Boolean(), nullable=False, server_default='false'),
+            sa.Column('estoque_baixado', sa.Boolean(), nullable=False, server_default='false'),
+            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.ForeignKeyConstraint(['venda_id'], ['vendas.vendas.id'], ondelete='CASCADE'),
+            schema='vendas'
+        )
     
     # ========== CRIAR TABELA PAGAMENTOS_VENDA ==========
-    op.create_table(
-        'pagamentos_venda',
-        sa.Column('id', UUID(as_uuid=True), primary_key=True),
-        sa.Column('venda_id', UUID(as_uuid=True), nullable=False),
-        sa.Column('forma_pagamento', sa.String(20), nullable=False),
-        sa.Column('valor_pago', sa.Numeric(10, 2), nullable=False),
-        sa.Column('valor_recebido', sa.Numeric(10, 2), nullable=True),
-        sa.Column('valor_troco', sa.Numeric(10, 2), nullable=True),
-        sa.Column('gera_conta_receber', sa.Boolean(), nullable=False, server_default='false'),
+    if 'pagamentos_venda' not in existing_tables:
+        op.create_table(
+            'pagamentos_venda',
+            sa.Column('id', UUID(as_uuid=True), primary_key=True),
+            sa.Column('venda_id', UUID(as_uuid=True), nullable=False),
+            sa.Column('forma_pagamento', sa.String(20), nullable=False),
+            sa.Column('valor_pago', sa.Numeric(10, 2), nullable=False),
+            sa.Column('valor_recebido', sa.Numeric(10, 2), nullable=True),
+            sa.Column('valor_troco', sa.Numeric(10, 2), nullable=True),
+            sa.Column('gera_conta_receber', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('conta_receber_id', UUID(as_uuid=True), nullable=True),
         sa.Column('comprovante', sa.String(200), nullable=True),
         sa.Column('data_pagamento', sa.DateTime(), nullable=False, server_default=sa.func.now()),
