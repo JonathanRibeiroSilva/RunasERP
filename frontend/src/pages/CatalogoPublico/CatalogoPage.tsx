@@ -36,7 +36,7 @@ interface EmpresaInfo {
 const CatalogoPage = () => {
   const navigate = useNavigate();
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
-  const { carrinho } = useCarrinho();
+  const { carrinho, adicionarItem } = useCarrinho();
 
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -88,10 +88,6 @@ const CatalogoPage = () => {
     carregarDados();
   }, [carregarDados]);
 
-  const handleBuscar = () => {
-    carregarDados(busca);
-  };
-
   const handleLimparBusca = () => {
     setBusca('');
     carregarDados();
@@ -109,6 +105,44 @@ const CatalogoPage = () => {
     const url = encodeURIComponent(window.location.href);
     const texto = encodeURIComponent('Confira nosso catálogo de produtos! 🛍️');
     window.open(`https://wa.me/?text=${texto}%20${url}`, '_blank');
+  };
+
+  const handleAdicionarAoCarrinho = async (produtoId: string) => {
+    try {
+      // Buscar detalhes do produto para verificar variantes
+      const response = await apiPublica.get(`/catalogo/publico/produto/${produtoId}?empresaSlug=${empresaSlug}`);
+      const produto = response.data;
+
+      // Se não tiver variantes ou produto inativo, redirecionar para detalhes
+      if (!produto.variantes || produto.variantes.length === 0 || !produto.ativo) {
+        navigate(`/c/${empresaSlug}/produto/${produtoId}`);
+        return;
+      }
+
+      // Filtrar variantes ativas
+      const variantesAtivas = produto.variantes.filter((v: any) => v.ativo);
+
+      if (variantesAtivas.length === 0) {
+        alert('Este produto não possui opções disponíveis no momento');
+        return;
+      }
+
+      // Se tiver apenas 1 variante, adicionar diretamente
+      if (variantesAtivas.length === 1) {
+        await adicionarItem(produtoId, variantesAtivas[0].id, 1);
+        // Feedback visual será dado pelo badge do carrinho
+      } else {
+        // Se tiver múltiplas variantes, redirecionar para página de detalhes
+        navigate(`/c/${empresaSlug}/produto/${produtoId}`);
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar ao carrinho:', error);
+      alert('Erro ao adicionar produto ao carrinho');
+    }
+  };
+
+  const handleBuscar = () => {
+    carregarDados(busca);
   };
 
   return (
@@ -227,7 +261,7 @@ const CatalogoPage = () => {
                   key={produto.id}
                   produto={produto}
                   onClick={() => navigate(`/c/${empresaSlug}/produto/${produto.id}`)}
-                  onAddToCart={() => navigate(`/c/${empresaSlug}/produto/${produto.id}`)}
+                  onAddToCart={() => handleAdicionarAoCarrinho(produto.id)}
                 />
               ))}
             </div>
