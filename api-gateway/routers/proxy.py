@@ -35,6 +35,17 @@ async def proxy_empresas_publico(request: Request, path: str):
 
 
 @router.api_route(
+    "/loja/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Loja Online"]
+)
+async def proxy_loja_publico(request: Request, path: str):
+    """Proxy para loja online - carrinho e checkout (sem autenticação)."""
+    full_path = f"/loja/{path}" if path else "/loja"
+    return await ServiceProxy.proxy_request(request, full_path)
+
+
+@router.api_route(
     "/carrinho/{path:path}",
     methods=["GET", "POST", "PATCH", "DELETE"],
     tags=["Carrinho Público"]
