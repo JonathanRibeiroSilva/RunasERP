@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiPackage, FiTag, FiShare2, FiCopy } from 'react-icons/fi';
+import { FiArrowLeft, FiPackage, FiTag, FiShare2, FiCopy, FiShoppingCart, FiCheck } from 'react-icons/fi';
 import axios from 'axios';
+import { useCarrinho } from '@/hooks/useCarrinho';
 import './ProdutoDetalhePage.scss';
 
 const apiPublica = axios.create({
@@ -34,12 +35,16 @@ interface Produto {
 const ProdutoDetalhePage = () => {
   const { empresaSlug, produtoId } = useParams<{ empresaSlug: string; produtoId: string }>();
   const navigate = useNavigate();
+  const { adicionarItem, carrinho } = useCarrinho();
 
   const [produto, setProduto] = useState<Produto | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [varianteSelecionada, setVarianteSelecionada] = useState<Variante | null>(null);
   const [linkCopiado, setLinkCopiado] = useState(false);
+  const [quantidade, setQuantidade] = useState(1);
+  const [adicionandoCarrinho, setAdicionandoCarrinho] = useState(false);
+  const [itemAdicionado, setItemAdicionado] = useState(false);
 
   useEffect(() => {
     if (produtoId) carregarProduto();
@@ -77,6 +82,29 @@ const ProdutoDetalhePage = () => {
 
   const formatarPreco = (valor: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+
+  const handleAdicionarCarrinho = async () => {
+    if (!varianteSelecionada) {
+      alert('Selecione uma opção do produto');
+      return;
+    }
+
+    try {
+      setAdicionandoCarrinho(true);
+      await adicionarItem(produto!.id, varianteSelecionada.id, quantidade);
+      
+      setItemAdicionado(true);
+      setTimeout(() => setItemAdicionado(false), 2000);
+    } catch (error: any) {
+      alert(error.message || 'Erro ao adicionar ao carrinho');
+    } finally {
+      setAdicionandoCarrinho(false);
+    }
+  };
+
+  const handleIrParaCarrinho = () => {
+    navigate(`/c/${empresaSlug}/carrinho`);
+  };
 
   if (loading) {
     return (
@@ -190,6 +218,58 @@ const ProdutoDetalhePage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Controle de Quantidade */}
+          {variantesAtivas.length > 0 && varianteSelecionada && (
+            <div className="quantidade-section">
+              <label>Quantidade</label>
+              <div className="quantidade-controle">
+                <button
+                  onClick={() => setQuantidade(Math.max(1, quantidade - 1))}
+                  disabled={quantidade <= 1}
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  value={quantidade}
+                  onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+                <button onClick={() => setQuantidade(quantidade + 1)}>
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Botões de Ação */}
+          {variantesAtivas.length > 0 && varianteSelecionada && (
+            <div className="acoes-section">
+              <button
+                className={`btn-adicionar-carrinho ${itemAdicionado ? 'adicionado' : ''}`}
+                onClick={handleAdicionarCarrinho}
+                disabled={adicionandoCarrinho || itemAdicionado}
+              >
+                {itemAdicionado ? (
+                  <>
+                    <FiCheck /> Adicionado!
+                  </>
+                ) : (
+                  <>
+                    <FiShoppingCart />
+                    {adicionandoCarrinho ? 'Adicionando...' : 'Adicionar ao Carrinho'}
+                  </>
+                )}
+              </button>
+
+              {carrinho && carrinho.itens.length > 0 && (
+                <button className="btn-ver-carrinho" onClick={handleIrParaCarrinho}>
+                  Ver Carrinho ({carrinho.quantidade_total})
+                </button>
+              )}
             </div>
           )}
 

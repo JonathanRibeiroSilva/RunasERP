@@ -11,7 +11,7 @@ import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
 import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
 import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
-import { CatalogoPage, ProdutoDetalhePage } from '@/pages/CatalogoPublico';
+import { CatalogoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/CatalogoPublico';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
 
 // Loading component
@@ -95,6 +95,10 @@ function App() {
         {/* Catálogo Público (sem autenticação) */}
         <Route path="/c/:empresaSlug" element={<CatalogoPage />} />
         <Route path="/c/:empresaSlug/produto/:produtoId" element={<ProdutoDetalhePage />} />
+        <Route path="/c/:empresaSlug/carrinho" element={<CarrinhoPage />} />
+        <Route path="/c/:empresaSlug/checkout" element={<CheckoutPage />} />
+        <Route path="/c/:empresaSlug/pedido/:numeroPedido" element={<RastreamentoPedidoPage />} />
+        <Route path="/c/:empresaSlug/minha-conta/pedidos" element={<MeusPedidosPage />} />
 
         {/* OAuth Callback Route */}
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />
