@@ -39,6 +39,19 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
-    """Inicializa o banco de dados criando todas as tabelas."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """
+    Inicializa o banco de dados.
+    
+    IMPORTANTE: Este método não cria mais as tabelas automaticamente.
+    Use Alembic migrations para gerenciar o schema do banco:
+    
+    ```bash
+    # Criar migration
+    alembic revision --autogenerate -m "descrição"
+    
+    # Aplicar migration
+    alembic upgrade head
+    ```
+    """
+    # Apenas log - tabelas são criadas via Alembic migrations
+    pass
