@@ -200,37 +200,40 @@ const CatalogoPage = () => {
       </div>
 
       {/* Conteúdo */}
-      {loading ? (
-        <div className="loading">
-          <div className="spinner" />
-          <p>Carregando produtos...</p>
-        </div>
-      ) : produtos.length === 0 ? (
-        <div className="empty-state">
-          <span className="empty-icon">📦</span>
-          <p>Nenhum produto encontrado</p>
-          {busca && (
-            <button className="btn-limpar-busca" onClick={handleLimparBusca}>
-              Limpar busca
-            </button>
-          )}
-        </div>
-      ) : (
-        <>
-          <div className="resultados-info">
-            <span>{produtos.length} produto{produtos.length !== 1 ? 's' : ''} encontrado{produtos.length !== 1 ? 's' : ''}</span>
+      <div className="catalogo-content">
+        {loading ? (
+          <div className="loading">
+            <div className="spinner" />
+            <p>Carregando produtos...</p>
           </div>
-          <div className="produtos-grid">
-            {produtos.map((produto) => (
-              <ProdutoCard
-                key={produto.id}
-                produto={produto}
-                onClick={() => navigate(`/c/${empresaSlug}/produto/${produto.id}`)}
-              />
-            ))}
+        ) : produtos.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-icon">📦</span>
+            <p>Nenhum produto encontrado</p>
+            {busca && (
+              <button className="btn-limpar-busca" onClick={handleLimparBusca}>
+                Limpar busca
+              </button>
+            )}
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <div className="resultados-info">
+              <span>{produtos.length} produto{produtos.length !== 1 ? 's' : ''} encontrado{produtos.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="produtos-grid">
+              {produtos.map((produto) => (
+                <ProdutoCard
+                  key={produto.id}
+                  produto={produto}
+                  onClick={() => navigate(`/c/${empresaSlug}/produto/${produto.id}`)}
+                  onAddToCart={() => navigate(`/c/${empresaSlug}/produto/${produto.id}`)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Footer */}
       <footer className="catalogo-footer">
