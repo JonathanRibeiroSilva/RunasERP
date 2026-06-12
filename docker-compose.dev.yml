@@ -99,6 +99,11 @@ services:
       - db
     networks:
       - erp-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     entrypoint: >
       /bin/sh -c "
       mkdir -p /var/lib/pgadmin/storage/admin_runas.com &&
@@ -151,6 +156,7 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      EMPRESAS_URL: ${EMPRESAS_URL:-http://empresas:8007}
       CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
       PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
       ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
@@ -370,6 +376,36 @@ services:
     restart: unless-stopped
     command: python -m uvicorn main:app --host 0.0.0.0 --port 8006 --reload
 
+  empresas:
+    build:
+      context: ./services/empresas
+      dockerfile: Dockerfile
+    container_name: erp-empresas-dev
+    ports:
+      - "8007:8007"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_EMPRESAS}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./services/empresas:/app
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8007 --reload
+
   # ============================================
   # FRONTEND
   # ============================================
@@ -404,6 +440,11 @@ services:
       - api-gateway
     networks:
       - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     stdin_open: true
     tty: true
     restart: unless-stopped

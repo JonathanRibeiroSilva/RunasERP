@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 import json
+import redis.asyncio as redis
 
 # Adicionar path do projeto
 sys.path.append(str(Path(__file__).parent.parent))
@@ -16,9 +17,17 @@ sys.path.append(str(Path(__file__).parent.parent))
 import structlog
 
 from config import settings
-from auth.redis_client import redis_client
 
 log = structlog.get_logger()
+
+
+async def _get_redis() -> redis.Redis:
+    """Retorna cliente Redis."""
+    return redis.from_url(
+        settings.REDIS_URL,
+        encoding="utf-8",
+        decode_responses=True
+    )
 
 
 async def limpar_carrinhos_abandonados():
@@ -29,6 +38,7 @@ async def limpar_carrinhos_abandonados():
     """
     log.info("job_limpar_carrinhos_iniciado")
     
+    r = await _get_redis()
     try:
         # Padrão de chaves de carrinho: carrinho:{sessao_id}:{empresa_id}
         pattern = "carrinho:*"
@@ -42,7 +52,7 @@ async def limpar_carrinhos_abandonados():
         
         # Varrer todas as chaves de carrinho
         while cursor != 0:
-            cursor, keys = await redis_client.scan(
+            cursor, keys = await r.scan(
                 cursor=int(cursor),
                 match=pattern,
                 count=100
@@ -53,7 +63,7 @@ async def limpar_carrinhos_abandonados():
                     carrinhos_verificados += 1
                     
                     # Obter carrinho do Redis
-                    carrinho_json = await redis_client.get(key)
+                    carrinho_json = await r.get(key)
                     
                     if not carrinho_json:
                         continue
@@ -65,7 +75,7 @@ async def limpar_carrinhos_abandonados():
                     
                     if not atualizado_em_str:
                         # Se não tem data, considerar como abandonado (caso antigo)
-                        await redis_client.delete(key)
+                        await r.delete(key)
                         carrinhos_removidos += 1
                         
                         log.info(
@@ -79,13 +89,13 @@ async def limpar_carrinhos_abandonados():
                         atualizado_em = datetime.fromisoformat(atualizado_em_str.replace('Z', '+00:00'))
                     except:
                         # Formato inválido - remover
-                        await redis_client.delete(key)
+                        await r.delete(key)
                         carrinhos_removidos += 1
                         continue
                     
                     # Verificar se está abandonado (>7 dias)
                     if atualizado_em < limite:
-                        await redis_client.delete(key)
+                        await r.delete(key)
                         carrinhos_removidos += 1
                         
                         log.info(
@@ -113,6 +123,8 @@ async def limpar_carrinhos_abandonados():
             "job_limpar_carrinhos_erro",
             error=str(e)
         )
+    finally:
+        await r.aclose()
 
 
 if __name__ == "__main__":
