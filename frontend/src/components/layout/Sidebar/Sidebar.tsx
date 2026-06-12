@@ -7,11 +7,14 @@ import {
   FiBox,
   FiDollarSign,
   FiFolder,
+  FiX,
 } from 'react-icons/fi';
 import './Sidebar.scss';
 
 interface SidebarProps {
   isOpen: boolean;
+  onClose?: () => void;
+  isMobile?: boolean;
 }
 
 interface NavItem {
@@ -30,14 +33,33 @@ const navItems: NavItem[] = [
   { path: '/financeiro', icon: <FiDollarSign />, label: 'Financeiro' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) => {
+  const handleNavClick = () => {
+    // Fechar sidebar automaticamente ao clicar em link no mobile
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+
   return (
     <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+      {/* Botão fechar (apenas mobile) */}
+      {isMobile && isOpen && onClose && (
+        <button 
+          className="sidebar-close" 
+          onClick={onClose} 
+          aria-label="Fechar menu"
+        >
+          <FiX />
+        </button>
+      )}
+      
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={handleNavClick}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <span className="nav-icon">{item.icon}</span>
