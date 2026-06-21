@@ -39,10 +39,14 @@ async def proxy_empresas_publico(request: Request, path: str):
     methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     tags=["Loja Online"]
 )
-async def proxy_loja_publico(request: Request, path: str):
+async def proxy_loja_publico(
+    request: Request,
+    path: str,
+    empresaSlug: str | None = None
+):
     """Proxy para loja online - carrinho e checkout (sem autenticação)."""
     full_path = f"/loja/{path}" if path else "/loja"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
 
 
 @router.api_route(
@@ -50,10 +54,14 @@ async def proxy_loja_publico(request: Request, path: str):
     methods=["GET", "POST", "PATCH", "DELETE"],
     tags=["Carrinho Público"]
 )
-async def proxy_carrinho_publico(request: Request, path: str):
+async def proxy_carrinho_publico(
+    request: Request,
+    path: str,
+    empresaSlug: str | None = None
+):
     """Proxy para carrinho (sem autenticação)."""
     full_path = f"/carrinho/{path}" if path else "/carrinho"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
 
 
 # Rotas protegidas (requerem autenticação)

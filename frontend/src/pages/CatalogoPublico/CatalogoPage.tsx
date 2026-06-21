@@ -36,7 +36,7 @@ interface EmpresaInfo {
 const CatalogoPage = () => {
   const navigate = useNavigate();
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
-  const { carrinho, adicionarItem } = useCarrinho();
+  const { carrinho, adicionarItem } = useCarrinho({ empresaSlug });
 
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -164,7 +164,7 @@ const CatalogoPage = () => {
                 title="Ver carrinho"
               >
                 <FiShoppingCart />
-                <span className="carrinho-badge">{carrinho.quantidade_total}</span>
+                <span className="carrinho-badge">{carrinho.quantidade_itens}</span>
                 Carrinho
               </button>
             )}
