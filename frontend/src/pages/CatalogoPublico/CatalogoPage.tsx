@@ -71,9 +71,19 @@ const CatalogoPage = () => {
       if (buscaParam && buscaParam.length >= 2) params.append('busca', buscaParam);
 
       const [produtosRes, categoriasRes] = await Promise.all([
-        apiPublica.get(`/catalogo/publico/produtos?${params}`).catch(() => ({ data: { items: [] } })),
-        apiPublica.get(`/catalogo/publico/categorias?empresaSlug=${empresaSlug}`).catch(() => ({ data: { items: [] } })),
+        apiPublica.get(`/catalogo/publico/produtos?${params}`).catch((err) => {
+          console.error('❌ Erro ao carregar produtos:', err);
+          console.error('URL tentada:', `/catalogo/publico/produtos?${params}`);
+          return { data: { items: [] } };
+        }),
+        apiPublica.get(`/catalogo/publico/categorias?empresaSlug=${empresaSlug}`).catch((err) => {
+          console.error('❌ Erro ao carregar categorias:', err);
+          return { data: { items: [] } };
+        }),
       ]);
+
+      console.log('✅ Produtos carregados:', produtosRes.data.items?.length || 0);
+      console.log('✅ Categorias carregadas:', categoriasRes.data.items?.length || 0);
 
       setProdutos(produtosRes.data.items || []);
       setCategorias(categoriasRes.data.items || []);
@@ -157,17 +167,17 @@ const CatalogoPage = () => {
             <p>{empresaInfo?.catalogo_descricao || 'Confira nossos produtos disponíveis'}</p>
           </div>
           <div className="header-actions">
-            {carrinho && carrinho.itens.length > 0 && (
-              <button
-                className="btn-carrinho"
-                onClick={() => navigate(`/c/${empresaSlug}/carrinho`)}
-                title="Ver carrinho"
-              >
-                <FiShoppingCart />
+            <button
+              className="btn-carrinho"
+              onClick={() => navigate(`/c/${empresaSlug}/carrinho`)}
+              title="Ver carrinho"
+            >
+              <FiShoppingCart />
+              {carrinho && carrinho.quantidade_itens > 0 && (
                 <span className="carrinho-badge">{carrinho.quantidade_itens}</span>
-                Carrinho
-              </button>
-            )}
+              )}
+              Carrinho
+            </button>
             <button
               className="btn-compartilhar"
               onClick={handleCopiarLink}
