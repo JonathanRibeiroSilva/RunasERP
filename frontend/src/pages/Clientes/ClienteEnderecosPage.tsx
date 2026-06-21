@@ -106,7 +106,7 @@ const ClienteEnderecosPage = () => {
 
       if (editando) {
         // Editar
-        await api.put(`/clientes/${id}/enderecos/${editando}`, data);
+        await api.patch(`/clientes/${id}/enderecos/${editando}`, data);
         toast.success('Endereço atualizado com sucesso');
       } else {
         // Criar

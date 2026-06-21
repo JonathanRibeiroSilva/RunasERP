@@ -130,7 +130,7 @@ const ClienteFormPage = () => {
 
       if (id) {
         // Editar cliente
-        await api.put(`/clientes/${id}`, clienteData);
+        await api.patch(`/clientes/${id}`, clienteData);
         toast.success('Cliente atualizado com sucesso');
       } else {
         // Criar cliente
@@ -160,7 +160,7 @@ const ClienteFormPage = () => {
 
           if (enderecoPrincipal) {
             // Atualizar endereço principal existente
-            await api.put(`/clientes/${clienteId}/enderecos/${enderecoPrincipal.id}`, enderecoData);
+            await api.patch(`/clientes/${clienteId}/enderecos/${enderecoPrincipal.id}`, enderecoData);
           } else {
             // Criar novo endereço principal
             await api.post(`/clientes/${clienteId}/enderecos`, enderecoData);
@@ -341,7 +341,9 @@ const ClienteFormPage = () => {
               <div className="info-item">
                 <span className="label">Crédito Disponível:</span>
                 <span className="value">
-                  R$ {cliente.credito_disponivel.toFixed(2).replace('.', ',')}
+                  R$ {typeof cliente.credito_disponivel === 'number' 
+                    ? cliente.credito_disponivel.toFixed(2).replace('.', ',')
+                    : parseFloat(cliente.credito_disponivel || '0').toFixed(2).replace('.', ',')}
                 </span>
               </div>
               <div className="info-item">
