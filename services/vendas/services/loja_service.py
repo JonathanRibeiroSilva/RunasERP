@@ -76,12 +76,15 @@ class LojaService:
             # 2.1 Cliente convidado (guest)
             if data.cliente_novo and not cliente_id:
                 # Validar dados do cliente convidado
-                cliente_validado = await ClienteValidacaoService.validar_cliente_convidado(
+                valido, cliente_validado, erros = ClienteValidacaoService.validar_cliente_convidado(
                     nome=data.cliente_novo.nome,
                     telefone=data.cliente_novo.telefone,
-                    email=data.cliente_novo.email if hasattr(data.cliente_novo, 'email') else None,
-                    cpf=data.cliente_novo.cpf if hasattr(data.cliente_novo, 'cpf') else None
+                    email=data.cliente_novo.email if data.cliente_novo.email else None,
+                    cpf=data.cliente_novo.cpf if data.cliente_novo.cpf else None
                 )
+                
+                if not valido:
+                    raise ValueError(f"Dados inválidos: {'; '.join(erros)}")
                 
                 cliente_info = {
                     'nome': cliente_validado['nome'],

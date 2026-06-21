@@ -1,6 +1,7 @@
 """
 Schemas para Loja Online (E-commerce).
 """
+import re
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
@@ -67,9 +68,39 @@ class EnderecoEntregaCheckout(BaseModel):
 class ClienteCheckout(BaseModel):
     """Schema de dados do cliente no checkout (para clientes não cadastrados)."""
     nome: str = Field(..., min_length=3, max_length=200)
-    email: EmailStr
-    telefone: str = Field(..., pattern=r'^\(\d{2}\)\s?\d{4,5}-?\d{4}$')
-    cpf: Optional[str] = Field(None, pattern=r'^\d{11}$')
+    email: Optional[EmailStr] = None
+    telefone: str = Field(..., min_length=10, max_length=15, description="Telefone com ou sem máscara")
+    cpf: Optional[str] = Field(None, min_length=11, max_length=14, description="CPF com ou sem máscara")
+    
+    @field_validator('telefone')
+    @classmethod
+    def validate_telefone(cls, v: str) -> str:
+        """Normaliza telefone removendo formatação."""
+        # Remove tudo que não é número
+        apenas_numeros = re.sub(r'\D', '', v)
+        
+        # Deve ter entre 10 e 11 dígitos (DDD + número)
+        if len(apenas_numeros) < 10 or len(apenas_numeros) > 11:
+            raise ValueError('Telefone deve ter 10 ou 11 dígitos (DDD + número)')
+        
+        return apenas_numeros
+    
+    @field_validator('cpf')
+    @classmethod
+    def validate_cpf(cls, v: Optional[str]) -> Optional[str]:
+        """Normaliza e valida CPF."""
+        if not v:
+            return None
+        
+        # Remove formatação
+        cpf_limpo = re.sub(r'\D', '', v)
+        
+        # Deve ter exatamente 11 dígitos
+        if len(cpf_limpo) != 11:
+            raise ValueError('CPF deve ter 11 dígitos')
+        
+        # TODO: Adicionar validação de dígitos verificadores
+        return cpf_limpo
 
 
 class PagamentoCheckout(BaseModel):
