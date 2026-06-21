@@ -6,6 +6,9 @@ from typing import Optional, Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Cookie, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+import structlog
+
+log = structlog.get_logger()
 
 from database import get_db
 from schemas.loja import (
@@ -19,7 +22,7 @@ from schemas.loja import (
 )
 from services.carrinho_service import CarrinhoService
 from services.loja_service import LojaService
-from utils.tenant import get_empresa_id
+from utils.tenant import get_empresa_id, get_empresa_id_from_slug
 
 router = APIRouter(prefix="/loja", tags=["loja-online"])
 
@@ -195,6 +198,13 @@ async def limpar_carrinho(
 
 # ==================== CHECKOUT ====================
 
+@router.post("/checkout/debug")
+async def debug_checkout(request: dict):
+    """Endpoint de debug para ver o payload recebido"""
+    log.info("debug_payload", payload=request)
+    return {"received": request}
+
+
 @router.post(
     "/checkout",
     response_model=CheckoutResponse,
@@ -203,7 +213,7 @@ async def limpar_carrinho(
 )
 async def processar_checkout(
     data: CheckoutRequest,
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     sessao_id: Annotated[str, Cookie(alias="cart_session_id")],
     db: AsyncSession = Depends(get_db)
 ):
@@ -217,6 +227,13 @@ async def processar_checkout(
     
     **Nota**: O pagamento deve ser confirmado posteriormente para prosseguir.
     """
+    import structlog
+    log = structlog.get_logger()
+    
+    log.info("checkout_recebido", 
+             cliente_nome=data.cliente_novo.nome if data.cliente_novo else None,
+             tem_endereco=bool(data.endereco_entrega))
+    
     try:
         resultado = await LojaService.processar_checkout(
             db,
@@ -228,8 +245,10 @@ async def processar_checkout(
         return resultado
         
     except ValueError as e:
+        log.error("checkout_valor_error", erro=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        log.error("checkout_exception", erro=str(e))
         raise HTTPException(status_code=500, detail=f"Erro ao processar checkout: {str(e)}")
 
 
