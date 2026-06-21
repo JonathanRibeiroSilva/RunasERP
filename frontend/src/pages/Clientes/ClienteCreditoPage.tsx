@@ -85,7 +85,7 @@ const ClienteCreditoPage = () => {
   const onSubmit = async (data: CreditoFormData) => {
     try {
       setSubmitting(true);
-      await api.put(`/clientes/${id}`, data);
+      await api.put(`/clientes/${id}/credito`, data);
       toast.success('Crédito atualizado com sucesso');
       carregarDados();
     } catch (error: any) {
