@@ -40,7 +40,7 @@ type Step = 1 | 2 | 3;
 const CheckoutPage = () => {
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
   const navigate = useNavigate();
-  const { carrinho, limparCarrinho } = useCarrinho();
+  const { carrinho, limparCarrinho } = useCarrinho({ empresaSlug });
 
   // Steps
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -78,9 +78,10 @@ const CheckoutPage = () => {
 
   // Calcular troco quando forma for DINHEIRO
   useEffect(() => {
-    if (formaPagamento === 'DINHEIRO' && valorDinheiro) {
+    if (formaPagamento === 'DINHEIRO' && valorDinheiro && carrinho) {
       const valor = parseFloat(valorDinheiro.replace(',', '.'));
-      const total = (carrinho?.total || 0) + frete;
+      const subtotalNum = parseFloat(carrinho.subtotal);
+      const total = subtotalNum + frete;
       setTroco(Math.max(0, valor - total));
     } else {
       setTroco(0);
@@ -188,7 +189,7 @@ const CheckoutPage = () => {
         pagamentos: [
           {
             forma_pagamento: formaPagamento,
-            valor: (carrinho?.total || 0) + frete,
+            valor: parseFloat(carrinho.subtotal) + frete,
           },
         ],
       };
@@ -215,10 +216,7 @@ const CheckoutPage = () => {
     }
   };
 
-  const formatarPreco = (valor: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
-
-  const formatarTelefone = (value: string) => {
+  // Formatadores
     const limpo = value.replace(/\D/g, '');
     if (limpo.length <= 10) {
       return limpo.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
@@ -251,7 +249,12 @@ const CheckoutPage = () => {
     );
   }
 
-  const total = carrinho.total + frete;
+  const formatarPreco = (valor: string | number) => {
+    const valorNum = typeof valor === 'string' ? parseFloat(valor) : valor;
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorNum);
+  };
+
+  const total = parseFloat(carrinho.subtotal) + frete;
 
   return (
     <div className="checkout-page">
@@ -581,20 +584,25 @@ const CheckoutPage = () => {
           <h3>Resumo do pedido</h3>
 
           <div className="resumo-itens">
-            {carrinho.itens.map((item) => (
-              <div key={item.id} className="resumo-item">
-                <span className="item-nome">
-                  {item.quantidade}x {item.produto_nome}
-                </span>
-                <span className="item-preco">{formatarPreco(item.subtotal)}</span>
-              </div>
-            ))}
+            {carrinho.itens.map((item) => {
+              const itemKey = `${item.produto_id}-${item.variante_id || 'null'}`;
+              const quantidadeNum = parseFloat(item.quantidade);
+              
+              return (
+                <div key={itemKey} className="resumo-item">
+                  <span className="item-nome">
+                    {quantidadeNum}x {item.descricao_produto}
+                  </span>
+                  <span className="item-preco">{formatarPreco(item.subtotal)}</span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="resumo-totais">
             <div className="total-linha">
               <span>Subtotal</span>
-              <span>{formatarPreco(carrinho.total)}</span>
+              <span>{formatarPreco(carrinho.subtotal)}</span>
             </div>
             <div className="total-linha">
               <span>Frete</span>

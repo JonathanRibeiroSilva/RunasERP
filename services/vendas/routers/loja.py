@@ -76,6 +76,7 @@ async def obter_carrinho(
 async def adicionar_item_carrinho(
     data: ItemCarrinhoCreate,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
+    db: AsyncSession = Depends(get_db),
     sessao_id: Annotated[str | None, Cookie(alias="cart_session_id")] = None,
     response: Response = None
 ):
@@ -98,7 +99,8 @@ async def adicionar_item_carrinho(
         carrinho = await CarrinhoService.adicionar_item(
             sessao_id,
             empresa_id,
-            data
+            data,
+            db
         )
         
         return carrinho

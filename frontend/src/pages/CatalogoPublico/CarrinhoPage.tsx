@@ -14,34 +14,43 @@ const CarrinhoPage = () => {
     removerItem, 
     atualizarQuantidade, 
     limparCarrinho 
-  } = useCarrinho();
+  } = useCarrinho({ empresaSlug });
 
-  const [processandoItemId, setProcessandoItemId] = useState<string | null>(null);
+  const [processandoItem, setProcessandoItem] = useState<string | null>(null);
 
-  const formatarPreco = (valor: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+  const formatarPreco = (valor: string | number) => {
+    const valorNum = typeof valor === 'string' ? parseFloat(valor) : valor;
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorNum);
+  };
 
-  const handleRemoverItem = async (itemId: string) => {
+  // Gera chave única para cada item (produto_id + variante_id)
+  const getItemKey = (item: any) => {
+    return `${item.produto_id}-${item.variante_id || 'null'}`;
+  };
+
+  const handleRemoverItem = async (produtoId: string, varianteId: string | null) => {
     try {
-      setProcessandoItemId(itemId);
-      await removerItem(itemId);
+      const key = `${produtoId}-${varianteId || 'null'}`;
+      setProcessandoItem(key);
+      await removerItem(produtoId, varianteId);
     } catch (error) {
       console.error('Erro ao remover item:', error);
     } finally {
-      setProcessandoItemId(null);
+      setProcessandoItem(null);
     }
   };
 
-  const handleAtualizarQuantidade = async (itemId: string, novaQuantidade: number) => {
+  const handleAtualizarQuantidade = async (produtoId: string, varianteId: string | null, novaQuantidade: number) => {
     if (novaQuantidade < 1) return;
     
     try {
-      setProcessandoItemId(itemId);
-      await atualizarQuantidade(itemId, novaQuantidade);
+      const key = `${produtoId}-${varianteId || 'null'}`;
+      setProcessandoItem(key);
+      await atualizarQuantidade(produtoId, varianteId, novaQuantidade);
     } catch (error) {
       console.error('Erro ao atualizar quantidade:', error);
     } finally {
-      setProcessandoItemId(null);
+      setProcessandoItem(null);
     }
   };
 
@@ -88,7 +97,7 @@ const CarrinhoPage = () => {
           Seu Carrinho
           {!carrinhoVazio && (
             <span className="badge-quantidade">
-              {carrinho.quantidade_total} {carrinho.quantidade_total === 1 ? 'item' : 'itens'}
+              {carrinho.quantidade_itens} {carrinho.quantidade_itens === 1 ? 'item' : 'itens'}
             </span>
           )}
         </h1>
@@ -121,68 +130,66 @@ const CarrinhoPage = () => {
             </div>
 
             <div className="itens-lista">
-              {carrinho.itens.map((item) => (
-                <div 
-                  key={item.id} 
-                  className={`item-carrinho ${processandoItemId === item.id ? 'processando' : ''}`}
-                >
-                  <div className="item-imagem">
-                    <FiShoppingBag />
-                  </div>
-
-                  <div className="item-info">
-                    <h4 className="item-nome">{item.produto_nome}</h4>
-                    <div className="item-detalhes">
-                      <span className="item-sku">SKU: {item.variante_sku}</span>
-                      {item.variante_atributos && item.variante_atributos.length > 0 && (
-                        <div className="item-atributos">
-                          {item.variante_atributos.map((attr, i) => (
-                            <span key={i} className="atributo-badge">
-                              {attr.chave}: {attr.valor}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+              {carrinho.itens.map((item) => {
+                const itemKey = getItemKey(item);
+                const quantidadeNum = parseFloat(item.quantidade);
+                
+                return (
+                  <div 
+                    key={itemKey}
+                    className={`item-carrinho ${processandoItem === itemKey ? 'processando' : ''}`}
+                  >
+                    <div className="item-imagem">
+                      <FiShoppingBag />
                     </div>
-                    <div className="item-preco-unitario">
-                      {formatarPreco(item.preco_unitario)} / unidade
-                    </div>
-                  </div>
 
-                  <div className="item-acoes">
-                    <div className="quantidade-editor">
+                    <div className="item-info">
+                      <h4 className="item-nome">{item.descricao_produto}</h4>
+                      <div className="item-detalhes">
+                        {item.codigo_produto && (
+                          <span className="item-sku">SKU: {item.codigo_produto}</span>
+                        )}
+                      </div>
+                      <div className="item-preco-unitario">
+                        {formatarPreco(item.preco_unitario)} / unidade
+                      </div>
+                    </div>
+
+                    <div className="item-acoes">
+                      <div className="quantidade-editor">
+                        <button
+                          className="btn-quantidade"
+                          onClick={() => handleAtualizarQuantidade(item.produto_id, item.variante_id, quantidadeNum - 1)}
+                          disabled={quantidadeNum <= 1 || processandoItem === itemKey}
+                        >
+                          <FiMinus />
+                        </button>
+                        <span className="quantidade-valor">{quantidadeNum}</span>
+                        <button
+                          className="btn-quantidade"
+                          onClick={() => handleAtualizarQuantidade(item.produto_id, item.variante_id, quantidadeNum + 1)}
+                          disabled={processandoItem === itemKey}
+                        >
+                          <FiPlus />
+                        </button>
+                      </div>
+
+                      <div className="item-subtotal">
+                        {formatarPreco(item.subtotal)}
+                      </div>
+
                       <button
-                        className="btn-quantidade"
-                        onClick={() => handleAtualizarQuantidade(item.id, item.quantidade - 1)}
-                        disabled={item.quantidade <= 1 || processandoItemId === item.id}
+                        className="btn-remover"
+                        onClick={() => handleRemoverItem(item.produto_id, item.variante_id)}
+                        disabled={processandoItem === itemKey}
+                        title="Remover item"
                       >
-                        <FiMinus />
-                      </button>
-                      <span className="quantidade-valor">{item.quantidade}</span>
-                      <button
-                        className="btn-quantidade"
-                        onClick={() => handleAtualizarQuantidade(item.id, item.quantidade + 1)}
-                        disabled={processandoItemId === item.id}
-                      >
-                        <FiPlus />
+                        <FiTrash2 />
                       </button>
                     </div>
-
-                    <div className="item-subtotal">
-                      {formatarPreco(item.subtotal)}
-                    </div>
-
-                    <button
-                      className="btn-remover"
-                      onClick={() => handleRemoverItem(item.id)}
-                      disabled={processandoItemId === item.id}
-                      title="Remover item"
-                    >
-                      <FiTrash2 />
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -192,8 +199,8 @@ const CarrinhoPage = () => {
               <h3>Resumo do pedido</h3>
 
               <div className="resumo-linha">
-                <span>Subtotal ({carrinho.quantidade_total} itens)</span>
-                <span className="resumo-valor">{formatarPreco(carrinho.total)}</span>
+                <span>Subtotal ({carrinho.quantidade_itens} itens)</span>
+                <span className="resumo-valor">{formatarPreco(carrinho.subtotal)}</span>
               </div>
 
               <div className="resumo-info">
@@ -202,7 +209,7 @@ const CarrinhoPage = () => {
 
               <div className="resumo-total">
                 <span>Total</span>
-                <span className="total-valor">{formatarPreco(carrinho.total)}</span>
+                <span className="total-valor">{formatarPreco(carrinho.subtotal)}</span>
               </div>
 
               <button 
