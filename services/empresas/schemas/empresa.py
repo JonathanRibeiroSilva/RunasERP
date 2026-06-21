@@ -173,6 +173,7 @@ class EmpresaListItem(BaseModel):
 
 class EmpresaPublicInfo(BaseModel):
     """Schema com informações públicas da empresa (para catálogo)."""
+    id: int
     slug: str
     nome_fantasia: str
     logo_url: Optional[str]
