@@ -35,7 +35,7 @@ interface Produto {
 const ProdutoDetalhePage = () => {
   const { empresaSlug, produtoId } = useParams<{ empresaSlug: string; produtoId: string }>();
   const navigate = useNavigate();
-  const { adicionarItem, carrinho } = useCarrinho();
+  const { adicionarItem, carrinho } = useCarrinho({ empresaSlug });
 
   const [produto, setProduto] = useState<Produto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -267,7 +267,7 @@ const ProdutoDetalhePage = () => {
 
               {carrinho && carrinho.itens.length > 0 && (
                 <button className="btn-ver-carrinho" onClick={handleIrParaCarrinho}>
-                  Ver Carrinho ({carrinho.quantidade_total})
+                  Ver Carrinho ({carrinho.quantidade_itens})
                 </button>
               )}
             </div>

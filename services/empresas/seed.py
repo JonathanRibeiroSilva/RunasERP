@@ -48,7 +48,7 @@ async def seed_empresas():
             cor_primaria="#1E40AF",
             cor_secundaria="#059669",
             catalogo_ativo=True,
-            catalogo_titulo="Catálogo Online - Distribuidora Central",
+            catalogo_titulo=None,  # Usar nome_fantasia
             catalogo_descricao="Alimentos e bebidas com os melhores preços da região!",
             catalogo_whatsapp="(11) 99000-0001",
             plano="PRO",
@@ -82,7 +82,7 @@ async def seed_empresas():
             cor_primaria="#1E40AF",
             cor_secundaria="#059669",
             catalogo_ativo=True,
-            catalogo_titulo="Catálogo Online - Zona Sul",
+            catalogo_titulo=None,  # Usar nome_fantasia
             catalogo_descricao="Distribuidora Central - Unidade Zona Sul",
             catalogo_whatsapp="(11) 99000-0002",
             plano="PRO",
@@ -114,7 +114,7 @@ async def seed_empresas():
             cor_primaria="#DC2626",
             cor_secundaria="#F59E0B",
             catalogo_ativo=True,
-            catalogo_titulo="Mercadinho do João - Catálogo",
+            catalogo_titulo=None,  # Usar nome_fantasia
             catalogo_descricao="Seu mercadinho de bairro com qualidade e preço justo!",
             catalogo_whatsapp="(19) 99000-0003",
             plano="BASICO",

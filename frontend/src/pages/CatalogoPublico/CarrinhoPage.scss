@@ -3,9 +3,11 @@
 
 .carrinho-page {
   min-height: 100vh;
+  height: 100vh;
   background: $background;
   display: flex;
   flex-direction: column;
+  overflow: hidden; // Previne scroll duplo
 }
 
 // Header
@@ -174,6 +176,8 @@
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  overflow-y: auto; // Adiciona scroll vertical
+  overflow-x: hidden;
 
   @media (max-width: #{$breakpoint-md - 1px}) {
     grid-template-columns: 1fr;

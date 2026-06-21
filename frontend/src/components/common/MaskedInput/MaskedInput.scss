@@ -1,0 +1,81 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.masked-input {
+  display: flex;
+  flex-direction: column;
+  gap: $spacer-2;
+  width: 100%;
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    
+    .required {
+      color: $error;
+      margin-left: 2px;
+    }
+  }
+
+  &__field {
+    width: 100%;
+    padding: $spacer-3;
+    border: 1px solid $border-default;
+    border-radius: $border-radius;
+    background: $background;
+    color: $text-primary;
+    font-size: $font-size-base;
+    font-family: $font-family-base;
+    transition: $transition-base;
+
+    &:hover:not(:disabled) {
+      border-color: $border-hover;
+      background: $surface;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary;
+      background: $surface;
+      box-shadow: 0 0 0 3px $primary-light;
+    }
+
+    &.error {
+      border-color: $error;
+      
+      &:focus {
+        box-shadow: 0 0 0 3px $error-light;
+      }
+    }
+
+    &:disabled,
+    &.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: $surface-hover;
+    }
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+  }
+
+  &__error {
+    font-size: $font-size-xs;
+    color: $error;
+    display: flex;
+    align-items: center;
+    gap: $spacer-1;
+
+    &::before {
+      content: '⚠';
+      font-size: $font-size-sm;
+    }
+  }
+
+  &__helper {
+    font-size: $font-size-xs;
+    color: $text-tertiary;
+  }
+}

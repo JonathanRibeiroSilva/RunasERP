@@ -117,18 +117,36 @@ class CarrinhoService:
         key = CarrinhoService._get_redis_key(sessao_id, empresa_id)
         
         try:
-            # Validar e buscar dados do produto
-            produto = await VendaService.verificar_produto_existe(
-                data.produto_id,
-                data.variante_id
-            )
-            if not produto:
-                raise ValueError(f"Produto {data.produto_id} não encontrado")
-            
-            # Extrair dados do produto
-            codigo = produto.get('codigo', produto.get('sku'))
-            descricao = produto.get('nome')
-            preco = Decimal(str(produto.get('preco_venda', 0)))
+            # Validar e buscar dados do produto/variante
+            if data.variante_id:
+                # Buscar variante
+                variante = await VendaService.verificar_produto_existe(
+                    data.produto_id,
+                    data.variante_id,
+                    empresa_id
+                )
+                if not variante:
+                    raise ValueError(f"Variante {data.variante_id} não encontrada")
+                
+                # Buscar dados do produto principal para obter nome
+                produto = await VendaService.verificar_produto_existe(data.produto_id, None, empresa_id)
+                if not produto:
+                    raise ValueError(f"Produto {data.produto_id} não encontrado")
+                
+                # Extrair dados combinados (variante + produto)
+                codigo = variante.get('sku')
+                descricao = produto.get('nome')
+                preco = Decimal(str(variante.get('preco_venda', 0)))
+            else:
+                # Buscar apenas produto (sem variante)
+                produto = await VendaService.verificar_produto_existe(data.produto_id, None, empresa_id)
+                if not produto:
+                    raise ValueError(f"Produto {data.produto_id} não encontrado")
+                
+                # Extrair dados do produto
+                codigo = produto.get('codigo', produto.get('sku'))
+                descricao = produto.get('nome')
+                preco = Decimal(str(produto.get('preco', produto.get('preco_venda', 0))))
             
             if preco <= 0:
                 raise ValueError("Produto sem preço de venda definido")

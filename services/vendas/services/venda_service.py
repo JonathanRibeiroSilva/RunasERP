@@ -42,19 +42,26 @@ class VendaService:
     """Service para operações de venda."""
 
     @staticmethod
-    async def verificar_produto_existe(produto_id: UUID, variante_id: Optional[UUID] = None) -> dict:
+    async def verificar_produto_existe(produto_id: UUID, variante_id: Optional[UUID] = None, empresa_id: Optional[int] = None) -> dict:
         """
         Verifica se produto/variante existe no serviço de produtos.
         Retorna dados do produto se existir.
         """
         try:
             async with httpx.AsyncClient() as client:
+                # Preparar headers
+                headers = {}
+                if empresa_id:
+                    headers["X-Empresa-Id"] = str(empresa_id)
+                
                 if variante_id:
-                    url = f"{settings.PRODUTOS_URL}/produtos/{produto_id}/variantes/{variante_id}"
+                    # Buscar variante específica
+                    url = f"{settings.PRODUTOS_URL}/variantes/{variante_id}"
                 else:
+                    # Buscar produto
                     url = f"{settings.PRODUTOS_URL}/produtos/{produto_id}"
                 
-                response = await client.get(url, timeout=5.0)
+                response = await client.get(url, headers=headers, timeout=5.0)
                 if response.status_code == 200:
                     return response.json()
                 return None

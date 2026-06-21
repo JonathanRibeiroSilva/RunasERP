@@ -2,10 +2,11 @@
 
 .catalogo-page {
   min-height: 100vh;
+  height: 100vh;
   background: $background;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden; // Evita scroll horizontal
+  overflow: hidden; // Previne scroll duplo
 
   // Header
   .catalogo-header {
