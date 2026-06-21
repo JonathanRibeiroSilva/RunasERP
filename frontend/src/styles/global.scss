@@ -25,10 +25,16 @@ body {
   font-size: $font-size-base;
   font-weight: $font-weight-normal;
   line-height: $line-height-base;
-  color: $text-primary;
-  background-color: $background;
+  color: $text-primary !important;
+  background-color: $background !important;
   height: 100%;
   overflow: hidden;
+}
+
+// Force dark background on root element
+#root {
+  min-height: 100vh;
+  background-color: $background;
 }
 
 // ========================================
