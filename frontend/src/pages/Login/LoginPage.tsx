@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { getErrorMessage } from '@/services/api/axios';
-import { toast } from 'react-toastify';
+import { Toast } from '@/utils/toast';
 import { FiUser, FiLock, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import './LoginPage.scss';
 
@@ -81,10 +81,16 @@ const LoginPage = () => {
   const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setLoginError(null);
+    
+    const toastId = Toast.loading('Entrando...');
+    
     try {
       await login(data.email, data.password);
+      Toast.update(toastId, 'success', 'Login realizado com sucesso!');
       navigate('/dashboard');
     } catch (error) {
+      Toast.dismiss(toastId);
+      
       const message = getErrorMessage(error);
       let errorMessage = message;
       if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
@@ -95,7 +101,7 @@ const LoginPage = () => {
         errorMessage = 'Erro de conexão. Verifique sua internet.';
       }
       setLoginError(errorMessage);
-      toast.error(errorMessage);
+      Toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
