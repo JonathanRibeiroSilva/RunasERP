@@ -3,6 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiUser, FiTruck, FiCreditCard, FiCheck, FiAlertCircle } from 'react-icons/fi';
 import axios from 'axios';
 import { useCarrinho } from '@/hooks/useCarrinho';
+import MaskedInput from '@/components/common/MaskedInput/MaskedInput';
+import { validateCPF, validateEmail, validatePhone, validateCEP, validateRequired } from '@/utils/validators';
+import { unmask, maskCurrency } from '@/utils/masks';
+import { Toast } from '@/utils/toast';
 import './CheckoutPage.scss';
 
 const apiPublica = axios.create({
@@ -123,26 +127,53 @@ const CheckoutPage = () => {
 
   // Validações por step
   const validarStep1 = (): boolean => {
-    if (!clienteNovo.nome.trim()) {
-      setErro('Nome é obrigatório');
+    setErro('');
+    
+    const nomeError = validateRequired(clienteNovo.nome, 'Nome');
+    if (nomeError) {
+      Toast.error(nomeError);
       return false;
     }
-    if (!clienteNovo.telefone.trim()) {
-      setErro('Telefone é obrigatório');
+    
+    const telefoneError = validatePhone(clienteNovo.telefone);
+    if (telefoneError) {
+      Toast.error(telefoneError);
       return false;
     }
-    const telefoneLimpo = clienteNovo.telefone.replace(/\D/g, '');
-    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
-      setErro('Telefone inválido (formato: DDD + número)');
-      return false;
+    
+    // Email é opcional, mas se preenchido deve ser válido
+    if (clienteNovo.email) {
+      const emailError = validateEmail(clienteNovo.email);
+      if (emailError) {
+        Toast.error(emailError);
+        return false;
+      }
     }
+    
+    // CPF é opcional, mas se preenchido deve ser válido
+    if (clienteNovo.cpf) {
+      const cpfError = validateCPF(clienteNovo.cpf);
+      if (cpfError) {
+        Toast.error(cpfError);
+        return false;
+      }
+    }
+    
     return true;
   };
 
   const validarStep2 = (): boolean => {
+    setErro('');
+    
     if (tipoEntrega === 'DELIVERY') {
-      if (!endereco.cep || !endereco.logradouro || !endereco.numero || !endereco.bairro) {
-        setErro('Preencha todos os campos obrigatórios do endereço');
+      const cepError = validateCEP(endereco.cep);
+      if (cepError) {
+        Toast.error(cepError);
+        return false;
+      }
+      
+      if (!endereco.logradouro || !endereco.numero || !endereco.bairro) {
+        Toast.error('Preencha todos os campos obrigatórios do endereço');
         return false;
       }
     }
@@ -168,17 +199,20 @@ const CheckoutPage = () => {
     setErro('');
     setFinalizando(true);
 
+    // Toast de loading
+    const toastId = Toast.loading('Processando pedido...');
+
     try {
       const payload = {
         cliente_novo: {
           nome: clienteNovo.nome,
-          telefone: clienteNovo.telefone.replace(/\D/g, ''),
-          email: clienteNovo.email || undefined,
-          cpf: clienteNovo.cpf ? clienteNovo.cpf.replace(/\D/g, '') : undefined,
+          telefone: unmask(clienteNovo.telefone), // Remove máscara
+          email: clienteNovo.email || undefined, // Não envia se vazio
+          cpf: clienteNovo.cpf ? unmask(clienteNovo.cpf) : undefined, // Remove máscara
         },
         tipo_entrega: tipoEntrega,
-        endereco: tipoEntrega === 'DELIVERY' ? {
-          cep: endereco.cep,
+        endereco_entrega: tipoEntrega === 'DELIVERY' ? {
+          cep: unmask(endereco.cep), // Remove máscara
           logradouro: endereco.logradouro,
           numero: endereco.numero,
           complemento: endereco.complemento || undefined,
@@ -194,8 +228,13 @@ const CheckoutPage = () => {
         ],
       };
 
-      const response = await apiPublica.post('/loja/checkout', payload);
+      console.log('📦 Payload enviado:', JSON.stringify(payload, null, 2));
+
+      const response = await apiPublica.post(`/loja/checkout?empresaSlug=${empresaSlug}`, payload);
       const { venda_id, numero_venda, mercadopago_init_point } = response.data;
+
+      // Atualiza toast para sucesso
+      Toast.update(toastId, 'success', 'Pedido realizado com sucesso!');
 
       // Limpar carrinho
       await limparCarrinho();
@@ -210,13 +249,16 @@ const CheckoutPage = () => {
         });
       }
     } catch (error: any) {
-      setErro(error.response?.data?.detail || 'Erro ao finalizar compra');
+      // Atualiza toast para erro e usa tratamento de erro da API
+      Toast.dismiss(toastId);
+      Toast.apiError(error);
     } finally {
       setFinalizando(false);
     }
   };
 
   // Formatadores
+  const formatarTelefone = (value: string) => {
     const limpo = value.replace(/\D/g, '');
     if (limpo.length <= 10) {
       return limpo.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
@@ -234,6 +276,12 @@ const CheckoutPage = () => {
     return limpo.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
   };
 
+  const formatarPreco = (valor: string | number) => {
+    const valorNum = typeof valor === 'string' ? parseFloat(valor) : valor;
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorNum);
+  };
+
+  // Early return se carrinho vazio
   if (!carrinho || carrinho.itens.length === 0) {
     return (
       <div className="checkout-page">
@@ -249,11 +297,6 @@ const CheckoutPage = () => {
     );
   }
 
-  const formatarPreco = (valor: string | number) => {
-    const valorNum = typeof valor === 'string' ? parseFloat(valor) : valor;
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorNum);
-  };
-
   const total = parseFloat(carrinho.subtotal) + frete;
 
   return (
@@ -266,23 +309,9 @@ const CheckoutPage = () => {
         <h1>Finalizar Compra</h1>
       </header>
 
-      {/* Steps Indicator */}
-      <div className="steps-indicator">
-        <div className={`step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
-          <div className="step-icon">{currentStep > 1 ? <FiCheck /> : <FiUser />}</div>
-          <span>Dados</span>
-        </div>
-        <div className="step-line" />
-        <div className={`step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
-          <div className="step-icon">{currentStep > 2 ? <FiCheck /> : <FiTruck />}</div>
-          <span>Entrega</span>
-        </div>
-        <div className="step-line" />
-        <div className={`step ${currentStep >= 3 ? 'active' : ''}`}>
-          <div className="step-icon"><FiCreditCard /></div>
-          <span>Pagamento</span>
-        </div>
-      </div>
+      {/* Steps Indicator - Temporariamente oculto */}
+      {/* TODO: Implementar stepper em modal/drawer separado */}
+      {/* <div className="steps-indicator">...</div> */}
 
       {erro && (
         <div className="erro-mensagem">
@@ -309,38 +338,37 @@ const CheckoutPage = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Telefone (WhatsApp) *</label>
-                <input
-                  type="tel"
-                  value={formatarTelefone(clienteNovo.telefone)}
-                  onChange={(e) => setClienteNovo({ ...clienteNovo, telefone: e.target.value })}
-                  placeholder="(11) 99999-9999"
-                  maxLength={15}
-                />
-                <small>Usaremos para enviar atualizações do pedido</small>
-              </div>
+              <MaskedInput
+                mask="phone"
+                value={clienteNovo.telefone}
+                onChange={(value) => setClienteNovo({ ...clienteNovo, telefone: value })}
+                onValidate={validatePhone}
+                label="Telefone (WhatsApp)"
+                placeholder="(11) 99999-9999"
+                helperText="Usaremos para enviar atualizações do pedido"
+                showValidation={true}
+                required
+              />
 
-              <div className="form-group">
-                <label>E-mail (opcional)</label>
-                <input
-                  type="email"
-                  value={clienteNovo.email}
-                  onChange={(e) => setClienteNovo({ ...clienteNovo, email: e.target.value })}
-                  placeholder="seu@email.com"
-                />
-              </div>
+              <MaskedInput
+                value={clienteNovo.email || ''}
+                onChange={(value) => setClienteNovo({ ...clienteNovo, email: value })}
+                onValidate={validateEmail}
+                label="E-mail"
+                placeholder="seu@email.com"
+                type="email"
+                showValidation={true}
+              />
 
-              <div className="form-group">
-                <label>CPF (opcional)</label>
-                <input
-                  type="text"
-                  value={formatarCpf(clienteNovo.cpf || '')}
-                  onChange={(e) => setClienteNovo({ ...clienteNovo, cpf: e.target.value })}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                />
-              </div>
+              <MaskedInput
+                mask="cpf"
+                value={clienteNovo.cpf || ''}
+                onChange={(value) => setClienteNovo({ ...clienteNovo, cpf: value })}
+                onValidate={validateCPF}
+                label="CPF (opcional)"
+                placeholder="000.000.000-00"
+                showValidation={true}
+              />
 
               <button className="btn-proximo" onClick={proximoStep}>
                 Continuar <FiCheck />
@@ -392,20 +420,24 @@ const CheckoutPage = () => {
                 <div className="endereco-form">
                   <h3>Endereço de entrega</h3>
 
-                  <div className="form-group">
-                    <label>CEP *</label>
-                    <div className="input-with-button">
-                      <input
-                        type="text"
-                        value={formatarCep(endereco.cep)}
-                        onChange={(e) => setEndereco({ ...endereco, cep: e.target.value })}
-                        onBlur={(e) => buscarCep(e.target.value)}
-                        placeholder="00000-000"
-                        maxLength={9}
-                      />
-                      {buscandoCep && <span className="loading-cep">Buscando...</span>}
-                    </div>
-                  </div>
+                  <MaskedInput
+                    mask="cep"
+                    value={endereco.cep}
+                    onChange={(value) => {
+                      setEndereco({ ...endereco, cep: value });
+                      // Busca CEP quando estiver completo
+                      const cleaned = unmask(value);
+                      if (cleaned.length === 8) {
+                        buscarCep(value);
+                      }
+                    }}
+                    onValidate={validateCEP}
+                    label="CEP"
+                    placeholder="00000-000"
+                    helperText={buscandoCep ? 'Buscando endereço...' : ''}
+                    showValidation={true}
+                    required
+                  />
 
                   <div className="form-row">
                     <div className="form-group">
