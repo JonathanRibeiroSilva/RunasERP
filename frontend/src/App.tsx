@@ -15,6 +15,9 @@ import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPag
 import { CatalogoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/CatalogoPublico';
 import { CatalogoRedirectPage, PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
+import { EstoquePage } from '@/pages/Estoque';
+import { VendasPage } from '@/pages/Vendas';
+import { FinanceiroPage } from '@/pages/Financeiro';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
 import RoleProtectedRoute from '@/components/common/RoleProtectedRoute';
 
@@ -153,25 +156,14 @@ function App() {
           <Route path="produtos/:id/variantes" element={<ProdutoVariantesPage />} />
           <Route path="categorias" element={<CategoriasPage />} />
           
-          {/* Rotas de Estoque - Sprint 3 */}
-          {/* TODO: Implementar páginas de estoque */}
-          {/* <Route path="estoque" element={<EstoquePage />} /> */}
-          {/* <Route path="estoque/movimentacoes" element={<EstoqueMovimentacoesPage />} /> */}
-          {/* <Route path="estoque/entrada" element={<EstoqueEntradaPage />} /> */}
-          {/* <Route path="estoque/lotes" element={<EstoqueLotesPage />} /> */}
-          {/* <Route path="estoque/inventario" element={<EstoqueInventarioPage />} /> */}
+          {/* Rotas de Estoque */}
+          <Route path="estoque" element={<EstoquePage />} />
           
-          {/* Rotas de Vendas - Sprint 5 */}
-          {/* TODO: Implementar páginas de vendas */}
-          {/* <Route path="vendas" element={<VendasPage />} /> */}
-          {/* <Route path="vendas/nova" element={<PDVPage />} /> */}
-          {/* <Route path="vendas/:id" element={<VendaDetalhesPage />} /> */}
+          {/* Rotas de Vendas */}
+          <Route path="vendas" element={<VendasPage />} />
           
-          {/* Rotas de Financeiro - Sprint 7 */}
-          {/* TODO: Implementar páginas financeiras */}
-          {/* <Route path="financeiro" element={<FinanceiroDashboard />} /> */}
-          {/* <Route path="financeiro/contas-receber" element={<ContasReceberPage />} /> */}
-          {/* <Route path="financeiro/contas-pagar" element={<ContasPagarPage />} /> */}
+          {/* Rotas de Financeiro */}
+          <Route path="financeiro" element={<FinanceiroPage />} />
           
           {/* Rotas de Configurações - Apenas ADMIN */}
           <Route 
