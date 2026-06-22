@@ -27,6 +27,20 @@ class Settings(BaseSettings):
     EVOLUTION_API_KEY: str = ""  # API Key da Evolution API (opcional)
     EVOLUTION_INSTANCE: str = ""  # Nome da instância (opcional)
     
+    # Email SMTP (para enviar credenciais de conta criada)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""  # Email de envio (opcional)
+    SMTP_PASSWORD: str = ""  # Senha do email (opcional)
+    SMTP_FROM_NAME: str = "Runas ERP"
+    
+    # JWT (para criar tokens de clientes)
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    
+    # API Gateway URL
+    API_GATEWAY_URL: str = "http://api-gateway:8000"
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

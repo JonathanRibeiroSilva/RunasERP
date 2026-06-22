@@ -114,6 +114,7 @@ class CheckoutRequest(BaseModel):
     # Cliente
     cliente_id: Optional[UUID] = Field(None, description="ID do cliente (se cadastrado)")
     cliente_novo: Optional[ClienteCheckout] = Field(None, description="Dados do cliente (se não cadastrado)")
+    criar_conta: bool = Field(default=False, description="Se True, cria conta para o cliente após checkout")
     
     # Entrega
     tipo_entrega: TipoEntrega = Field(..., description="Tipo de entrega")
@@ -184,6 +185,10 @@ class CheckoutResponse(BaseModel):
     valor_total: Decimal
     mercadopago_init_point: Optional[str] = None  # URL para pagamento online
     mensagem: str = "Pedido criado com sucesso! Aguarde confirmação do pagamento."
+    # Campos de autenticação (se conta foi criada)
+    access_token: Optional[str] = None
+    cliente_id: Optional[UUID] = None
+    conta_criada: bool = False
 
 
 # ==================== PEDIDOS DO CLIENTE ====================

@@ -256,6 +256,12 @@ class ProdutoRead(ProdutoBase):
     categoria_id: UUID
     categoria: CategoriaRead | None = None
     criado_em: datetime
+    preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda")
+    custo: Decimal = Field(default=Decimal("0.00"), description="Custo de aquisição")
+    preco_promocional: Decimal | None = Field(default=None, description="Preço promocional")
+    codigo_barras: str | None = Field(default=None, description="Código de barras/EAN")
+    sku: str | None = Field(default=None, description="SKU interno")
+    unidade_medida: str = Field(default="UN", description="UN, KG, LT, etc")
     variantes: list[VarianteRead] = Field(default_factory=list)
     catalogo_config: CatalogoConfigRead | None = None
     catalogo_fotos: list[CatalogoFotoRead] = Field(default_factory=list)
@@ -269,6 +275,8 @@ class ProdutoReadSimples(ProdutoBase):
     id: UUID
     categoria_id: UUID
     criado_em: datetime
+    preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda")
+    preco_promocional: Decimal | None = Field(default=None, description="Preço promocional")
     
     model_config = ConfigDict(from_attributes=True)
 

@@ -72,10 +72,18 @@ const RastreamentoPedidoPage = () => {
   const carregarRastreamento = async () => {
     try {
       setLoading(true);
-      const response = await apiPublica.get(`/loja/rastrear/${numeroPedido}`);
+      const response = await apiPublica.get(`/loja/rastrear/${numeroPedido}?empresaSlug=${empresaSlug}`);
       setDados(response.data);
     } catch (error: any) {
-      setErro(error.response?.data?.detail || 'Pedido não encontrado');
+      const mensagemErro = error.response?.data?.detail || 'Pedido não encontrado';
+      // Se detail for um array, pegar a primeira mensagem
+      if (Array.isArray(mensagemErro)) {
+        setErro(mensagemErro[0]?.msg || 'Pedido não encontrado');
+      } else if (typeof mensagemErro === 'object') {
+        setErro(JSON.stringify(mensagemErro));
+      } else {
+        setErro(mensagemErro);
+      }
     } finally {
       setLoading(false);
     }

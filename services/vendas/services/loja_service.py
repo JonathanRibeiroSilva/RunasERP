@@ -8,6 +8,8 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 import httpx
+import secrets
+import string
 
 from models.venda import StatusVenda, FormaPagamento, TipoEntrega
 from schemas.loja import (
@@ -29,10 +31,17 @@ from services.mercadopago_service import MercadoPagoService
 from services.historico_status_service import HistoricoStatusService
 from services.notificacao_service import NotificacaoService
 from services.cache_service import CacheService
+from services.email_service import enviar_email_credenciais
 from repositories.venda_repository import VendaRepository
 from config import settings
 
 log = structlog.get_logger()
+
+
+def gerar_senha_temporaria(tamanho: int = 8) -> str:
+    """Gera uma senha temporária aleatória."""
+    caracteres = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(caracteres) for _ in range(tamanho))
 
 
 class LojaService:
@@ -98,6 +107,133 @@ class LojaService:
                     nome=cliente_info['nome'],
                     telefone_masked=cliente_info['telefone'][:8] + "****"
                 )
+                
+                # 2.1.1 Se marcou "criar conta", criar cliente e autenticação
+                senha_temporaria = None
+                access_token = None
+                conta_criada = False
+                
+                if data.criar_conta and cliente_info.get('email'):
+                    try:
+                        log.info("checkout_iniciando_criacao_conta", email=cliente_info['email'])
+                        
+                        # Gerar senha temporária
+                        senha_temporaria = gerar_senha_temporaria(8)
+                        
+                        # 1. Criar cliente no serviço de clientes
+                        async with httpx.AsyncClient() as client:
+                            cliente_payload = {
+                                "empresa_id": empresa_id,
+                                "nome": cliente_info['nome'],
+                                "cpf": cliente_info['cpf'],
+                                "telefone": cliente_info['telefone'],
+                                "email": cliente_info['email']
+                            }
+                            
+                            response = await client.post(
+                                f"{settings.CLIENTES_URL}/clientes",
+                                json=cliente_payload,
+                                headers={"X-Empresa-Id": str(empresa_id)},
+                                timeout=10.0
+                            )
+                            
+                            if response.status_code == 201:
+                                cliente_criado = response.json()
+                                cliente_id = UUID(cliente_criado['id'])
+                                
+                                log.info(
+                                    "checkout_cliente_criado",
+                                    cliente_id=str(cliente_id),
+                                    email=cliente_info['email']
+                                )
+                                
+                                # 2. Criar autenticação no API Gateway
+                                from passlib.context import CryptContext
+                                pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+                                senha_hash = pwd_context.hash(senha_temporaria)
+                                
+                                auth_payload = {
+                                    "email": cliente_info['email'],
+                                    "senha_hash": senha_hash,
+                                    "cliente_id": str(cliente_id),
+                                    "empresa_id": empresa_id
+                                }
+                                
+                                auth_response = await client.post(
+                                    f"{settings.API_GATEWAY_URL}/auth/cliente/registrar-interno",
+                                    json=auth_payload,
+                                    timeout=10.0
+                                )
+                                
+                                if auth_response.status_code in [200, 201]:
+                                    # 3. Gerar token JWT para o cliente
+                                    from datetime import datetime, timedelta
+                                    from jose import jwt
+                                    
+                                    now = datetime.utcnow()
+                                    expire = now + timedelta(minutes=30)
+                                    
+                                    token_payload = {
+                                        "sub": str(cliente_id),
+                                        "role": "CLIENTE",
+                                        "user_type": "cliente",
+                                        "empresa_id": empresa_id,
+                                        "exp": int(expire.timestamp()),
+                                        "iat": int(now.timestamp())
+                                    }
+                                    
+                                    access_token = jwt.encode(
+                                        token_payload,
+                                        settings.SECRET_KEY,
+                                        algorithm=settings.ALGORITHM
+                                    )
+                                    
+                                    conta_criada = True
+                                    
+                                    # 4. Enviar email com credenciais (não bloquear checkout se falhar)
+                                    try:
+                                        # Buscar nome da empresa para o email
+                                        empresa_response = await client.get(
+                                            f"{settings.CLIENTES_URL}/../empresas/empresas/{empresa_id}",
+                                            headers={"X-Empresa-Id": str(empresa_id)},
+                                            timeout=5.0
+                                        )
+                                        empresa_nome = "Loja Online"
+                                        if empresa_response.status_code == 200:
+                                            empresa_data = empresa_response.json()
+                                            empresa_nome = empresa_data.get('nome_fantasia') or empresa_data.get('razao_social', 'Loja Online')
+                                        
+                                        await enviar_email_credenciais(
+                                            to_email=cliente_info['email'],
+                                            senha_temporaria=senha_temporaria,
+                                            empresa_nome=empresa_nome
+                                        )
+                                        log.info("checkout_email_credenciais_enviado", email=cliente_info['email'])
+                                    except Exception as e:
+                                        log.warning("checkout_erro_enviar_email", error=str(e))
+                                    
+                                    log.info(
+                                        "checkout_conta_criada_com_sucesso",
+                                        cliente_id=str(cliente_id),
+                                        email=cliente_info['email']
+                                    )
+                                else:
+                                    log.error(
+                                        "checkout_erro_criar_auth",
+                                        status=auth_response.status_code,
+                                        error=auth_response.text
+                                    )
+                            else:
+                                log.error(
+                                    "checkout_erro_criar_cliente",
+                                    status=response.status_code,
+                                    error=response.text
+                                )
+                    
+                    except Exception as e:
+                        log.error("checkout_erro_criar_conta", error=str(e), exc_info=True)
+                        # Não falhar o checkout por erro na criação de conta
+                        # Cliente pode criar conta manualmente depois
             
             # 2.2 Cliente cadastrado
             elif cliente_id:
@@ -138,14 +274,14 @@ class LojaService:
                 # Liberar reserva do carrinho
                 await ReservaTemporariaService.liberar_reserva(
                     db,
-                    sessao_id,
                     empresa_id,
                     item.produto_id,
+                    sessao_id,
                     item.variante_id
                 )
                 
-                # Criar reserva de checkout (5min)
-                disponivel = await ReservaTemporariaService.obter_estoque_disponivel(
+                # Calcular estoque disponível
+                disponivel = await ReservaTemporariaService.calcular_disponivel(
                     db,
                     empresa_id,
                     item.produto_id,
@@ -158,16 +294,18 @@ class LojaService:
                         f"Disponível: {disponivel}, Solicitado: {item.quantidade}"
                     )
                 
-                # Reservar com TTL de 5min (checkout)
-                await ReservaTemporariaService.reservar(
+                # Reservar novamente (15min padrão - não suporta TTL customizado)
+                sucesso, disp, erro = await ReservaTemporariaService.reservar(
                     db,
-                    sessao_id,
                     empresa_id,
                     item.produto_id,
-                    item.variante_id,
                     item.quantidade,
-                    ttl_minutos=5
+                    sessao_id,
+                    item.variante_id
                 )
+                
+                if not sucesso:
+                    raise ValueError(erro or f"Falha ao reservar {item.descricao_produto}")
             
             # 5. Calcular total dos pagamentos
             total_pagamentos = sum(p.valor for p in data.pagamentos)
@@ -263,25 +401,36 @@ class LojaService:
                 )
                 
                 try:
-                    preferencia = await MercadoPagoService.criar_preferencia(
+                    # TODO: Obter slug da empresa dinamicamente
+                    empresa_slug = 'distribuidora-central'
+                    
+                    # Buscar venda completa com itens para criar preferência
+                    venda_completa = await VendaRepository.buscar_por_id(
                         db,
                         empresa_id,
                         venda.id,
-                        venda.numero_venda,
-                        carrinho.itens,
-                        pagamento_online.valor,
-                        valor_frete
+                        com_relacionamentos=True
                     )
                     
-                    mercadopago_init_point = preferencia.get('init_point')
-                    
-                    # Salvar preference_id na venda
-                    await VendaRepository.atualizar(
-                        db,
-                        empresa_id,
-                        venda.id,
-                        mercadopago_preference_id=preferencia.get('id')
+                    preferencia_id, init_point, erro = await MercadoPagoService.criar_preferencia(
+                        db=db,
+                        venda=venda_completa,
+                        empresa_id=empresa_id,
+                        empresa_slug=empresa_slug
                     )
+                    
+                    if erro:
+                        log.error("erro_mercadopago", erro=erro)
+                    elif init_point:
+                        mercadopago_init_point = init_point
+                        
+                        # Salvar preference_id na venda
+                        await VendaRepository.atualizar(
+                            db,
+                            empresa_id,
+                            venda.id,
+                            mercadopago_preference_id=preferencia_id
+                        )
                     
                 except Exception as e:
                     log.error(
@@ -334,7 +483,7 @@ class LojaService:
             else:
                 mensagem += "Aguarde a confirmação do pagamento."
             
-            return CheckoutResponse(
+            response = CheckoutResponse(
                 venda_id=venda.id,
                 numero_venda=venda.numero_venda,
                 status=status_inicial.value,
@@ -342,6 +491,15 @@ class LojaService:
                 mercadopago_init_point=mercadopago_init_point,
                 mensagem=mensagem
             )
+            
+            # Adicionar dados de autenticação se conta foi criada
+            if conta_criada and access_token and cliente_id:
+                response.access_token = access_token
+                response.cliente_id = cliente_id
+                response.conta_criada = True
+                response.mensagem += " Sua conta foi criada! Verifique seu email para a senha de acesso."
+            
+            return response
             
         except ValueError:
             await db.rollback()

@@ -36,7 +36,7 @@ router = APIRouter(prefix="/loja", tags=["loja-online"])
     description="Obtém carrinho atual da sessão ou cria novo"
 )
 async def obter_carrinho(
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     sessao_id: Annotated[str | None, Cookie(alias="cart_session_id")] = None,
     response: Response = None
 ):
@@ -78,7 +78,7 @@ async def obter_carrinho(
 )
 async def adicionar_item_carrinho(
     data: ItemCarrinhoCreate,
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     db: AsyncSession = Depends(get_db),
     sessao_id: Annotated[str | None, Cookie(alias="cart_session_id")] = None,
     response: Response = None
@@ -123,7 +123,7 @@ async def adicionar_item_carrinho(
 async def atualizar_quantidade_item(
     produto_id: UUID,
     data: AtualizarQuantidadeRequest,
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     sessao_id: Annotated[str, Cookie(alias="cart_session_id")],
     variante_id: Optional[UUID] = None
 ):
@@ -155,7 +155,7 @@ async def atualizar_quantidade_item(
 )
 async def remover_item_carrinho(
     produto_id: UUID,
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     sessao_id: Annotated[str, Cookie(alias="cart_session_id")],
     variante_id: Optional[UUID] = None
 ):
@@ -182,7 +182,7 @@ async def remover_item_carrinho(
     description="Remove todos os itens do carrinho"
 )
 async def limpar_carrinho(
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     sessao_id: Annotated[str, Cookie(alias="cart_session_id")]
 ):
     """
@@ -262,7 +262,7 @@ async def processar_checkout(
 )
 async def listar_meus_pedidos(
     cliente_id: UUID,  # TODO: Obter de token JWT quando auth estiver integrado
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db)
@@ -298,7 +298,7 @@ async def listar_meus_pedidos(
 )
 async def rastrear_pedido(
     numero_venda: str,
-    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     db: AsyncSession = Depends(get_db)
 ):
     """
