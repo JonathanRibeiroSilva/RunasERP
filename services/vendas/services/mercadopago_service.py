@@ -122,7 +122,18 @@ class MercadoPagoService:
             "statement_descriptor": f"Pedido {venda.numero_venda}",
             "expires": True,
             "expiration_date_from": None,  # Agora
-            "expiration_date_to": None     # 5 minutos (calculado no momento)
+            "expiration_date_to": None,     # 5 minutos (calculado no momento)
+            # Métodos de pagamento permitidos - incluindo PIX explicitamente
+            "payment_methods": {
+                "excluded_payment_methods": [],  # Não excluir nenhum método
+                "excluded_payment_types": [],    # Não excluir nenhum tipo (importante para PIX)
+                "installments": 12,              # Até 12 parcelas para cartão
+                "default_installments": 1,       # Padrão: à vista
+                "default_payment_method_id": None  # Não forçar método padrão
+            },
+            # Configurações adicionais para garantir PIX
+            "binary_mode": False,  # False permite pagamentos pendentes (necessário para PIX)
+            "purpose": "onboarding_credits"  # Propósito da transação
         }
         
         # Adicionar dados do cliente se disponível
