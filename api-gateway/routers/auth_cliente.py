@@ -664,3 +664,63 @@ async def oauth_microsoft_callback_cliente(
         user_type="cliente",
         cliente=cliente_data
     )
+
+
+
+class InternalRegisterRequest(BaseModel):
+    """Request interno para registrar cliente (hash já gerado)."""
+    email: str
+    senha_hash: str
+    cliente_id: str
+    empresa_id: int
+
+
+@router.post("/registrar-interno", status_code=status.HTTP_201_CREATED)
+async def registrar_cliente_interno(
+    data: InternalRegisterRequest,
+    db: Annotated[AsyncSession, Depends(get_db)]
+):
+    """
+    Endpoint interno para registrar autenticação de cliente.
+    Usado quando o cliente é criado durante o checkout.
+    
+    Não requer hash da senha - já vem hasheado do serviço chamador.
+    """
+    repo = ClienteAuthRepository(db)
+    
+    # Verificar se email já existe
+    existing = await repo.buscar_por_email(data.email)
+    if existing:
+        log.warning("cliente.internal_register.email_exists", email=data.email)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email já cadastrado"
+        )
+    
+    # Criar registro de autenticação com hash já fornecido
+    from models.cliente_auth import ClienteAuth
+    cliente_auth = ClienteAuth(
+        email=data.email,
+        senha_hash=data.senha_hash,
+        cliente_id=UUID(data.cliente_id),
+        empresa_id=data.empresa_id,
+        ativo=True
+    )
+    
+    db.add(cliente_auth)
+    await db.commit()
+    await db.refresh(cliente_auth)
+    
+    log.info(
+        "cliente.internal_register.success",
+        cliente_auth_id=str(cliente_auth.id),
+        cliente_id=data.cliente_id,
+        empresa_id=data.empresa_id
+    )
+    
+    return {
+        "id": str(cliente_auth.id),
+        "email": cliente_auth.email,
+        "cliente_id": str(cliente_auth.cliente_id),
+        "empresa_id": cliente_auth.empresa_id
+    }

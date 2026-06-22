@@ -160,9 +160,9 @@ class MercadoPagoService:
                     )
                     return (None, None, "Resposta inválida do Mercado Pago")
                 
-                # Salvar preference_id na venda
+                # Salvar preference_id na venda (sem commit - será feito pelo caller)
                 venda.mercadopago_preference_id = preference_id
-                await db.commit()
+                # NÃO fazer commit aqui - deixar para o fluxo principal fazer
                 
                 log.info(
                     "mercadopago_preferencia_criada",

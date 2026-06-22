@@ -205,6 +205,17 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@runas.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
       ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Runas ERP}
+      FRONTEND_URL: ${FRONTEND_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
     depends_on:
       db:
         condition: service_healthy
@@ -337,6 +348,27 @@ services:
       DATABASE_URL: ${DATABASE_URL_VENDAS}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
+      PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
+      ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
+      VENDAS_URL: ${VENDAS_URL:-http://vendas:8004}
+      FINANCEIRO_URL: ${FINANCEIRO_URL:-http://financeiro:8005}
+      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://api-gateway:8000}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Runas ERP}
+      API_BASE_URL: ${API_BASE_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      MP_ENVIRONMENT: ${MP_ENVIRONMENT:-sandbox}
+      EVOLUTION_API_URL: ${EVOLUTION_URL}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE}
     depends_on:
       db:
         condition: service_healthy
