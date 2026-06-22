@@ -20,13 +20,9 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Cookies HTTP-only são enviados automaticamente pelo navegador
     // devido ao withCredentials: true
-    
-    // Adicionar X-Empresa-Id se o usuário estiver autenticado
-    // O backend pega o empresa_id do token JWT, mas alguns endpoints podem precisar do header
-    const empresaId = localStorage.getItem('empresa_id');
-    if (empresaId && !config.url?.includes('/auth/')) {
-      config.headers['X-Empresa-Id'] = empresaId;
-    }
+    // 
+    // O header X-Empresa-Id é adicionado pelo API Gateway
+    // a partir do token JWT do usuário autenticado
     
     return config;
   },
