@@ -726,3 +726,336 @@
     }
   }
 }
+
+
+// ==================== MODO CHECKOUT SELEÇÃO ====================
+.modo-checkout-selecao {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: $spacer-6;
+  max-width: 900px;
+  margin: $spacer-7 auto;
+  padding: $spacer-4;
+
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    grid-template-columns: 1fr;
+    gap: $spacer-4;
+  }
+
+  .modo-card {
+    background: $surface;
+    border: 2px solid $border-default;
+    border-radius: $border-radius-lg;
+    padding: $spacer-6;
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-4;
+    transition: $transition-base;
+
+    &:hover {
+      border-color: $primary;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .modo-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: $spacer-3;
+      text-align: center;
+
+      svg {
+        color: $primary;
+      }
+
+      h2 {
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: $text-primary;
+        margin: 0;
+      }
+    }
+
+    > p {
+      text-align: center;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin: 0;
+    }
+
+    .beneficios {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: $spacer-2;
+
+      li {
+        display: flex;
+        align-items: center;
+        gap: $spacer-2;
+        color: $text-secondary;
+        font-size: $font-size-sm;
+
+        svg {
+          color: $success;
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    button {
+      margin-top: auto;
+    }
+  }
+
+  .modo-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      display: none;
+    }
+
+    span {
+      background: $surface;
+      padding: $spacer-2 $spacer-3;
+      border: 1px solid $border-default;
+      border-radius: 9999px;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+    }
+  }
+}
+
+// ==================== LOGIN CHECKOUT ====================
+.login-checkout {
+  max-width: 450px;
+  margin: $spacer-7 auto;
+  padding: $spacer-4;
+
+  .login-card {
+    background: $surface;
+    border: 1px solid $border-default;
+    border-radius: $border-radius-lg;
+    padding: $spacer-6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: $spacer-2;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      margin: 0 0 $spacer-2 0;
+
+      svg {
+        color: $primary;
+      }
+    }
+
+    > p {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin: 0 0 $spacer-6 0;
+    }
+
+    .form-group {
+      margin-bottom: $spacer-4;
+
+      label {
+        display: block;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        color: $text-primary;
+        margin-bottom: $spacer-2;
+      }
+
+      input {
+        width: 100%;
+        padding: $spacer-3;
+        border: 1px solid $border-default;
+        border-radius: $border-radius;
+        font-size: $font-size-base;
+        transition: $transition-base;
+
+        &:focus {
+          outline: none;
+          border-color: $primary;
+          box-shadow: 0 0 0 3px rgba($primary, 0.1);
+        }
+
+        &:disabled {
+          background: $background;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+      }
+    }
+
+    .login-actions {
+      display: flex;
+      flex-direction: column;
+      gap: $spacer-3;
+      margin-top: $spacer-6;
+
+      .btn-primary {
+        width: 100%;
+      }
+
+      .btn-link {
+        width: 100%;
+        padding: $spacer-2;
+        background: transparent;
+        border: none;
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        cursor: pointer;
+        transition: $transition-base;
+
+        &:hover:not(:disabled) {
+          color: $text-primary;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .login-footer {
+      margin-top: $spacer-6;
+      padding-top: $spacer-4;
+      border-top: 1px solid $border-default;
+      text-align: center;
+
+      p {
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        margin: 0;
+      }
+
+      .btn-link-inline {
+        background: none;
+        border: none;
+        color: $primary;
+        font-weight: $font-weight-medium;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 0;
+        
+        &:hover {
+          color: darken($primary, 10%);
+        }
+      }
+    }
+  }
+}
+
+// ==================== CHECKBOX CRIAR CONTA ====================
+.criar-conta-checkbox {
+  margin: $spacer-6 0;
+  padding: $spacer-4;
+  background: lighten($primary, 45%);
+  border: 1px solid lighten($primary, 35%);
+  border-radius: $border-radius;
+
+  .checkbox-label {
+    display: flex;
+    gap: $spacer-3;
+    align-items: flex-start;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+    }
+
+    .checkbox-text {
+      display: flex;
+      flex-direction: column;
+      gap: $spacer-1;
+
+      strong {
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+      }
+
+      small {
+        font-size: $font-size-xs;
+        color: $text-secondary;
+        line-height: 1.4;
+      }
+    }
+  }
+}
+
+// ==================== BOTÕES ====================
+.btn-primary {
+  width: 100%;
+  padding: $spacer-3 $spacer-4;
+  background: $primary;
+  color: white;
+  border: none;
+  border-radius: $border-radius;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: $transition-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacer-2;
+
+  &:hover:not(:disabled) {
+    background: darken($primary, 8%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($primary, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: $spacer-3 $spacer-4;
+  background: transparent;
+  color: $primary;
+  border: 2px solid $primary;
+  border-radius: $border-radius;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: $transition-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacer-2;
+
+  &:hover:not(:disabled) {
+    background: $primary;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($primary, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}

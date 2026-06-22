@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiArrowLeft, FiUser, FiTruck, FiCreditCard, FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiUser, FiTruck, FiCreditCard, FiCheck, FiAlertCircle, FiLogIn, FiUserPlus } from 'react-icons/fi';
 import axios from 'axios';
 import { useCarrinho } from '@/hooks/useCarrinho';
 import MaskedInput from '@/components/common/MaskedInput/MaskedInput';
@@ -40,11 +40,21 @@ interface Pagamento {
 
 type TipoEntrega = 'RETIRADA' | 'DELIVERY';
 type Step = 1 | 2 | 3;
+type ModoCheckout = 'selecao' | 'login' | 'guest';
 
 const CheckoutPage = () => {
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
   const navigate = useNavigate();
   const { carrinho, limparCarrinho } = useCarrinho({ empresaSlug });
+
+  // Modo de checkout
+  const [modoCheckout, setModoCheckout] = useState<ModoCheckout>('selecao');
+  const [criarConta, setCriarConta] = useState(false);
+
+  // Login
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginSenha, setLoginSenha] = useState('');
+  const [fazendoLogin, setFazendoLogin] = useState(false);
 
   // Steps
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -91,6 +101,46 @@ const CheckoutPage = () => {
       setTroco(0);
     }
   }, [valorDinheiro, formaPagamento, carrinho, frete]);
+
+  // Função de Login
+  const fazerLogin = async () => {
+    if (!loginEmail || !loginSenha) {
+      Toast.error('Preencha email e senha');
+      return;
+    }
+
+    setFazendoLogin(true);
+    try {
+      const response = await apiPublica.post(`/auth/cliente/login?empresaSlug=${empresaSlug}`, {
+        email: loginEmail,
+        senha: loginSenha,
+      });
+
+      const { access_token, cliente } = response.data;
+
+      // Salvar token
+      localStorage.setItem('cliente_token', access_token);
+      
+      // Preencher dados do cliente
+      setClienteNovo({
+        nome: cliente.nome,
+        telefone: cliente.telefone || '',
+        email: cliente.email,
+        cpf: cliente.cpf || '',
+      });
+
+      // Ir para step 1 (dados já preenchidos)
+      setModoCheckout('guest');
+      setCurrentStep(1);
+      
+      Toast.success(`Bem-vindo de volta, ${cliente.nome}!`);
+    } catch (error: any) {
+      const mensagem = error.response?.data?.detail || 'Erro ao fazer login';
+      Toast.error(mensagem);
+    } finally {
+      setFazendoLogin(false);
+    }
+  };
 
   // Buscar CEP via ViaCEP
   const buscarCep = async (cep: string) => {
@@ -203,13 +253,14 @@ const CheckoutPage = () => {
     const toastId = Toast.loading('Processando pedido...');
 
     try {
-      const payload = {
+      const payload: any = {
         cliente_novo: {
           nome: clienteNovo.nome,
           telefone: unmask(clienteNovo.telefone), // Remove máscara
           email: clienteNovo.email || undefined, // Não envia se vazio
           cpf: clienteNovo.cpf ? unmask(clienteNovo.cpf) : undefined, // Remove máscara
         },
+        criar_conta: criarConta, // Flag para criar conta automaticamente
         tipo_entrega: tipoEntrega,
         endereco_entrega: tipoEntrega === 'DELIVERY' ? {
           cep: unmask(endereco.cep), // Remove máscara
@@ -236,22 +287,48 @@ const CheckoutPage = () => {
       // Atualiza toast para sucesso
       Toast.update(toastId, 'success', 'Pedido realizado com sucesso!');
 
-      // Limpar carrinho
-      await limparCarrinho();
-
-      // Se pagamento online (PIX/Cartão), redirecionar para Mercado Pago
+      // Se pagamento online (PIX/Cartão), redirecionar IMEDIATAMENTE para Mercado Pago
+      // O backend já limpou o carrinho, não precisamos fazer no frontend antes de sair
       if (mercadopago_init_point) {
+        // Redirecionar imediatamente sem limpar carrinho no frontend
+        // (evita mostrar carrinho vazio antes de redirecionar)
         window.location.href = mercadopago_init_point;
-      } else {
-        // Redirecionar para rastreamento
-        navigate(`/c/${empresaSlug}/pedido/${numero_venda}`, {
-          state: { sucesso: true },
-        });
+        return; // Importante: retornar para não executar código abaixo
       }
+
+      // Se pagamento offline, limpar carrinho e ir para rastreamento
+      await limparCarrinho();
+      navigate(`/c/${empresaSlug}/pedido/${numero_venda}`, {
+        state: { sucesso: true },
+      });
     } catch (error: any) {
       // Atualiza toast para erro e usa tratamento de erro da API
       Toast.dismiss(toastId);
-      Toast.apiError(error);
+      
+      // Extrair mensagem de erro do objeto
+      let mensagemErro = 'Erro ao processar pedido';
+      
+      if (error.response?.data) {
+        const { detail } = error.response.data;
+        
+        // Se detail for um array de erros de validação
+        if (Array.isArray(detail)) {
+          mensagemErro = detail.map((err: any) => err.msg || err.message || JSON.stringify(err)).join('; ');
+        }
+        // Se detail for uma string
+        else if (typeof detail === 'string') {
+          mensagemErro = detail;
+        }
+        // Se detail for um objeto
+        else if (typeof detail === 'object') {
+          mensagemErro = detail.msg || detail.message || JSON.stringify(detail);
+        }
+      } else if (error.message) {
+        mensagemErro = error.message;
+      }
+      
+      Toast.error(mensagemErro);
+      setErro(mensagemErro);
     } finally {
       setFinalizando(false);
     }
@@ -320,7 +397,111 @@ const CheckoutPage = () => {
       )}
 
       <div className="checkout-container">
-        {/* Formulário */}
+        {/* Seleção de Modo: Login ou Guest */}
+        {modoCheckout === 'selecao' && (
+          <div className="modo-checkout-selecao">
+            <div className="modo-card">
+              <div className="modo-header">
+                <FiLogIn size={32} />
+                <h2>Já sou cliente</h2>
+              </div>
+              <p>Faça login para checkout mais rápido com seus dados salvos</p>
+              <ul className="beneficios">
+                <li><FiCheck /> Endereços salvos</li>
+                <li><FiCheck /> Histórico de pedidos</li>
+                <li><FiCheck /> Recompra rápida</li>
+              </ul>
+              <button className="btn-primary" onClick={() => setModoCheckout('login')}>
+                Fazer Login
+              </button>
+            </div>
+
+            <div className="modo-divider">
+              <span>OU</span>
+            </div>
+
+            <div className="modo-card">
+              <div className="modo-header">
+                <FiUserPlus size={32} />
+                <h2>Continuar como convidado</h2>
+              </div>
+              <p>Compra rápida sem precisar criar uma conta</p>
+              <ul className="beneficios">
+                <li><FiCheck /> Checkout rápido</li>
+                <li><FiCheck /> Sem cadastro obrigatório</li>
+                <li><FiCheck /> Opção de criar conta depois</li>
+              </ul>
+              <button className="btn-secondary" onClick={() => setModoCheckout('guest')}>
+                Continuar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tela de Login */}
+        {modoCheckout === 'login' && (
+          <div className="login-checkout">
+            <div className="login-card">
+              <h2><FiUser /> Login</h2>
+              <p>Entre com seus dados para continuar</p>
+
+              <div className="form-group">
+                <label>Email *</label>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  disabled={fazendoLogin}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Senha *</label>
+                <input
+                  type="password"
+                  value={loginSenha}
+                  onChange={(e) => setLoginSenha(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={fazendoLogin}
+                />
+              </div>
+
+              <div className="login-actions">
+                <button
+                  className="btn-primary"
+                  onClick={fazerLogin}
+                  disabled={fazendoLogin}
+                >
+                  {fazendoLogin ? 'Entrando...' : 'Entrar'}
+                </button>
+                <button
+                  className="btn-link"
+                  onClick={() => setModoCheckout('selecao')}
+                  disabled={fazendoLogin}
+                >
+                  Voltar
+                </button>
+              </div>
+
+              <div className="login-footer">
+                <p>
+                  Não tem conta?{' '}
+                  <button
+                    className="btn-link-inline"
+                    onClick={() => setModoCheckout('guest')}
+                  >
+                    Continue como convidado
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Formulário - Só exibe se modo for 'guest' */}
+        {modoCheckout === 'guest' && (
+          <>
         <div className="checkout-form">
           {/* Step 1: Dados do Cliente */}
           {currentStep === 1 && (
@@ -369,6 +550,24 @@ const CheckoutPage = () => {
                 placeholder="000.000.000-00"
                 showValidation={true}
               />
+
+              {/* Checkbox Criar Conta */}
+              <div className="criar-conta-checkbox">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={criarConta}
+                    onChange={(e) => setCriarConta(e.target.checked)}
+                  />
+                  <span className="checkbox-text">
+                    <strong>Criar uma conta para mim</strong>
+                    <small>
+                      Facilita rastreamento de pedidos e recompras rápidas. 
+                      Você receberá suas credenciais por email.
+                    </small>
+                  </span>
+                </label>
+              </div>
 
               <button className="btn-proximo" onClick={proximoStep}>
                 Continuar <FiCheck />
@@ -611,7 +810,8 @@ const CheckoutPage = () => {
           )}
         </div>
 
-        {/* Resumo */}
+        {/* Resumo - Exibe tanto para guest quanto para login */}
+        {(modoCheckout === 'guest' || modoCheckout === 'login') && (
         <div className="checkout-resumo">
           <h3>Resumo do pedido</h3>
 
@@ -646,6 +846,9 @@ const CheckoutPage = () => {
             </div>
           </div>
         </div>
+        )}
+          </>
+        )}
       </div>
 
       <footer className="catalogo-footer">
