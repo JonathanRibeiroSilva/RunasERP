@@ -1,5 +1,5 @@
 """
-Modelos de Catálogo (CatalogoConfig e CatalogoFoto).
+Modelos de Loja Online (LojaOnlineConfig e LojaOnlineFoto).
 """
 from datetime import datetime
 from uuid import uuid4
@@ -9,10 +9,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 
-class CatalogoConfig(Base):
-    """Configuração de exibição do produto no catálogo público."""
+class LojaOnlineConfig(Base):
+    """Configuração de exibição do produto na loja online pública."""
     
-    __tablename__ = "catalogo_config"
+    __tablename__ = "loja_online_config"
     __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -34,16 +34,16 @@ class CatalogoConfig(Base):
     )
     
     # Relacionamentos
-    produto: Mapped["Produto"] = relationship("Produto", back_populates="catalogo_config")
+    produto: Mapped["Produto"] = relationship("Produto", back_populates="loja_online_config")
     
     def __repr__(self) -> str:
-        return f"<CatalogoConfig(produto_id={self.produto_id}, visivel={self.visivel})>"
+        return f"<LojaOnlineConfig(produto_id={self.produto_id}, visivel={self.visivel})>"
 
 
-class CatalogoFoto(Base):
-    """Fotos do produto no catálogo."""
+class LojaOnlineFoto(Base):
+    """Fotos do produto na loja online."""
     
-    __tablename__ = "catalogo_fotos"
+    __tablename__ = "loja_online_fotos"
     __table_args__ = {"schema": "produtos"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -57,7 +57,7 @@ class CatalogoFoto(Base):
     ordem: Mapped[int] = mapped_column(Integer, default=0)
     
     # Relacionamentos
-    produto: Mapped["Produto"] = relationship("Produto", back_populates="catalogo_fotos")
+    produto: Mapped["Produto"] = relationship("Produto", back_populates="loja_online_fotos")
     
     def __repr__(self) -> str:
-        return f"<CatalogoFoto(id={self.id}, produto_id={self.produto_id})>"
+        return f"<LojaOnlineFoto(id={self.id}, produto_id={self.produto_id})>"

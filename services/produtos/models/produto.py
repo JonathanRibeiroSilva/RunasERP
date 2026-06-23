@@ -70,17 +70,17 @@ class Produto(Base):
         back_populates="produto",
         cascade="all, delete-orphan"
     )
-    catalogo_config: Mapped["CatalogoConfig"] = relationship(
-        "CatalogoConfig",
+    loja_online_config: Mapped["LojaOnlineConfig"] = relationship(
+        "LojaOnlineConfig",
         back_populates="produto",
         uselist=False,
         cascade="all, delete-orphan"
     )
-    catalogo_fotos: Mapped[list["CatalogoFoto"]] = relationship(
-        "CatalogoFoto",
+    loja_online_fotos: Mapped[list["LojaOnlineFoto"]] = relationship(
+        "LojaOnlineFoto",
         back_populates="produto",
         cascade="all, delete-orphan",
-        order_by="CatalogoFoto.ordem"
+        order_by="LojaOnlineFoto.ordem"
     )
     fornecedores: Mapped[list["FornecedorProduto"]] = relationship(
         "FornecedorProduto",

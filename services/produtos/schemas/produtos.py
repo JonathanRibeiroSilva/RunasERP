@@ -91,58 +91,58 @@ class VarianteRead(VarianteBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ======================== CATALOGO FOTO ========================
+# ======================== LOJA ONLINE FOTO ========================
 
-class CatalogoFotoBase(BaseModel):
-    """Schema base de CatalogoFoto."""
+class LojaOnlineFotoBase(BaseModel):
+    """Schema base de LojaOnlineFoto."""
     url: str = Field(..., min_length=1, max_length=500)
     ordem: int = Field(default=0, ge=0)
 
 
-class CatalogoFotoCreate(CatalogoFotoBase):
-    """Schema para criar CatalogoFoto."""
+class LojaOnlineFotoCreate(LojaOnlineFotoBase):
+    """Schema para criar LojaOnlineFoto."""
     produto_id: UUID
 
 
-class CatalogoFotoUpdate(BaseModel):
-    """Schema para atualizar CatalogoFoto."""
+class LojaOnlineFotoUpdate(BaseModel):
+    """Schema para atualizar LojaOnlineFoto."""
     url: str | None = Field(default=None, min_length=1, max_length=500)
     ordem: int | None = Field(default=None, ge=0)
 
 
-class CatalogoFotoRead(CatalogoFotoBase):
-    """Schema para ler CatalogoFoto."""
+class LojaOnlineFotoRead(LojaOnlineFotoBase):
+    """Schema para ler LojaOnlineFoto."""
     id: UUID
     produto_id: UUID
     
     model_config = ConfigDict(from_attributes=True)
 
 
-# ======================== CATALOGO CONFIG ========================
+# ======================== LOJA ONLINE CONFIG ========================
 
-class CatalogoConfigBase(BaseModel):
-    """Schema base de CatalogoConfig."""
+class LojaOnlineConfigBase(BaseModel):
+    """Schema base de LojaOnlineConfig."""
     visivel: bool = False
     destaque: bool = False
     ordem_exibicao: int = Field(default=0, ge=0)
     descricao_publica: str | None = None
 
 
-class CatalogoConfigCreate(CatalogoConfigBase):
-    """Schema para criar CatalogoConfig."""
+class LojaOnlineConfigCreate(LojaOnlineConfigBase):
+    """Schema para criar LojaOnlineConfig."""
     produto_id: UUID
 
 
-class CatalogoConfigUpdate(BaseModel):
-    """Schema para atualizar CatalogoConfig."""
+class LojaOnlineConfigUpdate(BaseModel):
+    """Schema para atualizar LojaOnlineConfig."""
     visivel: bool | None = None
     destaque: bool | None = None
     ordem_exibicao: int | None = Field(default=None, ge=0)
     descricao_publica: str | None = None
 
 
-class CatalogoConfigRead(CatalogoConfigBase):
-    """Schema para ler CatalogoConfig."""
+class LojaOnlineConfigRead(LojaOnlineConfigBase):
+    """Schema para ler LojaOnlineConfig."""
     id: UUID
     produto_id: UUID
     atualizado_em: datetime
@@ -263,8 +263,8 @@ class ProdutoRead(ProdutoBase):
     sku: str | None = Field(default=None, description="SKU interno")
     unidade_medida: str = Field(default="UN", description="UN, KG, LT, etc")
     variantes: list[VarianteRead] = Field(default_factory=list)
-    catalogo_config: CatalogoConfigRead | None = None
-    catalogo_fotos: list[CatalogoFotoRead] = Field(default_factory=list)
+    loja_online_config: LojaOnlineConfigRead | None = None
+    loja_online_fotos: list[LojaOnlineFotoRead] = Field(default_factory=list)
     fornecedores: list[FornecedorProdutoRead] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)
@@ -281,10 +281,10 @@ class ProdutoReadSimples(ProdutoBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ======================== SCHEMAS CATÁLOGO PÚBLICO ========================
+# ======================== SCHEMAS LOJA ONLINE PÚBLICA ========================
 
-class VarianteCatalogoRead(BaseModel):
-    """Schema de variante para o catálogo público (sem dados internos)."""
+class VarianteLojaOnlineRead(BaseModel):
+    """Schema de variante para a loja online pública (sem dados internos)."""
     id: UUID
     sku: str
     preco_venda: Decimal
@@ -294,8 +294,8 @@ class VarianteCatalogoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ProdutoCatalogoRead(BaseModel):
-    """Schema de produto para o catálogo público (sem custo, markup, fornecedores)."""
+class ProdutoLojaOnlineRead(BaseModel):
+    """Schema de produto para a loja online pública (sem custo, markup, fornecedores)."""
     id: UUID
     nome: str
     descricao: str | None = None
@@ -303,6 +303,6 @@ class ProdutoCatalogoRead(BaseModel):
     categoria_id: UUID
     categoria: CategoriaRead | None = None
     criado_em: datetime
-    variantes: list[VarianteCatalogoRead] = Field(default_factory=list)
+    variantes: list[VarianteLojaOnlineRead] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

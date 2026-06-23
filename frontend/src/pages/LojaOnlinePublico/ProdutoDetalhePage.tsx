@@ -53,7 +53,7 @@ const ProdutoDetalhePage = () => {
   const carregarProduto = async () => {
     try {
       setLoading(true);
-      const response = await apiPublica.get(`/catalogo/publico/produto/${produtoId}?empresaSlug=${empresaSlug}`);
+      const response = await apiPublica.get(`/loja-online/publico/produto/${produtoId}?empresaSlug=${empresaSlug}`);
       const data = response.data;
       setProduto(data);
 
@@ -290,7 +290,7 @@ const ProdutoDetalhePage = () => {
         </div>
       </div>
 
-      <footer className="catalogo-footer">
+      <footer className="loja-online-footer">
         <p>Powered by <strong>Runas ERP</strong></p>
       </footer>
     </div>

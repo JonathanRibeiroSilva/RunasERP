@@ -2,7 +2,7 @@
 from models.categoria import Categoria
 from models.produto import Produto
 from models.variante import Variante, AtributoVariante
-from models.catalogo import CatalogoConfig, CatalogoFoto
+from models.loja_online import LojaOnlineConfig, LojaOnlineFoto
 from models.fornecedor import Fornecedor, FornecedorProduto
 
 __all__ = [
@@ -10,8 +10,8 @@ __all__ = [
     "Produto",
     "Variante",
     "AtributoVariante",
-    "CatalogoConfig",
-    "CatalogoFoto",
+    "LojaOnlineConfig",
+    "LojaOnlineFoto",
     "Fornecedor",
     "FornecedorProduto",
 ]

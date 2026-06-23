@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from models.categoria import Categoria
 from models.produto import Produto
 from models.variante import Variante, AtributoVariante
-from models.catalogo import CatalogoConfig, CatalogoFoto
+from models.loja_online import LojaOnlineConfig, LojaOnlineFoto
 from models.fornecedor import Fornecedor, FornecedorProduto
 
 
@@ -109,8 +109,8 @@ class ProdutoRepository:
             .options(
                 selectinload(Produto.categoria),
                 selectinload(Produto.variantes).selectinload(Variante.atributos),
-                selectinload(Produto.catalogo_config),
-                selectinload(Produto.catalogo_fotos),
+                selectinload(Produto.loja_online_config),
+                selectinload(Produto.loja_online_fotos),
                 selectinload(Produto.fornecedores)
             )
         )
@@ -146,7 +146,7 @@ class ProdutoRepository:
             .limit(limit)
             .options(
                 selectinload(Produto.variantes),
-                selectinload(Produto.catalogo_config)
+                selectinload(Produto.loja_online_config)
             )
         )
         return result.scalars().all(), total
@@ -194,7 +194,7 @@ class ProdutoRepository:
             query.offset(skip).limit(limit).options(
                 selectinload(Produto.categoria),
                 selectinload(Produto.variantes),
-                selectinload(Produto.catalogo_config)
+                selectinload(Produto.loja_online_config)
             )
         )
         return result.scalars().all(), total
@@ -388,8 +388,8 @@ class AtributoVarianteRepository:
         return True
 
 
-class CatalogoConfigRepository:
-    """Repository para CatalogoConfig."""
+class LojaOnlineConfigRepository:
+    """Repository para LojaOnlineConfig."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -401,100 +401,100 @@ class CatalogoConfigRepository:
         destaque: bool = False,
         ordem_exibicao: int = 0,
         descricao_publica: str | None = None,
-    ) -> CatalogoConfig:
-        """Cria uma nova configuração de catálogo."""
-        catalogo = CatalogoConfig(
+    ) -> LojaOnlineConfig:
+        """Cria uma nova configuração de loja online."""
+        loja_online = LojaOnlineConfig(
             produto_id=produto_id,
             visivel=visivel,
             destaque=destaque,
             ordem_exibicao=ordem_exibicao,
             descricao_publica=descricao_publica,
         )
-        self.session.add(catalogo)
+        self.session.add(loja_online)
         await self.session.flush()
-        return catalogo
+        return loja_online
 
-    async def obter_por_produto(self, produto_id: UUID) -> CatalogoConfig | None:
-        """Obtém configuração de catálogo de um produto."""
+    async def obter_por_produto(self, produto_id: UUID) -> LojaOnlineConfig | None:
+        """Obtém configuração de loja online de um produto."""
         result = await self.session.execute(
-            select(CatalogoConfig).where(CatalogoConfig.produto_id == produto_id)
+            select(LojaOnlineConfig).where(LojaOnlineConfig.produto_id == produto_id)
         )
         return result.scalars().first()
 
     async def atualizar(
         self,
-        catalogo_id: UUID,
+        loja_online_id: UUID,
         visivel: bool | None = None,
         destaque: bool | None = None,
         ordem_exibicao: int | None = None,
         descricao_publica: str | None = None,
-    ) -> CatalogoConfig | None:
-        """Atualiza uma configuração de catálogo."""
+    ) -> LojaOnlineConfig | None:
+        """Atualiza uma configuração de loja online."""
         result = await self.session.execute(
-            select(CatalogoConfig).where(CatalogoConfig.id == catalogo_id)
+            select(LojaOnlineConfig).where(LojaOnlineConfig.id == loja_online_id)
         )
-        catalogo = result.scalars().first()
-        if not catalogo:
+        loja_online = result.scalars().first()
+        if not loja_online:
             return None
 
         if visivel is not None:
-            catalogo.visivel = visivel
+            loja_online.visivel = visivel
         if destaque is not None:
-            catalogo.destaque = destaque
+            loja_online.destaque = destaque
         if ordem_exibicao is not None:
-            catalogo.ordem_exibicao = ordem_exibicao
+            loja_online.ordem_exibicao = ordem_exibicao
         if descricao_publica is not None:
-            catalogo.descricao_publica = descricao_publica
+            loja_online.descricao_publica = descricao_publica
 
         await self.session.flush()
-        return catalogo
+        return loja_online
 
-    async def deletar(self, catalogo_id: UUID) -> bool:
-        """Deleta uma configuração de catálogo."""
+    async def deletar(self, loja_online_id: UUID) -> bool:
+        """Deleta uma configuração de loja online."""
         result = await self.session.execute(
-            select(CatalogoConfig).where(CatalogoConfig.id == catalogo_id)
+            select(LojaOnlineConfig).where(LojaOnlineConfig.id == loja_online_id)
         )
-        catalogo = result.scalars().first()
-        if not catalogo:
+        loja_online = result.scalars().first()
+        if not loja_online:
             return False
 
-        await self.session.delete(catalogo)
+        await self.session.delete(loja_online)
         await self.session.flush()
         return True
 
 
-class CatalogoFotoRepository:
-    """Repository para CatalogoFoto."""
+class LojaOnlineFotoRepository:
+    """Repository para LojaOnlineFoto."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def criar(self, produto_id: UUID, url: str, ordem: int = 0) -> CatalogoFoto:
-        """Cria uma nova foto de catálogo."""
-        foto = CatalogoFoto(produto_id=produto_id, url=url, ordem=ordem)
+    async def criar(self, produto_id: UUID, url: str, ordem: int = 0) -> LojaOnlineFoto:
+        """Cria uma nova foto de loja online."""
+        foto = LojaOnlineFoto(produto_id=produto_id, url=url, ordem=ordem)
         self.session.add(foto)
         await self.session.flush()
         return foto
 
-    async def obter_por_id(self, foto_id: UUID) -> CatalogoFoto | None:
+    async def obter_por_id(self, foto_id: UUID) -> LojaOnlineFoto | None:
         """Obtém uma foto por ID."""
         result = await self.session.execute(
-            select(CatalogoFoto).where(CatalogoFoto.id == foto_id)
+            select(LojaOnlineFoto).where(LojaOnlineFoto.id == foto_id)
         )
         return result.scalars().first()
 
-    async def listar_por_produto(self, produto_id: UUID) -> list[CatalogoFoto]:
+    async def listar_por_produto(self, produto_id: UUID) -> list[LojaOnlineFoto]:
         """Lista fotos de um produto ordenadas."""
         result = await self.session.execute(
-            select(CatalogoFoto)
-            .where(CatalogoFoto.produto_id == produto_id)
-            .order_by(CatalogoFoto.ordem)
+            select(LojaOnlineFoto)
+            .where(LojaOnlineFoto.produto_id == produto_id)
+            .order_by(LojaOnlineFoto.ordem)
         )
         return result.scalars().all()
 
     async def atualizar(
         self, foto_id: UUID, url: str | None = None, ordem: int | None = None
-    ) -> CatalogoFoto | None:
+    ) -> LojaOnlineFoto | None:
         """Atualiza uma foto."""
         foto = await self.obter_por_id(foto_id)
         if not foto:

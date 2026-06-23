@@ -4,7 +4,7 @@ import { FiSearch, FiFilter, FiShare2, FiCopy, FiShoppingCart } from 'react-icon
 import axios from 'axios';
 import ProdutoCard from './components/ProdutoCard';
 import { useCarrinho } from '@/hooks/useCarrinho';
-import './CatalogoPage.scss';
+import './LojaOnlinePublicoPage.scss';
 
 // Instância axios pública (sem autenticação, sem interceptors de redirect)
 const apiPublica = axios.create({
@@ -29,11 +29,11 @@ interface Categoria {
 
 interface EmpresaInfo {
   nome_fantasia: string;
-  catalogo_titulo?: string;
-  catalogo_descricao?: string;
+  loja_online_titulo?: string;
+  loja_online_descricao?: string;
 }
 
-const CatalogoPage = () => {
+const LojaOnlinePublicoPage = () => {
   const navigate = useNavigate();
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
   const { carrinho, adicionarItem } = useCarrinho({ empresaSlug });
@@ -71,12 +71,12 @@ const CatalogoPage = () => {
       if (buscaParam && buscaParam.length >= 2) params.append('busca', buscaParam);
 
       const [produtosRes, categoriasRes] = await Promise.all([
-        apiPublica.get(`/catalogo/publico/produtos?${params}`).catch((err) => {
+        apiPublica.get(`/loja-online/publico/produtos?${params}`).catch((err) => {
           console.error('❌ Erro ao carregar produtos:', err);
-          console.error('URL tentada:', `/catalogo/publico/produtos?${params}`);
+          console.error('URL tentada:', `/loja-online/publico/produtos?${params}`);
           return { data: { items: [] } };
         }),
-        apiPublica.get(`/catalogo/publico/categorias?empresaSlug=${empresaSlug}`).catch((err) => {
+        apiPublica.get(`/loja-online/publico/categorias?empresaSlug=${empresaSlug}`).catch((err) => {
           console.error('❌ Erro ao carregar categorias:', err);
           return { data: { items: [] } };
         }),
@@ -120,7 +120,7 @@ const CatalogoPage = () => {
   const handleAdicionarAoCarrinho = async (produtoId: string) => {
     try {
       // Buscar detalhes do produto para verificar variantes
-      const response = await apiPublica.get(`/catalogo/publico/produto/${produtoId}?empresaSlug=${empresaSlug}`);
+      const response = await apiPublica.get(`/loja-online/publico/produto/${produtoId}?empresaSlug=${empresaSlug}`);
       const produto = response.data;
 
       // Se não tiver variantes ou produto inativo, redirecionar para detalhes
@@ -156,15 +156,15 @@ const CatalogoPage = () => {
   };
 
   return (
-    <div className="catalogo-page">
+    <div className="loja-online-publico-page">
       {/* Header */}
-      <header className="catalogo-header">
+      <header className="loja-online-publico-header">
         <div className="header-content">
           <div className="header-info">
             <h1>
-              🏪 {empresaInfo?.catalogo_titulo || empresaInfo?.nome_fantasia || 'Catálogo de Produtos'}
+              🏪 {empresaInfo?.loja_online_titulo || empresaInfo?.nome_fantasia || 'Loja Online'}
             </h1>
-            <p>{empresaInfo?.catalogo_descricao || 'Confira nossos produtos disponíveis'}</p>
+            <p>{empresaInfo?.loja_online_descricao || 'Confira nossos produtos disponíveis'}</p>
           </div>
           <div className="header-actions">
             <button
@@ -244,7 +244,7 @@ const CatalogoPage = () => {
       </div>
 
       {/* Conteúdo */}
-      <div className="catalogo-content">
+      <div className="loja-online-publico-content">
         {loading ? (
           <div className="loading">
             <div className="spinner" />
@@ -280,11 +280,11 @@ const CatalogoPage = () => {
       </div>
 
       {/* Footer */}
-      <footer className="catalogo-footer">
+      <footer className="loja-online-publico-footer">
         <p>Powered by <strong>Runas ERP</strong></p>
       </footer>
     </div>
   );
 };
 
-export default CatalogoPage;
+export default LojaOnlinePublicoPage;
