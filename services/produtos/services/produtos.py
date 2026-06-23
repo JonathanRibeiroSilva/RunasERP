@@ -11,10 +11,10 @@ from schemas.produtos import (
     VarianteCreate,
     VarianteUpdate,
     AtributoVarianteBase,
-    CatalogoConfigCreate,
-    CatalogoConfigUpdate,
-    CatalogoFotoCreate,
-    CatalogoFotoUpdate,
+    LojaOnlineConfigCreate,
+    LojaOnlineConfigUpdate,
+    LojaOnlineFotoCreate,
+    LojaOnlineFotoUpdate,
     FornecedorCreate,
     FornecedorUpdate,
     FornecedorProdutoCreate,
@@ -25,8 +25,8 @@ from repositories.produtos import (
     ProdutoRepository,
     VarianteRepository,
     AtributoVarianteRepository,
-    CatalogoConfigRepository,
-    CatalogoFotoRepository,
+    LojaOnlineConfigRepository,
+    LojaOnlineFotoRepository,
     FornecedorRepository,
     FornecedorProdutoRepository,
 )
@@ -277,28 +277,28 @@ class VarianteService:
         return await self.variante_repo.deletar(empresa_id, variante_id)
 
 
-class CatalogoService:
-    """Service para Catálogo (Config e Fotos)."""
+class LojaOnlineService:
+    """Service para Loja Online (Config e Fotos)."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.catalogo_config_repo = CatalogoConfigRepository(session)
-        self.catalogo_foto_repo = CatalogoFotoRepository(session)
+        self.loja_online_config_repo = LojaOnlineConfigRepository(session)
+        self.loja_online_foto_repo = LojaOnlineFotoRepository(session)
         self.produto_repo = ProdutoRepository(session)
 
-    async def criar_config(self, empresa_id: int, dados: CatalogoConfigCreate):
-        """Cria configuração de catálogo para um produto."""
+    async def criar_config(self, empresa_id: int, dados: LojaOnlineConfigCreate):
+        """Cria configuração de loja online para um produto."""
         # Validar produto
         produto = await self.produto_repo.obter_por_id(empresa_id, dados.produto_id)
         if not produto:
             raise ValueError(f"Produto com ID {dados.produto_id} não encontrada")
 
         # Verificar se já existe config
-        existente = await self.catalogo_config_repo.obter_por_produto(dados.produto_id)
+        existente = await self.loja_online_config_repo.obter_por_produto(dados.produto_id)
         if existente:
-            raise ValueError(f"Configuração de catálogo já existe para este produto")
+            raise ValueError(f"Configuração de loja online já existe para este produto")
 
-        return await self.catalogo_config_repo.criar(
+        return await self.loja_online_config_repo.criar(
             produto_id=dados.produto_id,
             visivel=dados.visivel,
             destaque=dados.destaque,
@@ -307,38 +307,38 @@ class CatalogoService:
         )
 
     async def obter_config(self, empresa_id: int, produto_id: UUID):
-        """Obtém configuração de catálogo de um produto."""
+        """Obtém configuração de loja online de um produto."""
         # Validar produto pertence à empresa
         produto = await self.produto_repo.obter_por_id(empresa_id, produto_id)
         if not produto:
             raise ValueError(f"Produto com ID {produto_id} não encontrado")
         
-        config = await self.catalogo_config_repo.obter_por_produto(produto_id)
+        config = await self.loja_online_config_repo.obter_por_produto(produto_id)
         if not config:
             raise ValueError(f"Configuração não encontrada para produto {produto_id}")
         return config
 
-    async def atualizar_config(self, empresa_id: int, catalogo_id: UUID, dados: CatalogoConfigUpdate):
-        """Atualiza configuração de catálogo."""
-        config = await self.catalogo_config_repo.atualizar(
-            catalogo_id,
+    async def atualizar_config(self, empresa_id: int, loja_online_id: UUID, dados: LojaOnlineConfigUpdate):
+        """Atualiza configuração de loja online."""
+        config = await self.loja_online_config_repo.atualizar(
+            loja_online_id,
             visivel=dados.visivel,
             destaque=dados.destaque,
             ordem_exibicao=dados.ordem_exibicao,
             descricao_publica=dados.descricao_publica,
         )
         if not config:
-            raise ValueError(f"Configuração com ID {catalogo_id} não encontrada")
+            raise ValueError(f"Configuração com ID {loja_online_id} não encontrada")
         return config
 
-    async def adicionar_foto(self, empresa_id: int, dados: CatalogoFotoCreate):
-        """Adiciona foto ao catálogo."""
+    async def adicionar_foto(self, empresa_id: int, dados: LojaOnlineFotoCreate):
+        """Adiciona foto à loja online."""
         # Validar produto
         produto = await self.produto_repo.obter_por_id(empresa_id, dados.produto_id)
         if not produto:
             raise ValueError(f"Produto com ID {dados.produto_id} não encontrada")
 
-        return await self.catalogo_foto_repo.criar(
+        return await self.loja_online_foto_repo.criar(
             produto_id=dados.produto_id,
             url=dados.url,
             ordem=dados.ordem,
@@ -351,11 +351,11 @@ class CatalogoService:
         if not produto:
             raise ValueError(f"Produto com ID {produto_id} não encontrada")
 
-        return await self.catalogo_foto_repo.listar_por_produto(produto_id)
+        return await self.loja_online_foto_repo.listar_por_produto(produto_id)
 
-    async def atualizar_foto(self, empresa_id: int, foto_id: UUID, dados: CatalogoFotoUpdate):
+    async def atualizar_foto(self, empresa_id: int, foto_id: UUID, dados: LojaOnlineFotoUpdate):
         """Atualiza uma foto."""
-        foto = await self.catalogo_foto_repo.atualizar(
+        foto = await self.loja_online_foto_repo.atualizar(
             foto_id,
             url=dados.url,
             ordem=dados.ordem,
@@ -366,7 +366,7 @@ class CatalogoService:
 
     async def deletar_foto(self, empresa_id: int, foto_id: UUID):
         """Deleta uma foto."""
-        return await self.catalogo_foto_repo.deletar(foto_id)
+        return await self.loja_online_foto_repo.deletar(foto_id)
 
 
 class FornecedorService:

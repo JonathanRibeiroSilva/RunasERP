@@ -3,7 +3,7 @@ from services.produtos import (
     CategoriaService,
     ProdutoService,
     VarianteService,
-    CatalogoService,
+    LojaOnlineService,
     FornecedorService,
     FornecedorProdutoService,
 )
@@ -12,7 +12,7 @@ __all__ = [
     "CategoriaService",
     "ProdutoService",
     "VarianteService",
-    "CatalogoService",
+    "LojaOnlineService",
     "FornecedorService",
     "FornecedorProdutoService",
 ]

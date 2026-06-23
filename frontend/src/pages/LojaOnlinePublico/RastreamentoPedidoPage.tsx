@@ -268,7 +268,7 @@ const RastreamentoPedidoPage = () => {
         </div>
       </div>
 
-      <footer className="catalogo-footer">
+      <footer className="loja-online-footer">
         <p>Powered by <strong>Runas ERP</strong></p>
       </footer>
     </div>
