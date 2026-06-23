@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from typing import Dict, List
 import networkx as nx
-import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 
