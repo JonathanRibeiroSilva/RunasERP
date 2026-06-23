@@ -2,8 +2,8 @@
 
 > Documentação completa do frontend do sistema Runas
 
-**Última atualização**: 26 de Maio de 2026  
-**Status**: Em desenvolvimento
+**Última atualização**: 23 de Junho de 2026  
+**Status**: Loja Online completa | Vendas/PDV e Estoque pendentes
 
 ---
 
@@ -20,7 +20,9 @@ Guias para configurar o ambiente de desenvolvimento do frontend.
 Documentação do design system e interface do usuário.
 
 - **[Design](./design/design.md)** - Guia de design e padrões visuais
-- **[Design System](./design/design-system.md)** - Sistema de design completo (componentes, cores, tipografia)
+- **[Componentes](./design/componentes.md)** - Biblioteca de componentes
+- **[Cores e Tipografia](./design/cores-tipografia.md)** - Paleta de cores e fontes
+- **[Layouts](./design/layouts.md)** - Estruturas de layout
 
 ### 🔐 OAuth e Autenticação
 Documentação sobre autenticação e OAuth.
@@ -28,6 +30,12 @@ Documentação sobre autenticação e OAuth.
 - **[OAuth Summary](./oauth/oauth-summary.md)** - Resumo da implementação OAuth
 - **[OAuth Fix Summary](./oauth/oauth-fix-summary.md)** - Correções aplicadas no OAuth
 - **[Debug OAuth Redirect](./oauth/debug-oauth-redirect.md)** - Guia de debug de redirecionamentos
+
+### 🛒 Features Implementadas
+Documentação das funcionalidades prontas.
+
+- **[Loja Online](./features/loja-online.md)** - ✅ Catálogo, carrinho, checkout (100% completo)
+- **[Categorias](./features/categorias.md)** - Gestão de categorias de produtos
 
 ### 📚 Guias de Desenvolvimento
 Guias práticos para desenvolvimento.
@@ -47,49 +55,65 @@ Guias para deploy e produção.
 
 ### Stack Tecnológico
 
-| Categoria | Tecnologia | Versão |
-|-----------|-----------|--------|
-| **Framework** | React | 18.x |
-| **Linguagem** | TypeScript | 5.x |
-| **Build Tool** | Vite | 5.x |
-| **Roteamento** | React Router | 6.x |
-| **Estado** | Zustand / Redux | - |
-| **UI Library** | Material-UI / Ant Design | - |
-| **Formulários** | React Hook Form | - |
-| **Validação** | Zod / Yup | - |
-| **HTTP Client** | Axios | - |
-| **Autenticação** | OAuth2 + JWT | - |
+| Categoria | Tecnologia | Versão | Status |
+|-----------|-----------|--------|--------|
+| **Framework** | React | 18.2.0 | ✅ |
+| **Linguagem** | TypeScript | 5.2.2 | ✅ |
+| **Build Tool** | Vite | 5.0.8 | ✅ |
+| **Roteamento** | React Router | 6.20.0 | ✅ |
+| **Estado Servidor** | TanStack Query (React Query) | 5.12.2 | ✅ |
+| **UI Library** | React Bootstrap | 2.9.1 | ✅ |
+| **Estilização** | Bootstrap + SASS | 5.3.2 | ✅ |
+| **Formulários** | React Hook Form | 7.49.2 | ✅ |
+| **Validação** | Zod | 3.22.4 | ✅ |
+| **HTTP Client** | Axios | 1.6.2 | ✅ |
+| **Notificações** | React Toastify | 9.1.3 | ✅ |
+| **Ícones** | React Icons | 4.12.0 | ✅ |
+| **Gráficos** | Chart.js + React ChartJS 2 | 4.4.1 / 5.2.0 | ✅ |
+| **Datas** | date-fns | 2.30.0 | ✅ |
+| **Autenticação** | OAuth2 + JWT | - | ✅ |
 
 ### Estrutura de Pastas
 
 ```
 frontend/
 ├── public/                 # Arquivos estáticos
+│   └── test.html          # Página de teste
 ├── src/
 │   ├── assets/            # Imagens, fontes, etc
 │   ├── components/        # Componentes reutilizáveis
 │   │   ├── common/       # Componentes comuns
 │   │   ├── forms/        # Componentes de formulário
-│   │   └── layout/       # Componentes de layout
+│   │   ├── layout/       # Componentes de layout
+│   │   └── loja/         # Componentes da loja online
 │   ├── pages/            # Páginas da aplicação
 │   │   ├── auth/         # Páginas de autenticação
 │   │   ├── clientes/     # Páginas de clientes
 │   │   ├── produtos/     # Páginas de produtos
-│   │   ├── estoque/      # Páginas de estoque
-│   │   └── vendas/       # Páginas de vendas
+│   │   ├── loja/         # Páginas da loja online
+│   │   ├── dashboard/    # Dashboard principal
+│   │   ├── vendas/       # Páginas de vendas (🔴 Pendente)
+│   │   └── estoque/      # Páginas de estoque (🔴 Pendente)
 │   ├── services/         # Serviços e API calls
+│   │   ├── api/         # Cliente Axios configurado
+│   │   └── auth/        # Serviços de autenticação
 │   ├── hooks/            # Custom hooks
-│   ├── store/            # Estado global
-│   ├── utils/            # Utilitários
+│   │   ├── useCarrinho  # ✅ Hook do carrinho (loja)
+│   │   └── usePDV       # 🔴 Hook do PDV (pendente)
+│   ├── contexts/         # Context providers
 │   ├── types/            # TypeScript types
-│   ├── styles/           # Estilos globais
+│   ├── utils/            # Utilitários e helpers
+│   ├── config/           # Configurações
+│   ├── styles/           # Estilos globais (SASS)
 │   ├── App.tsx           # Componente principal
 │   └── main.tsx          # Entry point
 ├── Dockerfile            # Docker para produção
+├── Dockerfile.dev        # Docker para desenvolvimento
 ├── docker-compose.yml    # Docker Compose
 ├── package.json          # Dependências
 ├── tsconfig.json         # Config TypeScript
-└── vite.config.ts        # Config Vite
+├── vite.config.ts        # Config Vite
+└── README.md             # Este arquivo
 ```
 
 ---
