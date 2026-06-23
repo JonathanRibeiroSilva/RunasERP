@@ -306,3 +306,9 @@ class ProdutoLojaOnlineRead(BaseModel):
     variantes: list[VarianteLojaOnlineRead] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ======================== ALIAS ========================
+
+# Alias para manter compatibilidade com rotas de catálogo público
+ProdutoCatalogoRead = ProdutoLojaOnlineRead
