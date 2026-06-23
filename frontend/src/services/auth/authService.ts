@@ -1,6 +1,6 @@
 import { api } from '@/services/api/axios';
 import { tokenService } from './tokenService';
-import type { LoginRequest, LoginResponse, User } from '@/types/auth';
+import type { LoginResponse, User } from '@/types/auth';
 
 interface RegisterRequest {
   nome: string;
@@ -50,10 +50,20 @@ export const authService = {
     return response.data;
   },
 
-  async refreshToken(refreshToken: string): Promise<string> {
+  async refreshToken(_refreshToken: string): Promise<string> {
     // Com cookies HTTP-only, o refresh é automático
     // Este método não é mais necessário mas mantido para compatibilidade
     console.warn('[authService] refreshToken is deprecated with HTTP-only cookies');
     return '';
+  },
+
+  async forgotPassword(email: string): Promise<{ message: string; token?: string }> {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  async resetPassword(token: string, nova_senha: string): Promise<{ message: string }> {
+    const response = await api.post('/auth/reset-password', { token, nova_senha });
+    return response.data;
   },
 };

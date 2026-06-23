@@ -12,7 +12,8 @@ engine = create_async_engine(
     echo=False,
     pool_size=10,
     max_overflow=20,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    connect_args={"server_settings": {"search_path": "gateway,public"}}
 )
 
 # Session factory
@@ -40,6 +41,19 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
-    """Inicializa o banco de dados criando todas as tabelas."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """
+    Inicializa o banco de dados.
+    
+    IMPORTANTE: Este método não cria mais as tabelas automaticamente.
+    Use Alembic migrations para gerenciar o schema do banco:
+    
+    ```bash
+    # Criar migration
+    alembic revision --autogenerate -m "descrição"
+    
+    # Aplicar migration
+    alembic upgrade head
+    ```
+    """
+    # Apenas log - tabelas são criadas via Alembic migrations
+    pass

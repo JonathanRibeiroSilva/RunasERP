@@ -24,14 +24,44 @@ async def proxy_catalogo_publico(request: Request, path: str):
 
 
 @router.api_route(
+    "/empresas/publico/{path:path}",
+    methods=["GET"],
+    tags=["Empresas Público"]
+)
+async def proxy_empresas_publico(request: Request, path: str):
+    """Proxy para informações públicas de empresas (sem autenticação)."""
+    full_path = f"/empresas/publico/{path}" if path else "/empresas/publico"
+    return await ServiceProxy.proxy_request(request, full_path)
+
+
+@router.api_route(
+    "/loja/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Loja Online"]
+)
+async def proxy_loja_publico(
+    request: Request,
+    path: str,
+    empresaSlug: str | None = None
+):
+    """Proxy para loja online - carrinho e checkout (sem autenticação)."""
+    full_path = f"/loja/{path}" if path else "/loja"
+    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
+
+
+@router.api_route(
     "/carrinho/{path:path}",
     methods=["GET", "POST", "PATCH", "DELETE"],
     tags=["Carrinho Público"]
 )
-async def proxy_carrinho_publico(request: Request, path: str):
+async def proxy_carrinho_publico(
+    request: Request,
+    path: str,
+    empresaSlug: str | None = None
+):
     """Proxy para carrinho (sem autenticação)."""
     full_path = f"/carrinho/{path}" if path else "/carrinho"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
 
 
 # Rotas protegidas (requerem autenticação)
@@ -53,7 +83,7 @@ async def proxy_clientes_root(
     - GET: Lista clientes com filtros opcionais
     - POST: Cria novo cliente
     """
-    return await ServiceProxy.proxy_request(request, "/clientes")
+    return await ServiceProxy.proxy_request(request, "/clientes", current_user)
 
 
 # Rota para operações com ID específico
@@ -77,7 +107,7 @@ async def proxy_clientes_path(
     - POST /clientes/{id}/enderecos: Adiciona endereço
     """
     full_path = f"/clientes/{path}"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
 # Rota específica para listar/criar produtos
@@ -91,13 +121,7 @@ async def proxy_produtos_root(
     request: Request,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
-    """
-    Proxy para serviço de produtos (autenticado).
-    
-    - GET: Lista produtos com filtros opcionais
-    - POST: Cria novo produto
-    """
-    return await ServiceProxy.proxy_request(request, "/produtos")
+    return await ServiceProxy.proxy_request(request, "/produtos", current_user)
 
 
 # Rota para operações com ID específico
@@ -112,16 +136,95 @@ async def proxy_produtos_path(
     path: str,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
-    """
-    Proxy para serviço de produtos (autenticado).
-    
-    - GET /produtos/{id}: Busca produto por ID
-    - PUT /produtos/{id}: Atualiza produto
-    - DELETE /produtos/{id}: Desativa produto
-    - POST /produtos/{id}/variantes: Adiciona variante
-    """
     full_path = f"/produtos/{path}"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
+
+
+# Rotas de categorias
+@router.api_route(
+    "/categorias",
+    methods=["GET", "POST"],
+    tags=["Produtos"],
+    summary="Listar ou criar categorias"
+)
+async def proxy_categorias_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    return await ServiceProxy.proxy_request(request, "/categorias", current_user)
+
+
+@router.api_route(
+    "/categorias/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Produtos"],
+    summary="Operações com categoria específica"
+)
+async def proxy_categorias_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/categorias/{path}"
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
+
+
+# Rotas de variantes
+@router.api_route(
+    "/variantes",
+    methods=["GET", "POST"],
+    tags=["Produtos"],
+    summary="Listar ou criar variantes"
+)
+async def proxy_variantes_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    return await ServiceProxy.proxy_request(request, "/variantes", current_user)
+
+
+@router.api_route(
+    "/variantes/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Produtos"],
+    summary="Operações com variante específica"
+)
+async def proxy_variantes_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/variantes/{path}"
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
+
+
+# Rotas de fornecedores
+@router.api_route(
+    "/fornecedores",
+    methods=["GET", "POST"],
+    tags=["Produtos"],
+    summary="Listar ou criar fornecedores"
+)
+async def proxy_fornecedores_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    return await ServiceProxy.proxy_request(request, "/fornecedores", current_user)
+
+
+@router.api_route(
+    "/fornecedores/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Produtos"],
+    summary="Operações com fornecedor específico"
+)
+async def proxy_fornecedores_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/fornecedores/{path}"
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
 # Rota específica para listar/criar estoque
@@ -141,7 +244,7 @@ async def proxy_estoque_root(
     - GET: Lista registros de estoque
     - POST: Cria novo registro de estoque
     """
-    return await ServiceProxy.proxy_request(request, "/estoque")
+    return await ServiceProxy.proxy_request(request, "/estoque", current_user)
 
 
 # Rota para operações com ID específico
@@ -167,7 +270,7 @@ async def proxy_estoque_path(
     - POST /estoque/liberar-reserva: Liberar reserva
     """
     full_path = f"/estoque/{path}"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
 @router.api_route(
@@ -182,7 +285,7 @@ async def proxy_pedidos(
 ):
     """Proxy para serviço de vendas - pedidos (autenticado)."""
     full_path = f"/pedidos/{path}" if path else "/pedidos"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
 @router.api_route(
@@ -197,7 +300,7 @@ async def proxy_pagamentos(
 ):
     """Proxy para serviço de vendas - pagamentos (autenticado)."""
     full_path = f"/pagamentos/{path}" if path else "/pagamentos"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
 @router.api_route(
@@ -212,7 +315,7 @@ async def proxy_contas(
 ):
     """Proxy para serviço financeiro (apenas admin)."""
     full_path = f"/contas/{path}" if path else "/contas"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
 @router.api_route(
@@ -227,7 +330,7 @@ async def proxy_notificacoes(
 ):
     """Proxy para serviço de notificações (apenas admin)."""
     full_path = f"/notificacoes/{path}" if path else "/notificacoes"
-    return await ServiceProxy.proxy_request(request, full_path)
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
 # Webhook público (sem autenticação)
@@ -238,3 +341,34 @@ async def proxy_notificacoes(
 async def proxy_webhook_mercadopago(request: Request):
     """Proxy para webhook do Mercado Pago (público)."""
     return await ServiceProxy.proxy_request(request, "/pagamentos/webhook/mercadopago")
+
+
+# Rotas de empresas (admin)
+@router.api_route(
+    "/empresas",
+    methods=["GET", "POST"],
+    tags=["Empresas"],
+    summary="Listar ou criar empresas"
+)
+async def proxy_empresas_root(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(require_admin)]
+):
+    """Proxy para serviço de empresas (apenas admin)."""
+    return await ServiceProxy.proxy_request(request, "/empresas", current_user)
+
+
+@router.api_route(
+    "/empresas/{path:path}",
+    methods=["GET", "PUT", "DELETE"],
+    tags=["Empresas"],
+    summary="Operações com empresa específica"
+)
+async def proxy_empresas_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(require_admin)]
+):
+    """Proxy para serviço de empresas (apenas admin)."""
+    full_path = f"/empresas/{path}"
+    return await ServiceProxy.proxy_request(request, full_path, current_user)

@@ -104,25 +104,32 @@ O sistema é composto por **7 microsserviços independentes**:
 
 ---
 
-## 📊 Status do MVP
+## 📊 Status do Sistema (Junho 2026)
 
-### ✅ Componentes Implementados (100%)
+### ✅ Componentes Completos (Backend + Frontend)
 
 | Componente | Status | Endpoints | Descrição |
 |------------|--------|-----------|-----------|
 | **API Gateway** | 🟢 100% | 15 | Autenticação JWT, RBAC, Proxy, Rate Limiting |
 | **Serviço Clientes** | 🟢 100% | 12 | CRUD de clientes (PF/PJ), endereços, crédito |
 | **Serviço Produtos** | 🟢 100% | 25 | CRUD de produtos, categorias, variantes, fornecedores |
+| **Loja Online** | 🟢 100% | 26 | Catálogo público, carrinho, checkout, rastreamento |
 | **Infraestrutura** | 🟢 100% | - | 8 bancos PostgreSQL, Redis, RabbitMQ, pgAdmin |
 
-**Total**: 52 endpoints REST funcionais | ~9.500 linhas de código
+**Total Backend**: 78 endpoints REST funcionais | ~15.000 linhas de código  
+**Total Frontend**: Interface completa com React + TypeScript
 
-### 🔨 Próximos Passos
+### 🟡 Componentes Backend Completos (Frontend Pendente)
+
+| Serviço | Backend | Frontend | Prioridade |
+|---------|---------|----------|------------|
+| **Vendas/PDV** | 🟢 100% | 🔴 0% | 🔥 Alta |
+| **Estoque** | 🟢 100% | 🔴 0% | 🔥 Alta |
+
+### 🔴 Próximos Módulos
 
 | Serviço | Prioridade | Status |
 |---------|-----------|--------|
-| **Estoque** | Alta | 🔴 Próximo na fila |
-| **Vendas** | Alta | 🔴 Planejado |
 | **Financeiro** | Média | 🔴 Planejado |
 | **Notificações** | Média | 🔴 Planejado |
 | **Testes Unitários** | Alta | 🔴 Planejado |
@@ -399,20 +406,23 @@ Para suporte técnico:
 
 ## 🎯 Roadmap
 
-### Q2 2026 (Atual)
+### Q2 2026
 - [x] MVP com Gateway, Clientes e Produtos
-- [ ] Serviço de Estoque
-- [ ] Serviço de Vendas
+- [x] Loja Online completa (catálogo, carrinho, checkout)
+- [x] API de Vendas completa
+- [x] API de Estoque completa
+- [ ] Frontend Vendas/PDV
+- [ ] Frontend Estoque
 - [ ] Testes unitários (80% coverage)
 
 ### Q3 2026
 - [ ] Serviço Financeiro
 - [ ] Serviço de Notificações
-- [ ] Integração Mercado Pago
-- [ ] Integração WhatsApp
+- [ ] Integração Mercado Pago completa
+- [ ] Integração WhatsApp (Evolution API)
 
 ### Q4 2026
-- [ ] Dashboard administrativo
+- [ ] Dashboard administrativo completo
 - [ ] Relatórios e analytics
 - [ ] App mobile
 - [ ] CI/CD completo
@@ -423,18 +433,19 @@ Para suporte técnico:
 
 ## 📊 Métricas do Projeto
 
-- **Linhas de código**: ~9.500 linhas Python
-- **Arquivos criados**: ~120 arquivos
-- **Endpoints REST**: 52 endpoints funcionais
-- **Microsserviços**: 3 funcionais + 4 planejados
+- **Linhas de código**: ~15.000 linhas Python
+- **Arquivos criados**: ~180 arquivos
+- **Endpoints REST**: 78 endpoints funcionais
+- **Microsserviços**: 5 funcionais (Gateway, Clientes, Produtos, Vendas, Estoque)
 - **Bancos de dados**: 8 PostgreSQL
+- **Frontend**: React + TypeScript com Loja Online completa
 - **Cobertura de testes**: Em desenvolvimento
 
 ---
 
-**Versão**: 1.0.0-MVP  
-**Última atualização**: 26 de Maio de 2026  
-**Status**: ✅ MVP 100% Funcional e Pronto para Testes
+**Versão**: 2.0.0  
+**Última atualização**: 23 de Junho de 2026  
+**Status**: ✅ Sistema Operacional com Loja Online Completa
 
 ---
 

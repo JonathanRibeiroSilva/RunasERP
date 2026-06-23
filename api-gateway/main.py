@@ -10,7 +10,7 @@ import structlog
 from database import init_db
 from auth.redis_client import close_redis
 from seed import seed_admin
-from routers import auth
+from routers import auth, auth_cliente, auth_admin
 from routers import proxy
 from middleware.logging_middleware import LoggingMiddleware
 from middleware.rate_limit import limiter
@@ -68,6 +68,8 @@ app.state.limiter = limiter
 
 # Routers
 app.include_router(auth.router)
+app.include_router(auth_cliente.router)
+app.include_router(auth_admin.router)
 app.include_router(proxy.router)
 
 

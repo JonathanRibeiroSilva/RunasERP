@@ -1,23 +1,24 @@
+# syntax=docker/dockerfile:1
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Instalar dependências do sistema
+# Dependências de sistema — layer separada, muda raramente
 RUN apt-get update && apt-get install -y \
     gcc \
     curl \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar requirements e instalar dependências Python
+# Instalar dependências Python com cache do BuildKit
+# Esta layer só é invalidada quando requirements.txt muda
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
-# Copiar código da aplicação
+# Código copiado por último — em dev é sobrescrito pelo volume
 COPY . .
 
-# Expor porta
 EXPOSE 8000
 
-# Comando para rodar a aplicação
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

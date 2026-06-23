@@ -5,26 +5,80 @@
   width: 260px;
   background: $surface;
   border-right: 1px solid $border-default;
-  position: fixed;
-  top: 64px;
-  left: 0;
-  bottom: 0;
   overflow-y: auto;
   transition: transform $transition-base;
-  z-index: $z-index-fixed;
-
-  &.closed {
-    transform: translateX(-100%);
-  }
-
-  &.open {
-    transform: translateX(0);
-  }
-
-  @include media-xs {
-    &.open {
-      box-shadow: $box-shadow-xl;
+  @include custom-scrollbar;
+  
+  // Desktop: posição fixa ao lado do conteúdo
+  @include media-md {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    bottom: 0;
+    z-index: $z-index-sticky;
+    
+    &.closed {
+      transform: translateX(-100%);
     }
+    
+    &.open {
+      transform: translateX(0);
+    }
+  }
+  
+  // Mobile: sidebar overlay com sombra
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    bottom: 0;
+    z-index: $z-index-modal;
+    box-shadow: $box-shadow-xl;
+    
+    &.closed {
+      transform: translateX(-100%);
+    }
+    
+    &.open {
+      transform: translateX(0);
+    }
+  }
+}
+
+// Botão fechar (apenas mobile)
+.sidebar-close {
+  position: absolute;
+  top: $spacer-2;
+  right: $spacer-2;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius;
+  border: none;
+  background: transparent;
+  color: $text-secondary;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: $transition-fast;
+  z-index: 10;
+  
+  svg {
+    font-size: 22px;
+  }
+  
+  &:hover {
+    background: $surface-hover;
+    color: $text-primary;
+  }
+  
+  &:focus-visible {
+    @include focus-ring-shadow;
+  }
+  
+  // Esconder no desktop
+  @include media-md {
+    display: none;
   }
 }
 
@@ -33,6 +87,17 @@
   display: flex;
   flex-direction: column;
   gap: $spacer-1;
+  
+  // Mobile: adicionar espaço para botão fechar
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-2;
+    padding-top: $spacer-5;
+  }
+}
+
+.nav-item-wrapper {
+  display: flex;
+  flex-direction: column;
 }
 
 .nav-item {
@@ -47,21 +112,40 @@
   font-weight: $font-weight-medium;
   transition: $transition-base;
   cursor: pointer;
+  min-height: 44px; // Área mínima de toque para acessibilidade
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
 
   .nav-icon {
     font-size: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 20px;
   }
 
   .nav-label {
     flex: 1;
   }
 
+  .nav-arrow {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $text-tertiary;
+    transition: $transition-fast;
+  }
+
   &:hover {
     background: $surface-hover;
     color: $text-primary;
+    
+    .nav-arrow {
+      color: $text-secondary;
+    }
   }
 
   &.active {
@@ -76,5 +160,132 @@
 
   &:focus-visible {
     @include focus-ring-shadow;
+  }
+  
+  // Mobile: área de toque maior e fonte maior
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-3 $spacer-4;
+    font-size: $font-size-base;
+    min-height: 48px;
+    
+    .nav-icon {
+      font-size: 22px;
+    }
+  }
+}
+
+// Item pai (com submenu)
+.nav-item-parent {
+  &:hover {
+    .nav-arrow {
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Submenu
+.nav-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+  margin-top: 0;
+  
+  &.expanded {
+    max-height: 500px;
+    opacity: 1;
+    margin-top: $spacer-1;
+  }
+}
+
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: $spacer-2;
+  padding: $spacer-2 $spacer-3;
+  padding-left: calc($spacer-3 + 20px + $spacer-3); // Indent = icon width + gap
+  border-radius: $border-radius;
+  color: $text-tertiary;
+  text-decoration: none;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  transition: $transition-base;
+  cursor: pointer;
+  min-height: 38px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  
+  .nav-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    opacity: 0.7;
+  }
+
+  .nav-label {
+    flex: 1;
+  }
+
+  &:hover {
+    background: $surface-hover;
+    color: $text-secondary;
+    
+    .nav-icon {
+      opacity: 1;
+    }
+  }
+
+  &.active {
+    background: rgba($primary, 0.08);
+    color: $primary;
+    font-weight: $font-weight-semibold;
+
+    .nav-icon {
+      color: $primary;
+      opacity: 1;
+    }
+  }
+  
+  // Item externo (Ver Minha Loja)
+  &.nav-subitem-external {
+    color: $primary;
+    font-weight: $font-weight-medium;
+    
+    .nav-icon {
+      color: $primary;
+      opacity: 1;
+    }
+    
+    &:hover {
+      background: $primary-light;
+      color: $primary;
+      
+      .nav-icon {
+        transform: translateX(2px);
+      }
+    }
+  }
+
+  &:focus-visible {
+    @include focus-ring-shadow;
+  }
+  
+  // Mobile
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-2 $spacer-3;
+    padding-left: calc($spacer-4 + 22px + $spacer-3);
+    font-size: $font-size-sm;
+    min-height: 42px;
+    
+    .nav-icon {
+      font-size: 18px;
+    }
   }
 }

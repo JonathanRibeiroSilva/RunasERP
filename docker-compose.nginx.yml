@@ -16,21 +16,19 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=50
-      - VITE_HMR_HOST=localhost
-      - VITE_HMR_PORT=3000
-      - VITE_HMR_PROTOCOL=ws
-      - VITE_API_URL=http://localhost:8000
-      - VITE_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback
+      # Usar URLs relativas para funcionar tanto local quanto via Ngrok
+      - VITE_API_URL=/api
+      - VITE_OAUTH_REDIRECT_URI=${FRONTEND_URL:-http://localhost:3000}/auth/callback
       - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
       - VITE_MICROSOFT_CLIENT_ID=${VITE_MICROSOFT_CLIENT_ID}
       - VITE_MICROSOFT_TENANT_ID=${VITE_MICROSOFT_TENANT_ID:-common}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD", "curl", "-sf", "http://localhost:3000"]
       interval: 30s
-      timeout: 3s
+      timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
   # Nginx reverse proxy
   nginx:
@@ -43,6 +41,7 @@ services:
       - "443:443"
     depends_on:
       - frontend-dev
+      - api-gateway
     networks:
       - erp-network
     volumes:
@@ -52,11 +51,11 @@ services:
       - TZ=America/Sao_Paulo
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
       interval: 30s
-      timeout: 3s
+      timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 10s
 
   # ngrok for public URL exposure
   ngrok:
@@ -72,12 +71,6 @@ services:
     env_file:
       - .env.ngrok
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4040/api/tunnels"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
 
 volumes:
   nginx-logs:
@@ -85,4 +78,5 @@ volumes:
 
 networks:
   erp-network:
-    driver: bridge
+    external: true
+    name: runaserp_erp-network

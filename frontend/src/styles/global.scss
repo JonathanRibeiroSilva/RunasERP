@@ -17,6 +17,7 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100%;
 }
 
 body {
@@ -24,9 +25,16 @@ body {
   font-size: $font-size-base;
   font-weight: $font-weight-normal;
   line-height: $line-height-base;
-  color: $text-primary;
-  background-color: $background;
+  color: $text-primary !important;
+  background-color: $background !important;
+  height: 100%;
+  overflow: hidden;
+}
+
+// Force dark background on root element
+#root {
   min-height: 100vh;
+  background-color: $background;
 }
 
 // ========================================

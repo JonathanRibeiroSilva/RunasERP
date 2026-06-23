@@ -1,0 +1,217 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.cliente-form-page {
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+
+    .btn-back {
+      padding: 0.5rem 1rem;
+      border: 1px solid $border-default;
+      border-radius: 0.5rem;
+      background-color: $surface;
+      color: $text-primary;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: rgba($primary, 0.05);
+        border-color: $primary;
+      }
+    }
+
+    .btn-enderecos {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid $secondary;
+      border-radius: 0.5rem;
+      background-color: transparent;
+      color: $secondary;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      margin-left: auto;
+
+      &:hover {
+        background-color: rgba($secondary, 0.1);
+      }
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+  }
+
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+  }
+
+  .cliente-form {
+    background-color: $surface;
+    border: 1px solid $border-default;
+    border-radius: 0.5rem;
+    padding: 2rem;
+
+    .form-section {
+      margin-bottom: 2rem;
+
+      &:last-of-type {
+        margin-bottom: 0;
+      }
+
+      h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: $text-primary;
+        margin: 0 0 1.5rem 0;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid $border-default;
+      }
+
+      .section-description {
+        margin: -1rem 0 1.5rem 0;
+        color: $text-secondary;
+        font-size: 0.9rem;
+        font-style: italic;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+          color: $text-primary;
+          font-size: 0.95rem;
+        }
+
+        input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 1px solid $border-default;
+          border-radius: 0.5rem;
+          background-color: $surface-hover;
+          color: $text-primary;
+          font-size: 0.95rem;
+          transition: all 0.2s ease;
+
+          &:focus {
+            outline: none;
+            border-color: $primary;
+            box-shadow: 0 0 0 3px rgba($primary, 0.1);
+          }
+
+          &::placeholder {
+            color: $text-secondary;
+          }
+
+          &.is-invalid {
+            border-color: $error;
+            background-color: rgba($error, 0.05);
+
+            &:focus {
+              box-shadow: 0 0 0 3px rgba($error, 0.1);
+            }
+          }
+        }
+
+        .error-message {
+          display: block;
+          margin-top: 0.5rem;
+          color: $error;
+          font-size: 0.85rem;
+        }
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .info-box {
+        background-color: rgba($primary, 0.05);
+        border: 1px solid rgba($primary, 0.2);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1.5rem;
+
+        .info-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5rem 0;
+
+          &:not(:last-child) {
+            border-bottom: 1px solid rgba($primary, 0.1);
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+          }
+
+          .label {
+            font-weight: 500;
+            color: $text-primary;
+          }
+
+          .value {
+            color: $primary;
+            font-weight: 600;
+
+            &.bloqueado {
+              color: $error;
+            }
+
+            &.ativo {
+              color: $success;
+            }
+          }
+        }
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid $border-default;
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}

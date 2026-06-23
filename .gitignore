@@ -36,6 +36,9 @@ ENV/
 # Environment variables
 .env
 .env.local
+.env.ngrok
+*.env
+!.env.example
 
 # Database
 *.db
@@ -75,7 +78,8 @@ dump.rdb
 
 # Documentação
 REORGANIZACAO-COMPLETA.md
+CHECKLIST_DESENVOLVIMENTO.md
 
-#Ngrok
-.env.ngrok
-
+# Dev Scripts (Windows batch files for local development)
+dev-scripts/
+*.bat

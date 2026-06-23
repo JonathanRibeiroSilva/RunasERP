@@ -1,0 +1,129 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.responsive-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  @include custom-scrollbar;
+  
+  // Sombra nas laterais para indicar scroll
+  position: relative;
+  
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s;
+  }
+  
+  &::before {
+    left: 0;
+    background: linear-gradient(to right, $surface, transparent);
+  }
+  
+  &::after {
+    right: 0;
+    background: linear-gradient(to left, $surface, transparent);
+  }
+}
+
+.responsive-table {
+  margin-bottom: 0;
+  
+  // Largura mínima para forçar scroll em telas pequenas
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    min-width: 600px;
+  }
+  
+  // Mobile: fonte menor e padding reduzido
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    font-size: $font-size-sm;
+    
+    th, td {
+      padding: $spacer-2 !important;
+      white-space: nowrap;
+    }
+    
+    // Primeira coluna sempre visível
+    thead th:first-child,
+    tbody td:first-child {
+      position: sticky;
+      left: 0;
+      background: $surface;
+      z-index: 2;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+  
+  // Estilização adicional para dark mode
+  &.table-dark {
+    th {
+      background: $surface-hover;
+      color: $text-primary;
+      font-weight: $font-weight-semibold;
+      border-color: $border-default;
+    }
+    
+    td {
+      background: $surface;
+      color: $text-secondary;
+      border-color: $border-subtle;
+    }
+    
+    tbody tr {
+      &:hover {
+        background: $surface-hover;
+        
+        td {
+          background: $surface-hover;
+          color: $text-primary;
+        }
+      }
+    }
+  }
+  
+  // Alinhamento vertical
+  th, td {
+    vertical-align: middle;
+  }
+  
+  // Ações (última coluna)
+  .table-actions {
+    text-align: right;
+    white-space: nowrap;
+    
+    .btn {
+      margin-left: $spacer-1;
+    }
+  }
+}
+
+// Loading state
+.responsive-table-wrapper.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+// Empty state
+.table-empty-state {
+  text-align: center;
+  padding: $spacer-5 $spacer-3;
+  color: $text-tertiary;
+  
+  svg {
+    font-size: 48px;
+    margin-bottom: $spacer-3;
+    opacity: 0.5;
+  }
+  
+  p {
+    margin: 0;
+    font-size: $font-size-sm;
+  }
+}

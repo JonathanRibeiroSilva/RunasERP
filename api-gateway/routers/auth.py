@@ -16,9 +16,10 @@ from repositories.usuario_repository import UsuarioRepository
 from auth.jwt import create_access_token, create_refresh_token, verify_token
 from auth.oauth2 import get_current_user
 from auth.redis_client import get_redis
-from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioResponse, LoginResponse
+from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioResponse, LoginResponse, ForgotPasswordRequest, ResetPasswordRequest
 from models.usuario import Usuario, RoleEnum
 from config import settings
+from services.email_service import send_reset_password_email
 
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -35,17 +36,16 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         refresh_token: JWT refresh token
     """
     # Detectar se está em HTTPS (ngrok, produção) ou HTTP (desenvolvimento local)
-    # Em produção com ngrok, sempre usar secure=True
-    secure = True  # Sempre True para ngrok/produção
+    is_https = settings.FRONTEND_URL.startswith("https://")
     
     # Access token - expira em 30 minutos
     response.set_cookie(
         key="access_token",
         value=access_token,
-        httponly=True,  # Não acessível via JavaScript
-        secure=secure,  # True em produção/ngrok (HTTPS only)
-        samesite="lax",  # Proteção CSRF
-        max_age=30 * 60,  # 30 minutos em segundos
+        httponly=True,
+        secure=is_https,   # True em HTTPS (ngrok/produção), False em HTTP local
+        samesite="lax",
+        max_age=30 * 60,
         path="/"
     )
     
@@ -54,9 +54,9 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str) 
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=secure,
+        secure=is_https,
         samesite="lax",
-        max_age=7 * 24 * 60 * 60,  # 7 dias em segundos
+        max_age=7 * 24 * 60 * 60,
         path="/"
     )
 
@@ -83,16 +83,16 @@ class OAuthCallbackRequest(BaseModel):
     state: str
 
 
-@router.post("/register", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED, deprecated=True)
 async def register(
     data: UsuarioCreate,
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
     """
-    Registra um novo usuário.
+    **DEPRECATED**: Use /auth/admin/usuarios para criar operadores.
     
-    Por padrão, cria usuários com role OPERADOR.
-    Para criar ADMIN, use role: "ADMIN" no body.
+    Este endpoint será removido em breve.
+    Registra um novo usuário operador (requer empresa_id).
     """
     repo = UsuarioRepository(db)
     
@@ -253,16 +253,105 @@ async def logout(
     return None
 
 
-# ==================== OAUTH ROUTES ====================
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)]
+):
+    """
+    Solicita reset de senha. Gera um token, salva no Redis e envia email.
+    Sempre retorna sucesso para evitar enumeration attacks.
+    """
+    repo = UsuarioRepository(db)
+    usuario = await repo.buscar_por_email(request.email)
 
-@router.post("/oauth/google")
+    if usuario and usuario.ativo:
+        # Gerar token aleatório
+        reset_token = secrets.token_urlsafe(32)
+
+        # Salvar token no Redis (expira em 1 hora)
+        await redis.setex(
+            f"password_reset:{reset_token}",
+            3600,
+            str(usuario.id)
+        )
+
+        # Enviar email com link de reset
+        await send_reset_password_email(
+            to_email=usuario.email,
+            reset_token=reset_token,
+            nome=usuario.nome
+        )
+
+        log.info("forgot_password.email_sent",
+                 user_id=str(usuario.id),
+                 email=usuario.email)
+    else:
+        log.warning("forgot_password.user_not_found", email=request.email)
+
+    return {
+        "message": "Se o email existir, você receberá instruções para resetar sua senha."
+    }
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    request: ResetPasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)]
+):
+    """
+    Reseta a senha usando o token recebido por email.
+    """
+    user_id_str = await redis.get(f"password_reset:{request.token}")
+
+    if not user_id_str:
+        log.warning("reset_password.invalid_token", token=request.token[:10] + "...")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token inválido ou expirado"
+        )
+
+    if isinstance(user_id_str, bytes):
+        user_id_str = user_id_str.decode('utf-8')
+
+    repo = UsuarioRepository(db)
+    success = await repo.atualizar_senha(user_id_str, request.nova_senha)
+
+    if not success:
+        log.error("reset_password.user_not_found", user_id=user_id_str)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Erro ao resetar senha"
+        )
+
+    # Token de uso único — remover do Redis
+    await redis.delete(f"password_reset:{request.token}")
+
+    # Invalidar refresh tokens (forçar novo login)
+    await redis.delete(f"refresh:{user_id_str}")
+
+    log.info("reset_password.success", user_id=user_id_str)
+
+    return {
+        "message": "Senha resetada com sucesso. Faça login com sua nova senha."
+    }
+
+
+# ==================== OAUTH ROUTES (DEPRECATED) ====================
+# OAuth para OPERADORES está deprecated.
+# Use /auth/cliente/oauth/* para autenticação de clientes compradores.
+
+@router.post("/oauth/google", deprecated=True)
 async def oauth_google_init(
     request: OAuthInitRequest,
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Inicia o fluxo OAuth com Google.
-    Retorna a URL de autorização.
+    **DEPRECATED**: Use /auth/cliente/oauth/google/init para clientes.
+    
+    Este endpoint será removido em breve.
     """
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(
@@ -293,7 +382,7 @@ async def oauth_google_init(
     return {"auth_url": auth_url, "state": state}
 
 
-@router.post("/oauth/google/callback")
+@router.post("/oauth/google/callback", deprecated=True)
 async def oauth_google_callback(
     response: Response,
     callback: OAuthCallbackRequest,
@@ -301,8 +390,9 @@ async def oauth_google_callback(
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Processa o callback do Google OAuth.
-    Retorna tokens de acesso e define cookies HTTP-only.
+    **DEPRECATED**: Use /auth/cliente/oauth/google/callback para clientes.
+    
+    Este endpoint será removido em breve.
     """
     log.info("oauth.google.callback.start", code=callback.code[:20] + "...", state=callback.state)
     
@@ -389,14 +479,63 @@ async def oauth_google_callback(
     if not usuario:
         # Criar novo usuário
         log.info("oauth.google.callback.creating_user", email=email)
+        
+        # Criar empresa para o novo usuário com dados fictícios
+        async with httpx.AsyncClient() as client:
+            try:
+                # Gerar slug único baseado no email
+                slug = email.split("@")[0].lower().replace(".", "-").replace("_", "-")[:50]
+                
+                empresa_response = await client.post(
+                    f"{settings.EMPRESAS_URL}/empresas",
+                    json={
+                        "slug": slug,
+                        "razao_social": f"{nome} - ME",
+                        "nome_fantasia": f"Empresa de {nome}",
+                        "cnpj": "12.345.678/0001-90",  # CNPJ fictício válido
+                        "cep": "01310-100",  # CEP da Av. Paulista, São Paulo
+                        "logradouro": "Avenida Paulista",
+                        "numero": "1000",
+                        "complemento": "Sala 100",
+                        "bairro": "Bela Vista",
+                        "cidade": "São Paulo",
+                        "uf": "SP",
+                        "telefone": "(11) 3000-0000",
+                        "celular": "(11) 99999-9999",
+                        "email": email,
+                        "catalogo_ativo": True,
+                        "catalogo_titulo": f"Catálogo {nome}",
+                        "catalogo_descricao": "Bem-vindo ao nosso catálogo online!"
+                    },
+                    timeout=10.0
+                )
+                
+                if empresa_response.status_code == 201:
+                    empresa_data = empresa_response.json()
+                    empresa_id = empresa_data.get("id")
+                    log.info("oauth.google.empresa_created", empresa_id=empresa_id, nome=nome)
+                else:
+                    log.error("oauth.google.empresa_creation_failed", status=empresa_response.status_code, response=empresa_response.text)
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Erro ao criar empresa"
+                    )
+            except httpx.RequestError as e:
+                log.error("oauth.google.empresa_request_error", error=str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Erro ao comunicar com serviço de empresas"
+                )
+        
         usuario_create = UsuarioCreate(
             email=email,
             nome=nome,
             senha="",  # OAuth users não têm senha
-            role=RoleEnum.OPERADOR
+            role=RoleEnum.OPERADOR,
+            empresa_id=empresa_id
         )
         usuario = await repo.criar(usuario_create)
-        log.info("oauth.google.user_created", user_id=str(usuario.id), email=email)
+        log.info("oauth.google.user_created", user_id=str(usuario.id), email=email, empresa_id=empresa_id)
     else:
         log.info("oauth.google.user_login", user_id=str(usuario.id), email=email)
     
@@ -436,14 +575,15 @@ async def oauth_google_callback(
     return response_data
 
 
-@router.post("/oauth/microsoft")
+@router.post("/oauth/microsoft", deprecated=True)
 async def oauth_microsoft_init(
     request: OAuthInitRequest,
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Inicia o fluxo OAuth com Microsoft.
-    Retorna a URL de autorização.
+    **DEPRECATED**: Use /auth/cliente/oauth/microsoft/init para clientes.
+    
+    Este endpoint será removido em breve.
     """
     if not settings.MICROSOFT_CLIENT_ID or not settings.MICROSOFT_CLIENT_SECRET:
         raise HTTPException(
@@ -476,7 +616,7 @@ async def oauth_microsoft_init(
     return {"auth_url": auth_url, "state": state}
 
 
-@router.post("/oauth/microsoft/callback")
+@router.post("/oauth/microsoft/callback", deprecated=True)
 async def oauth_microsoft_callback(
     response: Response,
     callback: OAuthCallbackRequest,
@@ -484,8 +624,9 @@ async def oauth_microsoft_callback(
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
-    Processa o callback do Microsoft OAuth.
-    Retorna tokens de acesso e define cookies HTTP-only.
+    **DEPRECATED**: Use /auth/cliente/oauth/microsoft/callback para clientes.
+    
+    Este endpoint será removido em breve.
     """
     # Verificar state (CSRF protection)
     redirect_uri = await redis.get(f"oauth:state:{callback.state}")
@@ -552,14 +693,63 @@ async def oauth_microsoft_callback(
     
     if not usuario:
         # Criar novo usuário
+        
+        # Criar empresa para o novo usuário com dados fictícios
+        async with httpx.AsyncClient() as client:
+            try:
+                # Gerar slug único baseado no email
+                slug = email.split("@")[0].lower().replace(".", "-").replace("_", "-")[:50]
+                
+                empresa_response = await client.post(
+                    f"{settings.EMPRESAS_URL}/empresas",
+                    json={
+                        "slug": slug,
+                        "razao_social": f"{nome} - ME",
+                        "nome_fantasia": f"Empresa de {nome}",
+                        "cnpj": "12.345.678/0001-90",  # CNPJ fictício válido
+                        "cep": "01310-100",  # CEP da Av. Paulista, São Paulo
+                        "logradouro": "Avenida Paulista",
+                        "numero": "1000",
+                        "complemento": "Sala 100",
+                        "bairro": "Bela Vista",
+                        "cidade": "São Paulo",
+                        "uf": "SP",
+                        "telefone": "(11) 3000-0000",
+                        "celular": "(11) 99999-9999",
+                        "email": email,
+                        "catalogo_ativo": True,
+                        "catalogo_titulo": f"Catálogo {nome}",
+                        "catalogo_descricao": "Bem-vindo ao nosso catálogo online!"
+                    },
+                    timeout=10.0
+                )
+                
+                if empresa_response.status_code == 201:
+                    empresa_data = empresa_response.json()
+                    empresa_id = empresa_data.get("id")
+                    log.info("oauth.microsoft.empresa_created", empresa_id=empresa_id, nome=nome)
+                else:
+                    log.error("oauth.microsoft.empresa_creation_failed", status=empresa_response.status_code, response=empresa_response.text)
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Erro ao criar empresa"
+                    )
+            except httpx.RequestError as e:
+                log.error("oauth.microsoft.empresa_request_error", error=str(e))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Erro ao comunicar com serviço de empresas"
+                )
+        
         usuario_create = UsuarioCreate(
             email=email,
             nome=nome,
             senha="",  # OAuth users não têm senha
-            role=RoleEnum.OPERADOR
+            role=RoleEnum.OPERADOR,
+            empresa_id=empresa_id
         )
         usuario = await repo.criar(usuario_create)
-        log.info("oauth.microsoft.user_created", user_id=str(usuario.id), email=email)
+        log.info("oauth.microsoft.user_created", user_id=str(usuario.id), email=email, empresa_id=empresa_id)
     else:
         log.info("oauth.microsoft.user_login", user_id=str(usuario.id), email=email)
     
@@ -588,3 +778,4 @@ async def oauth_microsoft_callback(
             "role": usuario.role.value
         }
     }
+

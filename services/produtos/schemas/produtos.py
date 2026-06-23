@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class CategoriaBase(BaseModel):
     """Schema base de Categoria."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     nome: str = Field(..., min_length=1, max_length=100)
     descricao: str | None = Field(default=None, max_length=500)
 
@@ -58,10 +59,11 @@ class AtributoVarianteRead(AtributoVarianteBase):
 
 class VarianteBase(BaseModel):
     """Schema base de Variante."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     sku: str = Field(..., min_length=1, max_length=100)
-    preco_custo: Decimal = Field(..., gt=0, decimal_places=2)
-    markup_pct: Decimal = Field(..., ge=0, decimal_places=2)
-    preco_venda: Decimal = Field(..., gt=0, decimal_places=2)
+    preco_custo: Decimal = Field(..., gt=0)
+    markup_pct: Decimal = Field(..., ge=0)
+    preco_venda: Decimal = Field(..., gt=0)
     ativo: bool = True
 
 
@@ -74,9 +76,9 @@ class VarianteCreate(VarianteBase):
 class VarianteUpdate(BaseModel):
     """Schema para atualizar Variante."""
     sku: str | None = Field(default=None, min_length=1, max_length=100)
-    preco_custo: Decimal | None = Field(default=None, gt=0, decimal_places=2)
-    markup_pct: Decimal | None = Field(default=None, ge=0, decimal_places=2)
-    preco_venda: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    preco_custo: Decimal | None = Field(default=None, gt=0)
+    markup_pct: Decimal | None = Field(default=None, ge=0)
+    preco_venda: Decimal | None = Field(default=None, gt=0)
     ativo: bool | None = None
 
 
@@ -89,58 +91,58 @@ class VarianteRead(VarianteBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ======================== CATALOGO FOTO ========================
+# ======================== LOJA ONLINE FOTO ========================
 
-class CatalogoFotoBase(BaseModel):
-    """Schema base de CatalogoFoto."""
+class LojaOnlineFotoBase(BaseModel):
+    """Schema base de LojaOnlineFoto."""
     url: str = Field(..., min_length=1, max_length=500)
     ordem: int = Field(default=0, ge=0)
 
 
-class CatalogoFotoCreate(CatalogoFotoBase):
-    """Schema para criar CatalogoFoto."""
+class LojaOnlineFotoCreate(LojaOnlineFotoBase):
+    """Schema para criar LojaOnlineFoto."""
     produto_id: UUID
 
 
-class CatalogoFotoUpdate(BaseModel):
-    """Schema para atualizar CatalogoFoto."""
+class LojaOnlineFotoUpdate(BaseModel):
+    """Schema para atualizar LojaOnlineFoto."""
     url: str | None = Field(default=None, min_length=1, max_length=500)
     ordem: int | None = Field(default=None, ge=0)
 
 
-class CatalogoFotoRead(CatalogoFotoBase):
-    """Schema para ler CatalogoFoto."""
+class LojaOnlineFotoRead(LojaOnlineFotoBase):
+    """Schema para ler LojaOnlineFoto."""
     id: UUID
     produto_id: UUID
     
     model_config = ConfigDict(from_attributes=True)
 
 
-# ======================== CATALOGO CONFIG ========================
+# ======================== LOJA ONLINE CONFIG ========================
 
-class CatalogoConfigBase(BaseModel):
-    """Schema base de CatalogoConfig."""
+class LojaOnlineConfigBase(BaseModel):
+    """Schema base de LojaOnlineConfig."""
     visivel: bool = False
     destaque: bool = False
     ordem_exibicao: int = Field(default=0, ge=0)
     descricao_publica: str | None = None
 
 
-class CatalogoConfigCreate(CatalogoConfigBase):
-    """Schema para criar CatalogoConfig."""
+class LojaOnlineConfigCreate(LojaOnlineConfigBase):
+    """Schema para criar LojaOnlineConfig."""
     produto_id: UUID
 
 
-class CatalogoConfigUpdate(BaseModel):
-    """Schema para atualizar CatalogoConfig."""
+class LojaOnlineConfigUpdate(BaseModel):
+    """Schema para atualizar LojaOnlineConfig."""
     visivel: bool | None = None
     destaque: bool | None = None
     ordem_exibicao: int | None = Field(default=None, ge=0)
     descricao_publica: str | None = None
 
 
-class CatalogoConfigRead(CatalogoConfigBase):
-    """Schema para ler CatalogoConfig."""
+class LojaOnlineConfigRead(LojaOnlineConfigBase):
+    """Schema para ler LojaOnlineConfig."""
     id: UUID
     produto_id: UUID
     atualizado_em: datetime
@@ -152,6 +154,7 @@ class CatalogoConfigRead(CatalogoConfigBase):
 
 class FornecedorBase(BaseModel):
     """Schema base de Fornecedor."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     nome: str = Field(..., min_length=1, max_length=255)
     cnpj: str | None = Field(default=None, max_length=18)
     email: str | None = Field(default=None, max_length=255)
@@ -193,7 +196,7 @@ class FornecedorRead(FornecedorBase):
 class FornecedorProdutoBase(BaseModel):
     """Schema base de FornecedorProduto."""
     codigo_fornecedor: str | None = Field(default=None, max_length=100)
-    preco_fornecedor: Decimal = Field(..., gt=0, decimal_places=2)
+    preco_fornecedor: Decimal = Field(..., gt=0)
     prazo_entrega_dias: int = Field(default=0, ge=0)
     quantidade_minima: int = Field(default=1, ge=1)
     ativo: bool = True
@@ -208,7 +211,7 @@ class FornecedorProdutoCreate(FornecedorProdutoBase):
 class FornecedorProdutoUpdate(BaseModel):
     """Schema para atualizar FornecedorProduto."""
     codigo_fornecedor: str | None = Field(default=None, max_length=100)
-    preco_fornecedor: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    preco_fornecedor: Decimal | None = Field(default=None, gt=0)
     prazo_entrega_dias: int | None = Field(default=None, ge=0)
     quantidade_minima: int | None = Field(default=None, ge=1)
     ativo: bool | None = None
@@ -228,6 +231,7 @@ class FornecedorProdutoRead(FornecedorProdutoBase):
 
 class ProdutoBase(BaseModel):
     """Schema base de Produto."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
     nome: str = Field(..., min_length=1, max_length=255)
     descricao: str | None = None
     ativo: bool = True
@@ -250,10 +254,17 @@ class ProdutoRead(ProdutoBase):
     """Schema para ler Produto."""
     id: UUID
     categoria_id: UUID
+    categoria: CategoriaRead | None = None
     criado_em: datetime
+    preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda")
+    custo: Decimal = Field(default=Decimal("0.00"), description="Custo de aquisição")
+    preco_promocional: Decimal | None = Field(default=None, description="Preço promocional")
+    codigo_barras: str | None = Field(default=None, description="Código de barras/EAN")
+    sku: str | None = Field(default=None, description="SKU interno")
+    unidade_medida: str = Field(default="UN", description="UN, KG, LT, etc")
     variantes: list[VarianteRead] = Field(default_factory=list)
-    catalogo_config: CatalogoConfigRead | None = None
-    catalogo_fotos: list[CatalogoFotoRead] = Field(default_factory=list)
+    loja_online_config: LojaOnlineConfigRead | None = None
+    loja_online_fotos: list[LojaOnlineFotoRead] = Field(default_factory=list)
     fornecedores: list[FornecedorProdutoRead] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)
@@ -264,5 +275,34 @@ class ProdutoReadSimples(ProdutoBase):
     id: UUID
     categoria_id: UUID
     criado_em: datetime
+    preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda")
+    preco_promocional: Decimal | None = Field(default=None, description="Preço promocional")
     
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ======================== SCHEMAS LOJA ONLINE PÚBLICA ========================
+
+class VarianteLojaOnlineRead(BaseModel):
+    """Schema de variante para a loja online pública (sem dados internos)."""
+    id: UUID
+    sku: str
+    preco_venda: Decimal
+    ativo: bool
+    atributos: list[AtributoVarianteBase] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProdutoLojaOnlineRead(BaseModel):
+    """Schema de produto para a loja online pública (sem custo, markup, fornecedores)."""
+    id: UUID
+    nome: str
+    descricao: str | None = None
+    ativo: bool
+    categoria_id: UUID
+    categoria: CategoriaRead | None = None
+    criado_em: datetime
+    variantes: list[VarianteLojaOnlineRead] = Field(default_factory=list)
+
     model_config = ConfigDict(from_attributes=True)
