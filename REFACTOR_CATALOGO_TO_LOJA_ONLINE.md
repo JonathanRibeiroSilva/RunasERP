@@ -58,14 +58,15 @@ Renomear todos os componentes relacionados a "catálogo" para "loja_online" (onl
 ## Status
 - ✅ Diretório frontend movido
 - ✅ Arquivo de modelo movido
-- 🔄 Renomeando classes e referências
+- ✅ Classes e referências renomeadas
+- ✅ Todos os imports atualizados
+- ✅ Testes atualizados
+- ✅ Commit realizado
 - ⏳ Criando migração de banco de dados
-- ⏳ Atualizando todos os imports
-- ⏳ Atualizando testes
-- ⏳ Atualizando documentação
+- ⏳ Push para branch
 
 ## Arquivos Afetados
-- Backend: ~15 arquivos
-- Frontend: ~10 arquivos
-- Testes: ~3 arquivos
-- Docs: ~2 arquivos
+- Backend: 15 arquivos modificados
+- Frontend: 17 arquivos movidos/modificados
+- Testes: 2 arquivos atualizados
+- Docs: 1 arquivo criado (este documento)
