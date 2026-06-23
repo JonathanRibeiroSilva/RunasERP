@@ -29,6 +29,12 @@ Localização: `.git/hooks/pre-commit`
 Hook do Kiro Agent que bloqueia operações de escrita com segredos.
 Localização: `.kiro/hooks/prevent-secrets-commit.json`
 
+### 4. Documentation Agent
+Agente especializado em criar documentação com validação de segurança integrada.
+Localização: `.kiro/agents/documentation-agent.json`
+
+Sempre que criar documentação, use o Documentation Agent que automaticamente valida e usa placeholders.
+
 ## 📝 Checklist Antes de Commitar
 
 - [ ] Revisei `git diff --staged`
