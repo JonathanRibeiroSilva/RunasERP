@@ -1,16 +1,34 @@
 # 🚀 Features Futuras - ERP Runas
 
-> **Última atualização**: 11/06/2026
+> **Última atualização**: 23/06/2026
 > 
 > Este documento lista funcionalidades avançadas e melhorias planejadas para versões futuras do sistema.
 > **Prioridade**: 🔥 Alta | 🟡 Média | 🟢 Baixa
 
 ---
 
-## 📊 Status Atual do Sistema
+## 📊 Status Atual do Sistema (Junho 2026)
 
 ### ✅ Módulos Completos (Backend + Frontend)
-- **Loja Online** (100%) ✅ **NOVO!**
+- **API Gateway** (100%) ✅
+  - Autenticação JWT com refresh token
+  - RBAC (Role-Based Access Control)
+  - Rate limiting
+  - Proxy para microsserviços
+  
+- **Clientes** (100%) ✅
+  - CRUD completo
+  - Gestão de endereços
+  - Controle de crédito fiado
+  - Histórico de compras
+  
+- **Produtos** (100%) ✅
+  - CRUD completo com variantes
+  - Categorias e subcategorias
+  - Fornecedores
+  - Controle de visibilidade no catálogo
+  
+- **Loja Online** (100%) ✅
   - Catálogo público de produtos
   - Carrinho de compras (Redis)
   - Checkout multi-step (dados, entrega, pagamento)
@@ -20,14 +38,20 @@
   - Integração Mercado Pago preparada
   - Notificações WhatsApp automáticas
 
-### 🟡 Módulos Parcialmente Completos
-- **Clientes** (80%) - Falta histórico
-- **Produtos** (80%) - Falta upload de fotos e fornecedores
+### 🟡 Módulos Implementados (Backend Completo, Frontend Pendente)
+- **Vendas/PDV** (Backend 100%, Frontend 0%)
+  - API completa implementada
+  - Workflow de status completo
+  - Interface PDV ainda não desenvolvida
+  
+- **Estoque** (Backend 100%, Frontend 0%)
+  - API completa implementada
+  - Controle de movimentações
+  - Interface administrativa pendente
 
-### 🔴 Módulos Pendentes (Frontend)
-- **Vendas/PDV** (0%) - Backend 100%, frontend pendente
-- **Estoque** (0%) - Backend 100%, frontend pendente
+### 🔴 Módulos Não Iniciados
 - **Financeiro** (0%) - Backend e frontend pendentes
+- **Notificações** (0%) - Webhook preparado, serviço não implementado
 
 ---
 
