@@ -102,8 +102,8 @@ INSERT INTO vendas.configuracoes_pagamento (
 ) VALUES (
     gen_random_uuid(),
     4,  -- distribuidora-central
-    'APP_USR-7939674233321264-061214-ec85276953508b5dc291133bb28bc278-3218634187',
-    'APP_USR-346c374c-c2da-4895-b8c4-a8cea38da220',
+    'APP_USR-xxxxxxxxxxxx-xxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxx',  -- SANDBOX (configure no .env)
+    'APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',  -- SANDBOX PUBLIC KEY (configure no .env)
     true,
     NOW(),
     NOW()
@@ -239,8 +239,8 @@ Frontend → API Gateway → Vendas Service
 
 ### Ambiente
 - Mercado Pago: **Sandbox**
-- Access Token: `APP_USR-7939674233321264-...`
-- Public Key: `APP_USR-346c374c-c2da-...`
+- Access Token: `Configurado via variável de ambiente MP_ACCESS_TOKEN`
+- Public Key: `Configurado via variável de ambiente MP_PUBLIC_KEY`
 
 ---
 

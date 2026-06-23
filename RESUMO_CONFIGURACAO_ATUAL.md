@@ -16,13 +16,13 @@
 - ✅ **Validações**: Erros do FastAPI são exibidos de forma clara
 
 ### 3. Mercado Pago (Sandbox)
-- ✅ **Credenciais configuradas**:
+- ✅ **Credenciais configuradas via .env**:
   ```env
-  MP_ACCESS_TOKEN=APP_USR-7939674233321264-061214-ec85276953508b5dc291133bb28bc278-3218634187
-  MP_PUBLIC_KEY=APP_USR-346c374c-c2da-4895-b8c4-a8cea38da220
+  MP_ACCESS_TOKEN=<configure-sua-chave-aqui>
+  MP_PUBLIC_KEY=<configure-sua-chave-aqui>
   MP_ENVIRONMENT=sandbox
   ```
-- ✅ **Serviço de vendas**: Reiniciado com novas credenciais
+- ✅ **Serviço de vendas**: Configurado para ler do .env
 - ⚠️ **Webhook**: Ainda precisa ser configurado no painel do Mercado Pago
 
 ## 📋 Usuário de Teste do Mercado Pago
