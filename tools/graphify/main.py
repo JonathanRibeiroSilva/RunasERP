@@ -3,11 +3,12 @@
 Graphify - Ferramenta de visualização de arquitetura
 """
 import sys
+import os
 import argparse
 from pathlib import Path
 
-# Adiciona o diretório raiz ao path
-project_root = Path(__file__).parent.parent.parent
+# No Docker, o projeto está montado em /project
+project_root = Path(os.getenv('PROJECT_ROOT', '/project'))
 sys.path.insert(0, str(project_root))
 
 
@@ -28,8 +29,8 @@ def main():
     print("🚀 Graphify - Iniciando análise do RunasERP\n")
     
     try:
-        from tools.graphify.architecture_visualizer import ArchitectureVisualizer
-        from tools.graphify.html_generator import HTMLGenerator
+        from architecture_visualizer import ArchitectureVisualizer
+        from html_generator import HTMLGenerator
         
         if args.all or args.architecture:
             print("📊 Gerando visualização de arquitetura...")
