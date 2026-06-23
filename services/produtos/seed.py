@@ -8,7 +8,7 @@ from models.categoria import Categoria
 from models.produto import Produto
 from models.variante import Variante, AtributoVariante
 from models.fornecedor import Fornecedor, FornecedorProduto
-from models.catalogo import CatalogoConfig, CatalogoFoto
+from models.loja_online import LojaOnlineConfig, LojaOnlineFoto
 
 
 async def seed_data():
@@ -165,24 +165,24 @@ async def seed_data():
             ])
             await session.flush()
             
-            # ========== CATÁLOGO CONFIG ==========
-            print("  → Criando configurações de catálogo...")
+            # ========== LOJA ONLINE CONFIG ==========
+            print("  → Criando configurações de loja online...")
             session.add_all([
-                CatalogoConfig(
+                LojaOnlineConfig(
                     produto_id=prod_notebook.id,
                     visivel=True,
                     destaque=True,
                     ordem_exibicao=1,
                     descricao_publica="Notebook potente para trabalho e estudos"
                 ),
-                CatalogoConfig(
+                LojaOnlineConfig(
                     produto_id=prod_mouse.id,
                     visivel=True,
                     destaque=False,
                     ordem_exibicao=2,
                     descricao_publica="Mouse ergonômico de alta precisão"
                 ),
-                CatalogoConfig(
+                LojaOnlineConfig(
                     produto_id=prod_camiseta.id,
                     visivel=True,
                     destaque=False,
@@ -192,15 +192,15 @@ async def seed_data():
             ])
             await session.flush()
             
-            # ========== CATÁLOGO FOTOS ==========
-            print("  → Adicionando fotos de catálogo...")
+            # ========== LOJA ONLINE FOTOS ==========
+            print("  → Adicionando fotos de loja online...")
             session.add_all([
-                CatalogoFoto(
+                LojaOnlineFoto(
                     produto_id=prod_notebook.id,
                     url="https://picsum.photos/800/600?random=1",
                     ordem=1
                 ),
-                CatalogoFoto(
+                LojaOnlineFoto(
                     produto_id=prod_mouse.id,
                     url="https://picsum.photos/800/600?random=2",
                     ordem=1

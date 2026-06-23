@@ -4,8 +4,8 @@ from repositories.produtos import (
     ProdutoRepository,
     VarianteRepository,
     AtributoVarianteRepository,
-    CatalogoConfigRepository,
-    CatalogoFotoRepository,
+    LojaOnlineConfigRepository,
+    LojaOnlineFotoRepository,
     FornecedorRepository,
     FornecedorProdutoRepository,
 )
@@ -15,8 +15,8 @@ __all__ = [
     "ProdutoRepository",
     "VarianteRepository",
     "AtributoVarianteRepository",
-    "CatalogoConfigRepository",
-    "CatalogoFotoRepository",
+    "LojaOnlineConfigRepository",
+    "LojaOnlineFotoRepository",
     "FornecedorRepository",
     "FornecedorProdutoRepository",
 ]

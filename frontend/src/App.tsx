@@ -12,7 +12,7 @@ import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
 import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
 import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
-import { CatalogoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/CatalogoPublico';
+import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/LojaOnlinePublico';
 import { CatalogoRedirectPage, PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
 import { EstoquePage } from '@/pages/Estoque';
@@ -99,8 +99,8 @@ function App() {
           }
         />
 
-        {/* Catálogo Público (sem autenticação) */}
-        <Route path="/c/:empresaSlug" element={<CatalogoPage />} />
+        {/* Loja Online Pública (sem autenticação) */}
+        <Route path="/c/:empresaSlug" element={<LojaOnlinePublicoPage />} />
         <Route path="/c/:empresaSlug/produto/:produtoId" element={<ProdutoDetalhePage />} />
         <Route path="/c/:empresaSlug/carrinho" element={<CarrinhoPage />} />
         <Route path="/c/:empresaSlug/checkout" element={<CheckoutPage />} />

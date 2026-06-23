@@ -14,18 +14,18 @@ from schemas.produtos import (
     ProdutoCreate,
     ProdutoRead,
     ProdutoReadSimples,
-    ProdutoCatalogoRead,
+    ProdutoLojaOnlineRead,
     ProdutoUpdate,
     VarianteCreate,
     VarianteRead,
     VarianteUpdate,
     AtributoVarianteBase,
-    CatalogoConfigCreate,
-    CatalogoConfigRead,
-    CatalogoConfigUpdate,
-    CatalogoFotoCreate,
-    CatalogoFotoRead,
-    CatalogoFotoUpdate,
+    LojaOnlineConfigCreate,
+    LojaOnlineConfigRead,
+    LojaOnlineConfigUpdate,
+    LojaOnlineFotoCreate,
+    LojaOnlineFotoRead,
+    LojaOnlineFotoUpdate,
     FornecedorCreate,
     FornecedorRead,
     FornecedorUpdate,
@@ -37,7 +37,7 @@ from services.produtos import (
     CategoriaService,
     ProdutoService,
     VarianteService,
-    CatalogoService,
+    LojaOnlineService,
     FornecedorService,
     FornecedorProdutoService,
 )
@@ -374,9 +374,9 @@ async def deletar_variante(
         raise HTTPException(status_code=500, detail="Erro ao deletar variante")
 
 
-# ======================== ROUTER CATÁLOGO PÚBLICO ========================
+# ======================== ROUTER LOJA ONLINE PÚBLICA ========================
 
-router_catalogo_publico = APIRouter(prefix="/catalogo/publico", tags=["catalogo-publico"])
+router_loja_online_publico = APIRouter(prefix="/loja-online/publico", tags=["loja-online-publico"])
 
 
 async def get_empresa_id_from_slug(
@@ -419,8 +419,8 @@ async def get_empresa_id_from_slug(
         )
 
 
-@router_catalogo_publico.get("/produtos", response_model=dict)
-async def listar_produtos_catalogo_publico(
+@router_loja_online_publico.get("/produtos", response_model=dict)
+async def listar_produtos_loja_online_publico(
     empresaSlug: str = Query(..., description="Slug da empresa"),
     categoria_id: UUID | None = Query(None),
     busca: str | None = Query(None, min_length=2),
@@ -430,11 +430,11 @@ async def listar_produtos_catalogo_publico(
     session: AsyncSession = Depends(get_db),
 ):
     """
-    Lista produtos visíveis no catálogo público.
+    Lista produtos visíveis na loja online pública.
     
     Retorna apenas produtos com:
     - ativo = True
-    - catalogo_config.visivel = True
+    - loja_online_config.visivel = True
     
     Query params:
     - empresaSlug: slug da empresa (obrigatório)
@@ -449,7 +449,7 @@ async def listar_produtos_catalogo_publico(
         
         service = ProdutoService(session)
         
-        # TODO: Filtrar apenas produtos com catalogo_config.visivel = True
+        # TODO: Filtrar apenas produtos com loja_online_config.visivel = True
         # Por enquanto, retorna todos os produtos ativos
         produtos, total = await service.listar_produtos(
             empresa_id=empresa_id,
@@ -480,7 +480,7 @@ async def listar_produtos_catalogo_publico(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Erro ao listar produtos do catálogo")
+        raise HTTPException(status_code=500, detail="Erro ao listar produtos da loja online")
 
 
 @router_catalogo_publico.get("/produto/{produto_id}", response_model=ProdutoCatalogoRead)
@@ -548,69 +548,69 @@ async def listar_categorias_catalogo_publico(
         raise HTTPException(status_code=500, detail="Erro ao listar categorias")
 
 
-# ======================== ROUTER CATÁLOGO ========================
+# ======================== ROUTER LOJA ONLINE ========================
 
-router_catalogo = APIRouter(prefix="/catalogo", tags=["catalogo"])
+router_loja_online = APIRouter(prefix="/loja-online", tags=["loja-online"])
 
 
-@router_catalogo.post("/config", response_model=CatalogoConfigRead, status_code=201)
-async def criar_config_catalogo(
-    dados: CatalogoConfigCreate,
+@router_loja_online.post("/config", response_model=LojaOnlineConfigRead, status_code=201)
+async def criar_config_loja_online(
+    dados: LojaOnlineConfigCreate,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
-    """Cria configuração de catálogo."""
+    """Cria configuração de loja online."""
     try:
-        service = CatalogoService(session)
+        service = LojaOnlineService(session)
         config = await service.criar_config(empresa_id, dados)
         return config
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Erro ao criar config de catálogo")
+        raise HTTPException(status_code=500, detail="Erro ao criar config de loja online")
 
 
-@router_catalogo.get("/config/{produto_id}", response_model=CatalogoConfigRead)
-async def obter_config_catalogo(
+@router_loja_online.get("/config/{produto_id}", response_model=LojaOnlineConfigRead)
+async def obter_config_loja_online(
     produto_id: UUID,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
-    """Obtém configuração de catálogo."""
+    """Obtém configuração de loja online."""
     try:
-        service = CatalogoService(session)
+        service = LojaOnlineService(session)
         return await service.obter_config(empresa_id, produto_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router_catalogo.put("/config/{catalogo_id}", response_model=CatalogoConfigRead)
-async def atualizar_config_catalogo(
-    catalogo_id: UUID,
-    dados: CatalogoConfigUpdate,
+@router_loja_online.put("/config/{config_id}", response_model=LojaOnlineConfigRead)
+async def atualizar_config_loja_online(
+    config_id: UUID,
+    dados: LojaOnlineConfigUpdate,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
-    """Atualiza configuração de catálogo."""
+    """Atualiza configuração de loja online."""
     try:
-        service = CatalogoService(session)
-        config = await service.atualizar_config(empresa_id, catalogo_id, dados)
+        service = LojaOnlineService(session)
+        config = await service.atualizar_config(empresa_id, config_id, dados)
         return config
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Erro ao atualizar config de catálogo")
+        raise HTTPException(status_code=500, detail="Erro ao atualizar config de loja online")
 
 
-@router_catalogo.post("/fotos", response_model=CatalogoFotoRead, status_code=201)
-async def adicionar_foto_catalogo(
-    dados: CatalogoFotoCreate,
+@router_loja_online.post("/fotos", response_model=LojaOnlineFotoRead, status_code=201)
+async def adicionar_foto_loja_online(
+    dados: LojaOnlineFotoCreate,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
-    """Adiciona foto ao catálogo."""
+    """Adiciona foto à loja online."""
     try:
-        service = CatalogoService(session)
+        service = LojaOnlineService(session)
         foto = await service.adicionar_foto(empresa_id, dados)
         return foto
     except ValueError as e:
@@ -619,32 +619,32 @@ async def adicionar_foto_catalogo(
         raise HTTPException(status_code=500, detail="Erro ao adicionar foto")
 
 
-@router_catalogo.get("/fotos/{produto_id}", response_model=list)
-async def listar_fotos_catalogo(
+@router_loja_online.get("/fotos/{produto_id}", response_model=list)
+async def listar_fotos_loja_online(
     produto_id: UUID,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
     """Lista fotos de um produto."""
     try:
-        service = CatalogoService(session)
+        service = LojaOnlineService(session)
         fotos = await service.listar_fotos(empresa_id, produto_id)
         # Converter modelos SQLAlchemy para schemas Pydantic
-        return [CatalogoFotoRead.model_validate(foto) for foto in fotos]
+        return [LojaOnlineFotoRead.model_validate(foto) for foto in fotos]
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router_catalogo.put("/fotos/{foto_id}", response_model=CatalogoFotoRead)
-async def atualizar_foto_catalogo(
+@router_loja_online.put("/fotos/{foto_id}", response_model=LojaOnlineFotoRead)
+async def atualizar_foto_loja_online(
     foto_id: UUID,
-    dados: CatalogoFotoUpdate,
+    dados: LojaOnlineFotoUpdate,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
     """Atualiza uma foto."""
     try:
-        service = CatalogoService(session)
+        service = LojaOnlineService(session)
         foto = await service.atualizar_foto(empresa_id, foto_id, dados)
         return foto
     except ValueError as e:
@@ -653,15 +653,15 @@ async def atualizar_foto_catalogo(
         raise HTTPException(status_code=500, detail="Erro ao atualizar foto")
 
 
-@router_catalogo.delete("/fotos/{foto_id}", status_code=204)
-async def deletar_foto_catalogo(
+@router_loja_online.delete("/fotos/{foto_id}", status_code=204)
+async def deletar_foto_loja_online(
     foto_id: UUID,
     empresa_id: Annotated[int, Depends(get_empresa_id)],
     session: AsyncSession = Depends(get_db)
 ):
     """Deleta uma foto."""
     try:
-        service = CatalogoService(session)
+        service = LojaOnlineService(session)
         await service.deletar_foto(empresa_id, foto_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

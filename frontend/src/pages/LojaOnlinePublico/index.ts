@@ -1,4 +1,4 @@
-export { default as CatalogoPage } from './CatalogoPage';
+export { default as LojaOnlinePublicoPage } from './LojaOnlinePublicoPage';
 export { default as ProdutoDetalhePage } from './ProdutoDetalhePage';
 export { default as CarrinhoPage } from './CarrinhoPage';
 export { default as CheckoutPage } from './CheckoutPage';
