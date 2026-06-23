@@ -1,28 +1,29 @@
 # 🎨 Frontend - Guia de Implementação Completo
 
-> **Última atualização**: 11/06/2026
+> **Última atualização**: 23/06/2026
 > 
-> Guia completo para implementar as telas pendentes do frontend, com foco em **Loja Online** e **Vendas/PDV**.
-> **Backend**: ✅ 100% Pronto | **Frontend**: 🔴 0% Implementado
+> Guia completo para implementar as telas pendentes do frontend, com foco em **Vendas/PDV** e **Estoque**.
+> **Loja Online**: ✅ 100% Implementada | **Vendas/PDV**: 🔴 0% | **Estoque**: 🔴 0%
 
 ---
 
 ## 📊 Visão Geral
 
-### Status Atual
-- ✅ **Backend**: API completa e testada
+### Status Atual - Junho 2026
+- ✅ **Backend**: APIs completas e testadas (78 endpoints)
 - ✅ **Componentes Responsivos**: Container, Table, Card
 - ✅ **Layout Mobile-First**: Sidebar, Navbar com backdrop
-- ✅ **Loja Online**: **100% implementado** 🎉
+- ✅ **Loja Online**: **100% implementada** 🎉
 - 🔴 **Vendas/PDV**: 0% implementado
+- 🔴 **Estoque**: 0% implementado
 
 ### O Que Precisa Ser Feito
 
 | Módulo | Rotas | Componentes | Status | Prioridade |
 |--------|-------|-------------|--------|------------|
-| **Loja Online** | 6 rotas | 15+ componentes | ✅ **COMPLETO** | 🔥 Alta |
+| **Loja Online** | 6 rotas | 15+ componentes | ✅ **COMPLETO** | - |
 | **Vendas/PDV** | 6 rotas | 12+ componentes | 🔴 Pendente | 🔥 Alta |
-| **Estoque** | 9 rotas | 10+ componentes | 🔴 Pendente | 🟡 Média |
+| **Estoque** | 9 rotas | 10+ componentes | 🔴 Pendente | 🔥 Alta |
 
 ---
 
@@ -765,8 +766,10 @@ $status-reembolsada: #6f42c1;      // Roxo
 
 ## ⚡ Priorização de Implementação
 
-### ~~Sprint 1 (2 semanas) - Loja Online Básica~~ ✅ COMPLETO
-**Objetivo**: Cliente consegue comprar
+### ~~Sprint 1 (2 semanas) - Loja Online~~ ✅ COMPLETO
+**Objetivo**: Cliente consegue comprar  
+**Status**: ✅ **100% Implementado**
+
 1. ✅ Página do catálogo (`/c/:slug`)
 2. ✅ Detalhes do produto
 3. ✅ Carrinho
@@ -776,38 +779,44 @@ $status-reembolsada: #6f42c1;      // Roxo
 
 **Resultado**: ✅ Loja funcional end-to-end com todas as features
 
-### Sprint 2 (1 semana) - PDV Básico
-**Objetivo**: Vendedor consegue vender
-1. ✅ Lista de vendas
-2. ✅ PDV simplificado (sem busca avançada)
-3. ✅ Confirmar venda
-4. ✅ Detalhes da venda
+### Sprint 2 (1-2 semanas) - PDV Básico 🔥 PRÓXIMO
+**Objetivo**: Vendedor consegue vender  
+**Prioridade**: 🔥 ALTA
 
-**Resultado**: PDV funcional para vendas presenciais
+1. 🔴 Lista de vendas
+2. 🔴 PDV simplificado (sem busca avançada)
+3. 🔴 Confirmar venda
+4. 🔴 Detalhes da venda
 
-### Sprint 3 (1 semana) - Integrações
-**Objetivo**: Automações funcionando
-1. ✅ Mercado Pago no checkout
-2. ✅ Webhooks (já funcionam no backend)
-3. ✅ Notificações WhatsApp
-4. ✅ Meus pedidos
+**Resultado esperado**: PDV funcional para vendas presenciais
 
-**Resultado**: Experiência completa automatizada
+### Sprint 3 (1-2 semanas) - Estoque Básico 🔥
+**Objetivo**: Controlar movimentações de estoque  
+**Prioridade**: 🔥 ALTA
 
-### Sprint 4 (1 semana) - Melhorias
-**Objetivo**: UX polida
-1. ✅ PDV com busca avançada
-2. ✅ Atalhos de teclado
-3. ✅ Relatórios de vendas
-4. ✅ Painel administrativo
+1. 🔴 Lista de produtos em estoque
+2. 🔴 Movimentações de entrada/saída
+3. 🔴 Ajustes de inventário
+4. 🔴 Histórico de movimentações
 
-**Resultado**: Sistema production-ready
+**Resultado esperado**: Gestão de estoque funcional
+
+### Sprint 4 (1 semana) - Melhorias PDV 🟡
+**Objetivo**: UX polida no PDV  
+**Prioridade**: 🟡 MÉDIA
+
+1. 🔴 PDV com busca avançada
+2. 🔴 Atalhos de teclado
+3. 🔴 Relatórios de vendas
+4. 🔴 Painel administrativo
+
+**Resultado esperado**: Sistema production-ready
 
 ---
 
 ## 📝 Checklist de Implementação
 
-### Loja Online ✅ COMPLETO
+### Loja Online ✅ COMPLETO (Junho 2026)
 - [x] CatalogoPage (vitrine)
 - [x] ProdutoDetalhePage (detalhes)
 - [x] CarrinhoPage (revisão)
@@ -828,7 +837,7 @@ $status-reembolsada: #6f42c1;      // Roxo
 - [x] Estados de UI (loading, error, empty, success)
 - [x] Responsividade completa
 
-### Vendas/PDV
+### Vendas/PDV 🔴 PENDENTE
 - [ ] VendasPage (lista)
 - [ ] PDVPage (ponto de venda)
 - [ ] VendaDetalhesPage (detalhes)
@@ -847,6 +856,19 @@ $status-reembolsada: #6f42c1;      // Roxo
 - [ ] usePDV hook
 - [ ] Atalhos de teclado (F2, F3, F9)
 - [ ] Impressão de cupom
+
+### Estoque 🔴 PENDENTE
+- [ ] EstoquePage (lista de produtos)
+- [ ] MovimentacoesPage (entradas/saídas)
+- [ ] AjusteInventarioPage (correções)
+- [ ] HistoricoMovimentacoesPage
+- [ ] ProdutoEstoqueCard component
+- [ ] ModalEntrada component
+- [ ] ModalSaida component
+- [ ] ModalAjuste component
+- [ ] FiltrosEstoque component
+- [ ] AlertasEstoque component
+- [ ] useEstoque hook
 
 ---
 
