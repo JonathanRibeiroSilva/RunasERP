@@ -247,8 +247,8 @@ GET /admin/pagamento/status
 # 2. Criar configuração
 POST /admin/pagamento/configuracao
 {
-  "mercadopago_access_token": "APP_USR-1234567890abcdef...",
-  "mercadopago_public_key": "APP_USR-abcdef1234567890...",
+  "mercadopago_access_token": "<sua-chave-sandbox-aqui>",
+  "mercadopago_public_key": "<sua-public-key-aqui>",
   "ativo": true
 }
 
