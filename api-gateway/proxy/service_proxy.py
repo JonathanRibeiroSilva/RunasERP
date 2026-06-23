@@ -24,6 +24,7 @@ class ServiceProxy:
         "/variantes": settings.PRODUTOS_URL,
         "/fornecedores": settings.PRODUTOS_URL,
         "/catalogo": settings.PRODUTOS_URL,
+        "/loja-online": settings.PRODUTOS_URL,
         "/estoque": settings.ESTOQUE_URL,
         "/loja": settings.VENDAS_URL,
         "/carrinho": settings.VENDAS_URL,

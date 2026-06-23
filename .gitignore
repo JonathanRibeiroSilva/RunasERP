@@ -76,9 +76,12 @@ celerybeat.pid
 # Redis
 dump.rdb
 
-# Documentação
+# Documentação de Desenvolvimento (não versionar)
 REORGANIZACAO-COMPLETA.md
 CHECKLIST_DESENVOLVIMENTO.md
+FRONTEND_IMPLEMENTACAO.md
+GUIA_MASCARAS_VALIDACOES.md
+docs/02-desenvolvimento/
 
 # Dev Scripts (Windows batch files for local development)
 dev-scripts/
