@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  graphify:
+    build: .
+    container_name: runasepr-graphify
+    volumes:
+      - ../../:/project:ro
+      - ./output:/app/output
+    environment:
+      - PROJECT_ROOT=/project
+    command: --all

@@ -29,12 +29,17 @@ def main():
     
     try:
         from tools.graphify.architecture_visualizer import ArchitectureVisualizer
+        from tools.graphify.html_generator import HTMLGenerator
         
         if args.all or args.architecture:
             print("📊 Gerando visualização de arquitetura...")
             arch_viz = ArchitectureVisualizer(str(project_root))
             services = arch_viz.scan_services()
             print(f"   ✅ {len(services)} serviços encontrados")
+            
+            html_gen = HTMLGenerator()
+            output_file = html_gen.generate_architecture_html(services)
+            print(f"   ✅ HTML gerado: {output_file}")
         
         if args.all or args.models:
             print("🗺️  Gerando visualização de models...")
@@ -44,7 +49,7 @@ def main():
             print("🔗 Gerando visualização de dependências...")
             print("   ⚠️  Em desenvolvimento")
         
-        print("\n✅ Análise concluída!")
+        print("\n✅ Análise concluída! Abra output/graph.html no navegador.")
         
     except Exception as e:
         print(f"❌ Erro: {e}")
