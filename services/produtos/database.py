@@ -11,7 +11,8 @@ engine = create_async_engine(
     echo=False,
     pool_size=10,
     max_overflow=20,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    connect_args={"server_settings": {"search_path": "produtos,public"}}
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -31,10 +32,12 @@ class Base(DeclarativeBase):
 async def get_db() -> AsyncSession:
     """Dependency para obter sessão do banco de dados."""
     async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+        async with session.begin():
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
 
 
 async def init_db():

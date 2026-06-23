@@ -3,6 +3,10 @@
 
 .dashboard-page {
   @include fade-in;
+  min-height: 100%;
+  position: relative;
+  z-index: 1;
+  background: $background;
 }
 
 .dashboard-header {

@@ -11,7 +11,10 @@ from config import settings
 from models import *
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Convert async URL to sync URL for Alembic (Alembic doesn't support async drivers)
+url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+url = url.replace("%", "%%")  # Escape % for configparser
+config.set_main_option("sqlalchemy.url", url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -27,6 +30,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table_schema="clientes",
+        include_schemas=False,
     )
 
     with context.begin_transaction():
@@ -43,7 +48,10 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            version_table_schema="clientes",
+            include_schemas=False,
         )
 
         with context.begin_transaction():

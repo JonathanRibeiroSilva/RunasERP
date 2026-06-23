@@ -5,6 +5,7 @@ export interface User {
   email: string;
   nome: string;
   role: UserRole;
+  empresa_id: number;
   ativo: boolean;
   criado_em: string;
 }
@@ -40,4 +41,10 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   setAuthUser: (user: User) => void;
   hasRole: (role: UserRole) => boolean;
+}
+
+export interface ApiError {
+  message: string;
+  status?: number;
+  detail?: string;
 }

@@ -24,15 +24,15 @@ try:
     from models.categoria import Categoria
     from models.produto import Produto
     from models.variante import Variante, AtributoVariante
-    from models.catalogo import CatalogoConfig, CatalogoFoto
+    from models.loja_online import LojaOnlineConfig, LojaOnlineFoto
     from models.fornecedor import Fornecedor, FornecedorProduto
     print("✓ Todos os modelos importados com sucesso")
     print("  - Categoria")
     print("  - Produto")
     print("  - Variante")
     print("  - AtributoVariante")
-    print("  - CatalogoConfig")
-    print("  - CatalogoFoto")
+    print("  - LojaOnlineConfig")
+    print("  - LojaOnlineFoto")
     print("  - Fornecedor")
     print("  - FornecedorProduto")
 except Exception as e:
@@ -46,8 +46,8 @@ try:
         CategoriaCreate, CategoriaRead, CategoriaUpdate,
         ProdutoCreate, ProdutoRead, ProdutoUpdate,
         VarianteCreate, VarianteRead, VarianteUpdate,
-        CatalogoConfigCreate, CatalogoConfigRead,
-        CatalogoFotoCreate, CatalogoFotoRead,
+        LojaOnlineConfigCreate, LojaOnlineConfigRead,
+        LojaOnlineFotoCreate, LojaOnlineFotoRead,
         FornecedorCreate, FornecedorRead, FornecedorUpdate,
         FornecedorProdutoCreate, FornecedorProdutoRead,
     )
@@ -65,8 +65,8 @@ try:
         ProdutoRepository,
         VarianteRepository,
         AtributoVarianteRepository,
-        CatalogoConfigRepository,
-        CatalogoFotoRepository,
+        LojaOnlineConfigRepository,
+        LojaOnlineFotoRepository,
         FornecedorRepository,
         FornecedorProdutoRepository,
     )
@@ -83,7 +83,7 @@ try:
         CategoriaService,
         ProdutoService,
         VarianteService,
-        CatalogoService,
+        LojaOnlineService,
         FornecedorService,
         FornecedorProdutoService,
     )
@@ -100,7 +100,7 @@ try:
         router_categorias,
         router_produtos,
         router_variantes,
-        router_catalogo,
+        router_loja_online,
         router_fornecedores,
         router_fornecedor_produtos,
     )
@@ -108,7 +108,7 @@ try:
     print("  - router_categorias")
     print("  - router_produtos")
     print("  - router_variantes")
-    print("  - router_catalogo")
+    print("  - router_loja_online")
     print("  - router_fornecedores")
     print("  - router_fornecedor_produtos")
 except Exception as e:

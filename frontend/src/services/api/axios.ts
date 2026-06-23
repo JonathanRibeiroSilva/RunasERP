@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { env } from '@/config/env';
 import { tokenService } from '@/services/auth/tokenService';
-import type { ApiError, RefreshTokenResponse } from '@/types/auth';
+import type { ApiError } from '@/types/auth';
 
 // Criar instância do Axios
 export const api = axios.create({
@@ -9,36 +9,21 @@ export const api = axios.create({
   timeout: env.apiTimeout,
   headers: {
     'Content-Type': 'application/json',
+    // Necessário para bypassar o aviso de browser do ngrok em ambiente de dev
+    'ngrok-skip-browser-warning': 'true',
   },
   withCredentials: true, // Importante: envia cookies em requisições cross-origin
 });
 
-// Flag para evitar múltiplas tentativas de refresh
-// DEPRECATED: Com cookies HTTP-only, não é mais necessário
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-const processQueue = (error: Error | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve();
-    }
-  });
-
-  failedQueue = [];
-};
-
 // Interceptor de Request - Cookies são enviados automaticamente
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Não precisa mais adicionar token manualmente
-    // Os cookies HTTP-only são enviados automaticamente pelo navegador
+    // Cookies HTTP-only são enviados automaticamente pelo navegador
     // devido ao withCredentials: true
+    // 
+    // O header X-Empresa-Id é adicionado pelo API Gateway
+    // a partir do token JWT do usuário autenticado
+    
     return config;
   },
   (error: AxiosError) => {

@@ -1,0 +1,1061 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+
+.checkout-page {
+  min-height: 100vh;
+  background: $background;
+  display: flex;
+  flex-direction: column;
+}
+
+// Header
+.checkout-header {
+  background: $surface;
+  border-bottom: 1px solid $border-default;
+  padding: $spacer-4;
+  
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-3 $spacer-2;
+  }
+
+  h1 {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin: $spacer-3 0 0 0;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      font-size: $font-size-xl;
+    }
+  }
+}
+
+.btn-voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacer-2;
+  padding: $spacer-2 $spacer-3;
+  border: 1px solid $border-default;
+  border-radius: $border-radius;
+  background: transparent;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: $transition-base;
+
+  &:hover {
+    background: $surface-hover;
+    color: $text-primary;
+    border-color: $border-hover;
+  }
+
+  svg {
+    font-size: 18px;
+  }
+}
+
+// Steps Indicator
+.steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacer-5;
+  background: $surface;
+  
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-4 $spacer-2;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacer-2;
+    opacity: 0.4;
+    transition: $transition-base;
+
+    &.active {
+      opacity: 1;
+    }
+
+    &.completed {
+      opacity: 1;
+
+      .step-icon {
+        background: $success;
+        border-color: $success;
+      }
+    }
+
+    .step-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid $border-default;
+      background: $background;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $text-secondary;
+      font-size: 20px;
+      transition: $transition-base;
+    }
+
+    &.active .step-icon {
+      border-color: $primary;
+      background: $primary-light;
+      color: $primary;
+    }
+
+    span {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+      color: $text-secondary;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        font-size: $font-size-xs;
+      }
+    }
+
+    &.active span {
+      color: $text-primary;
+    }
+  }
+
+  .step-line {
+    flex: 1;
+    height: 2px;
+    background: $border-default;
+    margin: 0 $spacer-3 $spacer-6 $spacer-3;
+    min-width: 40px;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      min-width: 20px;
+      margin: 0 $spacer-2 $spacer-6 $spacer-2;
+    }
+  }
+}
+
+// Erro
+.erro-mensagem {
+  margin: $spacer-4 auto;
+  max-width: 800px;
+  padding: $spacer-3;
+  background: $danger-light;
+  border: 1px solid $danger;
+  border-radius: $border-radius;
+  color: $danger-dark;
+  font-size: $font-size-sm;
+  display: flex;
+  align-items: center;
+  gap: $spacer-2;
+
+  svg {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    margin: $spacer-3 $spacer-2;
+  }
+}
+
+// Container
+.checkout-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: $spacer-5;
+  padding: $spacer-5;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  align-items: start;
+
+  @media (max-width: #{$breakpoint-lg - 1px}) {
+    grid-template-columns: 1fr 350px;
+    gap: $spacer-4;
+    padding: $spacer-4;
+  }
+
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    grid-template-columns: 1fr;
+    padding: $spacer-4 $spacer-3;
+    gap: $spacer-4;
+  }
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-3 $spacer-2;
+    gap: $spacer-3;
+  }
+}
+
+// Formulário
+.checkout-form {
+  .form-section {
+    background: $surface;
+    border: 1px solid $border-default;
+    border-radius: $border-radius;
+    padding: $spacer-5;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      padding: $spacer-4 $spacer-3;
+    }
+
+    h2 {
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      margin: 0 0 $spacer-2 0;
+    }
+
+    h3 {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+      margin: $spacer-5 0 $spacer-3 0;
+    }
+
+    .section-description {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin: 0 0 $spacer-4 0;
+    }
+  }
+
+  .form-group {
+    margin-bottom: $spacer-4;
+
+    label {
+      display: block;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+      margin-bottom: $spacer-2;
+    }
+
+    input {
+      width: 100%;
+      padding: $spacer-3;
+      border: 1px solid $border-default;
+      border-radius: $border-radius;
+      background: $background;
+      color: $text-primary;
+      font-size: $font-size-base;
+      transition: $transition-base;
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        background: $surface;
+      }
+
+      &::placeholder {
+        color: $text-tertiary;
+      }
+    }
+
+    small {
+      display: block;
+      margin-top: $spacer-1;
+      font-size: $font-size-xs;
+      color: $text-tertiary;
+
+      &.troco-info {
+        color: $success;
+        font-weight: $font-weight-semibold;
+      }
+    }
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacer-3;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      grid-template-columns: 1fr;
+      gap: $spacer-2;
+    }
+
+    .form-group-small {
+      @media (min-width: $breakpoint-sm) {
+        max-width: 120px;
+      }
+      
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        max-width: none;
+      }
+    }
+  }
+
+  .input-with-button {
+    position: relative;
+
+    .loading-cep {
+      position: absolute;
+      right: $spacer-3;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: $font-size-xs;
+      color: $text-tertiary;
+    }
+  }
+
+  // Opções de Entrega
+  .entrega-opcoes {
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-3;
+    margin-bottom: $spacer-4;
+  }
+
+  .entrega-opcao {
+    display: flex;
+    align-items: center;
+    gap: $spacer-3;
+    padding: $spacer-3;
+    border: 2px solid $border-default;
+    border-radius: $border-radius;
+    cursor: pointer;
+    transition: $transition-base;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      padding: $spacer-2;
+      gap: $spacer-2;
+      flex-wrap: wrap;
+    }
+
+    &:hover {
+      border-color: $border-hover;
+      background: $surface-hover;
+    }
+
+    &.selected {
+      border-color: $primary;
+      background: $primary-light;
+    }
+
+    input[type="radio"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .opcao-content {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: $spacer-1;
+      }
+
+      strong {
+        font-size: $font-size-base;
+        color: $text-primary;
+      }
+
+      .opcao-preco {
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: $success;
+      }
+    }
+  }
+
+  // Opções de Pagamento
+  .pagamento-opcoes {
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-3;
+    margin-bottom: $spacer-4;
+  }
+
+  .pagamento-opcao {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacer-3;
+    padding: $spacer-3;
+    border: 2px solid $border-default;
+    border-radius: $border-radius;
+    cursor: pointer;
+    transition: $transition-base;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      padding: $spacer-2;
+      gap: $spacer-2;
+    }
+
+    &:hover {
+      border-color: $border-hover;
+      background: $surface-hover;
+    }
+
+    &.selected {
+      border-color: $primary;
+      background: $primary-light;
+    }
+
+    input[type="radio"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .opcao-content {
+      flex: 1;
+
+      strong {
+        display: block;
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+        margin-bottom: $spacer-1;
+
+        @media (max-width: #{$breakpoint-sm - 1px}) {
+          font-size: $font-size-sm;
+        }
+      }
+
+      span {
+        font-size: $font-size-sm;
+        color: $text-secondary;
+
+        @media (max-width: #{$breakpoint-sm - 1px}) {
+          font-size: $font-size-xs;
+        }
+      }
+    }
+  }
+
+  // Botões
+  .btn-proximo,
+  .btn-finalizar {
+    width: 100%;
+    padding: $spacer-3;
+    background: $primary;
+    color: white;
+    border: none;
+    border-radius: $border-radius;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: $transition-base;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacer-2;
+    margin-top: $spacer-4;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      padding: $spacer-2 $spacer-3;
+      font-size: $font-size-sm;
+    }
+
+    &:hover:not(:disabled) {
+      background: $primary-dark;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    svg {
+      font-size: 18px;
+    }
+  }
+
+  .btn-finalizar {
+    background: $success;
+
+    &:hover:not(:disabled) {
+      background: darken($success, 8%);
+    }
+  }
+
+  .form-buttons {
+    display: flex;
+    gap: $spacer-3;
+    margin-top: $spacer-4;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      flex-direction: column-reverse;
+      gap: $spacer-2;
+    }
+
+    .btn-voltar-step {
+      flex: 1;
+      padding: $spacer-3;
+      background: transparent;
+      color: $text-secondary;
+      border: 1px solid $border-default;
+      border-radius: $border-radius;
+      font-size: $font-size-base;
+      font-weight: $font-weight-medium;
+      cursor: pointer;
+      transition: $transition-base;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacer-2;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        padding: $spacer-2 $spacer-3;
+        font-size: $font-size-sm;
+      }
+
+      &:hover {
+        background: $surface-hover;
+        color: $text-primary;
+        border-color: $border-hover;
+      }
+
+      svg {
+        font-size: 18px;
+      }
+    }
+
+    .btn-proximo {
+      flex: 2;
+      margin-top: 0;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        flex: 1;
+      }
+    }
+  }
+}
+
+// Resumo
+.checkout-resumo {
+  background: $surface;
+  border: 1px solid $border-default;
+  border-radius: $border-radius;
+  padding: $spacer-4;
+
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    order: -1; // Mostrar antes do form no mobile
+  }
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-3;
+  }
+
+  h3 {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin: 0 0 $spacer-4 0;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      font-size: $font-size-base;
+      margin: 0 0 $spacer-3 0;
+    }
+  }
+
+  .resumo-itens {
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-2;
+    margin-bottom: $spacer-4;
+    padding-bottom: $spacer-4;
+    border-bottom: 1px solid $border-default;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      gap: $spacer-1;
+      margin-bottom: $spacer-3;
+      padding-bottom: $spacer-3;
+    }
+  }
+
+  .resumo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: $font-size-sm;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      font-size: $font-size-xs;
+    }
+
+    .item-nome {
+      color: $text-secondary;
+      flex: 1;
+      margin-right: $spacer-2;
+    }
+
+    .item-preco {
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+  }
+
+  .resumo-totais {
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-3;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      gap: $spacer-2;
+    }
+  }
+
+  .total-linha {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      font-size: $font-size-xs;
+    }
+
+    span:last-child {
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+
+    &.total-final {
+      padding-top: $spacer-3;
+      border-top: 2px solid $border-default;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-bold;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        padding-top: $spacer-2;
+        font-size: $font-size-base;
+      }
+
+      span {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-bold;
+        color: $text-primary;
+
+        @media (max-width: #{$breakpoint-sm - 1px}) {
+          font-size: $font-size-base;
+        }
+      }
+
+      span:last-child {
+        font-size: $font-size-2xl;
+        color: $primary;
+
+        @media (max-width: #{$breakpoint-sm - 1px}) {
+          font-size: $font-size-xl;
+        }
+      }
+    }
+  }
+}
+
+// Carrinho Vazio
+.checkout-vazio {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: $spacer-6;
+  max-width: 400px;
+  margin: 0 auto;
+
+  .vazio-icon {
+    font-size: 80px;
+    margin-bottom: $spacer-4;
+  }
+
+  h2 {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin-bottom: $spacer-2;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: $font-size-base;
+    margin-bottom: $spacer-5;
+  }
+
+  button {
+    padding: $spacer-3 $spacer-5;
+    background: $primary;
+    color: white;
+    border: none;
+    border-radius: $border-radius;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: $transition-base;
+
+    &:hover {
+      background: $primary-dark;
+    }
+  }
+}
+
+// Footer
+.loja-online-footer {
+  margin-top: auto;
+  padding: $spacer-4;
+  text-align: center;
+  border-top: 1px solid $border-default;
+  background: $surface;
+
+  p {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+
+    strong {
+      color: $primary;
+      font-weight: $font-weight-semibold;
+    }
+  }
+}
+
+
+// ==================== MODO CHECKOUT SELEÇÃO ====================
+.modo-checkout-selecao {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: $spacer-6;
+  max-width: 900px;
+  margin: $spacer-7 auto;
+  padding: $spacer-4;
+
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    grid-template-columns: 1fr;
+    gap: $spacer-4;
+  }
+
+  .modo-card {
+    background: $surface;
+    border: 2px solid $border-default;
+    border-radius: $border-radius-lg;
+    padding: $spacer-6;
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-4;
+    transition: $transition-base;
+
+    &:hover {
+      border-color: $primary;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .modo-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: $spacer-3;
+      text-align: center;
+
+      svg {
+        color: $primary;
+      }
+
+      h2 {
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: $text-primary;
+        margin: 0;
+      }
+    }
+
+    > p {
+      text-align: center;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin: 0;
+    }
+
+    .beneficios {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: $spacer-2;
+
+      li {
+        display: flex;
+        align-items: center;
+        gap: $spacer-2;
+        color: $text-secondary;
+        font-size: $font-size-sm;
+
+        svg {
+          color: $success;
+          flex-shrink: 0;
+        }
+      }
+    }
+
+    button {
+      margin-top: auto;
+    }
+  }
+
+  .modo-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      display: none;
+    }
+
+    span {
+      background: $surface;
+      padding: $spacer-2 $spacer-3;
+      border: 1px solid $border-default;
+      border-radius: 9999px;
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+    }
+  }
+}
+
+// ==================== LOGIN CHECKOUT ====================
+.login-checkout {
+  max-width: 450px;
+  margin: $spacer-7 auto;
+  padding: $spacer-4;
+
+  .login-card {
+    background: $surface;
+    border: 1px solid $border-default;
+    border-radius: $border-radius-lg;
+    padding: $spacer-6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: $spacer-2;
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      margin: 0 0 $spacer-2 0;
+
+      svg {
+        color: $primary;
+      }
+    }
+
+    > p {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin: 0 0 $spacer-6 0;
+    }
+
+    .form-group {
+      margin-bottom: $spacer-4;
+
+      label {
+        display: block;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        color: $text-primary;
+        margin-bottom: $spacer-2;
+      }
+
+      input {
+        width: 100%;
+        padding: $spacer-3;
+        border: 1px solid $border-default;
+        border-radius: $border-radius;
+        font-size: $font-size-base;
+        transition: $transition-base;
+
+        &:focus {
+          outline: none;
+          border-color: $primary;
+          box-shadow: 0 0 0 3px rgba($primary, 0.1);
+        }
+
+        &:disabled {
+          background: $background;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+      }
+    }
+
+    .login-actions {
+      display: flex;
+      flex-direction: column;
+      gap: $spacer-3;
+      margin-top: $spacer-6;
+
+      .btn-primary {
+        width: 100%;
+      }
+
+      .btn-link {
+        width: 100%;
+        padding: $spacer-2;
+        background: transparent;
+        border: none;
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        cursor: pointer;
+        transition: $transition-base;
+
+        &:hover:not(:disabled) {
+          color: $text-primary;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .login-footer {
+      margin-top: $spacer-6;
+      padding-top: $spacer-4;
+      border-top: 1px solid $border-default;
+      text-align: center;
+
+      p {
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        margin: 0;
+      }
+
+      .btn-link-inline {
+        background: none;
+        border: none;
+        color: $primary;
+        font-weight: $font-weight-medium;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 0;
+        
+        &:hover {
+          color: darken($primary, 10%);
+        }
+      }
+    }
+  }
+}
+
+// ==================== CHECKBOX CRIAR CONTA ====================
+.criar-conta-checkbox {
+  margin: $spacer-6 0;
+  padding: $spacer-4;
+  background: lighten($primary, 45%);
+  border: 1px solid lighten($primary, 35%);
+  border-radius: $border-radius;
+
+  .checkbox-label {
+    display: flex;
+    gap: $spacer-3;
+    align-items: flex-start;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      margin-top: 2px;
+      cursor: pointer;
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+    }
+
+    .checkbox-text {
+      display: flex;
+      flex-direction: column;
+      gap: $spacer-1;
+
+      strong {
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+      }
+
+      small {
+        font-size: $font-size-xs;
+        color: $text-secondary;
+        line-height: 1.4;
+      }
+    }
+  }
+}
+
+// ==================== BOTÕES ====================
+.btn-primary {
+  width: 100%;
+  padding: $spacer-3 $spacer-4;
+  background: $primary;
+  color: white;
+  border: none;
+  border-radius: $border-radius;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: $transition-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacer-2;
+
+  &:hover:not(:disabled) {
+    background: darken($primary, 8%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($primary, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: $spacer-3 $spacer-4;
+  background: transparent;
+  color: $primary;
+  border: 2px solid $primary;
+  border-radius: $border-radius;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: $transition-base;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacer-2;
+
+  &:hover:not(:disabled) {
+    background: $primary;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($primary, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}

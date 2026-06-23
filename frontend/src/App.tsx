@@ -3,8 +3,23 @@ import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/Login/LoginPage';
 import RegisterPage from '@/pages/Register/RegisterPage';
 import OAuthCallbackPage from '@/pages/Auth/OAuthCallbackPage';
+import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/Auth/ResetPasswordPage';
 import DashboardPage from '@/pages/Dashboard/DashboardPage';
+import PerfilPage from '@/pages/Perfil/PerfilPage';
+import ClientesPage from '@/pages/Clientes/ClientesPage';
+import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
+import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
+import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
+import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
+import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/LojaOnlinePublico';
+import { CatalogoRedirectPage, PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
+import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
+import { EstoquePage } from '@/pages/Estoque';
+import { VendasPage } from '@/pages/Vendas';
+import { FinanceiroPage } from '@/pages/Financeiro';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
+import RoleProtectedRoute from '@/components/common/RoleProtectedRoute';
 
 // Loading component
 const LoadingScreen = () => (
@@ -33,41 +48,31 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  console.log('[ProtectedRoute] Estado:', { isAuthenticated, isLoading, user });
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    console.log('[ProtectedRoute] Ainda carregando, mostrando LoadingScreen');
     return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {
-    console.log('[ProtectedRoute] Não autenticado, redirecionando para /login');
     return <Navigate to="/login" replace />;
   }
 
-  console.log('[ProtectedRoute] Autenticado, renderizando children');
   return <>{children}</>;
 };
 
 // Public Route Component (redirect if authenticated)
 const PublicRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
-
-  console.log('[PublicRoute] Estado:', { isAuthenticated, isLoading, user });
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    console.log('[PublicRoute] Ainda carregando, mostrando LoadingScreen');
     return <LoadingScreen />;
   }
 
   if (isAuthenticated) {
-    console.log('[PublicRoute] Autenticado, redirecionando para /dashboard');
     return <Navigate to="/dashboard" replace />;
   }
 
-  console.log('[PublicRoute] Não autenticado, renderizando children (página pública)');
   return <>{children}</>;
 };
 
@@ -94,8 +99,27 @@ function App() {
           }
         />
 
+        {/* Loja Online Pública (sem autenticação) */}
+        <Route path="/c/:empresaSlug" element={<LojaOnlinePublicoPage />} />
+        <Route path="/c/:empresaSlug/produto/:produtoId" element={<ProdutoDetalhePage />} />
+        <Route path="/c/:empresaSlug/carrinho" element={<CarrinhoPage />} />
+        <Route path="/c/:empresaSlug/checkout" element={<CheckoutPage />} />
+        <Route path="/c/:empresaSlug/pedido/:numeroPedido" element={<RastreamentoPedidoPage />} />
+        <Route path="/c/:empresaSlug/minha-conta/pedidos" element={<MeusPedidosPage />} />
+
         {/* OAuth Callback Route */}
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+
+        {/* Password Recovery Routes */}
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          }
+        />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Protected Routes */}
         <Route
@@ -108,7 +132,64 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          {/* Outras rotas serão adicionadas aqui */}
+          
+          {/* Rota de Perfil - Todos os usuários */}
+          <Route path="perfil" element={<PerfilPage />} />
+          
+          {/* Rotas de Clientes */}
+          <Route path="clientes" element={<ClientesPage />} />
+          <Route path="clientes/novo" element={<ClienteFormPage />} />
+          <Route path="clientes/:id" element={<ClienteFormPage />} />
+          <Route path="clientes/:id/editar" element={<ClienteFormPage />} />
+          <Route path="clientes/:id/enderecos" element={<ClienteEnderecosPage />} />
+          <Route path="clientes/:id/credito" element={<ClienteCreditoPage />} />
+          
+          {/* Rotas de Loja Online */}
+          <Route path="loja/pedidos" element={<PedidosOnlinePage />} />
+          <Route path="loja/configuracoes" element={<ConfiguracoesLojaPage />} />
+          
+          {/* Rotas de Produtos */}
+          <Route path="produtos" element={<ProdutosPage />} />
+          <Route path="produtos/novo" element={<ProdutoFormPage />} />
+          <Route path="produtos/:id" element={<ProdutoDetalhesPage />} />
+          <Route path="produtos/:id/editar" element={<ProdutoFormPage />} />
+          <Route path="produtos/:id/variantes" element={<ProdutoVariantesPage />} />
+          <Route path="categorias" element={<CategoriasPage />} />
+          
+          {/* Rotas de Estoque */}
+          <Route path="estoque" element={<EstoquePage />} />
+          
+          {/* Rotas de Vendas */}
+          <Route path="vendas" element={<VendasPage />} />
+          
+          {/* Rotas de Financeiro */}
+          <Route path="financeiro" element={<FinanceiroPage />} />
+          
+          {/* Rotas de Configurações - Apenas ADMIN */}
+          <Route 
+            path="configuracoes/empresa" 
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <EmpresaPage />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="configuracoes/usuarios" 
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <UsuariosPage />
+              </RoleProtectedRoute>
+            } 
+          />
+          <Route 
+            path="configuracoes/integracoes" 
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <IntegracoesPage />
+              </RoleProtectedRoute>
+            } 
+          />
         </Route>
 
         {/* 404 */}

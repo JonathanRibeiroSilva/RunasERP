@@ -4,7 +4,7 @@ Modelos de Cliente e Endereco.
 from datetime import datetime, date
 from decimal import Decimal
 from uuid import uuid4
-from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, String, ForeignKey
+from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, String, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
@@ -14,9 +14,24 @@ class Cliente(Base):
     """Modelo de Cliente."""
     
     __tablename__ = "clientes"
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'cpf', name='uq_clientes_empresa_cpf'),
+        Index('ix_clientes_empresa_id_ativo', 'empresa_id', 'ativo'),
+        Index('ix_clientes_empresa_id_nome', 'empresa_id', 'nome'),
+        {"schema": "clientes"}
+    )
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    cpf: Mapped[str] = mapped_column(String(11), unique=True, nullable=False, index=True)
+    
+    # Multi-tenancy
+    empresa_id: Mapped[int] = mapped_column(
+        Integer, 
+        nullable=False, 
+        index=True,
+        comment="ID da empresa (multi-tenancy)"
+    )
+    
+    cpf: Mapped[str] = mapped_column(String(11), nullable=False, index=True)
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
     telefone: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str | None] = mapped_column(String(255))
@@ -43,9 +58,10 @@ class Endereco(Base):
     """Modelo de Endereço."""
     
     __tablename__ = "enderecos"
+    __table_args__ = {"schema": "clientes"}
     
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    cliente_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clientes.id", ondelete="CASCADE"))
+    cliente_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clientes.clientes.id", ondelete="CASCADE"))
     cep: Mapped[str] = mapped_column(String(8), nullable=False)
     logradouro: Mapped[str] = mapped_column(String(255), nullable=False)
     numero: Mapped[str] = mapped_column(String(20), nullable=False)

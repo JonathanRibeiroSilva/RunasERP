@@ -7,9 +7,9 @@ import { env } from '@/config/env';
 import App from './App';
 
 // Styles
+import '@/styles/global.scss'; // Importar ANTES do Bootstrap para permitir sobrescrita
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
-import '@/styles/global.scss';
 
 // Configurar React Query
 const queryClient = new QueryClient({

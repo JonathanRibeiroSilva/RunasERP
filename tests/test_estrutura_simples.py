@@ -85,7 +85,7 @@ models_files = [
     (models_dir / "categoria.py", "Categoria"),
     (models_dir / "produto.py", "Produto"),
     (models_dir / "variante.py", "Variante + AtributoVariante"),
-    (models_dir / "catalogo.py", "CatalogoConfig + CatalogoFoto"),
+    (models_dir / "loja_online.py", "LojaOnlineConfig + LojaOnlineFoto"),
     (models_dir / "fornecedor.py", "Fornecedor + FornecedorProduto"),
 ]
 

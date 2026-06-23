@@ -8,6 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from database import init_db
+from routers import vendas_router
+from routers.loja import router as loja_router
+from routers.webhook import router as webhook_router
+from routers.admin_entrega import router as admin_entrega_router
+from routers.admin_pagamento import router as admin_pagamento_router
 
 
 structlog.configure(
@@ -46,6 +51,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registrar routers
+app.include_router(vendas_router)
+app.include_router(loja_router)  # Loja Online (E-commerce)
+app.include_router(webhook_router)  # Webhooks (Mercado Pago)
+app.include_router(admin_entrega_router)  # Admin - Configuração de Entrega
+app.include_router(admin_pagamento_router)  # Admin - Configuração de Pagamento
 
 
 @app.get("/health")

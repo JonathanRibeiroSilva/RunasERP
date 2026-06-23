@@ -7,14 +7,7 @@ volumes:
   pgadmin_data:
   rabbitmq_data:
   redis_data:
-  db_gateway_data:
-  db_clientes_data:
-  db_produtos_data:
-  db_estoque_data:
-  db_vendas_data:
-  db_financeiro_data:
-  db_notificacoes_data:
-  db_evolution_data:
+  db_data:
 
 services:
   # ============================================
@@ -57,144 +50,28 @@ services:
     command: redis-server --appendonly yes
 
   # ============================================
-  # DATABASES
+  # DATABASE (Único container com schemas separados)
   # ============================================
 
-  db-gateway:
+  db:
     image: postgres:15-alpine
-    container_name: erp-db-gateway
+    container_name: erp-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-erp}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: gateway
+      POSTGRES_DB: ${POSTGRES_DB:-erp}
     volumes:
-      - db_gateway_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
+      - ./postgres/init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql:ro
     networks:
       - erp-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d gateway"]
+      test: ["CMD-SHELL", "pg_isready -U erp -d erp"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  db-clientes:
-    image: postgres:15-alpine
-    container_name: erp-db-clientes
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: clientes
-    volumes:
-      - db_clientes_data:/var/lib/postgresql/data
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d clientes"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  db-produtos:
-    image: postgres:15-alpine
-    container_name: erp-db-produtos
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: produtos
-    volumes:
-      - db_produtos_data:/var/lib/postgresql/data
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d produtos"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  db-estoque:
-    image: postgres:15-alpine
-    container_name: erp-db-estoque
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: estoque
-    volumes:
-      - db_estoque_data:/var/lib/postgresql/data
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d estoque"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  db-vendas:
-    image: postgres:15-alpine
-    container_name: erp-db-vendas
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: vendas
-    volumes:
-      - db_vendas_data:/var/lib/postgresql/data
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d vendas"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  db-financeiro:
-    image: postgres:15-alpine
-    container_name: erp-db-financeiro
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: financeiro
-    volumes:
-      - db_financeiro_data:/var/lib/postgresql/data
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d financeiro"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  db-notificacoes:
-    image: postgres:15-alpine
-    container_name: erp-db-notificacoes
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: notificacoes
-    volumes:
-      - db_notificacoes_data:/var/lib/postgresql/data
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d notificacoes"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  db-evolution:
-    image: postgres:15-alpine
-    container_name: erp-db-evolution
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-erp}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
-      POSTGRES_DB: evolution
-    volumes:
-      - db_evolution_data:/var/lib/postgresql/data
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp -d evolution"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    ports:
+      - "5432:5432"
 
   # ============================================
   # PGADMIN
@@ -216,13 +93,7 @@ services:
       - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
       - ./pgadmin/pgpass:/tmp/pgpass:ro
     depends_on:
-      - db-gateway
-      - db-clientes
-      - db-produtos
-      - db-estoque
-      - db-vendas
-      - db-financeiro
-      - db-notificacoes
+      - db
     networks:
       - erp-network
     entrypoint: >
@@ -243,13 +114,14 @@ services:
     container_name: erp-evolution-api
     environment:
       DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://erp:erp@db-evolution:5432/evolution
+      DATABASE_CONNECTION_URI: postgresql://erp:erp@db:5432/erp?schema=evolution
       DATABASE_CONNECTION_CLIENT_NAME: evolution_api
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-change-me}
     ports:
       - "8080:8080"
     depends_on:
-      - db-evolution
+      db:
+        condition: service_healthy
     networks:
       - erp-network
     healthcheck:
@@ -323,6 +195,7 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      EMPRESAS_URL: ${EMPRESAS_URL:-http://empresas:8007}
       CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
       PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
       ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
@@ -332,8 +205,19 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@runas.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
       ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Runas ERP}
+      FRONTEND_URL: ${FRONTEND_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
     depends_on:
-      db-gateway:
+      db:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -344,6 +228,33 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  empresas:
+    build:
+      context: ./services/empresas
+      dockerfile: Dockerfile
+    container_name: erp-empresas
+    ports:
+      - "8007:8007"
+    environment:
+      DATABASE_URL: ${DATABASE_URL_EMPRESAS}
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
   clientes:
     build:
@@ -357,7 +268,7 @@ services:
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
-      db-clientes:
+      db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -384,7 +295,7 @@ services:
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
-      db-produtos:
+      db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -411,7 +322,7 @@ services:
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
-      db-estoque:
+      db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -437,8 +348,29 @@ services:
       DATABASE_URL: ${DATABASE_URL_VENDAS}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
+      PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
+      ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
+      VENDAS_URL: ${VENDAS_URL:-http://vendas:8004}
+      FINANCEIRO_URL: ${FINANCEIRO_URL:-http://financeiro:8005}
+      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://api-gateway:8000}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Runas ERP}
+      API_BASE_URL: ${API_BASE_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      MP_ENVIRONMENT: ${MP_ENVIRONMENT:-sandbox}
+      EVOLUTION_API_URL: ${EVOLUTION_URL}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE}
     depends_on:
-      db-vendas:
+      db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -465,7 +397,7 @@ services:
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
-      db-financeiro:
+      db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -495,7 +427,7 @@ services:
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
       EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-runas}
     depends_on:
-      db-notificacoes:
+      db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -527,7 +459,7 @@ services:
     networks:
       - erp-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
