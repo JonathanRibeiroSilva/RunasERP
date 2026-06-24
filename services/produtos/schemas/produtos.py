@@ -286,7 +286,6 @@ class ProdutoReadSimples(ProdutoBase):
 class VarianteLojaOnlineRead(BaseModel):
     """Schema de variante para a loja online pública (sem dados internos)."""
     id: UUID
-    sku: str
     preco_venda: Decimal
     ativo: bool
     atributos: list[AtributoVarianteBase] = Field(default_factory=list)

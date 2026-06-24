@@ -13,7 +13,7 @@ import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
 import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
 import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/LojaOnlinePublico';
-import { CatalogoRedirectPage, PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
+import { PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
 import { EstoquePage } from '@/pages/Estoque';
 import { VendasPage } from '@/pages/Vendas';

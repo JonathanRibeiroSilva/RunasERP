@@ -145,11 +145,6 @@ const CarrinhoPage = () => {
 
                     <div className="item-info">
                       <h4 className="item-nome">{item.descricao_produto}</h4>
-                      <div className="item-detalhes">
-                        {item.codigo_produto && (
-                          <span className="item-sku">SKU: {item.codigo_produto}</span>
-                        )}
-                      </div>
                       <div className="item-preco-unitario">
                         {formatarPreco(item.preco_unitario)} / unidade
                       </div>

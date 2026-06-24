@@ -204,7 +204,6 @@ const ProdutoDetalhePage = () => {
                     className={`variante-item ${varianteSelecionada?.id === variante.id ? 'selecionada' : ''}`}
                     onClick={() => setVarianteSelecionada(variante)}
                   >
-                    <div className="variante-sku">SKU: {variante.sku}</div>
                     <div className="variante-preco">{formatarPreco(variante.preco_venda)}</div>
                     {variante.atributos?.length > 0 && (
                       <div className="variante-atributos">
