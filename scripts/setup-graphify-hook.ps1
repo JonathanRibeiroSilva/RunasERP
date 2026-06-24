@@ -16,19 +16,24 @@ $HookDisabledPath = "$HookPath.disabled"
 
 $HookTemplate = @"
 #!/bin/sh
-code_changed=`$(git diff-tree --no-commit-id --name-only -r HEAD | grep -E '\.(py|ts|tsx|js|jsx|vue)`$')
-
-if [ -n "`$code_changed" ]; then
-    echo "🔄 Atualizando Graphify..."
-    if ! command -v graphify &> /dev/null; then
-        echo "⚠️  Graphify não encontrado"
-        exit 0
-    fi
-    graphify update > /dev/null 2>&1
-    if [ `$? -eq 0 ]; then
-        echo "✅ Graphify atualizado"
-    fi
-fi
+# Windows Git Hook - Chama PowerShell para executar a lógica
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& {
+    `$files = git diff-tree --no-commit-id --name-only -r HEAD
+    `$codeChanged = `$files | Select-String -Pattern '\.(py|ts|tsx|js|jsx|vue)$'
+    
+    if (`$codeChanged) {
+        Write-Host '🔄 Atualizando Graphify...' -ForegroundColor Yellow
+        
+        if (Get-Command graphify -ErrorAction SilentlyContinue) {
+            graphify update > `$null 2>&1
+            if (`$LASTEXITCODE -eq 0) {
+                Write-Host '✅ Graphify atualizado' -ForegroundColor Green
+            }
+        } else {
+            Write-Host '⚠️  Graphify não encontrado' -ForegroundColor Yellow
+        }
+    }
+}"
 exit 0
 "@
 
