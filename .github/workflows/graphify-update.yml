@@ -63,7 +63,13 @@ jobs:
         if: steps.check-changes.outputs.has_changes == 'true'
         run: |
           echo "🔄 Atualizando grafo de conhecimento..."
+          
+          # Remove cache antigo que pode ter caminhos Windows
+          rm -rf graphify-out/.graphify_root graphify-out/.graphify_uncached.txt 2>/dev/null || true
+          
+          # Roda graphify update
           graphify update
+          
           echo "✅ Graphify atualizado com sucesso"
       
       - name: 📊 Verificar alterações no grafo
