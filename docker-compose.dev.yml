@@ -211,7 +211,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-delay 2
 
   clientes:
     build:
@@ -242,7 +242,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload --reload-delay 2
 
   produtos:
     build:
@@ -273,7 +273,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload --reload-delay 2
 
   estoque:
     build:
@@ -304,7 +304,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8003 --reload --reload-delay 2
 
   vendas:
     build:
@@ -345,7 +345,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8004 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8004 --reload --reload-delay 2
 
   financeiro:
     build:
@@ -376,7 +376,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8005 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8005 --reload --reload-delay 2
 
   notificacoes:
     build:
@@ -410,7 +410,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8006 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8006 --reload --reload-delay 2
 
   empresas:
     build:
@@ -441,7 +441,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8007 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8007 --reload --reload-delay 2
 
   # ============================================
   # FRONTEND
