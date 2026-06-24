@@ -865,6 +865,86 @@
       margin: 0 0 $spacer-6 0;
     }
 
+    // Social Login Buttons
+    .social-login-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: $spacer-3;
+      margin-bottom: $spacer-5;
+
+      button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: $spacer-3;
+        padding: $spacer-3;
+        border: 1px solid $border-default;
+        border-radius: $border-radius;
+        background: white;
+        color: $text-primary;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        cursor: pointer;
+        transition: $transition-base;
+
+        &:hover:not(:disabled) {
+          background: $surface-hover;
+          border-color: $border-hover;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        svg {
+          flex-shrink: 0;
+        }
+      }
+
+      .btn-google {
+        &:hover:not(:disabled) {
+          border-color: #4285F4;
+        }
+      }
+
+      .btn-microsoft {
+        &:hover:not(:disabled) {
+          border-color: #00a4ef;
+        }
+      }
+    }
+
+    // Divider
+    .divider {
+      position: relative;
+      text-align: center;
+      margin: $spacer-5 0;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: $border-default;
+      }
+
+      span {
+        position: relative;
+        display: inline-block;
+        padding: 0 $spacer-3;
+        background: $surface;
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        z-index: 1;
+      }
+    }
+
     .form-group {
       margin-bottom: $spacer-4;
 

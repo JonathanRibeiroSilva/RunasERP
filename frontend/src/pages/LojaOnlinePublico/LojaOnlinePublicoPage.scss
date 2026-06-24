@@ -269,6 +269,54 @@
       @keyframes spin { to { transform: rotate(360deg); } }
     }
 
+    // Skeleton Loading
+    .skeleton-grid {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 1rem 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .skeleton-card {
+      background: $surface;
+      border: 1px solid $border-default;
+      border-radius: 0.75rem;
+      overflow: hidden;
+
+      .skeleton-image {
+        width: 100%;
+        aspect-ratio: 1;
+        background: linear-gradient(90deg, $background 25%, rgba($primary, 0.05) 50%, $background 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+
+      .skeleton-content {
+        padding: 1rem;
+
+        .skeleton-line {
+          height: 1rem;
+          background: linear-gradient(90deg, $background 25%, rgba($primary, 0.05) 50%, $background 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+          border-radius: 0.25rem;
+          margin-bottom: 0.75rem;
+
+          &.title { width: 80%; height: 1.25rem; }
+          &.subtitle { width: 60%; }
+          &.price { width: 40%; height: 1.5rem; margin-top: 1rem; }
+        }
+      }
+
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+    }
+
     // Empty
     .empty-state {
       flex: 1;
