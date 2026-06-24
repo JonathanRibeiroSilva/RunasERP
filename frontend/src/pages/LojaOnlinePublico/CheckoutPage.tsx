@@ -16,7 +16,7 @@ const apiPublica = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Types
+// Types - Checkout Form Data Structures
 interface ClienteNovo {
   nome: string;
   telefone: string;
