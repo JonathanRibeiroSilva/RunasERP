@@ -1,901 +1,863 @@
-# 🎨 Frontend - Guia de Implementação Completo
+﻿# 🎨 Frontend - Guia de Implementação Completo
 
 > **Última atualização**: 23/06/2026
 > 
-> Guia completo para implementar as telas pendentes do frontend, com foco em **Vendas/PDV** e **Estoque**.
-> **Loja Online**: ✅ 100% Implementada | **Vendas/PDV**: 🔴 0% | **Estoque**: 🔴 0%
+> Documento mestre para guiar a implementação do frontend do ERP Runas.  
+> Este é o arquivo de referência principal para desenvolvimento frontend.
 
 ---
 
-## 📊 Visão Geral
+## 📊 Visão Geral do MVP
 
 ### Status Atual - Junho 2026
-- ✅ **Backend**: APIs completas e testadas (78 endpoints)
-- ✅ **Componentes Responsivos**: Container, Table, Card
-- ✅ **Layout Mobile-First**: Sidebar, Navbar com backdrop
-- ✅ **Loja Online**: **100% implementada** 🎉
-- 🔴 **Vendas/PDV**: 0% implementado
-- 🔴 **Estoque**: 0% implementado
 
-### O Que Precisa Ser Feito
-
-| Módulo | Rotas | Componentes | Status | Prioridade |
-|--------|-------|-------------|--------|------------|
-| **Loja Online** | 6 rotas | 15+ componentes | ✅ **COMPLETO** | - |
-| **Vendas/PDV** | 6 rotas | 12+ componentes | 🔴 Pendente | 🔥 Alta |
-| **Estoque** | 9 rotas | 10+ componentes | 🔴 Pendente | 🔥 Alta |
-
----
-
-## 🛒 LOJA ONLINE - ✅ IMPLEMENTAÇÃO COMPLETA
-
-### 📋 Visão Geral
-
-**Backend Status**: ✅ **100% Completo** (26 endpoints)  
-**Frontend Status**: ✅ **100% IMPLEMENTADO** 🎉
-
-#### Rotas Implementadas ✅
-1. ✅ `/c/:empresaSlug` - Catálogo de produtos
-2. ✅ `/c/:empresaSlug/produto/:id` - Detalhes do produto
-3. ✅ `/c/:empresaSlug/carrinho` - Carrinho de compras
-4. ✅ `/c/:empresaSlug/checkout` - Finalizar compra (3 steps)
-5. ✅ `/c/:empresaSlug/pedido/:numero` - Rastreamento de pedido
-6. ✅ `/c/:empresaSlug/minha-conta/pedidos` - Meus pedidos
-
-#### Funcionalidades Implementadas ✅
-- ✅ Hook `useCarrinho` para gerenciamento de estado
-- ✅ Catálogo com filtros e busca
-- ✅ Adicionar ao carrinho com feedback visual
-- ✅ Gerenciar carrinho (adicionar, remover, atualizar)
-- ✅ Checkout multi-step (dados, entrega, pagamento)
-- ✅ Integração ViaCEP (busca automática de endereço)
-- ✅ Cálculo de frete
-- ✅ Múltiplas formas de pagamento (PIX, Débito, Crédito, Dinheiro, Fiado)
-- ✅ Cálculo automático de troco
-- ✅ Timeline visual de status do pedido
-- ✅ Histórico de compras
-- ✅ Filtro por status de pedidos
-- ✅ Formatação automática (telefone, CPF, CEP)
-- ✅ Validações em tempo real
-- ✅ Estados de UI completos (loading, error, empty, success)
-- ✅ Totalmente responsivo (mobile, tablet, desktop)
-
-#### Documentação Completa ✅
-- ✅ `CHANGELOG_CARRINHO_LOJA.md` - Implementação do carrinho
-- ✅ `CHANGELOG_LOJA_ONLINE_FRONTEND_COMPLETO.md` - Documentação técnica
-- ✅ `RESUMO_SESSAO_LOJA_ONLINE.md` - Resumo da implementação
-
-**Status**: 🟢 **LOJA ONLINE OPERACIONAL E COMPLETA!**
-
----
-
-## 🎯 FASE 1: Catálogo Público da Loja - ✅ COMPLETO
-
-### Rotas Implementadas ✅
-
-#### 1. `/c/:empresaSlug` - Página Principal da Loja ✅
-**Status**: ✅ Implementado
-
-**Funcionalidades**:
-- ✅ Listar produtos visíveis (catalogo_ativo=true)
-- ✅ Filtrar por categoria
-- ✅ Buscar por nome
-- ✅ Ordenar (menor preço, maior preço, nome A-Z, destaques)
-- ✅ Paginação
-- ✅ Grid responsivo (1 col mobile, 2 col tablet, 3-4 col desktop)
-- ✅ Botão compartilhar (copiar link, WhatsApp)
-- ✅ Indicador de carrinho com badge
-
----
-
-#### 2. `/c/:empresaSlug/produto/:produtoId` - Detalhes do Produto ✅
-**Status**: ✅ Implementado
-
-**Funcionalidades**:
-- ✅ Galeria de fotos com zoom (lightbox)
-- ✅ Seletor de variantes (cor, tamanho, etc)
-- ✅ Atualização de preço ao mudar variante
-- ✅ Verificação de estoque em tempo real
-- ✅ Controle de quantidade (+/-)
-- ✅ Adicionar ao carrinho (com feedback visual - 3 estados)
-- ✅ Botão "Ver Carrinho" (quando há itens)
-- ✅ Produtos relacionados (mesma categoria)
-- ✅ Compartilhamento (copiar link, WhatsApp)
-
----
-
-#### 3. `/c/:empresaSlug/carrinho` - Carrinho de Compras ✅
-**Status**: ✅ Implementado
-
-**Funcionalidades**:
-- ✅ Listar itens do carrinho (cookie de sessão)
-- ✅ Atualizar quantidade inline (+/-)
-- ✅ Remover item individual
-- ✅ Limpar carrinho (com confirmação)
-- ✅ Calcular subtotal
-- ✅ Simular frete por CEP (opcional antes do checkout)
-- ✅ Botão "Continuar comprando" volta ao catálogo
-- ✅ Botão "Finalizar compra" vai para checkout
-- ✅ Empty state amigável
-- ✅ Resumo com totais
-
----
-
-#### 4. `/c/:empresaSlug/checkout` - Finalizar Compra ✅
-**Status**: ✅ Implementado
-
-**Step 1: Dados do Cliente** ✅
-- ✅ Nome completo (obrigatório)
-- ✅ Telefone WhatsApp (obrigatório, formatado)
-- ✅ E-mail (opcional)
-- ✅ CPF (opcional, formatado)
-- ✅ Validações em tempo real
-
-**Step 2: Tipo de Entrega** ✅
-- ✅ Retirada no local (grátis)
-- ✅ Delivery com endereço completo
-  - ✅ CEP com busca automática (ViaCEP)
-  - ✅ Preenchimento automático do endereço
-  - ✅ Cálculo de frete
-- ✅ Validação de campos obrigatórios
-
-**Step 3: Forma de Pagamento** ✅
-- ✅ PIX (Mercado Pago)
-- ✅ Cartão de Débito (Mercado Pago)
-- ✅ Cartão de Crédito (Mercado Pago)
-- ✅ Dinheiro (pagamento na entrega/retirada)
-  - ✅ Input de troco com cálculo automático
-- ✅ FIADO (validação backend)
-
-**Resumo Lateral** ✅
-- ✅ Lista de itens
-- ✅ Subtotal
-- ✅ Frete
-- ✅ Total destacado
-- ✅ Sticky no desktop
-
-**Finalização** ✅
-- ✅ Validação de cliente convidado (telefone DDD + 9 dígitos)
-- ✅ Buscar CEP via ViaCEP e preencher endereço
-- ✅ Calcular frete automaticamente (backend)
-- ✅ Validar limite de crédito se FIADO
-- ✅ Pagamento misto (ex: Fiado R$ 50 + PIX R$ 50)
-- ✅ Redirecionar para Mercado Pago se pagamento online
-- ✅ Mostrar mensagem de sucesso com número do pedido
-
----
-
-#### 5. `/c/:empresaSlug/pedido/:numeroPedido` - Rastreamento ✅
-**Status**: ✅ Implementado
-
-**Funcionalidades**:
-- ✅ Timeline visual de mudanças de status
-- ✅ Mostrar data/hora de cada mudança
-- ✅ Observações de cada etapa
-- ✅ Previsão de entrega (se DELIVERY)
-- ✅ Dados de contato da loja
-- ✅ Detalhes do pedido (itens, valores, forma de pagamento)
-- ✅ Histórico completo de alterações
-- ✅ Badge de status colorido
-- ✅ Estados especiais (cancelada, reembolsada)
-
----
-
-#### 6. `/c/:empresaSlug/minha-conta/pedidos` - Meus Pedidos ✅
-**Status**: ✅ Implementado
-
-**Funcionalidades**:
-- ✅ Listar pedidos do cliente (cookie de sessão)
-- ✅ Filtrar por status
-- ✅ Ordenar por data (mais recente primeiro)
-- ✅ Paginação
-- ✅ Link direto para rastreamento
-- ✅ Cards com informações resumidas
-- ✅ Grid responsivo
-- ✅ Empty state (sem pedidos)
-
----
-
-### 🎨 Design System da Loja - ✅ Implementado
-
-#### Cores por Status ✅
-```scss
-PEDIDO:      #6c757d (cinza)
-PENDENTE:    #ffc107 (amarelo)
-CONFIRMADA:  #17a2b8 (ciano)
-SEPARADA:    #fd7e14 (laranja)
-EM_ENTREGA:  #0dcaf0 (azul claro)
-ENTREGUE:    #28a745 (verde)
-FINALIZADA:  #198754 (verde escuro)
-CANCELADA:   #dc3545 (vermelho)
-REEMBOLSADA: #6f42c1 (roxo)
+```
+✅ Backend Completo: 78 endpoints funcionais
+✅ Loja Online: 100% implementada e operacional
+✅ Infraestrutura: Docker, responsividade, OAuth
+🔴 Vendas/PDV: 0% (backend pronto, aguardando frontend)
+🔴 Estoque: 0% (backend pronto, aguardando frontend)
 ```
 
-#### Componentes Compartilhados ✅
-- ✅ Hook `useCarrinho` - Gerenciamento de estado do carrinho
-- ✅ Formatação automática (telefone, CPF, CEP, preço)
-- ✅ Validações (telefone DDD+9, CPF, CEP)
-- ✅ Estados de UI (loading, error, empty, success)
-- ✅ Timeline de status (rastreamento)
-- ✅ Steps indicator (checkout)
-- ✅ Badge de status colorido
+---
+
+## 🎯 Status Detalhado por Módulo
+
+### ✅ MÓDULOS IMPLEMENTADOS (MVP FASE 1)
+
+| Módulo | Rotas | Componentes | Status | Observações |
+|--------|-------|-------------|--------|-------------|
+| **🔐 Autenticação** | 3 | 5 | ✅ 100% | Login, Register, OAuth Google/Microsoft |
+| **📊 Dashboard** | 1 | 8 | ✅ 100% | KPIs principais, gráficos |
+| **👥 Clientes** | 6 | 12 | ✅ 90% | CRUD completo (falta: histórico detalhado) |
+| **📦 Produtos** | 7 | 15 | ✅ 100% | CRUD + Categorias + Variantes |
+| **🛒 Loja Online** | 6 | 18 | ✅ 100% | Catálogo → Carrinho → Checkout → Rastreamento |
+
+**Total Implementado**: 23 rotas | 58 componentes | ~15.000 linhas de código
+
+### 🔴 MÓDULOS PENDENTES (MVP FASE 2)
+
+| Módulo | Rotas | Componentes | Prioridade | Backend | Estimativa |
+|--------|-------|-------------|------------|---------|------------|
+| **💰 Vendas/PDV** | 5 | 12 | 🔥 CRÍTICA | ✅ 100% | 2-3 semanas |
+| **📦 Estoque** | 7 | 10 | 🔥 ALTA | ✅ 100% | 1-2 semanas |
+| **💵 Financeiro** | 6 | 8 | 🟡 MÉDIA | 🔴 0% | Backend primeiro |
 
 ---
 
-## 💰 VENDAS/PDV - Implementação Completa
+## 📈 Progresso Geral
 
-### 📋 Visão Geral
-
-**Backend Status**: ✅ **100% Completo** (14 endpoints)  
-**Frontend Status**: 🔴 **0% Implementado**
-
-#### Features do Backend Prontas
-- ✅ CRUD de vendas
-- ✅ Workflow completo (6 status)
-- ✅ Múltiplas formas de pagamento
-- ✅ Desconto (percentual ou valor fixo)
-- ✅ Validação de cliente (ativo, bloqueado, crédito)
-- ✅ Reserva/baixa de estoque automática
-- ✅ Cliente opcional (vendas de balcão)
-- ✅ Histórico de mudanças de status
-- ✅ Relatórios (resumo, por período)
+```
+Total Planejado:    47 rotas | 88 componentes
+Total Implementado: 23 rotas | 58 componentes
+Progresso Frontend: 48.9% (rotas) | 65.9% (componentes)
+Progresso Backend:  85% (78/92 endpoints)
+```
 
 ---
 
-## 🎯 FASE 2: Ponto de Venda (PDV)
+## 🛒 LOJA ONLINE - ✅ 100% IMPLEMENTADO
+
+> **Status**: Totalmente funcional e operacional  
+> **Backend**: ✅ 26 endpoints | **Frontend**: ✅ 6 rotas | 18 componentes  
+> **Documentação**: `docs/03-changelogs/CHANGELOG_LOJA_ONLINE_FRONTEND_COMPLETO.md`
+
+### ✅ Rotas Implementadas
+
+| Rota | Status | Descrição |
+|------|--------|-----------|
+| `/c/:empresaSlug` | ✅ | Catálogo público com filtros e busca |
+| `/c/:empresaSlug/produto/:id` | ✅ | Detalhes do produto + variantes |
+| `/c/:empresaSlug/carrinho` | ✅ | Gerenciar carrinho de compras |
+| `/c/:empresaSlug/checkout` | ✅ | Checkout 3 steps (dados, entrega, pagamento) |
+| `/c/:empresaSlug/pedido/:numero` | ✅ | Rastreamento com timeline de status |
+| `/c/:empresaSlug/minha-conta/pedidos` | ✅ | Lista de pedidos do cliente |
+
+### ✅ Componentes-Chave Implementados
+
+**Páginas**: `CatalogoPage`, `ProdutoDetalhePage`, `CarrinhoPage`, `CheckoutPage`, `RastreamentoPedidoPage`, `MeusPedidosPage`
+
+**Componentes**: `ProdutoCard`, `BotaoAdicionarCarrinho`, `SeletorVariantes`, `FormEndereco`, `CalculadoraFrete`, `SeletorFormasPagamento`, `CalculadoraTroco`, `TimelineStatus`, `BadgeStatus`, `StepsIndicator`
+
+**Hooks**: `useCarrinho`, `useCheckout`, `useCEP`, `useFormatacao`
+
+### ✅ Features Completas
+
+- ✅ Catálogo responsivo com filtros (categoria, busca, ordenação, paginação)
+- ✅ Detalhes de produto (galeria, variantes, estoque, relacionados)
+- ✅ Carrinho com persistência em cookie
+- ✅ Checkout 3 steps (dados, entrega, pagamento)
+- ✅ Busca CEP via ViaCEP
+- ✅ Cálculo automático de frete
+- ✅ Múltiplas formas de pagamento (PIX, débito, crédito, dinheiro, fiado)
+- ✅ Pagamento misto
+- ✅ Calculadora de troco
+- ✅ Rastreamento com timeline de status
+- ✅ Histórico de pedidos
+- ✅ Formatação automática (telefone, CPF, CEP)
+- ✅ Validações em tempo real
+- ✅ Totalmente responsivo (mobile, tablet, desktop)
+- ✅ Estados de UI completos (loading, error, empty, success)
+
+**Status**: 🟢 **LOJA ONLINE 100% OPERACIONAL!**
+
+---
+
+## 💰 VENDAS/PDV - 🔴 0% IMPLEMENTADO (PRIORIDADE CRÍTICA)
+
+> **Status**: Aguardando implementação frontend  
+> **Backend**: ✅ 100% Pronto (14 endpoints funcionais)  
+> **Prioridade**: 🔥 CRÍTICA - Próxima sprint  
+> **Estimativa**: 2-3 semanas  
+> **Documentação Backend**: `CHANGELOG_VENDAS_IMPLEMENTATION.md`
 
 ### Rotas a Implementar
 
 #### 1. `/vendas` - Lista de Vendas
-**Descrição**: Dashboard de vendas com filtros
+**Objetivo**: Dashboard vendas com filtros
 
-**Componentes Necessários**:
+**Layout**:
 ```tsx
 <VendasPage>
-  <VendasHeader>
-    <BotaoNovaVenda />         // + Nova Venda (vai para PDV)
-    <FiltrosVendas>
+  <Header>
+    <BotaoNovaVenda />
+    <Filtros>
       <SelectStatus />
       <SelectCliente />
-      <InputPeriodo />         // Date range picker
-      <InputNumero />          // Buscar por número
-    </FiltrosVendas>
-  </VendasHeader>
+      <InputPeriodo />
+      <InputNumero />
+    </Filtros>
+  </Header>
   
   <ResponsiveTable>
-    <thead>
-      <tr>
-        <th>Número</th>
-        <th>Cliente</th>
-        <th>Data</th>
-        <th>Valor</th>
-        <th>Status</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>#V-2026-00001</td>
-        <td>João Silva</td>
-        <td>11/06/2026</td>
-        <td>R$ 150,00</td>
-        <td><BadgeStatus /></td>
-        <td>
-          <BotaoVer />
-          <BotaoEditar />       // Se PEDIDO
-          <BotaoCancelar />
-        </td>
-      </tr>
-    </tbody>
+    <Column>Número</Column>
+    <Column>Cliente</Column>
+    <Column>Data</Column>
+    <Column>Valor</Column>
+    <Column>Status</Column>
+    <Column>Ações</Column>
   </ResponsiveTable>
   
   <Paginacao />
 </VendasPage>
 ```
 
-**Endpoints Usados**:
-```typescript
-// GET /vendas?status=&cliente_id=&data_inicio=&data_fim=&numero=&skip=0&limit=20
-```
+**Endpoints**:
+- `GET /vendas?status=&cliente_id=&data_inicio=&data_fim=&skip=0&limit=20`
 
-**Funcionalidades**:
-- ✅ Listar vendas com filtros avançados
-- ✅ Badges coloridos por status
-- ✅ Buscar por número de venda
-- ✅ Filtrar por cliente
-- ✅ Filtrar por período
-- ✅ Paginação
-- ✅ Ações contextuais (editar só se PEDIDO)
+**Features**:
+- [  ] Listar vendas com paginação
+- [  ] Filtros avançados (status, cliente, período, número)
+- [  ] Badge colorido por status
+- [  ] Ações contextuais (editar só se PEDIDO)
+- [  ] Buscar por número
 
 ---
 
 #### 2. `/vendas/nova` - PDV (Ponto de Venda)
-**Descrição**: Tela de venda completa (mais complexa)
+**Objetivo**: Tela principal de vendas
 
-**Componentes Necessários**:
+**Layout** (Desktop - 2 colunas):
 ```tsx
 <PDVPage>
-  <PDVHeader>
-    <BotaoVoltar />
-    <InfoVendedor />           // Usuário logado
-  </PDVHeader>
-  
-  <PDVGrid>
+  <Grid>
     {/* Coluna Esquerda: Produtos */}
     <PainelProdutos>
-      <BuscaProduto>           // Busca por nome/SKU/código barras
-        <InputBusca />         // Autocomplete
-        <BotaoScanCodigo />    // Ícone de câmera (futuro)
+      <BuscaProduto>
+        <InputAutocomplete />
+        <BotaoScanner />
       </BuscaProduto>
       
       <ResultadosBusca>
-        <ProdutoResultado>     // Card com foto, nome, preço
+        <ProdutoCard>
+          <Foto />
+          <Nome />
+          <Preco />
           <BotaoAdicionar />
-        </ProdutoResultado>
+        </ProdutoCard>
       </ResultadosBusca>
       
-      <CategoriasRapidas />    // Botões de categorias frequentes
+      <CategoriasRapidas />
     </PainelProdutos>
     
-    {/* Coluna Direita: Carrinho e Finalização */}
+    {/* Coluna Direita: Venda */}
     <PainelVenda>
-      <SeletorCliente>         // Opcional
-        <BuscaCliente />       // Autocomplete
-        <InfoCliente />        // Crédito disponível, histórico
-        <BotaoNovoCliente />
-      </SeletorCliente>
+      <ClienteSelector>
+        <BuscaCliente />
+        <InfoCredito />
+      </ClienteSelector>
       
       <ItensVenda>
-        <ItemVenda>            // Produto, quantidade, preço, subtotal
-          <QuantidadeEditor />
+        <ItemVenda>
+          <Produto />
+          <Quantidade />
+          <Preco />
+          <Subtotal />
           <BotaoRemover />
         </ItemVenda>
       </ItensVenda>
       
-      <ResumoVenda>
+      <Resumo>
         <Subtotal />
-        <Desconto>             // Input % ou R$
+        <Desconto>
           <RadioPercentual />
           <RadioValorFixo />
-          <InputDesconto />
         </Desconto>
-        <ValorTotal />         // Grande e destacado
-      </ResumoVenda>
+        <Total />
+      </Resumo>
       
-      <BotaoFinalizarVenda />  // Abre modal de pagamento
+      <BotaoFinalizar />
     </PainelVenda>
-  </PDVGrid>
+  </Grid>
   
-  {/* Modal de Pagamento */}
   <ModalPagamento>
     <FormasPagamento>
       <BotaoPix />
       <BotaoDebito />
       <BotaoCredito />
-      <BotaoDinheiro>          // Abre calc de troco
-        <InputValorRecebido />
-        <DisplayTroco />
-      </BotaoDinheiro>
-      <BotaoFiado>            // Valida crédito
-        <AlertaCredito />
-      </BotaoFiado>
+      <BotaoDinheiro />
+      <BotaoFiado />
     </FormasPagamento>
     
-    <PagamentosMixtos>         // Lista de pagamentos adicionados
-      <PagamentoItem />
+    <PagamentosAdicionados>
+      <ItemPagamento />
       <TotalPago />
       <RestaPagar />
-    </PagamentosMixtos>
-    
-    <BotaoConfirmarVenda />
+    </PagamentosAdicionados>
   </ModalPagamento>
 </PDVPage>
 ```
 
-**Endpoints Usados**:
-```typescript
-// GET /produtos?busca=&empresa_id=
-// GET /clientes?busca=&empresa_id=
-// POST /vendas
-interface CriarVendaRequest {
-  empresa_id: number;
-  cliente_id?: string;               // Opcional (venda balcão)
-  itens: {
-    produto_id: string;
-    variante_id: string;
-    quantidade: number;
-    preco_unitario: number;
-  }[];
-  desconto_tipo?: 'PERCENTUAL' | 'VALOR_FIXO';
-  desconto_valor?: number;
-  tipo_entrega: 'RETIRADA' | 'DELIVERY';
-  observacao?: string;
-}
-```
+**Endpoints**:
+- `GET /produtos?busca=&empresa_id=`
+- `GET /clientes?busca=&empresa_id=`
+- `POST /vendas`
 
-**Funcionalidades**:
-- ✅ Busca de produtos (autocomplete)
-- ✅ Suporte a código de barras (futuro: câmera)
-- ✅ Adicionar itens ao carrinho
-- ✅ Editar quantidade inline
-- ✅ Remover itens
-- ✅ Buscar cliente (autocomplete)
-- ✅ Ver crédito disponível do cliente
-- ✅ Aplicar desconto (% ou R$)
-- ✅ Múltiplas formas de pagamento
-- ✅ Calcular troco automaticamente
-- ✅ Validar limite de crédito (FIADO)
-- ✅ Atalhos de teclado (F2 cliente, F3 produto, F9 finalizar)
-- ✅ Imprimir cupom (futuro)
+**Features**:
+- [  ] Busca produtos (autocomplete)
+- [  ] Busca clientes (autocomplete)
+- [  ] Adicionar itens carrinho
+- [  ] Editar quantidade inline
+- [  ] Remover item
+- [  ] Aplicar desconto (% ou R$)
+- [  ] Múltiplas formas pagamento
+- [  ] Calcular troco
+- [  ] Validar crédito FIADO
+- [  ] Atalhos teclado (F2, F3, F9)
+
+**Componentes Necessários**:
+- [  ] `PDVPage` - Página principal
+- [  ] `BuscaProduto` - Autocomplete produtos
+- [  ] `BuscaCliente` - Autocomplete clientes
+- [  ] `ClienteSelector` - Seletor com info crédito
+- [  ] `ItemVenda` - Card item no carrinho
+- [  ] `DescontoCalculator` - Input desconto
+- [  ] `ResumoVenda` - Totais
+- [  ] `ModalPagamento` - Modal pagamentos múltiplos
+- [  ] `usePDV` - Hook gerenciamento PDV
 
 ---
 
 #### 3. `/vendas/:id` - Detalhes da Venda
-**Descrição**: Visualizar venda completa
+**Objetivo**: Ver venda completa
 
-**Componentes Necessários**:
+**Layout**:
 ```tsx
 <VendaDetalhesPage>
-  <VendaHeader>
-    <NumeroVenda />            // #V-2026-00001
+  <Header>
+    <NumeroVenda />
     <BadgeStatus />
     <AcoesVenda>
-      <BotaoEditar />          // Se PEDIDO
-      <BotaoConfirmar />       // Se PEDIDO
-      <BotaoSeparar />         // Se CONFIRMADA
-      <BotaoEntregar />        // Se SEPARADA
-      <BotaoFinalizar />       // Se ENTREGUE
-      <BotaoCancelar />        // Se != FINALIZADA
+      <BotaoEditar />
+      <BotaoConfirmar />
+      <BotaoSeparar />
+      <BotaoEntregar />
+      <BotaoFinalizar />
+      <BotaoCancelar />
       <BotaoImprimir />
     </AcoesVenda>
-  </VendaHeader>
+  </Header>
   
-  <VendaInfo>
-    <DadosCliente />           // Nome, telefone, crédito usado
-    <DadosVenda />             // Data, tipo entrega, observação
-    <ItensVenda />             // Tabela de itens
-    <Pagamentos />             // Lista de pagamentos
-    <Resumo />                 // Subtotal, desconto, total
-  </VendaInfo>
+  <DadosVenda>
+    <SectionCliente />
+    <SectionItens />
+    <SectionPagamentos />
+    <SectionResumo />
+  </DadosVenda>
   
-  <HistoricoStatus>            // Timeline
+  <Timeline>
     <StepStatus>
       PEDIDO → CONFIRMADA
-      11/06/2026 10:35
+      23/06/2026 14:30
       Por: João Silva
     </StepStatus>
-  </HistoricoStatus>
+  </Timeline>
 </VendaDetalhesPage>
 ```
 
-**Endpoints Usados**:
-```typescript
-// GET /vendas/{id}
-```
+**Endpoints**:
+- `GET /vendas/{id}`
 
-**Funcionalidades**:
-- ✅ Visualizar todos os dados da venda
-- ✅ Timeline de mudanças de status
-- ✅ Ações contextuais por status
-- ✅ Imprimir cupom/nota
-- ✅ Histórico de quem alterou
+**Features**:
+- [  ] Visualizar todos dados
+- [  ] Timeline mudanças status
+- [  ] Ações contextuais por status
+- [  ] Imprimir cupom (futuro)
 
 ---
 
-#### 4. `/vendas/:id/editar` - Editar Venda (se PEDIDO)
-**Descrição**: Editar venda antes de confirmar
+#### 4. Modais de Workflow
 
-**Componentes**: Similar ao PDV, mas carregado com dados da venda
-
-**Endpoints Usados**:
-```typescript
-// GET /vendas/{id}
-// PUT /vendas/{id}
-```
-
-**Funcionalidades**:
-- ✅ Só permitir se status = PEDIDO
-- ✅ Editar itens (adicionar, remover, quantidade)
-- ✅ Editar desconto
-- ✅ Alterar cliente
-- ✅ Atualizar observação
-
----
-
-#### 5. Modais de Ações
-
-**Modal Confirmar Venda** (PEDIDO → CONFIRMADA)
+**Modal Confirmar** (PEDIDO → CONFIRMADA):
 ```tsx
 <ModalConfirmarVenda>
-  <ResumoVenda />              // Itens, valor total
-  <PagamentosAdicionar>        // Se não tiver pagamentos
-    <FormPagamento />
-  </PagamentosAdicionar>
+  <ResumoVenda />
+  <PagamentosAdicionar />
   <InputObservacao />
   <BotaoConfirmar />
 </ModalConfirmarVenda>
 ```
 
-**Modal Separar Venda** (CONFIRMADA → SEPARADA)
+**Modal Separar** (CONFIRMADA → SEPARADA):
 ```tsx
 <ModalSepararVenda>
-  <ChecklistItens>             // Marcar itens separados
-    <ItemSeparacao checked />
+  <ChecklistItens>
+    <Item checked />
   </ChecklistItens>
   <InputObservacao />
   <BotaoSeparar />
 </ModalSepararVenda>
 ```
 
-**Modal Entregar Venda** (SEPARADA → ENTREGUE)
+**Modal Entregar** (SEPARADA → ENTREGUE):
 ```tsx
 <ModalEntregarVenda>
-  <InfoEntrega />              // Endereço ou "Retirada no local"
-  <AssinaturaCliente />        // Canvas para assinar (futuro)
-  <FotoComprovante />          // Upload (futuro)
+  <InfoEntrega />
+  <AssinaturaCanvas />
+  <FotoComprovante />
   <InputObservacao />
-  <BotaoEntregar />            // Baixa estoque aqui!
+  <BotaoEntregar />
 </ModalEntregarVenda>
 ```
 
-**Modal Cancelar Venda**
+**Modal Cancelar**:
 ```tsx
 <ModalCancelarVenda>
   <AlertaCancelamento>
-    ⚠️ Esta ação liberará o estoque reservado
+    Estoque será liberado
   </AlertaCancelamento>
-  <TextareaMotivo />           // Obrigatório
-  <BotaoCancelar color="danger" />
+  <TextareaMotivo required />
+  <BotaoCancelar />
 </ModalCancelarVenda>
 ```
 
 ---
 
-#### 6. `/vendas/relatorios` - Relatórios de Vendas
-**Descrição**: Dashboard analítico
+#### 5. `/vendas/relatorios` - Relatórios
+**Objetivo**: Analytics de vendas
 
-**Componentes Necessários**:
+**Layout**:
 ```tsx
-<RelatoriosVendasPage>
-  <FiltrosRelatorio>
-    <SelectPeriodo />          // Hoje, semana, mês, customizado
+<RelatoriosPage>
+  <Filtros>
+    <SelectPeriodo />
     <SelectVendedor />
     <SelectCategoria />
-  </FiltrosRelatorio>
+  </Filtros>
   
   <CardsResumo>
-    <CardMetrica>
-      <Titulo>Vendas Hoje</Titulo>
-      <Valor>R$ 3.450,00</Valor>
-      <Variacao>+15% vs ontem</Variacao>
-    </CardMetrica>
-    <CardMetrica>
-      <Titulo>Ticket Médio</Titulo>
-      <Valor>R$ 125,00</Valor>
-    </CardMetrica>
-    <CardMetrica>
-      <Titulo>Vendas Realizadas</Titulo>
-      <Valor>28</Valor>
-    </CardMetrica>
+    <Card title="Vendas Hoje" value="R$ 3.450" />
+    <Card title="Ticket Médio" value="R$ 125" />
+    <Card title="Total Vendas" value="28" />
   </CardsResumo>
   
-  <GraficosVendas>
+  <Graficos>
     <GraficoLinha title="Vendas por Dia" />
-    <GraficoPizza title="Formas de Pagamento" />
+    <GraficoPizza title="Formas Pagamento" />
     <GraficoBarra title="Top 10 Produtos" />
-    <GraficoBarra title="Vendas por Categoria" />
-  </GraficosVendas>
-  
-  <TabelaDetalhada>
-    <ResponsiveTable>
-      {/* Lista de vendas do período */}
-    </ResponsiveTable>
-  </TabelaDetalhada>
+  </Graficos>
   
   <BotoesExportar>
     <BotaoExportarPDF />
     <BotaoExportarExcel />
   </BotoesExportar>
-</RelatoriosVendasPage>
+</RelatoriosPage>
 ```
 
-**Endpoints Usados**:
-```typescript
-// GET /vendas/relatorios/resumo?data_inicio=&data_fim=
-interface RelatorioResumo {
-  total_vendas: number;
-  total_valor: number;
-  ticket_medio: number;
-  vendas_por_status: { status: string; quantidade: number }[];
-  vendas_por_pagamento: { forma: string; valor: number }[];
-  produtos_mais_vendidos: { produto: string; quantidade: number }[];
-}
-```
+**Endpoints**:
+- `GET /vendas/relatorios/resumo?data_inicio=&data_fim=`
 
-**Funcionalidades**:
-- ✅ KPIs principais em cards
-- ✅ Gráficos interativos (Chart.js/Recharts)
-- ✅ Filtros de período
-- ✅ Comparação com períodos anteriores
-- ✅ Exportar relatórios (PDF/Excel)
-- ✅ Ranking de produtos
-- ✅ Análise de formas de pagamento
+**Features**:
+- [  ] KPIs principais em cards
+- [  ] Gráficos interativos (Chart.js)
+- [  ] Filtros período
+- [  ] Comparação períodos
+- [  ] Exportar PDF/Excel
+- [  ] Ranking produtos
 
 ---
 
-## 🛠️ Componentes Compartilhados
+## 📦 ESTOQUE - 🔴 0% IMPLEMENTADO (PRIORIDADE ALTA)
 
-### Componentes Gerais
+> **Status**: Aguardando implementação frontend  
+> **Backend**: ✅ 100% Pronto (19 endpoints funcionais)  
+> **Prioridade**: 🔥 ALTA - Sprint após Vendas/PDV  
+> **Estimativa**: 1-2 semanas
+
+### Rotas a Implementar
+
+#### 1. `/estoque` - Dashboard Estoque
+**Objetivo**: Visão geral do estoque
+
+**Layout**:
 ```tsx
-// Busca com Autocomplete
-<BuscaAutocomplete
+<EstoquePage>
+  <CardsResumo>
+    <Card title="Produtos Estoque" value="245" />
+    <Card title="Estoque Baixo" value="12" color="warning" />
+    <Card title="Sem Estoque" value="5" color="danger" />
+    <Card title="Lotes Vencendo" value="3" color="warning" />
+  </CardsResumo>
+  
+  <Grafico>
+    <GraficoLinha title="Movimentações 30 dias" />
+  </Grafico>
+  
+  <Alertas>
+    <AlertaEstoqueBaixo />
+    <AlertaLoteVencendo />
+  </Alertas>
+</EstoquePage>
+```
+
+---
+
+#### 2. `/estoque/produtos` - Lista Produtos
+**Objetivo**: Ver estoque de todos produtos
+
+**Layout**:
+```tsx
+<EstoqueProdutosPage>
+  <Filtros>
+    <InputBusca />
+    <SelectCategoria />
+    <SelectStatus />
+  </Filtros>
+  
+  <ResponsiveTable>
+    <Column>Produto</Column>
+    <Column>Disponível</Column>
+    <Column>Reservado</Column>
+    <Column>Mínimo</Column>
+    <Column>Status</Column>
+    <Column>Ações</Column>
+  </ResponsiveTable>
+</EstoqueProdutosPage>
+```
+
+**Endpoints**:
+- `GET /estoque?skip=0&limit=20`
+
+---
+
+#### 3. `/estoque/movimentacoes` - Histórico
+**Objetivo**: Ver todas movimentações
+
+**Layout**:
+```tsx
+<MovimentacoesPage>
+  <Filtros>
+    <SelectTipo />
+    <InputPeriodo />
+    <SelectProduto />
+  </Filtros>
+  
+  <Timeline>
+    <MovimentacaoCard>
+      <Tipo badge />
+      <Produto />
+      <Quantidade />
+      <Data />
+      <Usuario />
+    </MovimentacaoCard>
+  </Timeline>
+</MovimentacoesPage>
+```
+
+**Endpoints**:
+- `GET /estoque/movimentacoes?tipo=&data_inicio=&skip=0&limit=20`
+
+---
+
+#### 4. `/estoque/entrada` - Registrar Entrada
+**Objetivo**: Dar entrada em produtos
+
+**Layout**:
+```tsx
+<EntradaEstoquePage>
+  <FormEntrada>
+    <SeletorProduto />
+    <SeletorVariante />
+    <InputQuantidade />
+    <InputCustoUnitario />
+    
+    <DadosLote>
+      <InputCodigoLote />
+      <InputDataValidade />
+      <SelectFornecedor />
+    </DadosLote>
+    
+    <InputObservacao />
+    <BotaoRegistrar />
+  </FormEntrada>
+</EntradaEstoquePage>
+```
+
+**Endpoints**:
+- `POST /estoque/movimentacoes`
+
+---
+
+#### 5. `/estoque/saida` - Registrar Saída
+**Objetivo**: Dar saída manual
+
+**Layout**: Similar à entrada, sem dados de lote
+
+---
+
+#### 6. `/estoque/ajuste` - Ajuste Inventário
+**Objetivo**: Corrigir divergências
+
+**Layout**:
+```tsx
+<AjusteInventarioPage>
+  <FormAjuste>
+    <SeletorProduto />
+    <SeletorVariante />
+    
+    <Grid>
+      <InputQuantidadeSistema disabled />
+      <InputQuantidadeFisica />
+      <DisplayDivergencia />
+    </Grid>
+    
+    <SelectMotivo>
+      <Option>Inventário</Option>
+      <Option>Perda</Option>
+      <Option>Dano</Option>
+      <Option>Outro</Option>
+    </SelectMotivo>
+    
+    <InputObservacao required />
+    <BotaoAjustar />
+  </FormAjuste>
+</AjusteInventarioPage>
+```
+
+**Endpoints**:
+- `POST /estoque/movimentacoes` (tipo: AJUSTE)
+
+---
+
+#### 7. `/estoque/alertas` - Alertas
+**Objetivo**: Ver alertas de estoque
+
+**Layout**:
+```tsx
+<AlertasPage>
+  <Tabs>
+    <Tab title="Estoque Baixo">
+      <ProdutoCard>
+        <Nome />
+        <EstoqueAtual badge="danger" />
+        <EstoqueMinimo />
+        <BotaoEntrada />
+      </ProdutoCard>
+    </Tab>
+    
+    <Tab title="Sem Estoque">
+      <ProdutoCard />
+    </Tab>
+    
+    <Tab title="Lotes Vencendo">
+      <LoteCard>
+        <Produto />
+        <CodigoLote />
+        <DataValidade badge="warning" />
+        <DiasRestantes />
+        <BotaoMarcarVencido />
+      </LoteCard>
+    </Tab>
+  </Tabs>
+</AlertasPage>
+```
+
+**Endpoints**:
+- `GET /estoque/alertas/baixo`
+- `GET /estoque/alertas/zerado`
+- `GET /estoque/alertas/lotes-vencendo`
+
+---
+
+## 🎨 Componentes Compartilhados
+
+### Já Implementados ✅
+
+```tsx
+// Layout
+<ResponsiveContainer maxWidth="xl" />
+<ResponsiveTable striped hover />
+<ResponsiveCard title="..." />
+
+// Forms
+<MaskedInput mask="cpf" />
+<MaskedInput mask="phone" />
+<MaskedInput mask="cep" />
+
+// UI
+<StatusBadge status="CONFIRMADA" />
+<LoadingSpinner />
+<EmptyState message="..." />
+<ErrorMessage error={...} />
+```
+
+### A Criar 🔴
+
+```tsx
+// Busca
+<AutocompleteInput
   placeholder="Buscar produto..."
   onSearch={handleSearch}
   onSelect={handleSelect}
-  resultados={produtos}
-  renderItem={(item) => <ProdutoItem produto={item} />}
+  renderItem={(item) => <ProdutoItem />}
 />
 
-// Seletor de Cliente
+// Seletores
 <ClienteSelector
   value={clienteId}
   onChange={setClienteId}
   showCredito={true}
 />
 
-// Badge de Status
-<StatusBadge status="CONFIRMADA" />
+<ProdutoSelector
+  value={produtoId}
+  onChange={setProdutoId}
+  showEstoque={true}
+/>
 
-// Timeline de Status
-<StatusTimeline historico={historico} />
-
-// Calculadora de Desconto
+// Calculadoras
 <DescontoCalculator
   subtotal={subtotal}
   onDescontoChange={setDesconto}
 />
 
-// Resumo de Valores
+<TrocoCalculator
+  total={total}
+  valorRecebido={valorRecebido}
+/>
+
+// Resumos
 <ResumoValores
   subtotal={subtotal}
   desconto={desconto}
   frete={frete}
   total={total}
 />
+
+// Timeline
+<Timeline>
+  <TimelineItem
+    date="23/06/2026"
+    title="Confirmada"
+    description="Pagamento recebido"
+    icon={<CheckIcon />}
+    color="success"
+  />
+</Timeline>
 ```
 
-### Hooks Customizados
+---
+
+## 🎯 Hooks Customizados
+
+### Implementados ✅
+
 ```typescript
-// Hook para carrinho (Loja)
+// Carrinho (Loja Online)
 const useCarrinho = () => {
   const { data, mutate } = useSWR('/loja/carrinho');
   
-  const adicionarItem = async (item) => { /* ... */ };
-  const removerItem = async (id) => { /* ... */ };
-  const atualizarQuantidade = async (id, qtd) => { /* ... */ };
-  const limparCarrinho = async () => { /* ... */ };
-  
-  return { carrinho: data, adicionarItem, removerItem, ... };
+  return {
+    carrinho: data,
+    adicionarItem,
+    removerItem,
+    atualizarQuantidade,
+    limparCarrinho,
+    calcularTotal
+  };
 };
+```
 
-// Hook para PDV (Vendas)
+### A Criar 🔴
+
+```typescript
+// PDV (Vendas)
 const usePDV = () => {
   const [itens, setItens] = useState([]);
   const [cliente, setCliente] = useState(null);
   const [desconto, setDesconto] = useState({ tipo: null, valor: 0 });
   
-  const adicionarProduto = (produto, variante, quantidade) => { /* ... */ };
-  const calcularTotal = () => { /* ... */ };
-  const finalizarVenda = async (pagamentos) => { /* ... */ };
-  
-  return { itens, cliente, desconto, total, ... };
+  return {
+    itens,
+    cliente,
+    desconto,
+    total,
+    adicionarProduto,
+    removerItem,
+    setCliente,
+    aplicarDesconto,
+    finalizarVenda
+  };
 };
 
-// Hook para validações
+// Estoque
+const useEstoque = () => {
+  const { data } = useSWR('/estoque');
+  
+  return {
+    estoque: data,
+    registrarEntrada,
+    registrarSaida,
+    ajustarInventario,
+    buscarProduto
+  };
+};
+
+// Validações
 const useValidacoes = () => {
-  const validarTelefone = (tel) => /^\d{10,11}$/.test(tel);
-  const validarCPF = (cpf) => { /* lógica */ };
-  const validarCEP = (cep) => /^\d{8}$/.test(cep);
-  
-  return { validarTelefone, validarCPF, validarCEP };
+  return {
+    validarTelefone,
+    validarCPF,
+    validarCEP,
+    validarEmail
+  };
 };
 ```
 
 ---
 
-## 📦 Bibliotecas Recomendadas
+## 📚 Bibliotecas
 
-### UI Components
+### ✅ Instaladas e em Uso
+
 ```json
 {
-  "react-bootstrap": "^2.9.1",           // ✅ Já instalado
-  "react-icons": "^4.12.0",              // ✅ Já instalado
-  "react-select": "^5.8.0",              // Autocomplete avançado
-  "react-datepicker": "^4.21.0",         // Date range picker
-  "react-image-lightbox": "^5.1.4",      // Galeria de fotos com zoom
-  "react-hot-toast": "^2.4.1"            // Notificações toast
+  "react": "^18.2.0",
+  "react-dom": "^18.2.0",
+  "react-router-dom": "^6.20.0",
+  "axios": "^1.6.2",
+  "@tanstack/react-query": "^5.12.2",
+  "react-hook-form": "^7.49.2",
+  "zod": "^3.22.4",
+  "@hookform/resolvers": "^3.3.2",
+  "bootstrap": "^5.3.2",
+  "react-bootstrap": "^2.9.1",
+  "react-icons": "^4.12.0",
+  "sass": "^1.69.5",
+  "date-fns": "^2.30.0",
+  "react-toastify": "^9.1.3",
+  "react-loading-skeleton": "^3.3.1",
+  "chart.js": "^4.4.1",
+  "react-chartjs-2": "^5.2.0"
 }
 ```
 
-### Charts
-```json
-{
-  "chart.js": "^4.4.1",                  // ✅ Já instalado
-  "react-chartjs-2": "^5.2.0",           // ✅ Já instalado
-  "recharts": "^2.10.3"                  // Alternativa Chart.js
-}
-```
-
-### Formulários
-```json
-{
-  "react-hook-form": "^7.49.2",          // ✅ Já instalado
-  "zod": "^3.22.4",                      // ✅ Já instalado
-  "@hookform/resolvers": "^3.3.2"        // ✅ Já instalado
-}
-```
-
-### Utilitários
-```json
-{
-  "date-fns": "^2.30.0",                 // ✅ Já instalado
-  "currency.js": "^2.0.4",               // Formatação de moeda
-  "react-input-mask": "^2.0.4",          // Máscaras de input
-  "qrcode.react": "^3.1.0"               // QR Code PIX
-}
-```
-
----
-
-## 🎨 Paleta de Cores por Status
-
-```scss
-// Status de Vendas
-$status-pedido: #6c757d;           // Cinza
-$status-pendente: #ffc107;         // Amarelo
-$status-confirmada: #17a2b8;       // Ciano
-$status-separada: #fd7e14;         // Laranja
-$status-em-entrega: #0dcaf0;       // Azul claro
-$status-entregue: #28a745;         // Verde
-$status-finalizada: #198754;       // Verde escuro
-$status-cancelada: #dc3545;        // Vermelho
-$status-reembolsada: #6f42c1;      // Roxo
-```
-
----
-
-## ⚡ Priorização de Implementação
-
-### ~~Sprint 1 (2 semanas) - Loja Online~~ ✅ COMPLETO
-**Objetivo**: Cliente consegue comprar  
-**Status**: ✅ **100% Implementado**
-
-1. ✅ Página do catálogo (`/c/:slug`)
-2. ✅ Detalhes do produto
-3. ✅ Carrinho
-4. ✅ Checkout (3 steps completos)
-5. ✅ Rastreamento
-6. ✅ Meus pedidos
-
-**Resultado**: ✅ Loja funcional end-to-end com todas as features
-
-### Sprint 2 (1-2 semanas) - PDV Básico 🔥 PRÓXIMO
-**Objetivo**: Vendedor consegue vender  
-**Prioridade**: 🔥 ALTA
-
-1. 🔴 Lista de vendas
-2. 🔴 PDV simplificado (sem busca avançada)
-3. 🔴 Confirmar venda
-4. 🔴 Detalhes da venda
-
-**Resultado esperado**: PDV funcional para vendas presenciais
-
-### Sprint 3 (1-2 semanas) - Estoque Básico 🔥
-**Objetivo**: Controlar movimentações de estoque  
-**Prioridade**: 🔥 ALTA
-
-1. 🔴 Lista de produtos em estoque
-2. 🔴 Movimentações de entrada/saída
-3. 🔴 Ajustes de inventário
-4. 🔴 Histórico de movimentações
-
-**Resultado esperado**: Gestão de estoque funcional
-
-### Sprint 4 (1 semana) - Melhorias PDV 🟡
-**Objetivo**: UX polida no PDV  
-**Prioridade**: 🟡 MÉDIA
-
-1. 🔴 PDV com busca avançada
-2. 🔴 Atalhos de teclado
-3. 🔴 Relatórios de vendas
-4. 🔴 Painel administrativo
-
-**Resultado esperado**: Sistema production-ready
-
----
-
-## 📝 Checklist de Implementação
-
-### Loja Online ✅ COMPLETO (Junho 2026)
-- [x] CatalogoPage (vitrine)
-- [x] ProdutoDetalhePage (detalhes)
-- [x] CarrinhoPage (revisão)
-- [x] CheckoutPage (pagamento)
-- [x] RastreamentoPedidoPage (status)
-- [x] MeusPedidosPage (histórico)
-- [x] ProdutoCard component
-- [x] BotaoAdicionarCarrinho component
-- [x] FormEndereco component
-- [x] CalculadoraFrete component
-- [x] TimelineStatus component
-- [x] useCarrinho hook
-- [x] Integração Mercado Pago
-- [x] Validação ViaCEP
-- [x] Formatação automática (telefone, CPF, CEP)
-- [x] Steps indicator (checkout)
-- [x] Badge de status colorido
-- [x] Estados de UI (loading, error, empty, success)
-- [x] Responsividade completa
-
-### Vendas/PDV 🔴 PENDENTE
-- [ ] VendasPage (lista)
-- [ ] PDVPage (ponto de venda)
-- [ ] VendaDetalhesPage (detalhes)
-- [ ] VendaEditarPage (edição)
-- [ ] RelatoriosVendasPage (analytics)
-- [ ] BuscaProduto component
-- [ ] BuscaCliente component
-- [ ] ItemVenda component
-- [ ] ModalPagamento component
-- [ ] ModalConfirmarVenda component
-- [ ] ModalSepararVenda component
-- [ ] ModalEntregarVenda component
-- [ ] ModalCancelarVenda component
-- [ ] DescontoCalculator component
-- [ ] ResumoVenda component
-- [ ] usePDV hook
-- [ ] Atalhos de teclado (F2, F3, F9)
-- [ ] Impressão de cupom
-
-### Estoque 🔴 PENDENTE
-- [ ] EstoquePage (lista de produtos)
-- [ ] MovimentacoesPage (entradas/saídas)
-- [ ] AjusteInventarioPage (correções)
-- [ ] HistoricoMovimentacoesPage
-- [ ] ProdutoEstoqueCard component
-- [ ] ModalEntrada component
-- [ ] ModalSaida component
-- [ ] ModalAjuste component
-- [ ] FiltrosEstoque component
-- [ ] AlertasEstoque component
-- [ ] useEstoque hook
-
----
-
-## 🚀 Comandos para Iniciar
+### 🔴 A Instalar para Vendas/Estoque
 
 ```bash
-# Instalar dependências novas
-npm install react-select react-datepicker react-image-lightbox react-hot-toast currency.js react-input-mask qrcode.react
-
-# Rodar frontend
-cd frontend
-npm run dev
-
-# Acessar
-# Loja: http://localhost:3000/c/empresa-slug
-# Vendas: http://localhost:3000/vendas
+npm install react-select react-datepicker currency.js react-input-mask qrcode.react
 ```
 
----
-
-## 📚 Documentação de Referência
-
-- **Backend Loja Online**: `LOJA_ONLINE_MVP_COMPLETO.md`
-- **Backend Vendas**: `CHANGELOG_VENDAS_IMPLEMENTATION.md`
-- **Responsividade**: `MELHORIAS_RESPONSIVIDADE.md`
-- **Swagger Backend**: `http://localhost:8004/docs` (Vendas)
+**Justificativas**:
+- `react-select`: Autocomplete avançado (busca produtos/clientes no PDV)
+- `react-datepicker`: Seletor de período nos filtros e relatórios
+- `currency.js`: Formatação precisa de valores monetários
+- `react-input-mask`: Máscaras para inputs (CPF, telefone, CEP)
+- `qrcode.react`: Gerar QR Code PIX (pagamentos)
 
 ---
 
-**Pronto para começar a implementar! 🎨🚀**
+## 🚀 Priorização
+
+### Sprint 1-2: Vendas/PDV 🔥 URGENTE
+- [  ] VendasPage - Lista
+- [  ] PDVPage - Ponto de venda completo
+- [  ] VendaDetalhesPage
+- [  ] Modais workflow
+- [  ] Componentes compartilhados
+
+**Entregável**: PDV funcional
+
+### Sprint 3: Estoque 🔥 ALTA
+- [  ] EstoquePage - Dashboard
+- [  ] EstoqueProdutosPage - Lista
+- [  ] MovimentacoesPage - Histórico
+- [  ] EntradaEstoquePage
+- [  ] AlertasPage
+
+**Entregável**: Gestão estoque funcional
+
+### Sprint 4: Melhorias UX 🟡
+- [  ] Relatórios avançados
+- [  ] Gráficos interativos
+- [  ] Exportação PDF/Excel
+- [  ] Atalhos teclado
+- [  ] Impressão cupom
+
+**Entregável**: Sistema production-ready
+
+---
+
+## 📝 Checklist Implementação
+
+### Para Cada Rota
+
+- [  ] Criar componente página
+- [  ] Criar arquivo SCSS
+- [  ] Implementar layout responsivo
+- [  ] Integrar com API (axios)
+- [  ] Implementar loading states
+- [  ] Implementar error handling
+- [  ] Implementar empty states
+- [  ] Validações formulários
+- [  ] Feedback visual (toasts)
+- [  ] Testar em mobile
+- [  ] Adicionar ao router
+
+### Para Cada Componente
+
+- [  ] Props interface TypeScript
+- [  ] Documentação JSDoc
+- [  ] Responsivo (mobile-first)
+- [  ] Acessibilidade (ARIA)
+- [  ] Estados (loading, error, empty)
+- [  ] Testes unitários (futuro)
+
+---
+
+## 📊 Status Final
+
+| Módulo | Backend | Frontend | Próximo Passo |
+|--------|---------|----------|---------------|
+| **Loja Online** | ✅ | ✅ | - |
+| **Clientes** | ✅ | ✅ | Histórico |
+| **Produtos** | ✅ | ✅ | - |
+| **Vendas/PDV** | ✅ | 🔴 | **Implementar** |
+| **Estoque** | ✅ | 🔴 | **Implementar** |
+| **Financeiro** | 🔴 | 🔴 | Backend primeiro |
+
+---
+
+**Versão**: 2.0.0  
+**Última atualização**: 23/06/2026  
+**Foco atual**: Vendas/PDV Frontend

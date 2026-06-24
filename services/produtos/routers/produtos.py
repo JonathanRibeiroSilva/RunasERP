@@ -15,6 +15,7 @@ from schemas.produtos import (
     ProdutoRead,
     ProdutoReadSimples,
     ProdutoLojaOnlineRead,
+    ProdutoCatalogoRead,
     ProdutoUpdate,
     VarianteCreate,
     VarianteRead,
@@ -481,6 +482,11 @@ async def listar_produtos_loja_online_publico(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao listar produtos da loja online")
+
+
+# ======================== ROUTER CATÁLOGO PÚBLICO ========================
+
+router_catalogo_publico = APIRouter(prefix="/catalogo-publico", tags=["catalogo-publico"])
 
 
 @router_catalogo_publico.get("/produto/{produto_id}", response_model=ProdutoCatalogoRead)
