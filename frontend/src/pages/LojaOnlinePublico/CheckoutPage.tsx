@@ -39,6 +39,7 @@ interface Pagamento {
   valor: number;
 }
 
+// Step navigation type
 type TipoEntrega = 'RETIRADA' | 'DELIVERY';
 type Step = 1 | 2 | 3;
 type ModoCheckout = 'selecao' | 'login' | 'guest';
