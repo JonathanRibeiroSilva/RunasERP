@@ -1,0 +1,2 @@
+Teste do hook Graphify
+Este arquivo será usado apenas para testar se o hook post-commit está funcionando.

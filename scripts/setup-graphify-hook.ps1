@@ -69,6 +69,15 @@ function Install-Hook {
     
     Set-Content -Path $HookPath -Value $HookTemplate -Encoding UTF8
     
+    # No Windows, precisamos garantir que o Git pode executar o hook
+    # Usar git update-index para marcar como executável
+    try {
+        git update-index --chmod=+x .git/hooks/post-commit 2>$null
+    }
+    catch {
+        # Se falhar, não é crítico - o hook ainda pode funcionar
+    }
+    
     Write-Host "✅ Hook instalado!" -ForegroundColor Green
     Write-Host ""
 }
