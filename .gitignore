@@ -86,6 +86,9 @@ REORGANIZACAO-COMPLETA.md
 dev-scripts/
 *.bat
 
-# Graphify - Agora versionado e atualizado via GitHub Actions
-# O workflow .github/workflows/graphify-update.yml mantém sincronizado
+# Graphify - Versionar apenas arquivos essenciais
+# GitHub Actions atualiza automaticamente após cada push
+# HTMLs e cache são ignorados (podem ser regenerados localmente)
+graphify-out/**/*.html
+graphify-out/cache/
 
