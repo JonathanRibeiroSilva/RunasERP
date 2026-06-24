@@ -1,16 +1,16 @@
 # Graph Report - RunasERP  (2026-06-24)
 
 ## Corpus Check
-- 494 files · ~339,624 words
+- 510 files · ~347,658 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 9192 nodes · 12002 edges · 683 communities (580 shown, 103 thin omitted)
+- 9432 nodes · 12236 edges · 706 communities (604 shown, 102 thin omitted)
 - Extraction: 94% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 528 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `71e51b92`
+- Built from commit: `f8474cfb`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -665,8 +665,30 @@
 - [[_COMMUNITY_Community 678|Community 678]]
 - [[_COMMUNITY_Community 679|Community 679]]
 - [[_COMMUNITY_Community 680|Community 680]]
+- [[_COMMUNITY_Community 681|Community 681]]
+- [[_COMMUNITY_Community 682|Community 682]]
+- [[_COMMUNITY_Community 683|Community 683]]
 - [[_COMMUNITY_Community 684|Community 684]]
 - [[_COMMUNITY_Community 685|Community 685]]
+- [[_COMMUNITY_Community 686|Community 686]]
+- [[_COMMUNITY_Community 687|Community 687]]
+- [[_COMMUNITY_Community 688|Community 688]]
+- [[_COMMUNITY_Community 689|Community 689]]
+- [[_COMMUNITY_Community 690|Community 690]]
+- [[_COMMUNITY_Community 691|Community 691]]
+- [[_COMMUNITY_Community 692|Community 692]]
+- [[_COMMUNITY_Community 693|Community 693]]
+- [[_COMMUNITY_Community 694|Community 694]]
+- [[_COMMUNITY_Community 695|Community 695]]
+- [[_COMMUNITY_Community 696|Community 696]]
+- [[_COMMUNITY_Community 698|Community 698]]
+- [[_COMMUNITY_Community 699|Community 699]]
+- [[_COMMUNITY_Community 700|Community 700]]
+- [[_COMMUNITY_Community 701|Community 701]]
+- [[_COMMUNITY_Community 702|Community 702]]
+- [[_COMMUNITY_Community 703|Community 703]]
+- [[_COMMUNITY_Community 704|Community 704]]
+- [[_COMMUNITY_Community 705|Community 705]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `FormaPagamento` - 46 edges
@@ -721,83 +743,83 @@
 - **chunk_13_hyperedge_brand_ecosystem** — chunk_13_logo_png_visual_identity, chunk_13_logo_png_brand_runas, chunk_13_logo_png_brand_attributes, chunk_13_logo_png_erp_system [0.95]
 - **chunk_13_hyperedge_documentation_archive** — chunk_13_logo_png_documentation_asset, chunk_13_logo_png_image_archive, chunk_13_logo_png_visual_identity [1.0]
 
-## Communities (683 total, 103 thin omitted)
+## Communities (706 total, 102 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.03
-Nodes (58): global_exception_handler(), health_check(), lifespan(), Serviço Clientes - Runas, Gerencia o ciclo de vida da aplicação., Health check endpoint., Handler global de exceções., global_exception_handler() (+50 more)
+Nodes (64): global_exception_handler(), health_check(), lifespan(), Serviço Clientes - Runas, Gerencia o ciclo de vida da aplicação., Health check endpoint., Handler global de exceções., global_exception_handler() (+56 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.04
-Nodes (95): Schemas do API Gateway., Seed para criar o usuário administrador padrão. Executado automaticamente no sta, create_access_token(), create_refresh_token(), Utilitários para geração e validação de tokens JWT., Cria um access token JWT.          Args:         user_id: ID do usuário ou clien, Cria um refresh token JWT.          Args:         user_id: ID do usuário, get_current_user() (+87 more)
+Cohesion: 0.06
+Nodes (70): create_access_token(), create_refresh_token(), decode_token(), Utilitários para geração e validação de tokens JWT., Cria um access token JWT.          Args:         user_id: ID do usuário ou cl, Cria um refresh token JWT.          Args:         user_id: ID do usuário, Decodifica e valida um token JWT.          Args:         token: Token JWT, Verifica se um token é válido.          Args:         token: Token JWT (+62 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.03
-Nodes (171): AsyncSession, Depends, get_empresa_id, Busca faixa de entrega por ID., atualizar_faixa_entrega(), deletar_faixa_entrega(), listar_faixas_entrega(), obter_configuracao_loja() (+163 more)
+Nodes (184): AsyncSession, Depends, get_empresa_id, Busca faixa de entrega por ID., atualizar_faixa_entrega(), criar_faixa_entrega(), deletar_faixa_entrega(), listar_faixas_entrega() (+176 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.08
 Nodes (20): atualizar_produto(), criar_produto(), obter_produto(), obter_produto_loja_online_publico(), Cria um novo produto., Obtém um produto por ID., Obtém detalhes de um produto na loja online pública., ProdutoCreate (+12 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.04
-Nodes (99): Base, Classe base para os modelos., BaseModel, Enum, ConfiguracaoPagamento, FormaPagamento, HistoricoStatusVenda, Status do fluxo de venda. (+91 more)
+Cohesion: 0.06
+Nodes (82): BaseModel, Enum, FormaPagamento, Status do fluxo de venda., Tipo de entrega da venda., Tipo de desconto aplicado., Formas de pagamento aceitas., StatusVenda (+74 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.07
-Nodes (29): 2027, 📊 ANÁLISES E RELATÓRIOS, Auditoria Completa 🟡, Backup e Recuperação 🔥, Business Intelligence (BI) 🔥, Cache Estratégico 🔥, 💡 Como Sugerir Features, Controle de Acesso Avançado 🔥 (+21 more)
+Cohesion: 0.04
+Nodes (48): 2027, 📊 ANÁLISES E RELATÓRIOS, Atalhos de Teclado 🟡, Auditoria Completa 🟡, Automações de Estoque 🔥, Automações de Financeiro 🔥, 🤖 AUTOMAÇÕES E INTEGRAÇÕES, Backup e Recuperação 🔥 (+40 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.33
-Nodes (6): get_current_active_user(), Verifica se o usuário está ativo.          Args:         current_user: Usuário a, Verifica se o usuário tem role ADMIN.          Args:         current_user: Usuár, Verifica se o usuário tem role ADMIN ou OPERADOR.          Args:         current, require_admin(), require_admin_or_operador()
+Cohesion: 0.06
+Nodes (42): Modelos do API Gateway., Schemas do API Gateway., Seed para criar o usuário administrador padrão. Executado automaticamente no st, get_current_active_user(), get_token_from_cookie_or_header(), Configuração OAuth2 e dependências de autenticação., Verifica se o usuário está ativo.          Args:         current_user: Usuári, Verifica se o usuário tem role ADMIN.          Args:         current_user: Us (+34 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.08
-Nodes (52): get_current_active_user, Usuario, Proxy para comunicação com microsserviços., Determina a URL do serviço baseado no caminho.                  Args:, Resolve empresa_id a partir do slug.                  Args:             slug: Sl, Faz proxy da requisição para o microsserviço apropriado.                  Args:, ServiceProxy, Busca usuário por email. (+44 more)
+Nodes (52): get_current_active_user, Usuario, Proxy para comunicação com microsserviços., Determina a URL do serviço baseado no caminho.                  Args:, Resolve empresa_id a partir do slug.                  Args:             slug:, Faz proxy da requisição para o microsserviço apropriado.                  Args, ServiceProxy, Busca usuário por email. (+44 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.07
-Nodes (28): Cria uma nova faixa de entrega., atualizar_configuracao_loja(), ConfiguracaoLojaResponse, ConfiguracaoLojaUpdate, criar_faixa_entrega(), FaixaEntregaCreate, FaixaEntregaResponse, FaixaEntregaUpdate (+20 more)
+Cohesion: 0.06
+Nodes (25): Busca configuração da loja por empresa., Atualiza configuração da loja., Busca faixa de entrega por empresa e bairro., atualizar_configuracao_loja(), ConfiguracaoLojaResponse, ConfiguracaoLojaUpdate, FaixaEntregaCreate, FaixaEntregaResponse (+17 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.04
 Nodes (48): dependencies, axios, bootstrap, chart.js, date-fns, @hookform/resolvers, react, react-bootstrap (+40 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.07
-Nodes (25): Decimal, Modelos de Fornecedor e FornecedorProduto., Modelos de Loja Online (LojaOnlineConfig e LojaOnlineFoto)., Modelos de Variante e AtributoVariante., Calcula o preço de venda baseado no custo e markup., main(), Cria produtos de exemplo., seed_produtos() (+17 more)
+Cohesion: 0.04
+Nodes (47): main(), Seed de clientes com CPFs válidos., Cria clientes de exemplo., seed_clientes(), Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), datetime (+39 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.04
-Nodes (73): datetime, Job para verificar pagamentos online pendentes. - Timeout Mercado Pago: 5 minuto, Verifica vendas com status PENDENTE_PAGAMENTO e cancela se expirou (5min)., verificar_pagamentos_pendentes(), Job para verificar timeouts de separação de vendas. - Alerta em 12h (aviso para, # TODO: Enviar notificação interna para admin/lojista, Verifica timeouts de separação de vendas CONFIRMADAS.          Fluxo:     - 12h:, verificar_timeouts() (+65 more)
+Cohesion: 0.05
+Nodes (60): Any, Base, Classe base para os modelos., Base, ConfiguracaoLoja, ConfiguracaoPagamento, FaixaEntrega, HistoricoStatusVenda (+52 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.11
-Nodes (12): ClienteService, Lista clientes com filtros (filtrado por empresa)., Desativa um cliente (soft delete) com transação atômica (filtrado por empresa)., Define limite de crédito e dia de vencimento com transação atômica (filtrado por, Ajusta crédito disponível com transação atômica (filtrado por empresa)., Bloqueia um cliente manualmente com transação atômica (filtrado por empresa)., Desbloqueia um cliente com transação atômica (filtrado por empresa)., Cria um novo cliente com transação atômica.                  Regras:         - C (+4 more)
+Cohesion: 0.09
+Nodes (24): Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), Inventario, ItemInventario, Movimentacao, Modelo de Inventário.     Registra contagens físicas de estoque., Modelo de Item de Inventário.     Registra a contagem de cada produto no invent (+16 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.03
-Nodes (43): Categoria, Produto, Obtém um produto por ID (incluindo deletados)., Obtém produtos por nome (busca parcial)., Lista produtos de uma categoria., Lista todos os produtos com filtros opcionais.                  Args:, Cria uma nova categoria., Soft delete de um produto (marca como deletado). (+35 more)
+Cohesion: 0.15
+Nodes (8): CategoriaUpdate, Schema para atualizar Categoria., CategoriaService, Service para Categoria., Obtém uma categoria por ID., Lista todas as categorias., Atualiza uma categoria., Deleta uma categoria.
 
 ### Community 14 - "Community 14"
 Cohesion: 0.07
-Nodes (21): main(), Script para popular dados iniciais de empresas., Popula empresas de exemplo., seed_empresas(), Empresa, Modelo de Empresa (Multi-tenancy).          Cada empresa representa um tenant no, EmpresaRepository, Lista empresas com filtros e paginação.                  Args:             skip: (+13 more)
+Nodes (21): main(), Script para popular dados iniciais de empresas., Popula empresas de exemplo., seed_empresas(), Empresa, Modelo de Empresa (Multi-tenancy).          Cada empresa representa um tenant, EmpresaRepository, Lista empresas com filtros e paginação.                  Args:             sk (+13 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.14
-Nodes (18): ClienteBase, ClienteComEnderecos, ClienteCreate, ClienteResponse, CreditoDelta, CreditoUpdate, EnderecoBase, EnderecoResponse (+10 more)
+Cohesion: 0.05
+Nodes (36): 1. Tela de Seleção Inicial, 1. Testar Registro via Formulário, 2. Tela de Login, 2. Testar Login via E-mail/Senha, 3. Tela de Registro, 3. Testar OAuth Google, 4. Checkout como Convidado, 4. Testar OAuth Microsoft (+28 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.09
-Nodes (20): Router de Webhooks (Mercado Pago). Recebe notificações de pagamento do Mercado P, Endpoint de teste para verificar se webhook está acessível., Webhook do Mercado Pago.          Recebe notificações de mudança de status de pa, # TODO: Implementar busca de empresa por slug via HTTP, test_webhook(), webhook_mercadopago(), MercadoPagoService, Service de integração com Mercado Pago. Gerencia criação de preferências, links (+12 more)
+Cohesion: 0.07
+Nodes (26): 1.1. Conectar via SSH, 1.2. Atualizar Sistema, 1.3. Instalar Docker, ✅ Checklist, Container não sobe, 💰 Custos, 🚀 Migração: Local → VPS (com Cloudflare Tunnel), Opção A: Via Git (+18 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.14
-Nodes (12): Endereco, EnderecoRepository, Repository de Endereço., Cria um novo endereço., Lista endereços de um cliente., Atualiza um endereço., EnderecoCreate, EnderecoUpdate (+4 more)
+Cohesion: 0.11
+Nodes (18): 🔧 Comandos Úteis, 📚 Documentação Completa, Erro: 502 Bad Gateway, Erro: CORS, Erro: SSL certificate problem, Google, Mercado Pago, Microsoft (+10 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.17
-Nodes (10): main(), Seed de clientes com CPFs válidos., Cria clientes de exemplo., seed_clientes(), Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), Cliente (+2 more)
+Cohesion: 0.11
+Nodes (14): ConfiguracaoPagamentoCreate, ConfiguracaoPagamentoResponse, ConfiguracaoPagamentoStatusResponse, ConfiguracaoPagamentoUpdate, Schema para criar configuração de pagamento., Schema para atualizar configuração de pagamento., Schema de resposta da configuração de pagamento., Schema de status da configuração (sem credenciais). (+6 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.06
@@ -812,8 +834,8 @@ Cohesion: 0.13
 Nodes (24): Modelos do domínio de Empresas (Multi-tenancy)., Regime tributário da empresa., RegimeTributario, StatusEmpresa, TipoEmpresa, EmpresaBase, EmpresaCreate, EmpresaListItem (+16 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.04
-Nodes (91): Base, Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), Inventario, ItemInventario, Lote, Movimentacao (+83 more)
+Cohesion: 0.09
+Nodes (46): Tipos de movimentação de estoque., StatusLote, TipoMovimentacao, Lista lotes com filtros., Config, EntradaEstoqueRequest, EstoqueComAlerta, InventarioBase (+38 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.04
@@ -828,12 +850,12 @@ Cohesion: 0.08
 Nodes (24): atualizar_empresa(), buscar_empresa(), buscar_empresa_por_slug(), buscar_info_publica(), criar_empresa(), desativar_empresa(), listar_empresas(), listar_filiais() (+16 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.21
-Nodes (11): adicionar_endereco(), atualizar_endereco(), get_cliente_service(), listar_enderecos(), Remove um endereço do cliente (filtrado por empresa)., Dependency para obter ClienteService., Adiciona um novo endereço ao cliente (filtrado por empresa).          - **cep**:, Lista todos os endereços de um cliente (filtrado por empresa). (+3 more)
+Cohesion: 0.22
+Nodes (11): CarrinhoResponse, Schema de resposta do carrinho completo., CarrinhoService, Adiciona ou atualiza item no carrinho COM RESERVA DE ESTOQUE., Atualiza quantidade de um item específico., Service para gerenciar carrinho de compras no Redis.          Estrutura no Red, Remove item do carrinho., Remove carrinho completamente do Redis. (+3 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.04
-Nodes (63): Categoria, Modelo de Categoria de Produtos., Fornecedor, FornecedorProduto, Modelo de Fornecedor., Modelo de Associação entre Fornecedor e Produto., LojaOnlineConfig, LojaOnlineFoto (+55 more)
+Cohesion: 0.02
+Nodes (102): Categoria, Categoria, Modelo de Categoria de Produtos., Fornecedor, FornecedorProduto, Modelo de Fornecedor., Modelo de Associação entre Fornecedor e Produto., LojaOnlineConfig (+94 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.10
@@ -848,12 +870,12 @@ Cohesion: 0.14
 Nodes (13): 📋 Comandos Detalhados, ⚙️ Como Funciona, 🤝 Contribuindo, 💡 Dicas, 📚 Documentação Relacionada, 📊 Exemplo de Output, 🎯 Quando Usar Cada Modo, 🔧 Requisitos (+5 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.15
-Nodes (10): HistoricoStatusService, Obtém o último registro de status de uma venda.                  Args:, Service para operações de histórico de status., Lista histórico de status de uma venda (ordenado por data).                  Arg, LojaService, Service para operações de loja online., Lista pedidos de um cliente específico (área do cliente)., Rastreia pedido pelo número da venda.         Retorna histórico completo e próxi (+2 more)
+Cohesion: 0.10
+Nodes (13): Busca venda por número isolada por empresa., Lista vendas isoladas por empresa com filtros., HistoricoStatusService, Obtém o último registro de status de uma venda.                  Args:, Service para operações de histórico de status., Lista histórico de status de uma venda (ordenado por data).                  A, LojaService, Service para operações de loja online. (+5 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.11
-Nodes (14): limpar_reservas_expiradas(), Job para limpar reservas temporárias expiradas. Deve rodar a cada 1 minuto via c, Limpa reservas temporárias expiradas do banco de dados., Service de Reservas Temporárias de Estoque. Gerencia reservas de estoque para o, Atualiza quantidade de uma reserva existente com Redis Lock.                  Re, Service para gerenciar reservas temporárias de estoque (carrinho).          Usa, Libera todas as reservas de uma sessão (ao finalizar checkout ou limpar carrinho, Retorna conexão Redis. (+6 more)
+Cohesion: 0.12
+Nodes (13): limpar_reservas_expiradas(), Job para limpar reservas temporárias expiradas. Deve rodar a cada 1 minuto via, Limpa reservas temporárias expiradas do banco de dados., Atualiza quantidade de uma reserva existente com Redis Lock., Service para gerenciar reservas temporárias de estoque (carrinho).          Us, Libera (remove) reserva de estoque.         Usado quando item é removido do car, Libera todas as reservas de uma sessão (ao finalizar checkout ou limpar carrinho, Retorna conexão Redis. (+5 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.18
@@ -873,39 +895,39 @@ Nodes (48): Aplicação, 🎓 Aprendizados e Decisões Técnicas, Arquitetura, �
 
 ### Community 37 - "Community 37"
 Cohesion: 0.10
-Nodes (13): api, Categoria, Categoria, Produto, Categoria, Produto, ProdutoFormData, produtoSchema (+5 more)
+Nodes (15): api, RegisterRequest, tokenService, Categoria, Categoria, Produto, Categoria, Produto (+7 more)
 
 ### Community 38 - "Community 38"
 Cohesion: 0.12
-Nodes (9): AuthProvider(), mockAlerts, mockStats, EstoquePage(), FinanceiroPage(), App(), ProtectedRouteProps, queryClient (+1 more)
+Nodes (13): RoleProtectedRoute(), EstoquePage(), FinanceiroPage(), useAuth(), Navbar(), NavbarProps, AlterarSenhaFormData, alterarSenhaSchema (+5 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.09
-Nodes (32): alias, Cookie, get_empresa_id_from_slug, adicionar_item_carrinho(), atualizar_quantidade_item(), debug_checkout(), limpar_carrinho(), listar_meus_pedidos() (+24 more)
+Cohesion: 0.11
+Nodes (26): alias, Cookie, get_empresa_id_from_slug, adicionar_item_carrinho(), atualizar_quantidade_item(), debug_checkout(), limpar_carrinho(), listar_meus_pedidos() (+18 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.13
-Nodes (11): global_exception_handler(), health_check(), API Gateway - Ponto de entrada único para todos os microsserviços., Health check endpoint., Handler global de exceções., BaseHTTPMiddleware, LoggingMiddleware, Middleware de logging estruturado. (+3 more)
+Cohesion: 0.08
+Nodes (20): global_exception_handler(), health_check(), lifespan(), API Gateway - Ponto de entrada único para todos os microsserviços., Gerencia o ciclo de vida da aplicação., Health check endpoint., Handler global de exceções., Cria o usuário administrador padrão se não existir.          Usa as variáveis (+12 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.04
-Nodes (49): 1. Dashboard, 2. Clientes, 3. Produtos, 4. Estoque, 5. Vendas, 6. Financeiro, Acessar Aplicação, 🔌 [API-EXAMPLES.md](./API-EXAMPLES.md) (+41 more)
+Cohesion: 0.08
+Nodes (25): 1. Dashboard, 2. Clientes, 3. Produtos, 4. Estoque, 5. Vendas, 6. Financeiro, 🔐 Autenticação, Backend (+17 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.11
-Nodes (14): Cliente, ClienteRepository, Atualiza um cliente (filtrado por empresa)., Soft delete de um cliente (filtrado por empresa)., Atualiza limite de crédito e dia de vencimento (filtrado por empresa)., Repository de Cliente., Ajusta crédito disponível (positivo = crédito, negativo = débito) (filtrado por, Bloqueia um cliente (filtrado por empresa). (+6 more)
+Cohesion: 0.03
+Nodes (63): Cliente, Endereco, ClienteRepository, EnderecoRepository, Repository para operações de Cliente no banco de dados., Atualiza um cliente (filtrado por empresa)., Soft delete de um cliente (filtrado por empresa)., Atualiza limite de crédito e dia de vencimento (filtrado por empresa). (+55 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.18
-Nodes (10): OAuthCallbackPage(), useAuth(), Navbar(), NavbarProps, AlterarSenhaFormData, alterarSenhaSchema, PerfilPage(), Sidebar() (+2 more)
+Cohesion: 0.19
+Nodes (9): OAuthCallbackPage(), OAuthInitResponse, OAuthProvider, oauthService, env, AuthProvider(), App(), queryClient (+1 more)
 
 ### Community 44 - "Community 44"
 Cohesion: 0.13
 Nodes (12): apiPublica, ClienteNovo, Endereco, ModoCheckout, Pagamento, Step, TipoEntrega, validateCEP() (+4 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.11
-Nodes (15): Modelos do API Gateway., ClienteAuth, Modelo de autenticação de clientes (compradores). Separado de Usuario (operadore, Modelo de autenticação para clientes compradores.          Este modelo armazena, ClienteAuthRepository, Repository para ClienteAuth (autenticação de clientes compradores)., Repository para gerenciar autenticação de clientes., Busca um cliente de autenticação por email.                  Args:             e (+7 more)
+Cohesion: 0.12
+Nodes (14): ClienteAuth, Modelo de autenticação de clientes (compradores). Separado de Usuario (operador, Modelo de autenticação para clientes compradores.          Este modelo armazen, ClienteAuthRepository, Repository para ClienteAuth (autenticação de clientes compradores)., Repository para gerenciar autenticação de clientes., Busca um cliente de autenticação por email.                  Args:, Busca um cliente de autenticação por ID.                  Args:             c (+6 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.04
@@ -917,15 +939,19 @@ Nodes (47): 1. API Gateway (`api-gateway/` — porta 8000), 2. Serviço de Clien
 
 ### Community 48 - "Community 48"
 Cohesion: 0.18
-Nodes (10): NotificacaoService, Envia notificação de pagamento confirmado.                  Args:             te, Envia notificação de pedido separado.                  Args:             telefon, Service para envio de notificações via WhatsApp., Formata telefone para envio (remove caracteres especiais).                  Args, Envia notificação de pedido entregue.                  Args:             telefon, Envia notificação de pedido cancelado.                  Args:             telefo, Envia mensagem via Evolution API.                  Args:             telefone: T (+2 more)
+Nodes (10): NotificacaoService, Envia notificação de pagamento confirmado.                  Args:, Envia notificação de pedido separado.                  Args:             tele, Service para envio de notificações via WhatsApp., Formata telefone para envio (remove caracteres especiais).                  Ar, Envia notificação de pedido entregue.                  Args:             tele, Envia notificação de pedido cancelado.                  Args:             tel, Envia mensagem via Evolution API.                  Args:             telefone (+2 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.14
-Nodes (14): Any, decode_token(), Decodifica e valida um token JWT.          Args:         token: Token JWT, Verifica se um token é válido.          Args:         token: Token JWT, verify_token(), CacheService, Busca produto no serviço de produtos.                  Args:             produto, Salva produto no cache.                  Args:             cache_key: Chave do R (+6 more)
+Cohesion: 0.18
+Nodes (9): CacheService, Busca produto no serviço de produtos.                  Args:             prod, Salva produto no cache.                  Args:             cache_key: Chave d, Invalida cache de um produto.                  Args:             produto_id:, Service para cache de produtos em Redis., Limpa todo cache de produtos de uma empresa.                  Args:, Retorna cliente Redis., Gera chave do cache.                  Args:             produto_id: ID do pro (+1 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.15
-Nodes (11): getErrorMessage(), authService, RegisterRequest, OAuthInitResponse, OAuthProvider, oauthService, tokenService, env (+3 more)
+Cohesion: 0.14
+Nodes (6): getErrorMessage(), authService, PasswordRule, passwordRules, RegisterFormData, registerSchema
+
+### Community 51 - "Community 51"
+Cohesion: 0.12
+Nodes (17): 📚 Arquivos de Configuração, Cenário 1: Local + Cloudflare (15 min), Cenário 2: VPS + Let's Encrypt (30 min), 🎯 Comparação Rápida, 📞 Contato, 🧪 **Desenvolvimento/Teste**, 🚀 Guias de Deploy - Runas ERP, 🎯 **MVP/Startup** (+9 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.16
@@ -936,8 +962,8 @@ Cohesion: 0.24
 Nodes (8): useCarrinho(), CarrinhoPage(), CheckoutPage(), LojaOnlinePublicoPage(), apiPublica, Produto, ProdutoDetalhePage(), Variante
 
 ### Community 54 - "Community 54"
-Cohesion: 0.20
-Nodes (10): 🔵 **Azul Primary (#3B82F6)**, Badges de Status - Exemplos de Uso, 🔷 **Ciano Secondary (#22D3EE)**, Cores Base (Dark Mode First), Cores Neutras (Dark Mode), Cores Semânticas por Contexto, 🟡 **Dourado Accent (#D4A017) - RARO!**, 🎨 Paleta de Cores - Runas Identity (+2 more)
+Cohesion: 0.12
+Nodes (16): 1.1. Criar Registros DNS, 1.2. Verificar Propagação DNS, 1. Configuração DNS, 3.1. Criar Configuração de Produção, 3.2. Configurar Docker Compose para Produção, 3.3. Atualizar Variáveis de Ambiente, 3. Configuração do Nginx para Produção, 4.1. Preparar Ambiente (+8 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.04
@@ -945,15 +971,15 @@ Nodes (47): 1. ✅ Arquivo `.env` Criado, 2. ✅ Docker Compose Completo, 3. ✅
 
 ### Community 56 - "Community 56"
 Cohesion: 0.17
-Nodes (9): ClienteValidacaoService, Service de Validação de Cliente Convidado. Valida dados de clientes não cadastra, Valida CPF brasileiro (dígitos verificadores).                  Regra:         -, Service para validar dados de cliente convidado.          Validações:     - Tele, Valida todos os dados do cliente convidado.                  Args:             n, Valida nome do cliente.                  Regras:         - Mínimo 3 caracteres, Normaliza telefone removendo caracteres não numéricos.                  Exemplo:, Valida telefone brasileiro.                  Regras:         - DDD: 2 dígitos (1 (+1 more)
+Nodes (9): ClienteValidacaoService, Service de Validação de Cliente Convidado. Valida dados de clientes não cadastr, Valida CPF brasileiro (dígitos verificadores).                  Regra:, Service para validar dados de cliente convidado.          Validações:     - T, Valida todos os dados do cliente convidado.                  Args:, Valida nome do cliente.                  Regras:         - Mínimo 3 caractere, Normaliza telefone removendo caracteres não numéricos.                  Exempl, Valida telefone brasileiro.                  Regras:         - DDD: 2 dígitos (+1 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.20
-Nodes (10): 5. VENDAS ✅, CRUD ✅, Descontos ✅, Integração Estoque ✅, Itens ✅, Multi-Tenancy ✅, Pagamentos ✅, Relatórios ✅ (+2 more)
+Cohesion: 0.13
+Nodes (9): Conta movimentações por tipo., Soma quantidade movimentada por tipo., EstoqueService, Service de Estoque. Contém a lógica de negócio para gestão de estoque., Service para operações de estoque., Verifica se produto/variante existe no serviço de produtos., Gera relatório de movimentações., Busca estoque por ID com alertas. (+1 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.14
-Nodes (8): Cliente, CreditoFormData, creditoSchema, HistoricoCredito, Cliente, ClienteFormData, clienteSchema, Cliente
+Cohesion: 0.13
+Nodes (9): Cliente, CreditoFormData, creditoSchema, HistoricoCredito, Cliente, Endereco, EnderecoFormData, enderecoSchema (+1 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.04
@@ -980,8 +1006,8 @@ Cohesion: 0.17
 Nodes (13): docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_atributovariante, docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_categoria, docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_cliente, docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_endereco, docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_estoque, docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_itemvenda, docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_lote, docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_movimentacao (+5 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.04
-Nodes (54): Estoque, Modelo de Estoque.     Controla a quantidade disponível de cada produto/variante, EstoqueRepository, Atualiza a quantidade de estoque., Reserva quantidade de estoque., Libera reserva de estoque., Conta total de estoques., Conta estoques abaixo do mínimo. (+46 more)
+Cohesion: 0.10
+Nodes (17): Estoque, Modelo de Estoque.     Controla a quantidade disponível de cada produto/variant, EstoqueRepository, Atualiza a quantidade de estoque., Reserva quantidade de estoque., Libera reserva de estoque., Conta total de estoques., Conta estoques abaixo do mínimo. (+9 more)
 
 ### Community 66 - "Community 66"
 Cohesion: 0.15
@@ -992,28 +1018,28 @@ Cohesion: 0.17
 Nodes (12): config_oauth_credentials, config_seed_data_system, design_philosophy_runas, frontend_architecture_runas, frontend_categorias_interface, frontend_component_library, frontend_design_system_runas, frontend_docker_setup (+4 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.18
-Nodes (9): AsyncClient, Testes de Integração - Serviço de Estoque Cobre: Movimentações, Reservas, Lotes,, Suite de testes de movimentações de estoque., Teste: Registrar entrada de mercadoria., Teste: Listar estoque., Suite de testes de isolamento multi-tenant., Teste: Estoque de empresa 1 não aparece para empresa 2., TestEstoqueMovimentacoes (+1 more)
+Cohesion: 0.17
+Nodes (8): Testes de Integração - Serviço de Estoque Cobre: Movimentações, Reservas, Lotes, Suite de testes de movimentações de estoque., Teste: Registrar entrada de mercadoria., Teste: Listar estoque., Suite de testes de isolamento multi-tenant., Teste: Estoque de empresa 1 não aparece para empresa 2., TestEstoqueMovimentacoes, TestEstoqueMultiTenancy
 
 ### Community 69 - "Community 69"
 Cohesion: 0.17
-Nodes (8): Testes de Integração - Serviço de Produtos Cobre: CRUD Produtos, Categorias, Var, Suite de testes de categorias., Teste: Criar categoria com sucesso., Suite de testes de produtos., Teste: Criar produto completo com categoria., Teste: Produto de empresa 1 não aparece para empresa 2., TestCategorias, TestProdutos
+Nodes (8): Testes de Integração - Serviço de Produtos Cobre: CRUD Produtos, Categorias, Va, Suite de testes de categorias., Teste: Criar categoria com sucesso., Suite de testes de produtos., Teste: Criar produto completo com categoria., Teste: Produto de empresa 1 não aparece para empresa 2., TestCategorias, TestProdutos
 
 ### Community 70 - "Community 70"
 Cohesion: 0.04
 Nodes (47): 10.1. Máquina de Estados - Reserva de Estoque, 10.2. Tabela Comparativa: Operações de Estoque, 10. Diagrama de Estados do Estoque, 12. Glossário Técnico, 5.1. Padrões de Autenticação, 5.2. Padrões de Validação, 5.3. Padrões de Resposta, 5.4. Padrões de Eventos (RabbitMQ) (+39 more)
 
 ### Community 71 - "Community 71"
-Cohesion: 0.11
-Nodes (12): lifespan(), Gerencia o ciclo de vida da aplicação., Cria o usuário administrador padrão se não existir.          Usa as variáveis de, seed_admin(), close_redis(), Fecha conexão com Redis., Atualiza a senha de um usuário., Atualiza a senha de um usuário. (+4 more)
+Cohesion: 0.17
+Nodes (6): Atualiza a senha de um usuário., Atualiza a senha de um usuário., Hash de senha usando bcrypt., Cria um novo usuário., Busca usuário por ID., Deleta um usuário (soft delete).
 
 ### Community 72 - "Community 72"
 Cohesion: 0.18
-Nodes (10): Valida e normaliza CPF., Validadores de CPF e telefone., normalizar_cpf(), normalizar_telefone(), Valida CPF usando algoritmo dos dígitos verificadores.          Args:         cp, Remove formatação do CPF.          Args:         cpf: CPF formatado, Valida se telefone está no formato E.164.          Args:         telefone: Telef, Normaliza telefone para formato E.164.          Args:         telefone: Telefone (+2 more)
+Nodes (10): Valida e normaliza CPF., Validadores de CPF e telefone., normalizar_cpf(), normalizar_telefone(), Valida CPF usando algoritmo dos dígitos verificadores.          Args:, Remove formatação do CPF.          Args:         cpf: CPF formatado, Valida se telefone está no formato E.164.          Args:         telefone: Te, Normaliza telefone para formato E.164.          Args:         telefone: Telef (+2 more)
 
 ### Community 73 - "Community 73"
 Cohesion: 0.20
-Nodes (6): Estabelece conexão com RabbitMQ., Publica um evento no RabbitMQ.                  Args:             event_type: Ti, EventPublisher, Publisher de eventos para o serviço de empresas., Publisher de eventos via RabbitMQ., Fecha a conexão com RabbitMQ.
+Nodes (6): Estabelece conexão com RabbitMQ., Publica um evento no RabbitMQ.                  Args:             event_type:, EventPublisher, Publisher de eventos para o serviço de empresas., Publisher de eventos via RabbitMQ., Fecha a conexão com RabbitMQ.
 
 ### Community 74 - "Community 74"
 Cohesion: 0.04
@@ -1021,31 +1047,31 @@ Nodes (46): 🛠️ API Gateway, 🏗️ Arquitetura, 🏛️ Arquitetura em Cam
 
 ### Community 75 - "Community 75"
 Cohesion: 0.22
-Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de rote, Obtém instância do publisher.
+Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de r, Obtém instância do publisher.
 
 ### Community 76 - "Community 76"
 Cohesion: 0.22
-Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de rote, Obtém instância do publisher.
+Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de r, Obtém instância do publisher.
 
 ### Community 77 - "Community 77"
 Cohesion: 0.22
-Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de rote, Obtém instância do publisher.
+Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de r, Obtém instância do publisher.
 
 ### Community 78 - "Community 78"
 Cohesion: 0.22
-Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de rote, Obtém instância do publisher.
+Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de r, Obtém instância do publisher.
 
 ### Community 79 - "Community 79"
 Cohesion: 0.22
-Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de rote, Obtém instância do publisher.
+Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de r, Obtém instância do publisher.
 
 ### Community 80 - "Community 80"
-Cohesion: 0.25
-Nodes (8): 4. VENDAS ✅ IMPLEMENTAÇÃO COMPLETA, Backend - Endpoints Implementados ✅, Backend - Estatísticas ✅, Backend - Melhorias Futuras 🔴, Backend - Modelos Criados ✅, Backend - Regras de Negócio ✅ Implementadas, Frontend - Componentes Necessários 🔴, Frontend - Rotas a Implementar 🔴
+Cohesion: 0.21
+Nodes (8): Lote, Modelo de Lote.     Controla lotes de produtos com data de validade., LoteRepository, Repository para operações de Lote., Busca lote por código., Atualiza quantidade do lote., Marca lotes vencidos., Registra saída de estoque com transação atômica.
 
 ### Community 81 - "Community 81"
 Cohesion: 0.22
-Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de rote, Obtém instância do publisher.
+Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de r, Obtém instância do publisher.
 
 ### Community 82 - "Community 82"
 Cohesion: 0.22
@@ -1057,11 +1083,11 @@ Nodes (6): ResponsiveCard(), ResponsiveCardProps, ResponsiveContainer(), Respons
 
 ### Community 84 - "Community 84"
 Cohesion: 0.20
-Nodes (6): Testes de Autenticação - API Gateway Cobre: Login, OAuth, Refresh Tokens, Permis, Suite de testes de autenticação., Teste: Login com credenciais de admin corretas., Teste: Login com senha incorreta retorna 401., Teste: Acessar rota protegida com token válido retorna 200., TestAuth
+Nodes (6): Testes de Autenticação - API Gateway Cobre: Login, OAuth, Refresh Tokens, Permi, Suite de testes de autenticação., Teste: Login com credenciais de admin corretas., Teste: Login com senha incorreta retorna 401., Teste: Acessar rota protegida com token válido retorna 200., TestAuth
 
 ### Community 85 - "Community 85"
 Cohesion: 0.20
-Nodes (6): Testes de Integração - Serviço de Clientes Cobre: CRUD, Endereços, Crédito, Vali, Suite de testes de CRUD de clientes., Teste: Criar cliente pessoa física com sucesso., Teste: Listar clientes com paginação., Teste: Cliente de empresa 1 não aparece para empresa 2., TestClientesCRUD
+Nodes (6): Testes de Integração - Serviço de Clientes Cobre: CRUD, Endereços, Crédito, Val, Suite de testes de CRUD de clientes., Teste: Criar cliente pessoa física com sucesso., Teste: Listar clientes com paginação., Teste: Cliente de empresa 1 não aparece para empresa 2., TestClientesCRUD
 
 ### Community 86 - "Community 86"
 Cohesion: 0.04
@@ -1077,11 +1103,11 @@ Nodes (45): 1. Instalar Dependências, 2. Configurar Variáveis de Ambiente, 3. 
 
 ### Community 89 - "Community 89"
 Cohesion: 0.03
-Nodes (72): AtributoVarianteBase, AtributoVarianteCreate, AtributoVarianteRead, CategoriaBase, CategoriaCreate, CategoriaRead, CategoriaUpdate, FornecedorBase (+64 more)
+Nodes (74): AtributoVarianteBase, AtributoVarianteCreate, AtributoVarianteRead, CategoriaBase, CategoriaCreate, CategoriaRead, FornecedorBase, FornecedorCreate (+66 more)
 
 ### Community 90 - "Community 90"
 Cohesion: 0.24
-Nodes (8): Utils do serviço empresas., Validadores customizados para o serviço de empresas., formatar_cnpj(), limpar_cnpj(), Formata um CNPJ para o padrão XX.XXX.XXX/XXXX-XX.          Args:         cnpj: C, Remove formatação do CNPJ, deixando apenas números.          Args:         cnpj:, Valida um CNPJ usando validação de dígitos verificadores.          Args:, validar_cnpj()
+Nodes (8): Utils do serviço empresas., Validadores customizados para o serviço de empresas., formatar_cnpj(), limpar_cnpj(), Formata um CNPJ para o padrão XX.XXX.XXX/XXXX-XX.          Args:         cnpj, Remove formatação do CNPJ, deixando apenas números.          Args:         cn, Valida um CNPJ usando validação de dígitos verificadores.          Args:, validar_cnpj()
 
 ### Community 92 - "Community 92"
 Cohesion: 0.22
@@ -1097,7 +1123,7 @@ Nodes (7): apiPublica, HistoricoStatus, ItemVenda, RastreamentoDados, STATUS_INF
 
 ### Community 95 - "Community 95"
 Cohesion: 0.22
-Nodes (5): Repository para Empresas. Responsável por todas as queries ao banco de dados., Service para Empresas. Contém toda a lógica de negócio relacionada a empresas (m, # TODO: Validar se não tem dados dependentes (clientes, produtos, vendas), Repositories do serviço empresas., Services do serviço empresas.
+Nodes (5): Repository para Empresas. Responsável por todas as queries ao banco de dados., Service para Empresas. Contém toda a lógica de negócio relacionada a empresas (, # TODO: Validar se não tem dados dependentes (clientes, produtos, vendas), Repositories do serviço empresas., Services do serviço empresas.
 
 ### Community 96 - "Community 96"
 Cohesion: 0.20
@@ -1108,8 +1134,8 @@ Cohesion: 0.29
 Nodes (8): Carrinho Service, Shopping Cart Implementation, Jobs & Automation Phase 5, Admin Endpoints Phase 6, Final Improvements Phase 7, Online Store Implementation, Status History, Online Store MVP
 
 ### Community 98 - "Community 98"
-Cohesion: 0.17
-Nodes (15): RoleProtectedRoute(), RoleProtectedRouteProps, AuthContext, AuthProviderProps, NavItem, navItems, SidebarProps, SubMenuItem (+7 more)
+Cohesion: 0.16
+Nodes (15): RoleProtectedRouteProps, AuthContext, AuthProviderProps, NavItem, navItems, Sidebar(), SidebarProps, SubMenuItem (+7 more)
 
 ### Community 99 - "Community 99"
 Cohesion: 0.25
@@ -1124,20 +1150,20 @@ Cohesion: 0.25
 Nodes (7): compilerOptions, allowSyntheticDefaultImports, composite, module, moduleResolution, skipLibCheck, include
 
 ### Community 102 - "Community 102"
-Cohesion: 0.22
-Nodes (9): 1. `/estoque` - Dashboard Estoque, 2. `/estoque/produtos` - Lista Produtos, 3. `/estoque/movimentacoes` - Histórico, 4. `/estoque/entrada` - Registrar Entrada, 5. `/estoque/saida` - Registrar Saída, 6. `/estoque/ajuste` - Ajuste Inventário, 7. `/estoque/alertas` - Alertas, 📦 ESTOQUE - 🔴 0% IMPLEMENTADO (PRIORIDADE ALTA) (+1 more)
+Cohesion: 0.15
+Nodes (13): 10. Subir Sistema Localmente, 11. Iniciar Tunnel, 12. Configurar OAuth2, 1. Criar Conta Cloudflare (5 min), 2. Adicionar Domínio (5 min), 3. Atualizar DNS no Registro.br (10 min), 4. Instalar Cloudflared (Windows), 5. Autenticar (+5 more)
 
 ### Community 103 - "Community 103"
 Cohesion: 0.25
-Nodes (5): Testes de Integração - Serviço de Empresas Cobre: CRUD, Validação CNPJ, Slug úni, Suite de testes de CRUD de empresas., Teste: Listar empresas., Teste: Buscar empresa pública por slug., TestEmpresasCRUD
+Nodes (5): Testes de Integração - Serviço de Empresas Cobre: CRUD, Validação CNPJ, Slug ún, Suite de testes de CRUD de empresas., Teste: Listar empresas., Teste: Buscar empresa pública por slug., TestEmpresasCRUD
 
 ### Community 104 - "Community 104"
 Cohesion: 0.25
-Nodes (5): Testes da Loja Online Pública Cobre: Listagem de produtos, categorias, busca (se, Suite de testes da loja online pública., Teste: Listar produtos públicos sem autenticação., Teste: Listar categorias públicas sem autenticação., TestLojaOnlinePublica
+Nodes (5): Testes da Loja Online Pública Cobre: Listagem de produtos, categorias, busca (s, Suite de testes da loja online pública., Teste: Listar produtos públicos sem autenticação., Teste: Listar categorias públicas sem autenticação., TestLojaOnlinePublica
 
 ### Community 105 - "Community 105"
 Cohesion: 0.25
-Nodes (5): Testes de Integração - Serviço de Vendas Cobre: Pedidos, Pagamentos, Workflow, M, Suite de testes de pedidos., Teste: Listar pedidos., Teste: Pedidos de empresa 1 não aparecem para empresa 2., TestVendasPedidos
+Nodes (5): Testes de Integração - Serviço de Vendas Cobre: Pedidos, Pagamentos, Workflow,, Suite de testes de pedidos., Teste: Listar pedidos., Teste: Pedidos de empresa 1 não aparecem para empresa 2., TestVendasPedidos
 
 ### Community 106 - "Community 106"
 Cohesion: 0.25
@@ -1164,12 +1190,12 @@ Cohesion: 0.25
 Nodes (8): Ambiente de Desenvolvimento, Ambiente de Produção (MVP), 📦 Dependências Externas, 📚 Próximos Passos, 💻 Requisitos de Hardware, Requisitos do Sistema - Runas, Serviços Obrigatórios, Serviços Opcionais
 
 ### Community 112 - "Community 112"
-Cohesion: 0.33
-Nodes (6): 2. CLIENTES ✅, CRUD ✅, Crédito ✅, Endereços ✅, Multi-Tenancy ✅, Validações ✅
+Cohesion: 0.15
+Nodes (13): Alternativa: Ngrok Free + Subdomínio, 💰 Comparação: Ngrok vs Cloudflare Tunnel, ✅ Conclusão, ⚠️ Importante, Passo 1: Adicionar Domínio no Ngrok Dashboard, Passo 2: Configurar DNS, Passo 3: Atualizar .env.ngrok, Passo 4: Atualizar docker-compose.nginx.yml (+5 more)
 
 ### Community 113 - "Community 113"
-Cohesion: 0.07
-Nodes (27): A Criar 🔴, A Criar 🔴, 🔴 A Instalar para Vendas/Estoque, 📚 Bibliotecas, 📝 Checklist Implementação, ✅ Componentes-Chave Implementados, 🎨 Componentes Compartilhados, ✅ Features Completas (+19 more)
+Cohesion: 0.05
+Nodes (43): 1. `/estoque` - Dashboard Estoque, 1. `/vendas` - Lista de Vendas, 2. `/estoque/produtos` - Lista Produtos, 2. `/vendas/nova` - PDV (Ponto de Venda), 3. `/estoque/movimentacoes` - Histórico, 3. `/vendas/:id` - Detalhes da Venda, 4. `/estoque/entrada` - Registrar Entrada, 4. Modais de Workflow (+35 more)
 
 ### Community 114 - "Community 114"
 Cohesion: 0.05
@@ -1185,7 +1211,7 @@ Nodes (7): event_loop(), Configuração de fixtures para testes., engine(), Cria
 
 ### Community 117 - "Community 117"
 Cohesion: 0.25
-Nodes (7): Teste Simplificado - Validação de Estrutura do Serviço de Produtos Não depende d, Valida se um arquivo existe., Valida sintaxe Python de um arquivo., Valida imports em um arquivo., validate_file_exists(), validate_imports_in_file(), validate_python_syntax()
+Nodes (7): Teste Simplificado - Validação de Estrutura do Serviço de Produtos Não depende, Valida se um arquivo existe., Valida sintaxe Python de um arquivo., Valida imports em um arquivo., validate_file_exists(), validate_imports_in_file(), validate_python_syntax()
 
 ### Community 118 - "Community 118"
 Cohesion: 0.25
@@ -1197,7 +1223,7 @@ Nodes (7): close_redis(), get_redis(), init_redis(), Cliente Redis compartilhado
 
 ### Community 120 - "Community 120"
 Cohesion: 0.29
-Nodes (5): Configuração do Alembic para migrations do API Gateway., Run migrations in 'offline' mode.      This configures the context with just a U, Run migrations in 'online' mode.      In this scenario we need to create an Engi, run_migrations_offline(), run_migrations_online()
+Nodes (5): Configuração do Alembic para migrations do API Gateway., Run migrations in 'offline' mode.      This configures the context with just a, Run migrations in 'online' mode.      In this scenario we need to create an En, run_migrations_offline(), run_migrations_online()
 
 ### Community 122 - "Community 122"
 Cohesion: 0.29
@@ -1205,7 +1231,7 @@ Nodes (5): Request para resetar senha com token., Valida força da nova senha., 
 
 ### Community 123 - "Community 123"
 Cohesion: 0.29
-Nodes (5): Configuração do Alembic para migrations., Run migrations in 'offline' mode.      This configures the context with just a U, Run migrations in 'online' mode.      In this scenario we need to create an Engi, run_migrations_offline(), run_migrations_online()
+Nodes (5): Configuração do Alembic para migrations., Run migrations in 'offline' mode.      This configures the context with just a, Run migrations in 'online' mode.      In this scenario we need to create an En, run_migrations_offline(), run_migrations_online()
 
 ### Community 124 - "Community 124"
 Cohesion: 0.29
@@ -1213,15 +1239,15 @@ Nodes (6): ApiError, BaseEntity, ListParams, PaginatedResponse, SelectOption, St
 
 ### Community 125 - "Community 125"
 Cohesion: 0.33
-Nodes (5): get_db(), init_db(), Configuração do banco de dados para o API Gateway., Dependency para obter sessão do banco de dados., Inicializa o banco de dados.          IMPORTANTE: Este método não cria mais as t
+Nodes (5): get_db(), init_db(), Configuração do banco de dados para o API Gateway., Dependency para obter sessão do banco de dados., Inicializa o banco de dados.          IMPORTANTE: Este método não cria mais as
 
 ### Community 126 - "Community 126"
 Cohesion: 0.40
-Nodes (5): Serviço de envio de email via SMTP (Gmail)., _build_reset_email_html(), Envia email de reset de senha via SMTP Gmail.      Args:         to_email: Email, Monta o HTML do email de reset de senha., send_reset_password_email()
+Nodes (5): Serviço de envio de email via SMTP (Gmail)., _build_reset_email_html(), Envia email de reset de senha via SMTP Gmail.      Args:         to_email: Em, Monta o HTML do email de reset de senha., send_reset_password_email()
 
 ### Community 127 - "Community 127"
-Cohesion: 0.40
-Nodes (4): Cliente, Endereco, EnderecoFormData, enderecoSchema
+Cohesion: 0.17
+Nodes (10): liberar_reserva(), Registra saída de estoque., Libera reserva de estoque., Gera relatório geral de estoque., relatorio_geral(), saida_estoque(), LiberarReservaRequest, Schema para liberar reserva de estoque. (+2 more)
 
 ### Community 128 - "Community 128"
 Cohesion: 0.33
@@ -1229,15 +1255,15 @@ Nodes (5): get_db(), init_db(), Configuração do banco de dados., Dependency pa
 
 ### Community 129 - "Community 129"
 Cohesion: 0.33
-Nodes (5): get_db(), init_db(), Configuração do banco de dados., Dependency para obter sessão do banco de dados., Inicializa o banco de dados.          IMPORTANTE: Este método não cria mais as t
+Nodes (5): get_db(), init_db(), Configuração do banco de dados., Dependency para obter sessão do banco de dados., Inicializa o banco de dados.          IMPORTANTE: Este método não cria mais as
 
 ### Community 130 - "Community 130"
 Cohesion: 0.40
-Nodes (5): _get_redis(), limpar_carrinhos_abandonados(), Job para limpar carrinhos abandonados (>7 dias). Remove carrinhos do Redis que n, Retorna cliente Redis., Limpa carrinhos abandonados do Redis (>7 dias sem acesso).          Critério: ca
+Nodes (5): _get_redis(), limpar_carrinhos_abandonados(), Job para limpar carrinhos abandonados (>7 dias). Remove carrinhos do Redis que, Retorna cliente Redis., Limpa carrinhos abandonados do Redis (>7 dias sem acesso).          Critério:
 
 ### Community 131 - "Community 131"
-Cohesion: 0.25
-Nodes (6): features, LoginFormData, LoginPage(), loginSchema, defaultOptions, Toast
+Cohesion: 0.16
+Nodes (8): apiPublica, apiPublica, features, LoginFormData, LoginPage(), loginSchema, defaultOptions, Toast
 
 ### Community 132 - "Community 132"
 Cohesion: 0.05
@@ -1257,7 +1283,7 @@ Nodes (5): client(), Configuração de fixtures para testes., Fixture de banco d
 
 ### Community 136 - "Community 136"
 Cohesion: 0.40
-Nodes (5): _build_welcome_email_html(), enviar_email_credenciais(), Envia email com credenciais de acesso para conta recém-criada.      Args:, Monta o HTML do email de boas-vindas com credenciais., Serviço de envio de email via SMTP. Usado para enviar credenciais de conta criad
+Nodes (5): _build_welcome_email_html(), enviar_email_credenciais(), Envia email com credenciais de acesso para conta recém-criada.      Args:, Monta o HTML do email de boas-vindas com credenciais., Serviço de envio de email via SMTP. Usado para enviar credenciais de conta cria
 
 ### Community 137 - "Community 137"
 Cohesion: 0.33
@@ -1300,8 +1326,8 @@ Cohesion: 0.33
 Nodes (5): client(), Configuração de fixtures para testes., Fixture de banco de dados em memória para testes., Fixture de cliente HTTP para testes., test_db()
 
 ### Community 147 - "Community 147"
-Cohesion: 0.50
-Nodes (3): Teste End-to-End: Fluxo Completo de Venda Simula: Criar Produto → Adicionar Esto, Teste E2E: Fluxo completo de venda desde criação do produto até pagamento., test_fluxo_venda_completo()
+Cohesion: 0.40
+Nodes (4): AsyncClient, Teste End-to-End: Fluxo Completo de Venda Simula: Criar Produto → Adicionar Est, Teste E2E: Fluxo completo de venda desde criação do produto até pagamento., test_fluxo_venda_completo()
 
 ### Community 148 - "Community 148"
 Cohesion: 0.40
@@ -1337,7 +1363,7 @@ Nodes (4): downgrade(), Adiciona empresa_id para multi-tenancy em todas as tabel
 
 ### Community 156 - "Community 156"
 Cohesion: 0.40
-Nodes (4): downgrade(), Reverte as mudanças de multi-tenancy.          ATENÇÃO: Esta operação pode resul, Adiciona suporte a multi-tenancy no serviço de clientes.          Mudanças:, upgrade()
+Nodes (4): downgrade(), Reverte as mudanças de multi-tenancy.          ATENÇÃO: Esta operação pode res, Adiciona suporte a multi-tenancy no serviço de clientes.          Mudanças:, upgrade()
 
 ### Community 157 - "Community 157"
 Cohesion: 0.40
@@ -1349,11 +1375,11 @@ Nodes (4): downgrade(), Remove infraestrutura da Loja Online MVP., Adiciona infr
 
 ### Community 159 - "Community 159"
 Cohesion: 0.40
-Nodes (4): downgrade(), Migration inicial do serviço Empresas.     Cria a tabela empresas no schema empr, Rollback da migration inicial., upgrade()
+Nodes (4): downgrade(), Migration inicial do serviço Empresas.     Cria a tabela empresas no schema emp, Rollback da migration inicial., upgrade()
 
 ### Community 160 - "Community 160"
 Cohesion: 0.40
-Nodes (4): downgrade(), Migration inicial do Gateway.          A tabela 'usuarios' já existe (foi criada, Rollback não suportado para migration inicial., upgrade()
+Nodes (4): downgrade(), Migration inicial do Gateway.          A tabela 'usuarios' já existe (foi cria, Rollback não suportado para migration inicial., upgrade()
 
 ### Community 161 - "Community 161"
 Cohesion: 0.40
@@ -1365,19 +1391,19 @@ Nodes (4): downgrade(), Cria tabela de autenticação de clientes (compradores).
 
 ### Community 163 - "Community 163"
 Cohesion: 0.40
-Nodes (4): downgrade(), Adiciona campos essenciais ao modelo Produto:     - codigo_barras, sku, unidade_, Remove os campos adicionados., upgrade()
+Nodes (4): downgrade(), Adiciona campos essenciais ao modelo Produto:     - codigo_barras, sku, unidade, Remove os campos adicionados., upgrade()
 
 ### Community 164 - "Community 164"
 Cohesion: 0.40
-Nodes (4): downgrade(), Adiciona tabela de histórico de status para auditoria completa     de mudanças d, Remove tabela de histórico de status., upgrade()
+Nodes (4): downgrade(), Adiciona tabela de histórico de status para auditoria completa     de mudanças, Remove tabela de histórico de status., upgrade()
 
 ### Community 165 - "Community 165"
 Cohesion: 0.40
-Nodes (4): downgrade(), Adiciona colunas de soft delete para clientes.     Permite manter histórico de c, Remove colunas de soft delete., upgrade()
+Nodes (4): downgrade(), Adiciona colunas de soft delete para clientes.     Permite manter histórico de, Remove colunas de soft delete., upgrade()
 
 ### Community 166 - "Community 166"
 Cohesion: 0.40
-Nodes (4): downgrade(), Renomeia tabelas e relacionamentos de 'catalogo' para 'loja_online'.          Mu, Reverte as mudanças renomeando de volta para 'catalogo'., upgrade()
+Nodes (4): downgrade(), Renomeia tabelas e relacionamentos de 'catalogo' para 'loja_online'., Reverte as mudanças renomeando de volta para 'catalogo'., upgrade()
 
 ### Community 167 - "Community 167"
 Cohesion: 0.40
@@ -1429,7 +1455,7 @@ Nodes (39): 1. `jobs/verificar_timeouts_separacao.py`, 2. `jobs/limpar_carrinhos
 
 ### Community 180 - "Community 180"
 Cohesion: 0.25
-Nodes (7): Header, Query, get_empresa_id(), Utilidades para Multi-Tenancy., get_empresa_id_from_slug(), Extrai empresa_id do header X-Empresa-Id.          Args:         x_empresa_id: I, Obtém empresa_id a partir do slug.          Args:         empresaSlug: Slug da e
+Nodes (7): Header, Query, get_empresa_id(), Utilidades para Multi-Tenancy., get_empresa_id_from_slug(), Extrai empresa_id do header X-Empresa-Id.          Args:         x_empresa_id, Obtém empresa_id a partir do slug.          Args:         empresaSlug: Slug d
 
 ### Community 181 - "Community 181"
 Cohesion: 0.67
@@ -1445,7 +1471,7 @@ Nodes (3): Security Corrective Actions, Mercado Pago Sandbox Keys Exposure, Secu
 
 ### Community 185 - "Community 185"
 Cohesion: 0.07
-Nodes (17): ItemVenda, Conta total de vendas da empresa., Obtém a próxima sequência de número de venda para a empresa., Cria um novo item de venda., Cria múltiplos itens de venda., Lista itens de uma venda., Atualiza um item de venda., Cria múltiplas reservas de estoque. (+9 more)
+Nodes (30): ItemVenda, Verifica vendas com status PENDENTE_PAGAMENTO e cancela se expirou (5min)., verificar_pagamentos_pendentes(), Verifica timeouts de separação de vendas CONFIRMADAS.          Fluxo:     - 1, verificar_timeouts(), Cria um novo item de venda., Cria múltiplos itens de venda., Atualiza um item de venda. (+22 more)
 
 ### Community 186 - "Community 186"
 Cohesion: 0.05
@@ -1456,8 +1482,8 @@ Cohesion: 0.22
 Nodes (8): 🎯 Benefícios, ⚙️ Como Funciona, 🚀 Execução Manual, 📝 Exemplo de Uso, GitHub Actions Workflows, 🔄 `graphify-update.yml` - Auto-Update Graphify Knowledge Graph, 🔗 Integração com Kiro AI, 📋 Workflows Disponíveis
 
 ### Community 206 - "Community 206"
-Cohesion: 0.10
-Nodes (21): 1. API GATEWAY ✅, 4. ESTOQUE ✅, 6. LOJA ONLINE ✅, Autenticação ✅, Carrinho ✅, Catálogo Público ✅, Checkout ✅, Controle ✅ (+13 more)
+Cohesion: 0.05
+Nodes (44): 1. API GATEWAY ✅, 2. CLIENTES ✅, 3. PRODUTOS ✅, 4. ESTOQUE ✅, 5. VENDAS ✅, 6. LOJA ONLINE ✅, Autenticação ✅, Carrinho ✅ (+36 more)
 
 ### Community 207 - "Community 207"
 Cohesion: 0.05
@@ -1492,8 +1518,8 @@ Cohesion: 0.06
 Nodes (34): Adaptado:, Arquivos:, Checklist por Serviço:, ✅ Clientes (100%), Commits Realizados: 4, 🏆 Conclusão, Concluído:, Criado: (+26 more)
 
 ### Community 314 - "Community 314"
-Cohesion: 0.07
-Nodes (29): 1. Verificar Pré-requisitos, 2. Clonar/Atualizar Repositório, 3. Iniciar Backend, 4. Iniciar Frontend, "Botões OAuth não aparecem", "CORS error", Decodificar JWT, 📚 Documentação Relacionada (+21 more)
+Cohesion: 0.06
+Nodes (35): 1. Verificar Pré-requisitos, 2. Clonar/Atualizar Repositório, 3. Iniciar Backend, 4. Iniciar Frontend, Autenticação Básica, "Botões OAuth não aparecem", 📊 Checklist de Testes, "CORS error" (+27 more)
 
 ### Community 315 - "Community 315"
 Cohesion: 0.06
@@ -1596,8 +1622,8 @@ Cohesion: 0.07
 Nodes (26): Backend, Backend (APIs REST), Docs Técnicos, 📚 DOCUMENTAÇÃO, Documentos Principais, Frontend, Frontend (React + TypeScript), Implementadas ✅ (+18 more)
 
 ### Community 340 - "Community 340"
-Cohesion: 0.11
-Nodes (19): Animações Suaves, Cores e Tipografia - Design System Runas, 📏 Espaçamento, Fonte, 🌈 Gradientes (Uso Minimalista), Line Height, Pesos, Quando Usar Glow (+11 more)
+Cohesion: 0.07
+Nodes (29): Animações Suaves, 🔵 **Azul Primary (#3B82F6)**, Badges de Status - Exemplos de Uso, 🔷 **Ciano Secondary (#22D3EE)**, Cores Base (Dark Mode First), Cores e Tipografia - Design System Runas, Cores Neutras (Dark Mode), Cores Semânticas por Contexto (+21 more)
 
 ### Community 341 - "Community 341"
 Cohesion: 0.07
@@ -1636,8 +1662,8 @@ Cohesion: 0.08
 Nodes (25): Backend, 📋 Checklist de Teste, ✅ Com Checkbox Marcada (Fluxo Novo), 🧪 Como Testar, 🔍 Como Verificar no Banco de Dados, 📊 Comparação: Com vs Sem Criação de Conta, Frontend, 📦 O Que Foi Implementado (+17 more)
 
 ### Community 350 - "Community 350"
-Cohesion: 0.07
-Nodes (30): Backend (.env), 🗄️ Banco de Dados, "Cannot connect to Docker daemon", ✅ Checklist de Pré-requisitos, 📋 Checklist Final, Com Docker (Recomendado), 🔧 Configuração de Variáveis de Ambiente, Configuração Geral (+22 more)
+Cohesion: 0.10
+Nodes (21): Backend (.env), 🗄️ Banco de Dados, ✅ Checklist de Pré-requisitos, 📋 Checklist Final, Com Docker (Recomendado), 🔧 Configuração de Variáveis de Ambiente, Configuração Geral, 🔐 Credenciais de Teste (+13 more)
 
 ### Community 351 - "Community 351"
 Cohesion: 0.08
@@ -1688,8 +1714,8 @@ Cohesion: 0.08
 Nodes (25): 1. Orquestração (Criar Venda), 2. Coreografia (Alerta Estoque), 3. Scheduled Jobs (Verificar Lotes), 4.1. Fluxo Completo: Criar Venda com Estoque, 4.2. Fluxo: Alerta de Estoque Baixo com Notificação, 4.3. Fluxo: Verificação de Lotes Vencidos (Job Agendado), Arquitetura Event-Driven, Circuit Breaker (+17 more)
 
 ### Community 363 - "Community 363"
-Cohesion: 0.10
-Nodes (21): 1. CLIENTES, 2. PRODUTOS, 3. ESTOQUE, 5. FINANCEIRO 🔴 NÃO IMPLEMENTADO, Backend - Melhorias Necessárias 🟡, Backend - Melhorias Necessárias 🔴, Backend - Melhorias Necessárias 🔴, Backend - Modelos a Criar 🔴 (+13 more)
+Cohesion: 0.08
+Nodes (24): 2. PRODUTOS, 3. ESTOQUE, 4. VENDAS ✅ IMPLEMENTAÇÃO COMPLETA, 5. FINANCEIRO 🔴 NÃO IMPLEMENTADO, Backend - Endpoints Implementados ✅, Backend - Estatísticas ✅, Backend - Melhorias Futuras 🔴, Backend - Melhorias Necessárias 🔴 (+16 more)
 
 ### Community 364 - "Community 364"
 Cohesion: 0.08
@@ -1704,8 +1730,8 @@ Cohesion: 0.08
 Nodes (24): API Financeiro - Runas, 🔐 Autenticação, Caso 1: Consultar Contas em Aberto de um Cliente, Caso 2: Registrar Pagamento Parcial, Caso 3: Quitar Conta Completamente, Caso 4: Monitorar Contas a Vencer, Caso 5: Listar Contas Vencidas, Caso 6: Histórico de Pagamentos de uma Conta (+16 more)
 
 ### Community 367 - "Community 367"
-Cohesion: 0.06
-Nodes (35): 1. Verificar Pré-requisitos, 2. Clonar/Atualizar Repositório, 3. Iniciar Backend, 4. Iniciar Frontend, Autenticação Básica, "Botões OAuth não aparecem", 📊 Checklist de Testes, "CORS error" (+27 more)
+Cohesion: 0.07
+Nodes (29): 1. Verificar Pré-requisitos, 2. Clonar/Atualizar Repositório, 3. Iniciar Backend, 4. Iniciar Frontend, "Botões OAuth não aparecem", "CORS error", Decodificar JWT, 📚 Documentação Relacionada (+21 more)
 
 ### Community 368 - "Community 368"
 Cohesion: 0.08
@@ -1716,8 +1742,8 @@ Cohesion: 0.08
 Nodes (24): 2.1. Criar Produto (POST /api/produtos), 2.2. Criar Variante (POST /api/produtos/{id}/variantes), 2.3. Listar Produtos com Filtros (GET /api/produtos), 2.4. Vincular Fornecedor ao Produto (POST /api/fornecedores-produtos), 2.5. Atualizar Configuração de Catálogo (PUT /api/produtos/{id}/catalogo), Campos da Variante, Campos do Produto, Campos do Vínculo (+16 more)
 
 ### Community 370 - "Community 370"
-Cohesion: 0.08
-Nodes (24): Cancelamento ✅, Clientes, Contas a Pagar, Contas a Receber, Devolução 🔴 (A Implementar - Entidade Separada), Estoque, Financeiro (A Implementar), Fluxo de Venda ✅ (+16 more)
+Cohesion: 0.09
+Nodes (23): Clientes, Contas a Pagar, Contas a Receber, Cálculo de Preço, Estoque, Financeiro (A Implementar), Inventário, Lotes (+15 more)
 
 ### Community 372 - "Community 372"
 Cohesion: 0.09
@@ -1728,7 +1754,7 @@ Cohesion: 0.09
 Nodes (23): Adicionar Endereço, Ajustar Limite de Crédito, API de Clientes - Runas, Atualizar Cliente, Atualizar Endereço, 🔐 Autenticação, Bloquear Cliente, Buscar Cliente por CPF (+15 more)
 
 ### Community 374 - "Community 374"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (23): 1. Entidade: Categoria, 2. Entidade: Produto, 3. Entidade: Variante, 4. Entidade: Fornecedor, 5. Entidade: Fornecedor-Produto (Vínculo), 6. Entidade: Catálogo (Configuração), 7. Entidade: Catálogo (Fotos), 📊 Estrutura de Dados (+15 more)
 
 ### Community 375 - "Community 375"
@@ -1748,8 +1774,8 @@ Cohesion: 0.07
 Nodes (27): Acessibilidade, Concluído (28h de 162h estimadas - 17%), Decisões de Arquitetura, ✅ Design System Runas (Concluído), ✅ Docker e Deploy (Concluída), 📦 EXTRA: OAuth e Docker, 📦 Fase 1: Setup e Configuração Inicial, 📦 Fase 2: Autenticação e Layout (+19 more)
 
 ### Community 379 - "Community 379"
-Cohesion: 0.09
-Nodes (22): 🏗️ Arquiteto, 🏗️ Arquitetura, 🔄 Atualizações, 🔍 Busca Rápida por Palavra-Chave, 📝 Convenções, 👨‍💻 Desenvolvedor, 💻 Desenvolvimento, 🔧 DevOps (+14 more)
+Cohesion: 0.12
+Nodes (16): 🏗️ Arquitetura, 🔄 Atualizações, 🔍 Busca Rápida por Palavra-Chave, 📝 Convenções, 💻 Desenvolvimento, 📖 Documentos por Categoria, Emojis Usados, 🗂️ Estrutura da Documentação (+8 more)
 
 ### Community 380 - "Community 380"
 Cohesion: 0.09
@@ -1792,8 +1818,8 @@ Cohesion: 0.10
 Nodes (21): ♿ Acessibilidade, 🙏 Agradecimentos, 🎓 Aprendizados, 🚀 Como Usar, 🚀 Conclusão, Cores Principais, 💡 Decisões Técnicas Importantes, 🎨 Design System Highlights (+13 more)
 
 ### Community 390 - "Community 390"
-Cohesion: 0.10
-Nodes (21): 🔄 Atualizações Recentes, Autenticação e Autorização, 🔍 Busca Rápida por Tópico, Carrinho e Pedidos, Cobertura, Documentos Criados, 📈 Estatísticas da Documentação, Eventos e Mensageria (+13 more)
+Cohesion: 0.13
+Nodes (15): 🔄 Atualizações Recentes, Cobertura, Documentos Criados, 📈 Estatísticas da Documentação, Nível 1: Iniciante (1-2 horas), Nível 2: Intermediário (4-6 horas), Nível 3: Avançado (8-12 horas), 🎯 Próximos Passos na Documentação (+7 more)
 
 ### Community 391 - "Community 391"
 Cohesion: 0.10
@@ -1808,7 +1834,7 @@ Cohesion: 0.10
 Nodes (20): 10. Erro de memória insuficiente, 1. Containers não sobem, 2. Erro "no space left on device", 3. Container reiniciando constantemente, 4. Erro de permissão em volumes, 5. Erro "network not found", 6. Imagens não atualizam, 7. Erro "port is already allocated" (+12 more)
 
 ### Community 394 - "Community 394"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (19): 1. Entidade: Estoque, 2. Entidade: Movimentação, 3. Entidade: Lote, 4. Entidade: Inventário, 5.1. Venda com Estoque Insuficiente, 5.2. Lote Vencido com Estoque, 5.3. Inventário com Grandes Diferenças, 5. Casos de Uso (+11 more)
 
 ### Community 395 - "Community 395"
@@ -1857,7 +1883,7 @@ Nodes (18): 1. AuthContext (`frontend/src/contexts/AuthContext.tsx`), 2. OAuthCa
 
 ### Community 406 - "Community 406"
 Cohesion: 0.11
-Nodes (18): Glossário - Runas, I, Idempotência, Inventário, J, JWT (JSON Web Token), O, OAuth2 (+10 more)
+Nodes (18): Glossário - Runas, H, Health Check, HTTP Status Codes, I, Idempotência, Inventário, J (+10 more)
 
 ### Community 407 - "Community 407"
 Cohesion: 0.11
@@ -1972,8 +1998,8 @@ Cohesion: 0.15
 Nodes (12): 1. Entidade: Cliente, 2. Entidade: Endereço, 3.1. Cliente com Crédito Insuficiente, 3. Casos de Uso, 📊 Estrutura de Dados, 📊 Estrutura de Dados, 📚 Referências, 💳 Regras de Crédito (+4 more)
 
 ### Community 436 - "Community 436"
-Cohesion: 0.25
-Nodes (5): Repository para operações de Cliente no banco de dados., Service de Cliente com regras de negócio., # TODO: Verificar pedidos em aberto (integração com serviço de vendas), # TODO: Verificar contas pendentes (integração com serviço financeiro), # TODO: Buscar saldo devedor do serviço financeiro
+Cohesion: 0.17
+Nodes (11): 1️⃣ **Desenvolvimento Local Simples** (Sem proxy), 2️⃣ **MVP com Domínio Real** (Cloudflare Tunnel) ⭐ RECOMENDADO, 3️⃣ **Desenvolvimento com Ngrok** (URL temporária), 4️⃣ **Produção em VPS** (Deploy real), 🎯 Cenários Comuns, 🔍 Como Saber Qual Está Rodando?, 📝 Credenciais de Acesso, 🚨 Erro Comum: "404 Not Found" no Login (+3 more)
 
 ### Community 437 - "Community 437"
 Cohesion: 0.17
@@ -2080,8 +2106,8 @@ Cohesion: 0.20
 Nodes (10): 1. Axios Interceptors, 2. React Query, 3. Context API para Auth, 4. SASS com Modules, 5. Path Aliases, 6. Dark Mode First, 7. OAuth Social Login, 8. Docker Multi-Stage Build (+2 more)
 
 ### Community 464 - "Community 464"
-Cohesion: 0.29
-Nodes (7): Automações de Estoque 🔥, Automações de Financeiro 🔥, 🤖 AUTOMAÇÕES E INTEGRAÇÕES, Emissão de Notas Fiscais 🔥, Integrações com Marketplaces 🔥, Integrações de Pagamento 🔥, Webhooks e API 🟡
+Cohesion: 0.18
+Nodes (10): 1. Instalar CLI, 2. Login, 3. Criar Tunnel, 4. Configurar, 5. Subir, 6. Testar, 📄 Documentação Completa, ✅ Resumo (+2 more)
 
 ### Community 465 - "Community 465"
 Cohesion: 0.20
@@ -2184,8 +2210,8 @@ Cohesion: 0.25
 Nodes (8): 5. 401 Unauthorized ao Acessar /auth/me, Causa, Passo 1: Verificar se os Cookies Existem, Passo 2: Se os Cookies Não Estiverem Lá, Passo 3: Se os Cookies Estiverem Lá, Passo 4: Verificar se o Token Expirou, Sintoma, Solução
 
 ### Community 490 - "Community 490"
-Cohesion: 0.17
-Nodes (11): 🗄️ Banco de Dados, Campos Adicionados em `vendas`, 🎉 Conclusão, 📚 Documentação de Referência, Eventos Principais, Logs Estruturados (structlog), 🛒 Loja Online MVP - Implementação Completa, Métricas dos Jobs (+3 more)
+Cohesion: 0.25
+Nodes (7): 🗄️ Banco de Dados, Campos Adicionados em `vendas`, 🎉 Conclusão, 📚 Documentação de Referência, 🛒 Loja Online MVP - Implementação Completa, 📋 Resumo Executivo, Tabelas Criadas (8)
 
 ### Community 491 - "Community 491"
 Cohesion: 0.25
@@ -2200,8 +2226,8 @@ Cohesion: 0.25
 Nodes (7): ❌ API Gateway — Seed do Admin (CRÍTICO — JÁ CORRIGIDO), ⚠️ Bcrypt Version Warning (INFORMATIVO), ✅ Correções Já Aplicadas, ❌ Evolution API — Conexão com Banco (NÃO-CRÍTICO), Resumo dos Problemas Encontrados, Serviços Essenciais para MVP (na data), 📊 Status Atual do MVP - Análise do Terminal
 
 ### Community 494 - "Community 494"
-Cohesion: 0.06
-Nodes (33): 1. Authentication Flow, 2. API Service Pattern, 3. React Query Hook Pattern, 4. Form Validation Pattern, Accessibility, API Documentation, Build, CI/CD (+25 more)
+Cohesion: 0.25
+Nodes (8): Accessibility, Color Palette (Dark Mode First), Component States, Responsive Breakpoints, Runas Brand Identity, Spacing, Typography, UI/UX Design Principles
 
 ### Community 495 - "Community 495"
 Cohesion: 0.25
@@ -2276,8 +2302,8 @@ Cohesion: 0.29
 Nodes (7): 1. Aplicar Migrations, 2. Configurar Variáveis de Ambiente, 3. Configurar Jobs (Cron ou Task Scheduler), 4. Configurar Taxa de Entrega, 5. Configurar Mercado Pago, 6. Testar Fluxo Completo, 🚀 Como Usar
 
 ### Community 513 - "Community 513"
-Cohesion: 0.20
-Nodes (9): APIs Consumidas (11 endpoints), 🎊 Celebração, Cliente Final (E-commerce), 📁 Estrutura Final, 🚀 Fluxo de Uso Completo, 🔗 Integração com Backend, Lojista (Interno), 🎯 Objetivo da Sessão (+1 more)
+Cohesion: 0.29
+Nodes (6): APIs Consumidas (11 endpoints), 🎊 Celebração, 📁 Estrutura Final, 🔗 Integração com Backend, 🎯 Objetivo da Sessão, 🎉 Resumo da Sessão - Loja Online Frontend Completa
 
 ### Community 514 - "Community 514"
 Cohesion: 0.29
@@ -2312,8 +2338,8 @@ Cohesion: 0.29
 Nodes (7): 1. Dashboard, 2. Clientes, 3. Produtos, 4. Estoque, 5. Vendas, 6. Financeiro, Key Features Design
 
 ### Community 522 - "Community 522"
-Cohesion: 0.29
-Nodes (7): get_current_user, clear_auth_cookies(), get_current_user_info(), logout(), Retorna informações do usuário logado., Logout: invalida refresh_token e remove cookies., Remove os cookies de autenticação.          Args:         response: Response obj
+Cohesion: 0.67
+Nodes (3): get_current_user, get_current_user_info(), Retorna informações do usuário logado.
 
 ### Community 523 - "Community 523"
 Cohesion: 0.29
@@ -2392,8 +2418,8 @@ Cohesion: 0.33
 Nodes (6): 2.1. Criar Produto (POST /api/produtos), 2.2. Criar Variante (POST /api/produtos/{id}/variantes), 2.3. Listar Produtos com Filtros (GET /api/produtos), 2.4. Vincular Fornecedor ao Produto (POST /api/fornecedores-produtos), 2.5. Atualizar Configuração de Catálogo (PUT /api/produtos/{id}/catalogo), 2. Operações de Produto
 
 ### Community 543 - "Community 543"
-Cohesion: 0.33
-Nodes (6): Atalhos de Teclado 🟡, Busca Global (Spotlight) 🔥, Dark/Light Mode Toggle 🟡, 📱 EXPERIÊNCIA DO USUÁRIO, Gestures Mobile 🟢, Progressive Web App (PWA) 🔥
+Cohesion: 0.18
+Nodes (6): 🎯 Arquitetura, 🔧 Comandos Úteis, 🌐 Configuração com Cloudflare Tunnel (Local + Domínio), 💰 Custo, O que é Cloudflare Tunnel?, ✅ Pronto!
 
 ### Community 544 - "Community 544"
 Cohesion: 0.29
@@ -2440,12 +2466,12 @@ Cohesion: 0.33
 Nodes (6): 🐛 6. Troubleshooting, Container não sobe, Erro 401 Unauthorized, Erro 503 Service Unavailable, Erro de conexão com banco de dados, Limpar tudo e recomeçar
 
 ### Community 556 - "Community 556"
-Cohesion: 0.29
-Nodes (7): 3. PRODUTOS ✅, Categorias ✅, CRUD ✅, Fornecedores ✅, Loja Online ✅, Multi-Tenancy ✅, Variantes ✅
+Cohesion: 0.18
+Nodes (11): 🔌 [API-EXAMPLES.md](./API-EXAMPLES.md), 🏗️ [DESIGN.md](./DESIGN.md), 🎨 [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md), 🔧 [DOCKER.md](./DOCKER.md), 📚 Documentação, ⭐ [IMPLEMENTATION-LOG.md](./IMPLEMENTATION-LOG.md) - **LOG DE IMPLEMENTAÇÃO**, 🔐 [OAUTH-SETUP.md](./OAUTH-SETUP.md), ✅ [PREREQUISITES.md](./PREREQUISITES.md) (+3 more)
 
 ### Community 557 - "Community 557"
-Cohesion: 0.33
-Nodes (6): Compras e Fornecedores 🔥, CRM (Customer Relationship Management) 🟢, 💼 MÓDULOS DE NEGÓCIO, Múltiplos Pontos de Venda 🟡, Produção/Manufatura 🟡, Serviços e Agendamentos 🟡
+Cohesion: 0.20
+Nodes (10): 6.1. Verificar Logs, 6.2. Renovar Certificado Manualmente, 6.3. Reverter para Desenvolvimento, 6.4. Problemas Comuns, 6.5. Monitoring, 6. Manutenção e Troubleshooting, DNS não propaga, Erro: "502 Bad Gateway" (+2 more)
 
 ### Community 558 - "Community 558"
 Cohesion: 0.40
@@ -2472,8 +2498,8 @@ Cohesion: 0.40
 Nodes (5): Longo Prazo (2028+), MVP (Fase 1-4), 📊 Métricas de Sucesso, Progresso Atual (Junho 2026), Pós-MVP (Fase 5-6)
 
 ### Community 564 - "Community 564"
-Cohesion: 0.33
-Nodes (6): Autenticação Básica, 📊 Checklist de Testes, OAuth Google, OAuth Microsoft, Segurança, UI/UX
+Cohesion: 0.24
+Nodes (9): criar_estoque(), Cria um novo registro de estoque., EstoqueBase, EstoqueCreate, EstoqueResponse, Schema base de Estoque., Schema para criar estoque., Schema de resposta de Estoque. (+1 more)
 
 ### Community 565 - "Community 565"
 Cohesion: 0.40
@@ -2572,8 +2598,8 @@ Cohesion: 0.33
 Nodes (5): apiPublica, Carrinho, ItemCarrinho, UseCarrinhoProps, UseCarrinhoReturn
 
 ### Community 590 - "Community 590"
-Cohesion: 0.33
-Nodes (4): ClienteUpdate, Schema para atualização de cliente., Normaliza telefone para E.164., Atualiza dados do cliente com transação atômica (filtrado por empresa).
+Cohesion: 0.22
+Nodes (9): "Cannot connect to Docker daemon", "docker: command not found", "docker-compose: command not found", "node: command not found", "npm: command not found", "Permission denied", "Port already in use", 🆘 Problemas Comuns (+1 more)
 
 ### Community 591 - "Community 591"
 Cohesion: 0.40
@@ -2588,12 +2614,12 @@ Cohesion: 0.40
 Nodes (5): Fonte, Line Height, Pesos, Tamanhos, 📝 Tipografia
 
 ### Community 594 - "Community 594"
-Cohesion: 0.40
-Nodes (5): Cálculo de Preço, Produtos, Regras de Desativação e Reativação, Validações, Variantes
+Cohesion: 0.22
+Nodes (8): 1. Cloudflare Tunnel Token, 📋 Arquivos Disponíveis, 🎯 Como Usar, 🔐 Configuração Necessária, 📝 Credenciais Padrão, ✅ **Desenvolvimento/MVP (Padrão)**, 🐳 Docker Compose - Guia de Uso, 🔍 Verificar Status
 
 ### Community 595 - "Community 595"
-Cohesion: 0.50
-Nodes (4): main(), Seed de categorias de produtos., Cria categorias de exemplo., seed_categorias()
+Cohesion: 0.25
+Nodes (5): CheckoutRequest, Schema para processar checkout., Valida que endereço é obrigatório para DELIVERY., Valida que um dos dois (cliente_id ou cliente_novo) deve ser fornecido., Valida pagamentos (valores mínimos e formas).
 
 ### Community 596 - "Community 596"
 Cohesion: 0.40
@@ -2700,8 +2726,8 @@ Cohesion: 0.50
 Nodes (4): **Backend**, **Frontend**, **Melhorias**, 🎯 **PRÓXIMOS PASSOS**
 
 ### Community 622 - "Community 622"
-Cohesion: 0.67
-Nodes (3): get_token_from_cookie_or_header(), Obtém o token do cookie HTTP-only ou do header Authorization.     Prioriza o coo, oauth2_scheme
+Cohesion: 0.29
+Nodes (6): 🐛 O Problema, 🐳 Por que arquivos não sincronizavam?, ⚡ Por que não montar tudo?, 🔧 Quando precisar rebuild, 🛠️ Troubleshooting, 📋 Volumes Configurados
 
 ### Community 623 - "Community 623"
 Cohesion: 0.50
@@ -2754,6 +2780,10 @@ Nodes (4): Analytics, Error Tracking, Monitoring, Performance Monitoring
 ### Community 635 - "Community 635"
 Cohesion: 0.50
 Nodes (4): Architecture, Component Architecture, Data Flow, High-Level Architecture
+
+### Community 636 - "Community 636"
+Cohesion: 0.29
+Nodes (6): Backend, 📝 Falta Fazer, Frontend, Implementação OAuth e Registro no Checkout, ✅ Já Implementado, 🧪 Testando
 
 ### Community 639 - "Community 639"
 Cohesion: 0.50
@@ -2813,7 +2843,7 @@ Nodes (3): L, Limite de Crédito, Lote
 
 ### Community 653 - "Community 653"
 Cohesion: 0.29
-Nodes (7): 1. `/vendas` - Lista de Vendas, 2. `/vendas/nova` - PDV (Ponto de Venda), 3. `/vendas/:id` - Detalhes da Venda, 4. Modais de Workflow, 5. `/vendas/relatorios` - Relatórios, Rotas a Implementar, 💰 VENDAS/PDV - 🔴 0% IMPLEMENTADO (PRIORIDADE CRÍTICA)
+Nodes (7): API Documentation, Component Documentation, Design Document: Frontend ERP Runas, Documentation, Folder Structure, Next Steps, Overview
 
 ### Community 654 - "Community 654"
 Cohesion: 0.67
@@ -2911,33 +2941,117 @@ Nodes (4): Docker não inicia, Permissão negada (Linux), Porta já em uso, 🆘
 Cohesion: 0.50
 Nodes (4): Navegadores Suportados, 📱 Requisitos do Cliente (Navegador), Requisitos do Navegador, Resolução de Tela
 
+### Community 680 - "Community 680"
+Cohesion: 0.29
+Nodes (7): Core, Forms & Validation, HTTP & API, State Management, 🛠️ Tech Stack, UI/Styling, Utils
+
+### Community 681 - "Community 681"
+Cohesion: 0.33
+Nodes (5): atualizar_estoque(), Atualiza configurações de estoque., EstoqueUpdate, Schema para atualizar estoque., Atualiza configurações de estoque com transação atômica.
+
+### Community 682 - "Community 682"
+Cohesion: 0.33
+Nodes (6): Cancelamento ✅, Devolução 🔴 (A Implementar - Entidade Separada), Fluxo de Venda ✅, Formas de Pagamento ✅, Validações ✅, Vendas - Regras Detalhadas (Conforme Implementado)
+
+### Community 683 - "Community 683"
+Cohesion: 0.33
+Nodes (6): 5.1. Testar HTTPS, 5.2. Testar SSL no Navegador, 5.3. Verificar Nota SSL, 5.4. Testar OAuth2, 5.5. Testar Webhooks do Mercado Pago, 5. Verificação e Testes
+
 ### Community 684 - "Community 684"
-Cohesion: 0.67
-Nodes (3): H, Health Check, HTTP Status Codes
+Cohesion: 0.33
+Nodes (6): Escolha Seu Cenário, ✅ Opção 1: Cloudflare Tunnel (RECOMENDADO), Opção 2: Ngrok com Domínio Próprio, Opção 3: Deploy Tradicional (Nginx + Let's Encrypt), 🏠 Rodando Localmente (Seu PC/Servidor Local), 🌍 Servidor com IP Público (VPS, Cloud, etc.)
 
 ### Community 685 - "Community 685"
 Cohesion: 0.67
 Nodes (3): Ferramentas de Desenvolvimento, IDE Recomendado, 🧪 Requisitos para Desenvolvimento
 
+### Community 686 - "Community 686"
+Cohesion: 0.33
+Nodes (6): Autenticação Básica, 📊 Checklist de Testes, OAuth Google, OAuth Microsoft, Segurança, UI/UX
+
+### Community 687 - "Community 687"
+Cohesion: 0.33
+Nodes (6): Acessar Aplicação, Instalação com Docker (Recomendado), Instalação sem Docker, Login Padrão, Pré-requisitos, 🚀 Quick Start
+
+### Community 688 - "Community 688"
+Cohesion: 0.33
+Nodes (6): 🏗️ Arquiteto, 👨‍💻 Desenvolvedor, 🔧 DevOps, 👥 Documentação por Perfil, 👨‍💼 Gerente / Stakeholder, 🧪 Testador / QA
+
+### Community 689 - "Community 689"
+Cohesion: 0.33
+Nodes (6): Autenticação e Autorização, 🔍 Busca Rápida por Tópico, Carrinho e Pedidos, Eventos e Mensageria, Gestão de Estoque, Reservas de Estoque
+
+### Community 690 - "Community 690"
+Cohesion: 0.40
+Nodes (5): ajustar_estoque(), Ajusta estoque (inventário)., AjusteEstoqueRequest, Schema para ajuste de estoque., Ajusta estoque (inventário) com transação atômica.
+
+### Community 691 - "Community 691"
+Cohesion: 0.40
+Nodes (5): Reserva estoque para venda., reservar_estoque(), Schema para reservar estoque., ReservaEstoqueRequest, Reserva estoque para venda com transação atômica.
+
+### Community 692 - "Community 692"
+Cohesion: 0.40
+Nodes (5): 1. CLIENTES, Backend - Melhorias Necessárias 🟡, Backend - Regras de Negócio ✅ Implementadas, Frontend - Componentes Necessários 🔴, Frontend - Rotas a Implementar 🟢
+
+### Community 693 - "Community 693"
+Cohesion: 0.50
+Nodes (3): Cliente, ClienteFormData, clienteSchema
+
+### Community 694 - "Community 694"
+Cohesion: 0.40
+Nodes (5): 1. Authentication Flow, 2. API Service Pattern, 3. React Query Hook Pattern, 4. Form Validation Pattern, Core Patterns
+
+### Community 695 - "Community 695"
+Cohesion: 0.40
+Nodes (5): Build, CI/CD, Deployment, Docker, Environment Variables
+
+### Community 696 - "Community 696"
+Cohesion: 0.40
+Nodes (4): ⚠️ Ação Final, Implementação OAuth e Registro - COMPLETO, ✅ O que foi feito, 🧪 Teste
+
+### Community 698 - "Community 698"
+Cohesion: 0.50
+Nodes (4): 2.1. Instalar Certbot no Servidor, 2.2. Gerar Certificado SSL, 2.3. Renovação Automática, 2. Certificado SSL com Let's Encrypt
+
+### Community 699 - "Community 699"
+Cohesion: 0.50
+Nodes (4): Eventos Principais, Logs Estruturados (structlog), Métricas dos Jobs, 📈 Métricas e Monitoramento
+
+### Community 701 - "Community 701"
+Cohesion: 0.50
+Nodes (4): E2E Tests (Playwright - Opcional), Integration Tests (React Testing Library), Testing Strategy, Unit Tests (Vitest)
+
+### Community 702 - "Community 702"
+Cohesion: 0.50
+Nodes (4): HTTPS Only, Input Sanitization, Security, Token Storage
+
+### Community 704 - "Community 704"
+Cohesion: 0.67
+Nodes (3): O, OAuth2, ORM (Object-Relational Mapping)
+
+### Community 705 - "Community 705"
+Cohesion: 0.67
+Nodes (3): Cliente Final (E-commerce), 🚀 Fluxo de Uso Completo, Lojista (Interno)
+
 ## Knowledge Gaps
-- **4682 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+4677 more)
+- **4852 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+4847 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **103 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **102 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Exemplos de API - Frontend` connect `Community 324` to `Community 435`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `Glossário - Runas` connect `Community 406` to `Community 611`, `Community 612`, `Community 483`, `Community 613`, `Community 199`, `Community 484`, `Community 614`, `Community 651`, `Community 684`, `Community 652`, `Community 560`, `Community 561`, `Community 466`, `Community 467`, `Community 562`, `Community 534`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
-- **Why does `🏷️ Interface de Categorias - Documentação` connect `Community 46` to `Community 439`?**
+- **Why does `Glossário - Runas` connect `Community 406` to `Community 704`, `Community 611`, `Community 612`, `Community 483`, `Community 613`, `Community 199`, `Community 484`, `Community 614`, `Community 651`, `Community 652`, `Community 560`, `Community 561`, `Community 466`, `Community 467`, `Community 562`, `Community 534`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `Changelog - Runas` connect `Community 395` to `Community 199`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Why does `Roadmap - Runas` connect `Community 485` to `Community 449`, `Community 535`, `Community 199`, `Community 504`, `Community 654`, `Community 655`, `Community 563`, `Community 503`, `Community 536`?**
   _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **What connects `Configuração do Alembic para migrations do API Gateway.`, `Run migrations in 'offline' mode.      This configures the context with just a U`, `Run migrations in 'online' mode.      In this scenario we need to create an Engi` to the rest of the system?**
-  _5780 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `Configuração do Alembic para migrations do API Gateway.`, `Run migrations in 'offline' mode.      This configures the context with just a`, `Run migrations in 'online' mode.      In this scenario we need to create an En` to the rest of the system?**
+  _5950 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.03424056189640035 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03063063063063063 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.043202257097513665 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06306306306306306 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.02564102564102564 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.025323817076394396 - nodes in this community are weakly interconnected._
