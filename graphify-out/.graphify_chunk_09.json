@@ -1,0 +1,53 @@
+{
+  "nodes": [
+    {"id": "runaserp_readme_project", "label": "Runas ERP Project", "type": "document", "properties": {"description": "Sistema ERP completo para comércio de alimentos e bebidas com arquitetura de microsserviços", "status": "Operacional", "version": "2.0.0", "date": "Junho 2026", "total_endpoints": 78, "lines_of_code": 15000}, "confidence": 1.0},
+    {"id": "runaserp_readme_architecture", "label": "Microservices Architecture", "type": "concept", "properties": {"services": 5, "pattern": "Database per Service", "communication": "Event-Driven", "cache": "Redis"}, "confidence": 1.0},
+    {"id": "runaserp_readme_tech_backend", "label": "Backend Technologies", "type": "concept", "properties": {"framework": "FastAPI 0.109", "orm": "SQLAlchemy 2.0", "database": "PostgreSQL 15", "cache": "Redis 7", "messaging": "RabbitMQ 3.12"}, "confidence": 1.0},
+    {"id": "runaserp_readme_tech_frontend", "label": "Frontend Technologies", "type": "concept", "properties": {"library": "React 18", "language": "TypeScript 5", "ui": "React Bootstrap", "data_fetching": "SWR", "routing": "React Router"}, "confidence": 1.0},
+    {"id": "runaserp_readme_modules_complete", "label": "Complete Modules", "type": "concept", "properties": {"api_gateway": "100%", "clientes": "100%", "produtos": "100%", "loja_online": "100%"}, "confidence": 1.0},
+    {"id": "runaserp_readme_modules_backend_ready", "label": "Backend Ready Modules", "type": "concept", "properties": {"vendas_pdv": "Backend 100%, Frontend 0%", "estoque": "Backend 100%, Frontend 0%", "priority": "Alta"}, "confidence": 1.0},
+    {"id": "runaserp_readme_auth_system", "label": "Authentication System", "type": "concept", "properties": {"method": "OAuth2 with JWT", "authorization": "RBAC", "roles": ["ADMIN", "GERENTE", "VENDEDOR", "OPERADOR"]}, "confidence": 1.0},
+    {"id": "runaserp_apigateway_requirements", "label": "API Gateway Dependencies", "type": "document", "properties": {"fastapi": "0.109.0", "uvicorn": "0.27.0", "sqlalchemy": "2.0.36", "redis": "5.0.1", "structlog": "24.1.0", "python_jose": "3.3.0", "passlib": "1.7.4"}, "confidence": 1.0},
+    {"id": "runaserp_services_requirements_common", "label": "Common Service Dependencies", "type": "concept", "properties": {"fastapi": "0.109.0", "sqlalchemy": "2.0.36", "alembic": "1.13.1", "pydantic": "2.5.3", "httpx": "0.26.0", "structlog": "24.1.0", "aio_pika": "9.3.1", "redis": "5.0.1", "celery": "5.3.4", "validate_docbr": "1.10.0"}, "confidence": 1.0},
+    {"id": "runaserp_frontend_design_system", "label": "Frontend Design System", "type": "concept", "properties": {"theme": "Dark Mode First", "palette": "Linear, Vercel, Stripe inspired", "typography": "Inter font", "spacing": "8px multiples"}, "confidence": 1.0},
+    {"id": "runaserp_frontend_oauth", "label": "Frontend OAuth Support", "type": "concept", "properties": {"google": "Gmail", "microsoft": "Outlook/Office 365"}, "confidence": 1.0},
+    {"id": "runaserp_frontend_docker", "label": "Frontend Docker Setup", "type": "concept", "properties": {"development": "hot reload enabled", "production": "nginx serving", "environment": "Vite environment variables"}, "confidence": 1.0},
+    {"id": "runaserp_vendas_jobs", "label": "Vendas Automation Jobs", "type": "document", "properties": {"limpar_reservas": "every 1 minute", "verificar_timeouts_separacao": "every 1 hour", "limpar_carrinhos_abandonados": "daily at 3am", "verificar_pagamentos_pendentes": "every 5 minutes"}, "confidence": 1.0},
+    {"id": "runaserp_vendas_jobs_limpar_reservas", "label": "Limpar Reservas Job", "type": "concept", "properties": {"purpose": "Clean expired temporary stock reservations", "frequency": "every 1 minute", "removes": "expired cart and checkout reservations"}, "confidence": 1.0},
+    {"id": "runaserp_vendas_jobs_verificar_timeouts", "label": "Verificar Timeouts Job", "type": "concept", "properties": {"purpose": "Check separation timeouts for CONFIRMED sales", "frequency": "every 1 hour", "12h": "warning log", "24h": "critical log", "48h": "auto-cancellation + stock release + customer notification"}, "confidence": 1.0},
+    {"id": "runaserp_vendas_jobs_limpar_carrinhos", "label": "Limpar Carrinhos Job", "type": "concept", "properties": {"purpose": "Clean abandoned carts from Redis", "frequency": "daily at 3am", "threshold": "> 7 days without access"}, "confidence": 1.0},
+    {"id": "runaserp_vendas_jobs_verificar_pagamentos", "label": "Verificar Pagamentos Job", "type": "concept", "properties": {"purpose": "Cancel sales with expired pending online payment", "frequency": "every 5 minutes", "timeout": "> 5 minutes", "status": "PENDENTE_PAGAMENTO", "actions": "cancel + release stock + notify customer"}, "confidence": 1.0},
+    {"id": "runaserp_vendas_jobs_scheduling", "label": "Jobs Scheduling Options", "type": "concept", "properties": {"cron": "Linux/MacOS", "task_scheduler": "Windows", "supervisor": "Docker", "celery": "Production recommendation with Redis broker"}, "confidence": 1.0},
+    {"id": "runaserp_docker_evolution_api", "label": "Evolution API WhatsApp", "type": "concept", "properties": {"image": "atendai/evolution-api:latest", "port": 8080, "database_provider": "postgresql", "redis_cache": true, "purpose": "WhatsApp integration"}, "confidence": 1.0},
+    {"id": "runaserp_docker_celery", "label": "Celery Workers", "type": "concept", "properties": {"status": "Disabled until celery_app.py implemented", "worker": "celery -A celery_app worker", "beat": "celery -A celery_app beat", "broker": "RabbitMQ", "backend": "Redis"}, "confidence": 1.0},
+    {"id": "runaserp_frontend_html_index", "label": "Frontend Index HTML", "type": "document", "properties": {"lang": "pt-BR", "icon": "/logo.svg", "title": "Runas", "description": "Runas - Sistema de gestão Empresárial", "entry_point": "/src/main.tsx"}, "confidence": 1.0},
+    {"id": "runaserp_frontend_test_html", "label": "Frontend Test HTML", "type": "document", "properties": {"purpose": "JavaScript and API testing", "tests": ["JavaScript execution", "Backend login"], "api_endpoint": "http://localhost:8000/auth/login", "credentials": "admin@runas.com / Admin@123"}, "confidence": 1.0}
+  ],
+  "edges": [
+    {"from": "runaserp_readme_project", "to": "runaserp_readme_architecture", "label": "uses", "confidence": 1.0},
+    {"from": "runaserp_readme_project", "to": "runaserp_readme_tech_backend", "label": "implements_with", "confidence": 1.0},
+    {"from": "runaserp_readme_project", "to": "runaserp_readme_tech_frontend", "label": "implements_with", "confidence": 1.0},
+    {"from": "runaserp_readme_project", "to": "runaserp_readme_modules_complete", "label": "has_completed", "confidence": 1.0},
+    {"from": "runaserp_readme_project", "to": "runaserp_readme_modules_backend_ready", "label": "has_pending", "confidence": 1.0},
+    {"from": "runaserp_readme_project", "to": "runaserp_readme_auth_system", "label": "uses", "confidence": 1.0},
+    {"from": "runaserp_apigateway_requirements", "to": "runaserp_readme_tech_backend", "label": "specifies_dependencies", "confidence": 1.0},
+    {"from": "runaserp_tests_implementation_status", "to": "runaserp_tests_coverage_analysis", "label": "reports_to", "confidence": 1.0},
+    {"from": "runaserp_tests_strategy", "to": "runaserp_readme_project", "label": "guides_testing_for", "confidence": 1.0},
+    {"from": "runaserp_tests_ready_to_run", "to": "runaserp_tests_strategy", "label": "implements", "confidence": 1.0},
+    {"from": "runaserp_tests_commands", "to": "runaserp_tests_ready_to_run", "label": "executes", "confidence": 1.0},
+    {"from": "runaserp_docker_compose_production", "to": "runaserp_readme_project", "label": "deploys", "confidence": 1.0},
+    {"from": "runaserp_docker_evolution_api", "to": "runaserp_docker_dev_infrastructure", "label": "is_part_of", "confidence": 1.0},
+    {"from": "runaserp_docker_celery", "to": "runaserp_docker_dev_infrastructure", "label": "is_part_of", "confidence": 1.0},
+    {"from": "runaserp_frontend_html_index", "to": "runaserp_frontend_readme", "label": "entry_point_for", "confidence": 1.0},
+    {"from": "runaserp_frontend_test_html", "to": "runaserp_frontend_readme", "label": "tests", "confidence": 1.0}
+  ],
+  "hyperedges": [
+    {"id": "he_runaserp_chunk09_microservices_stack", "label": "Microservices Stack", "nodes": ["runaserp_readme_architecture", "runaserp_docker_dev_microservices", "runaserp_docker_dev_infrastructure"], "type": "architectural_pattern", "confidence": 1.0},
+    {"id": "he_runaserp_chunk09_tech_stack", "label": "Technology Stack", "nodes": ["runaserp_readme_tech_backend", "runaserp_readme_tech_frontend", "runaserp_apigateway_requirements", "runaserp_services_requirements_common"], "type": "technology_group", "confidence": 1.0},
+    {"id": "he_runaserp_chunk09_docker_deployment", "label": "Docker Deployment", "nodes": ["runaserp_docker_dev_infrastructure", "runaserp_docker_dev_microservices", "runaserp_docker_dev_frontend", "runaserp_docker_nginx", "runaserp_docker_compose_production"], "type": "deployment_configuration", "confidence": 1.0},
+    {"id": "he_runaserp_chunk09_empresas_multitenancy", "label": "Multi-tenancy System", "nodes": ["runaserp_empresas_service", "runaserp_empresas_plans", "runaserp_empresas_softdelete"], "type": "business_feature", "confidence": 1.0},
+    {"id": "he_runaserp_chunk09_testing_framework", "label": "Testing Framework", "nodes": ["runaserp_tests_coverage_analysis", "runaserp_tests_critical_gaps", "runaserp_tests_implementation_status", "runaserp_tests_strategy", "runaserp_tests_ready_to_run", "runaserp_tests_commands"], "type": "testing_infrastructure", "confidence": 1.0}
+  ],
+  "input_tokens": 47000,
+  "output_tokens": 6500
+}

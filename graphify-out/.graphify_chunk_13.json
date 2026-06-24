@@ -1,0 +1,233 @@
+{
+  "nodes": [
+    {
+      "id": "chunk_13_logo_png_brand_runas",
+      "type": "brand",
+      "name": "Runas",
+      "description": "Primary brand identity for the Runas ERP system - a complete management solution for food and beverage commerce",
+      "properties": {
+        "brand_name": "Runas",
+        "industry": "ERP Software",
+        "target_market": "Small and medium-sized food and beverage businesses",
+        "tagline": "Sistema ERP completo para comércio de alimentos e bebidas",
+        "file_location": "docs/_archive/documentacao-original/Documentacao-Original/Imagens/logo.png",
+        "file_type": "PNG image",
+        "asset_type": "logo"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_logo_png_visual_identity",
+      "type": "visual_identity",
+      "name": "Runas Logo Visual Identity",
+      "description": "Visual branding asset representing the Runas ERP brand identity",
+      "properties": {
+        "asset_type": "logo",
+        "format": "PNG",
+        "usage": "brand_identity",
+        "location": "documentation_archive",
+        "context": "original_documentation"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_logo_png_documentation_asset",
+      "type": "documentation_asset",
+      "name": "Logo Documentation Asset",
+      "description": "Branding image file archived in original documentation",
+      "properties": {
+        "file_name": "logo.png",
+        "file_path": "E:\\GitHub\\ERP\\RunasERP\\docs\\_archive\\documentacao-original\\Documentacao-Original\\Imagens\\logo.png",
+        "asset_category": "branding",
+        "archive_status": "archived",
+        "documentation_section": "original_documentation"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_logo_png_erp_system",
+      "type": "software_system",
+      "name": "Runas ERP System",
+      "description": "Complete ERP solution for food and beverage commerce with microservices architecture",
+      "properties": {
+        "system_name": "Runas",
+        "system_type": "ERP",
+        "architecture": "microservices",
+        "version": "2.0.0",
+        "status": "operational",
+        "primary_features": [
+          "client_management",
+          "product_catalog",
+          "inventory_control",
+          "sales_system",
+          "financial_management",
+          "whatsapp_notifications",
+          "pix_payments"
+        ],
+        "tech_stack": {
+          "backend": "FastAPI + Python 3.12",
+          "frontend": "React + TypeScript",
+          "database": "PostgreSQL 15",
+          "cache": "Redis 7",
+          "messaging": "RabbitMQ 3.12"
+        }
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_logo_png_brand_attributes",
+      "type": "brand_attributes",
+      "name": "Runas Brand Characteristics",
+      "description": "Key attributes and positioning of the Runas brand",
+      "properties": {
+        "positioning": "Accessible ERP for small Brazilian businesses",
+        "values": [
+          "simplicity",
+          "accessibility",
+          "control",
+          "flexibility"
+        ],
+        "target_audience": "Small and medium food and beverage retailers",
+        "geographic_focus": "Brazil",
+        "brand_promise": "Complete management solution with modern microservices architecture"
+      },
+      "confidence": 0.95,
+      "source": "INFERRED"
+    },
+    {
+      "id": "chunk_13_logo_png_image_archive",
+      "type": "archive_location",
+      "name": "Original Documentation Image Archive",
+      "description": "Archive folder containing original branding and documentation images",
+      "properties": {
+        "folder_path": "docs/_archive/documentacao-original/Documentacao-Original/Imagens/",
+        "archive_type": "documentation",
+        "status": "archived",
+        "purpose": "historical_reference"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    }
+  ],
+  "edges": [
+    {
+      "id": "chunk_13_edge_logo_represents_brand",
+      "source": "chunk_13_logo_png_visual_identity",
+      "target": "chunk_13_logo_png_brand_runas",
+      "relation": "REPRESENTS",
+      "properties": {
+        "relationship": "visual_representation",
+        "description": "Logo image visually represents the Runas brand"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_edge_logo_documents_system",
+      "source": "chunk_13_logo_png_visual_identity",
+      "target": "chunk_13_logo_png_erp_system",
+      "relation": "DOCUMENTS",
+      "properties": {
+        "relationship": "brand_identity_for_system",
+        "description": "Logo serves as brand identity for the Runas ERP system"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_edge_asset_stored_in_archive",
+      "source": "chunk_13_logo_png_documentation_asset",
+      "target": "chunk_13_logo_png_image_archive",
+      "relation": "STORED_IN",
+      "properties": {
+        "relationship": "file_location",
+        "description": "Logo file is stored in the original documentation archive"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_edge_brand_has_attributes",
+      "source": "chunk_13_logo_png_brand_runas",
+      "target": "chunk_13_logo_png_brand_attributes",
+      "relation": "HAS_ATTRIBUTES",
+      "properties": {
+        "relationship": "brand_characteristics",
+        "description": "Runas brand is characterized by specific values and positioning"
+      },
+      "confidence": 0.95,
+      "source": "INFERRED"
+    },
+    {
+      "id": "chunk_13_edge_asset_is_visual_identity",
+      "source": "chunk_13_logo_png_documentation_asset",
+      "target": "chunk_13_logo_png_visual_identity",
+      "relation": "IS_INSTANCE_OF",
+      "properties": {
+        "relationship": "type_classification",
+        "description": "Documentation asset is an instance of visual identity branding"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    },
+    {
+      "id": "chunk_13_edge_brand_identifies_system",
+      "source": "chunk_13_logo_png_brand_runas",
+      "target": "chunk_13_logo_png_erp_system",
+      "relation": "IDENTIFIES",
+      "properties": {
+        "relationship": "brand_system_association",
+        "description": "Runas brand identifies and represents the ERP software system"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "chunk_13_hyperedge_brand_ecosystem",
+      "name": "Runas Brand Identity Ecosystem",
+      "description": "Complete brand identity system connecting visual assets, brand values, and the software system",
+      "nodes": [
+        "chunk_13_logo_png_visual_identity",
+        "chunk_13_logo_png_brand_runas",
+        "chunk_13_logo_png_brand_attributes",
+        "chunk_13_logo_png_erp_system"
+      ],
+      "properties": {
+        "ecosystem_type": "brand_identity",
+        "components": [
+          "visual_identity",
+          "brand_positioning",
+          "system_association"
+        ],
+        "purpose": "unified_brand_representation"
+      },
+      "confidence": 0.95,
+      "source": "INFERRED"
+    },
+    {
+      "id": "chunk_13_hyperedge_documentation_archive",
+      "name": "Documentation Asset Management",
+      "description": "Archival system for original documentation and branding assets",
+      "nodes": [
+        "chunk_13_logo_png_documentation_asset",
+        "chunk_13_logo_png_image_archive",
+        "chunk_13_logo_png_visual_identity"
+      ],
+      "properties": {
+        "management_type": "documentation_archival",
+        "purpose": "historical_reference_and_asset_storage",
+        "status": "archived"
+      },
+      "confidence": 1.0,
+      "source": "EXTRACTED"
+    }
+  ],
+  "input_tokens": 32430,
+  "output_tokens": 1850
+}

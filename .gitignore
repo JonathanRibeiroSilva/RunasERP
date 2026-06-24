@@ -86,5 +86,6 @@ REORGANIZACAO-COMPLETA.md
 dev-scripts/
 *.bat
 
-# Graphify - regenerar localmente
-graphify-out/
+# Graphify - Agora versionado e atualizado via GitHub Actions
+# O workflow .github/workflows/graphify-update.yml mantém sincronizado
+

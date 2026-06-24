@@ -1,0 +1,367 @@
+{
+  "nodes": [
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Venda",
+        "type": "class",
+        "schema": "vendas",
+        "description": "Entidade central de venda com workflow completo",
+        "key_attributes": "id, empresa_id, numero_venda, cliente_id, valor_total, status",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_itemvenda",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "ItemVenda",
+        "type": "class",
+        "schema": "vendas",
+        "description": "Item individual de venda",
+        "key_attributes": "id, venda_id, produto_id, quantidade, preco_unitario",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_pagamentovenda",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "PagamentoVenda",
+        "type": "class",
+        "schema": "vendas",
+        "description": "Forma de pagamento da venda",
+        "key_attributes": "id, venda_id, forma_pagamento, valor_pago",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Produto",
+        "type": "class",
+        "schema": "produtos",
+        "description": "Entidade de produto do catálogo",
+        "key_attributes": "id, empresa_id, categoria_id, nome, preco, custo, sku",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_variante",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Variante",
+        "type": "class",
+        "schema": "produtos",
+        "description": "Variante de produto com atributos",
+        "key_attributes": "id, produto_id, sku, preco_venda",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_categoria",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Categoria",
+        "type": "class",
+        "schema": "produtos",
+        "description": "Categoria de produtos",
+        "key_attributes": "id, empresa_id, nome",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_cliente",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Cliente",
+        "type": "class",
+        "schema": "clientes",
+        "description": "Cadastro de cliente",
+        "key_attributes": "id, cpf, nome, limite_credito",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_endereco",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Endereco",
+        "type": "class",
+        "schema": "clientes",
+        "description": "Endereço do cliente",
+        "key_attributes": "id, cliente_id, cep, logradouro",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_estoque",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Estoque",
+        "type": "class",
+        "schema": "estoque",
+        "description": "Controle de estoque",
+        "key_attributes": "id, produto_id, quantidade",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_movimentacao",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Movimentacao",
+        "type": "class",
+        "schema": "estoque",
+        "description": "Movimentação de estoque",
+        "key_attributes": "id, estoque_id, tipo, quantidade",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_lote",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "Lote",
+        "type": "class",
+        "schema": "estoque",
+        "description": "Lote de produto com validade",
+        "key_attributes": "id, codigo, data_validade",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_reservaestoquevenda",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "ReservaEstoqueVenda",
+        "type": "class",
+        "schema": "vendas",
+        "description": "Reserva estoque para venda",
+        "key_attributes": "id, venda_id, produto_id, status",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_atributovariante",
+      "labels": ["Entity", "Class", "DomainModel"],
+      "properties": {
+        "name": "AtributoVariante",
+        "type": "class",
+        "schema": "produtos",
+        "description": "Atributo de variante",
+        "key_attributes": "id, variante_id, chave, valor",
+        "confidence": 1.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_cliente",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "foreign_key": "cliente_id",
+        "description": "Venda de cliente",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_itemvenda",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "foreign_key": "venda_id",
+        "description": "Item de venda",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_itemvenda",
+      "relationship": "HAS_MANY",
+      "properties": {
+        "cardinality": "one-to-many",
+        "description": "Venda tem itens",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_pagamentovenda",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "foreign_key": "venda_id",
+        "description": "Pagamento de venda",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_itemvenda",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+      "relationship": "REFERENCES",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Item referencia produto",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_categoria",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Produto de categoria",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_variante",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Variante de produto",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_atributovariante",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_variante",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Atributo de variante",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_endereco",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_cliente",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Endereço de cliente",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_estoque",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+      "relationship": "TRACKS",
+      "properties": {
+        "cardinality": "one-to-one",
+        "description": "Estoque rastreia produto",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_movimentacao",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_estoque",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Movimentação de estoque",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_lote",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_estoque",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Lote de estoque",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_reservaestoquevenda",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+      "relationship": "BELONGS_TO",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Reserva para venda",
+        "confidence": 1.0
+      }
+    },
+    {
+      "from": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_reservaestoquevenda",
+      "to": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+      "relationship": "REFERENCES",
+      "properties": {
+        "cardinality": "many-to-one",
+        "description": "Reserva de produto",
+        "confidence": 1.0
+      }
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_pattern_multitenancy",
+      "nodes": [
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_cliente",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_estoque"
+      ],
+      "relationship": "MULTI_TENANCY_PATTERN",
+      "properties": {
+        "pattern": "multi-tenancy",
+        "description": "Entidades com empresa_id",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_pattern_sales_workflow",
+      "nodes": [
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_venda",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_itemvenda",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_pagamentovenda",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_reservaestoquevenda"
+      ],
+      "relationship": "SALES_WORKFLOW",
+      "properties": {
+        "pattern": "aggregate-root",
+        "description": "Venda como agregado raiz",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_pattern_product_variants",
+      "nodes": [
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_produto",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_variante",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_atributovariante"
+      ],
+      "relationship": "PRODUCT_VARIANT_PATTERN",
+      "properties": {
+        "pattern": "product-variants",
+        "description": "Produto com variantes",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_pattern_inventory_control",
+      "nodes": [
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_estoque",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_movimentacao",
+        "docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_lote"
+      ],
+      "relationship": "INVENTORY_CONTROL_PATTERN",
+      "properties": {
+        "pattern": "inventory-management",
+        "description": "Controle de estoque",
+        "confidence": 1.0
+      }
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

@@ -1,0 +1,42 @@
+{
+  "nodes": [
+    {"id": "docs_index", "type": "document", "label": "Documentation Index", "properties": {"file_path": "docs/INDEX.md", "purpose": "navigation", "structure": "5 main folders"}, "confidence": 1.0},
+    {"id": "docs_readme", "type": "document", "label": "Documentation README", "properties": {"file_path": "docs/README.md", "total_files": "40+", "api_lines": 3271}, "confidence": 1.0},
+    {"id": "analise_catalogo", "type": "concept", "label": "Catalog-Stock Separation", "properties": {"key_finding": "catalog visibility based on product.ativo not stock", "services": "produtos,estoque"}, "confidence": 1.0},
+    {"id": "changelog_carrinho_checkout", "type": "document", "label": "Cart & Checkout Complete Fix", "properties": {"date": "2026-06-21", "scope": "loja-online", "fixes": 3}, "confidence": 1.0},
+    {"id": "changelog_empresa_slug_fix", "type": "document", "label": "Public Cart Endpoints Fix", "properties": {"date": "2026-06-21", "issue": "wrong_tenant_detection", "fix": "get_empresa_id_from_slug"}, "confidence": 1.0},
+    {"id": "changelog_carrinho_loja", "type": "document", "label": "Shopping Cart Implementation", "properties": {"date": "2026-06-11", "lines_added": 848, "new_files": 3}, "confidence": 1.0},
+    {"id": "changelog_loja_fase5", "type": "document", "label": "Jobs & Automation Phase 5", "properties": {"date": "2026-06-11", "jobs": 4, "timeouts": "12h,24h,48h,5min"}, "confidence": 1.0},
+    {"id": "changelog_loja_fase6", "type": "document", "label": "Admin Endpoints Phase 6", "properties": {"date": "2026-06-11", "routers": 2, "features": "entrega,pagamento"}, "confidence": 1.0},
+    {"id": "changelog_loja_fase7", "type": "document", "label": "Final Improvements Phase 7", "properties": {"date": "2026-06-11", "focus": "historico_status,rastreamento,notificacoes"}, "confidence": 1.0},
+    {"id": "changelog_loja_online", "type": "document", "label": "Online Store Implementation", "properties": {"date": "2026-06-09", "lines": 1180, "features": "carrinho_redis,checkout,rastreamento"}, "confidence": 1.0},
+    {"id": "changelog_loja_ux", "type": "document", "label": "Store UX Improvements", "properties": {"date": "2026-06-12", "version": "1.2.0", "change": "menu_reorganization"}, "confidence": 1.0},
+    {"id": "changelog_menu_hibrido", "type": "document", "label": "Hybrid Menu", "properties": {"date": "2026-06-12", "feature": "submenu_support", "structure": "collapsible"}, "confidence": 1.0},
+    {"id": "changelog_nome_fantasia_fix", "type": "document", "label": "Trade Name Fix", "properties": {"date": "2026-06-12", "bug": "public_endpoint_blocked", "fix": "public_route_before_protected"}, "confidence": 1.0},
+    {"id": "multitenancy_pattern", "type": "concept", "label": "Multi-tenancy Pattern", "properties": {"key": "empresa_id", "isolation": "complete", "services": "clientes,produtos,estoque,empresas"}, "confidence": 1.0},
+    {"id": "loja_online_mvp", "type": "concept", "label": "Online Store MVP", "properties": {"phases": 7, "redis_cart": "7_days_ttl", "mercadopago": "5min_timeout"}, "confidence": 1.0},
+    {"id": "carrinho_service", "type": "rationale", "label": "Shopping Cart in Redis", "properties": {"reason": "performance", "latency": "<1ms", "ttl": "7_days", "auto_cleanup": true}, "confidence": 1.0},
+    {"id": "historico_status", "type": "concept", "label": "Status History", "properties": {"purpose": "audit_trail", "tracks": "status_changes", "includes": "usuario_id,observacao"}, "confidence": 1.0}
+  ],
+  "edges": [
+    {"source": "docs_index", "target": "docs_readme", "relation": "references", "properties": {"type": "navigation"}, "confidence": 1.0},
+    {"source": "analise_catalogo", "target": "multitenancy_pattern", "relation": "applies", "properties": {"context": "product_visibility"}, "confidence": 0.95},
+    {"source": "changelog_carrinho_checkout", "target": "changelog_empresa_slug_fix", "relation": "fixes", "properties": {"scope": "tenant_detection"}, "confidence": 1.0},
+    {"source": "changelog_carrinho_loja", "target": "loja_online_mvp", "relation": "implements", "properties": {"phase": 1}, "confidence": 1.0},
+    {"source": "changelog_clientes_final", "target": "changelog_clientes_multitenancy", "relation": "completes", "properties": {"status": "100%"}, "confidence": 1.0},
+    {"source": "changelog_clientes_multitenancy", "target": "multitenancy_pattern", "relation": "implements", "properties": {"service": "clientes"}, "confidence": 1.0},
+    {"source": "changelog_empresas_multitenancy", "target": "multitenancy_pattern", "relation": "implements", "properties": {"service": "empresas"}, "confidence": 1.0},
+    {"source": "changelog_estoque_multitenancy", "target": "multitenancy_pattern", "relation": "implements", "properties": {"service": "estoque"}, "confidence": 1.0},
+    {"source": "changelog_loja_fase4", "target": "loja_online_mvp", "relation": "implements", "properties": {"phase": 4}, "confidence": 1.0},
+    {"source": "changelog_loja_fase5", "target": "loja_online_mvp", "relation": "implements", "properties": {"phase": 5}, "confidence": 1.0},
+    {"source": "changelog_loja_fase6", "target": "loja_online_mvp", "relation": "implements", "properties": {"phase": 6}, "confidence": 1.0},
+    {"source": "changelog_loja_fase7", "target": "loja_online_mvp", "relation": "implements", "properties": {"phase": 7}, "confidence": 1.0},
+    {"source": "changelog_loja_online", "target": "carrinho_service", "relation": "justifies", "properties": {"reason": "performance"}, "confidence": 1.0},
+    {"source": "changelog_loja_fase7", "target": "historico_status", "relation": "implements", "properties": {"integration": "complete"}, "confidence": 1.0},
+    {"source": "loja_online_mvp", "target": "carrinho_service", "relation": "uses", "properties": {"storage": "redis"}, "confidence": 1.0},
+    {"source": "historico_status", "target": "loja_online_mvp", "relation": "enables", "properties": {"feature": "tracking"}, "confidence": 1.0}
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
