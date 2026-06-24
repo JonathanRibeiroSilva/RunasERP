@@ -416,10 +416,6 @@ const CheckoutPage = () => {
               </button>
             </div>
 
-            <div className="modo-divider">
-              <span>OU</span>
-            </div>
-
             <div className="modo-card">
               <div className="modo-header">
                 <FiUserPlus size={32} />
