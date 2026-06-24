@@ -824,66 +824,74 @@
 
 // ==================== LOGIN CHECKOUT ====================
 .login-checkout {
-  max-width: 450px;
-  margin: $spacer-7 auto;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
   padding: $spacer-4;
 
   @media (max-width: #{$breakpoint-md - 1px}) {
-    margin: $spacer-4 auto;
     padding: $spacer-3;
   }
 
   @media (max-width: #{$breakpoint-sm - 1px}) {
-    margin: $spacer-3 auto;
     padding: $spacer-2;
     max-width: 100%;
   }
 
   .login-card {
+    width: 100%;
     background: $surface;
     border: 1px solid $border-default;
     border-radius: $border-radius-lg;
-    padding: $spacer-6;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: $spacer-5;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 
     @media (max-width: #{$breakpoint-sm - 1px}) {
       padding: $spacer-4;
     }
 
-    h2 {
-      display: flex;
-      align-items: center;
-      gap: $spacer-2;
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
-      color: $text-primary;
-      margin: 0 0 $spacer-2 0;
+    // Header
+    .login-header {
+      text-align: center;
+      margin-bottom: $spacer-4;
 
       svg {
         color: $primary;
+        margin-bottom: $spacer-2;
       }
-    }
 
-    > p {
-      color: $text-secondary;
-      font-size: $font-size-sm;
-      margin: 0 0 $spacer-6 0;
+      h2 {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-bold;
+        color: $text-primary;
+        margin: 0 0 $spacer-2 0;
+
+        @media (max-width: #{$breakpoint-sm - 1px}) {
+          font-size: $font-size-base;
+        }
+      }
+
+      > p {
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        margin: 0;
+      }
     }
 
     // Social Login Buttons
     .social-login-buttons {
       display: flex;
       flex-direction: column;
-      gap: $spacer-3;
-      margin-bottom: $spacer-5;
+      gap: $spacer-2;
+      margin-bottom: $spacer-3;
 
       button {
         width: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: $spacer-3;
-        padding: $spacer-3;
+        gap: $spacer-2;
+        padding: $spacer-2 $spacer-3;
         border: 1px solid $border-default;
         border-radius: $border-radius;
         background: white;
@@ -897,7 +905,7 @@
           background: $surface-hover;
           border-color: $border-hover;
           transform: translateY(-1px);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         &:disabled {
@@ -913,12 +921,14 @@
       .btn-google {
         &:hover:not(:disabled) {
           border-color: #4285F4;
+          box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
         }
       }
 
       .btn-microsoft {
         &:hover:not(:disabled) {
           border-color: #00a4ef;
+          box-shadow: 0 2px 8px rgba(0, 164, 239, 0.2);
         }
       }
     }
@@ -927,7 +937,7 @@
     .divider {
       position: relative;
       text-align: center;
-      margin: $spacer-5 0;
+      margin: $spacer-3 0;
 
       &::before {
         content: '';
@@ -942,7 +952,7 @@
       span {
         position: relative;
         display: inline-block;
-        padding: 0 $spacer-3;
+        padding: 0 $spacer-2;
         background: $surface;
         color: $text-secondary;
         font-size: $font-size-sm;
@@ -951,7 +961,7 @@
     }
 
     .form-group {
-      margin-bottom: $spacer-4;
+      margin-bottom: $spacer-3;
 
       label {
         display: block;
@@ -963,10 +973,10 @@
 
       input {
         width: 100%;
-        padding: $spacer-3;
+        padding: $spacer-2 $spacer-3;
         border: 1px solid $border-default;
         border-radius: $border-radius;
-        font-size: $font-size-base;
+        font-size: $font-size-sm;
         transition: $transition-base;
 
         &:focus {
@@ -980,17 +990,22 @@
           cursor: not-allowed;
           opacity: 0.6;
         }
+
+        &::placeholder {
+          color: $text-tertiary;
+        }
       }
     }
 
     .login-actions {
       display: flex;
       flex-direction: column;
-      gap: $spacer-3;
-      margin-top: $spacer-6;
+      gap: $spacer-2;
+      margin-top: $spacer-4;
 
       .btn-primary {
         width: 100%;
+        padding: $spacer-2 $spacer-3;
       }
 
       .btn-link {
@@ -1015,8 +1030,8 @@
     }
 
     .login-footer {
-      margin-top: $spacer-6;
-      padding-top: $spacer-4;
+      margin-top: $spacer-4;
+      padding-top: $spacer-3;
       border-top: 1px solid $border-default;
       text-align: center;
 

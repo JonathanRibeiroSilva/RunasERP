@@ -1,0 +1,44 @@
+# ============================================
+# CLOUDFLARE TUNNEL - Extensão para MVP
+# ============================================
+# Uso: docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
+#
+# Este arquivo ADICIONA o Cloudflare Tunnel ao ambiente de desenvolvimento.
+# Não é standalone - precisa do docker-compose.dev.yml
+# ============================================
+
+services:
+  # Override frontend para usar URL do domínio real
+  frontend-dev:
+    environment:
+      VITE_API_URL: /api
+      VITE_OAUTH_REDIRECT_URI: https://runaserp.com.br/auth/callback
+      FRONTEND_URL: https://runaserp.com.br
+
+  # Override api-gateway para reconhecer domínio real
+  api-gateway:
+    environment:
+      FRONTEND_URL: https://runaserp.com.br
+
+  # Cloudflare Tunnel
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: erp-cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run
+    depends_on:
+      - nginx
+    networks:
+      - erp-network
+    restart: unless-stopped
+    volumes:
+      - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
+      - ~/.cloudflared:/etc/cloudflared:ro
+    environment:
+      TUNNEL_METRICS: 0.0.0.0:9126
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9126/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - proxy

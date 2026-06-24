@@ -1,0 +1,9 @@
+﻿tunnel: 2c06d803-6aeb-47da-afd0-c644e9ce3fba
+credentials-file: /etc/cloudflared/2c06d803-6aeb-47da-afd0-c644e9ce3fba.json
+
+ingress:
+  - hostname: runaserp.com.br
+    service: http://nginx:80
+  - hostname: www.runaserp.com.br
+    service: http://nginx:80
+  - service: http_status:404

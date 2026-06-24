@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/Login/LoginPage';
 import RegisterPage from '@/pages/Register/RegisterPage';
 import OAuthCallbackPage from '@/pages/Auth/OAuthCallbackPage';
+import GoogleCallback from '@/pages/Auth/GoogleCallback';
+import MicrosoftCallback from '@/pages/Auth/MicrosoftCallback';
 import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/Auth/ResetPasswordPage';
 import DashboardPage from '@/pages/Dashboard/DashboardPage';
@@ -106,6 +108,10 @@ function App() {
         <Route path="/c/:empresaSlug/checkout" element={<CheckoutPage />} />
         <Route path="/c/:empresaSlug/pedido/:numeroPedido" element={<RastreamentoPedidoPage />} />
         <Route path="/c/:empresaSlug/minha-conta/pedidos" element={<MeusPedidosPage />} />
+
+        {/* OAuth Callback Routes - Cliente */}
+        <Route path="/auth/callback/google" element={<GoogleCallback />} />
+        <Route path="/auth/callback/microsoft" element={<MicrosoftCallback />} />
 
         {/* OAuth Callback Route */}
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />

@@ -1,0 +1,61 @@
+@import '@/styles/variables';
+
+.auth-callback {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $background;
+  padding: $spacer-4;
+
+  .auth-callback-card {
+    background: $surface;
+    border: 1px solid $border-default;
+    border-radius: $border-radius-lg;
+    padding: $spacer-7;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+    h2 {
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      margin: $spacer-4 0 $spacer-2 0;
+    }
+
+    p {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin: 0 0 $spacer-2 0;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid $border-default;
+      border-top-color: $primary;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    .error-icon {
+      font-size: 48px;
+      margin-bottom: $spacer-2;
+    }
+
+    .redirect-info {
+      margin-top: $spacer-4;
+      font-size: $font-size-xs;
+      color: $text-tertiary;
+    }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

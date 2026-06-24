@@ -40,6 +40,9 @@ export default defineConfig({
       '127.0.0.1',
       '.ngrok-free.dev',
       '.ngrok.io',
+      'runaserp.com.br',
+      '.runaserp.com.br',
+      'www.runaserp.com.br',
     ],
     watch: {
       usePolling: true,

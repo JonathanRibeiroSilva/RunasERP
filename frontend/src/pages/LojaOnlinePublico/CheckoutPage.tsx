@@ -58,6 +58,16 @@ const CheckoutPage = () => {
   const [loginSenha, setLoginSenha] = useState('');
   const [fazendoLogin, setFazendoLogin] = useState(false);
 
+  // Registro
+  const [mostrarRegistro, setMostrarRegistro] = useState(false);
+  const [registroNome, setRegistroNome] = useState('');
+  const [registroEmail, setRegistroEmail] = useState('');
+  const [registroSenha, setRegistroSenha] = useState('');
+  const [registroConfirmarSenha, setRegistroConfirmarSenha] = useState('');
+  const [registroTelefone, setRegistroTelefone] = useState('');
+  const [registroCpf, setRegistroCpf] = useState('');
+  const [fazendoRegistro, setFazendoRegistro] = useState(false);
+
   // Steps
   const [currentStep, setCurrentStep] = useState<Step>(1);
 
@@ -141,6 +151,135 @@ const CheckoutPage = () => {
       Toast.error(mensagem);
     } finally {
       setFazendoLogin(false);
+    }
+  };
+
+  // Função OAuth Google
+  const fazerLoginGoogle = async () => {
+    setFazendoLogin(true);
+    try {
+      const empresaResponse = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+      const empresa_id = empresaResponse.data.id;
+      const redirect_uri = `${window.location.origin}/auth/callback/google`;
+      
+      const response = await apiPublica.post('/auth/cliente/oauth/google/init', {
+        redirect_uri,
+        empresa_id
+      });
+
+      const { auth_url, state } = response.data;
+      localStorage.setItem('oauth_state', state);
+      localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      window.location.href = auth_url;
+    } catch (error: any) {
+      Toast.error('Erro ao iniciar login com Google');
+      setFazendoLogin(false);
+    }
+  };
+
+  // Função OAuth Microsoft
+  const fazerLoginMicrosoft = async () => {
+    setFazendoLogin(true);
+    try {
+      const empresaResponse = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+      const empresa_id = empresaResponse.data.id;
+      const redirect_uri = `${window.location.origin}/auth/callback/microsoft`;
+      
+      const response = await apiPublica.post('/auth/cliente/oauth/microsoft/init', {
+        redirect_uri,
+        empresa_id
+      });
+
+      const { auth_url, state } = response.data;
+      localStorage.setItem('oauth_state', state);
+      localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      window.location.href = auth_url;
+    } catch (error: any) {
+      Toast.error('Erro ao iniciar login com Microsoft');
+      setFazendoLogin(false);
+    }
+  };
+
+  // Função de Registro
+  const fazerRegistro = async () => {
+    setErro('');
+    if (!registroNome || !registroEmail || !registroSenha || !registroConfirmarSenha || !registroTelefone || !registroCpf) {
+      Toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    if (registroSenha !== registroConfirmarSenha) {
+      Toast.error('As senhas não conferem');
+      return;
+    }
+    if (registroSenha.length < 8 || registroSenha.length > 20) {
+      Toast.error('Senha deve ter entre 8 e 20 caracteres');
+      return;
+    }
+    if (!/[A-Z]/.test(registroSenha)) {
+      Toast.error('Senha deve conter ao menos uma letra maiúscula');
+      return;
+    }
+    if (!/[a-z]/.test(registroSenha)) {
+      Toast.error('Senha deve conter ao menos uma letra minúscula');
+      return;
+    }
+    if (!/[0-9]/.test(registroSenha)) {
+      Toast.error('Senha deve conter ao menos um número');
+      return;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(registroSenha)) {
+      Toast.error('Senha deve conter ao menos um caractere especial');
+      return;
+    }
+    const cpfLimpo = unmask(registroCpf);
+    if (cpfLimpo.length !== 11) {
+      Toast.error('CPF deve ter 11 dígitos');
+      return;
+    }
+    const telefoneLimpo = unmask(registroTelefone);
+    if (telefoneLimpo.length < 10) {
+      Toast.error('Telefone inválido');
+      return;
+    }
+    setFazendoRegistro(true);
+    try {
+      const empresaResponse = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+      const empresa_id = empresaResponse.data.id;
+      const response = await apiPublica.post('/auth/cliente/register', {
+        nome: registroNome,
+        email: registroEmail,
+        senha: registroSenha,
+        cpf: cpfLimpo,
+        telefone: telefoneLimpo,
+        empresa_id
+      });
+      const { access_token, cliente } = response.data;
+      localStorage.setItem('cliente_token', access_token);
+      setClienteNovo({
+        nome: cliente.nome,
+        telefone: cliente.telefone || '',
+        email: cliente.email,
+        cpf: cliente.cpf || '',
+      });
+      setModoCheckout('guest');
+      setCurrentStep(1);
+      Toast.success(`Conta criada com sucesso! Bem-vindo, ${cliente.nome}!`);
+    } catch (error: any) {
+      let mensagem = 'Erro ao criar conta';
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (Array.isArray(detail)) {
+          mensagem = detail.map((err: any) => err.msg || err.message).join('; ');
+        } else if (typeof detail === 'string') {
+          mensagem = detail;
+        } else if (typeof detail === 'object') {
+          mensagem = detail.msg || detail.message || JSON.stringify(detail);
+        }
+      }
+      Toast.error(mensagem);
+      setErro(mensagem);
+    } finally {
+      setFazendoRegistro(false);
     }
   };
 
@@ -437,20 +576,20 @@ const CheckoutPage = () => {
         )}
 
         {/* Tela de Login */}
-        {modoCheckout === 'login' && (
+        {modoCheckout === 'login' && !mostrarRegistro && (
           <div className="login-checkout">
             <div className="login-card">
-              <h2><FiUser /> Login</h2>
-              <p>Entre com seus dados para continuar</p>
+              <div className="login-header">
+                <FiUser size={40} />
+                <h2>Bem-vindo de volta!</h2>
+                <p>Acesse sua conta para finalizar a compra</p>
+              </div>
 
               {/* Social Login Buttons */}
               <div className="social-login-buttons">
                 <button
                   className="btn-google"
-                  onClick={() => {
-                    // TODO: Implementar login com Google
-                    alert('Login com Google em desenvolvimento');
-                  }}
+                  onClick={fazerLoginGoogle}
                   disabled={fazendoLogin}
                 >
                   <svg viewBox="0 0 24 24" width="18" height="18">
@@ -459,15 +598,12 @@ const CheckoutPage = () => {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  Continuar com Google
+                  Entrar com Google
                 </button>
 
                 <button
                   className="btn-microsoft"
-                  onClick={() => {
-                    // TODO: Implementar login com Microsoft
-                    alert('Login com Microsoft em desenvolvimento');
-                  }}
+                  onClick={fazerLoginMicrosoft}
                   disabled={fazendoLogin}
                 >
                   <svg viewBox="0 0 24 24" width="18" height="18">
@@ -476,22 +612,23 @@ const CheckoutPage = () => {
                     <path fill="#7fba00" d="M1 13h10v10H1z"/>
                     <path fill="#ffb900" d="M13 13h10v10H13z"/>
                   </svg>
-                  Continuar com Microsoft
+                  Entrar com Microsoft
                 </button>
               </div>
 
               <div className="divider">
-                <span>ou entre com email</span>
+                <span>ou use seu e-mail</span>
               </div>
 
               <div className="form-group">
-                <label>Email *</label>
+                <label>E-mail *</label>
                 <input
                   type="email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="seu@email.com"
+                  placeholder="Digite seu e-mail"
                   disabled={fazendoLogin}
+                  autoComplete="email"
                 />
               </div>
 
@@ -501,8 +638,9 @@ const CheckoutPage = () => {
                   type="password"
                   value={loginSenha}
                   onChange={(e) => setLoginSenha(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Digite sua senha"
                   disabled={fazendoLogin}
+                  autoComplete="current-password"
                 />
               </div>
 
@@ -528,11 +666,114 @@ const CheckoutPage = () => {
                   Não tem conta?{' '}
                   <button
                     className="btn-link-inline"
-                    onClick={() => setModoCheckout('guest')}
+                    onClick={() => setMostrarRegistro(true)}
                   >
-                    Continue como convidado
+                    Criar conta agora
                   </button>
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tela de Registro */}
+        {modoCheckout === 'login' && mostrarRegistro && (
+          <div className="login-checkout">
+            <div className="login-card">
+              <div className="login-header">
+                <FiUserPlus size={40} />
+                <h2>Criar nova conta</h2>
+                <p>Preencha seus dados para se cadastrar</p>
+              </div>
+
+              <div className="form-group">
+                <label>Nome completo *</label>
+                <input
+                  type="text"
+                  value={registroNome}
+                  onChange={(e) => setRegistroNome(e.target.value)}
+                  placeholder="Digite seu nome completo"
+                  disabled={fazendoRegistro}
+                  autoComplete="name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>E-mail *</label>
+                <input
+                  type="email"
+                  value={registroEmail}
+                  onChange={(e) => setRegistroEmail(e.target.value)}
+                  placeholder="Digite seu e-mail"
+                  disabled={fazendoRegistro}
+                  autoComplete="email"
+                />
+              </div>
+
+              <MaskedInput
+                mask="phone"
+                value={registroTelefone}
+                onChange={(value) => setRegistroTelefone(value)}
+                onValidate={validatePhone}
+                label="Telefone *"
+                placeholder="Digite seu telefone"
+                showValidation={true}
+                required
+              />
+
+              <MaskedInput
+                mask="cpf"
+                value={registroCpf}
+                onChange={(value) => setRegistroCpf(value)}
+                onValidate={validateCPF}
+                label="CPF *"
+                placeholder="Digite seu CPF"
+                showValidation={true}
+                required
+              />
+
+              <div className="form-group">
+                <label>Senha *</label>
+                <input
+                  type="password"
+                  value={registroSenha}
+                  onChange={(e) => setRegistroSenha(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  disabled={fazendoRegistro}
+                  autoComplete="new-password"
+                />
+                <small>
+                  Deve conter: 8-20 caracteres, 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>Confirmar senha *</label>
+                <input
+                  type="password"
+                  value={registroConfirmarSenha}
+                  onChange={(e) => setRegistroConfirmarSenha(e.target.value)}
+                  placeholder="Digite a senha novamente"
+                  disabled={fazendoRegistro}
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <div className="login-actions">
+                <button
+                  className="btn-primary"
+                  onClick={fazerRegistro}
+                  disabled={fazendoRegistro}
+                >
+                  {fazendoRegistro ? 'Criando conta...' : 'Criar conta'}
+                </button>
+                <button
+                  className="btn-link"
+                  onClick={() => setMostrarRegistro(false)}
+                  disabled={fazendoRegistro}
+                >
+                  Voltar para login
+                </button>
               </div>
             </div>
           </div>
@@ -554,7 +795,8 @@ const CheckoutPage = () => {
                   type="text"
                   value={clienteNovo.nome}
                   onChange={(e) => setClienteNovo({ ...clienteNovo, nome: e.target.value })}
-                  placeholder="Ex: João Silva"
+                  placeholder="Digite seu nome completo"
+                  autoComplete="name"
                 />
               </div>
 
@@ -563,8 +805,8 @@ const CheckoutPage = () => {
                 value={clienteNovo.telefone}
                 onChange={(value) => setClienteNovo({ ...clienteNovo, telefone: value })}
                 onValidate={validatePhone}
-                label="Telefone (WhatsApp)"
-                placeholder="(11) 99999-9999"
+                label="Telefone (WhatsApp) *"
+                placeholder="Digite seu telefone"
                 helperText="Usaremos para enviar atualizações do pedido"
                 showValidation={true}
                 required
@@ -575,7 +817,7 @@ const CheckoutPage = () => {
                 onChange={(value) => setClienteNovo({ ...clienteNovo, email: value })}
                 onValidate={validateEmail}
                 label="E-mail"
-                placeholder="seu@email.com"
+                placeholder="Digite seu e-mail"
                 type="email"
                 showValidation={true}
               />
@@ -586,7 +828,7 @@ const CheckoutPage = () => {
                 onChange={(value) => setClienteNovo({ ...clienteNovo, cpf: value })}
                 onValidate={validateCPF}
                 label="CPF (opcional)"
-                placeholder="000.000.000-00"
+                placeholder="Digite seu CPF"
                 showValidation={true}
               />
 
@@ -670,9 +912,9 @@ const CheckoutPage = () => {
                       }
                     }}
                     onValidate={validateCEP}
-                    label="CEP"
-                    placeholder="00000-000"
-                    helperText={buscandoCep ? 'Buscando endereço...' : ''}
+                    label="CEP *"
+                    placeholder="Digite o CEP"
+                    helperText={buscandoCep ? 'Buscando endereço...' : 'Preencheremos o endereço automaticamente'}
                     showValidation={true}
                     required
                   />
@@ -684,7 +926,8 @@ const CheckoutPage = () => {
                         type="text"
                         value={endereco.logradouro}
                         onChange={(e) => setEndereco({ ...endereco, logradouro: e.target.value })}
-                        placeholder="Rua, Avenida..."
+                        placeholder="Nome da rua"
+                        autoComplete="street-address"
                       />
                     </div>
 
@@ -694,7 +937,8 @@ const CheckoutPage = () => {
                         type="text"
                         value={endereco.numero}
                         onChange={(e) => setEndereco({ ...endereco, numero: e.target.value })}
-                        placeholder="123"
+                        placeholder="Nº"
+                        autoComplete="address-line2"
                       />
                     </div>
                   </div>
@@ -705,7 +949,8 @@ const CheckoutPage = () => {
                       type="text"
                       value={endereco.complemento}
                       onChange={(e) => setEndereco({ ...endereco, complemento: e.target.value })}
-                      placeholder="Apto, Bloco..."
+                      placeholder="Apartamento, bloco, etc."
+                      autoComplete="address-line3"
                     />
                   </div>
 
@@ -716,7 +961,8 @@ const CheckoutPage = () => {
                         type="text"
                         value={endereco.bairro}
                         onChange={(e) => setEndereco({ ...endereco, bairro: e.target.value })}
-                        placeholder="Centro"
+                        placeholder="Nome do bairro"
+                        autoComplete="address-level3"
                       />
                     </div>
 
@@ -726,7 +972,8 @@ const CheckoutPage = () => {
                         type="text"
                         value={endereco.cidade}
                         onChange={(e) => setEndereco({ ...endereco, cidade: e.target.value })}
-                        placeholder="São Paulo"
+                        placeholder="Nome da cidade"
+                        autoComplete="address-level2"
                       />
                     </div>
 
@@ -736,8 +983,9 @@ const CheckoutPage = () => {
                         type="text"
                         value={endereco.estado}
                         onChange={(e) => setEndereco({ ...endereco, estado: e.target.value.toUpperCase() })}
-                        placeholder="SP"
+                        placeholder="UF"
                         maxLength={2}
+                        autoComplete="address-level1"
                       />
                     </div>
                   </div>
@@ -825,7 +1073,7 @@ const CheckoutPage = () => {
                     type="text"
                     value={valorDinheiro}
                     onChange={(e) => setValorDinheiro(e.target.value)}
-                    placeholder="Ex: 100.00"
+                    placeholder="Digite o valor (ex: 100.00)"
                   />
                   {troco > 0 && (
                     <small className="troco-info">Troco: {formatarPreco(troco)}</small>
