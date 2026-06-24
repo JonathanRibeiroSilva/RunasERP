@@ -512,7 +512,7 @@ async def listar_categorias_loja_online_publico(
         raise HTTPException(status_code=500, detail=f"Erro ao listar categorias: {str(e)}")
 
 
-@router_loja_online_publico.get("/produto/{produto_id}", response_model=ProdutoReadSimples)
+@router_loja_online_publico.get("/produto/{produto_id}", response_model=ProdutoLojaOnlineRead)
 async def obter_produto_loja_online_publico(
     produto_id: UUID,
     empresaSlug: str = Query(..., description="Slug da empresa"),
@@ -527,7 +527,7 @@ async def obter_produto_loja_online_publico(
         if not produto.ativo:
             raise HTTPException(status_code=404, detail="Produto não encontrado")
         
-        return ProdutoReadSimples.model_validate(produto)
+        return ProdutoLojaOnlineRead.model_validate(produto)
     
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
