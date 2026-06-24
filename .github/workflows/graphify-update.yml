@@ -41,7 +41,7 @@ jobs:
       
       - name: 📦 Instalar Graphify
         run: |
-          pip install graphify
+          pip install graphifyy
           graphify --version
       
       - name: 🔍 Verificar mudanças em código
