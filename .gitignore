@@ -40,8 +40,11 @@ ENV/
 .env
 .env.local
 .env.ngrok
+.env.cloudflare
+.env.production
 *.env
 !.env.example
+!.env.production.example
 
 # Database
 *.db
