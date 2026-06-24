@@ -15,7 +15,6 @@ from schemas.produtos import (
     ProdutoRead,
     ProdutoReadSimples,
     ProdutoLojaOnlineRead,
-    ProdutoCatalogoRead,
     ProdutoUpdate,
     VarianteCreate,
     VarianteRead,
@@ -484,74 +483,58 @@ async def listar_produtos_loja_online_publico(
         raise HTTPException(status_code=500, detail="Erro ao listar produtos da loja online")
 
 
-# ======================== ROUTER CATÁLOGO PÚBLICO ========================
-
-router_catalogo_publico = APIRouter(prefix="/catalogo-publico", tags=["catalogo-publico"])
-
-
-@router_catalogo_publico.get("/produto/{produto_id}", response_model=ProdutoCatalogoRead)
-async def obter_produto_catalogo_publico(
-    produto_id: UUID,
+@router_loja_online_publico.get("/categorias", response_model=dict)
+async def listar_categorias_loja_online_publico(
     empresaSlug: str = Query(..., description="Slug da empresa"),
-    session: AsyncSession = Depends(get_db)
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    session: AsyncSession = Depends(get_db),
 ):
-    """
-    Obtém detalhes de um produto no catálogo público.
-    Não expõe dados internos como custo, markup e fornecedores.
-    
-    Query params:
-    - empresaSlug: slug da empresa (obrigatório)
-    """
+    """Lista categorias da loja online pública."""
     try:
-        # Resolver empresa_id a partir do slug
         empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
-        
-        service = ProdutoService(session)
-        produto = await service.obter_produto(empresa_id, produto_id)
-
-        if not produto.ativo:
-            raise HTTPException(status_code=404, detail="Produto não encontrado")
-
-        return ProdutoCatalogoRead.model_validate(produto)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Erro ao obter produto")
-
-
-@router_catalogo_publico.get("/categorias", response_model=dict)
-async def listar_categorias_catalogo_publico(
-    empresaSlug: str = Query(..., description="Slug da empresa"),
-    session: AsyncSession = Depends(get_db)
-):
-    """
-    Lista categorias ativas no catálogo público.
-    
-    Retorna apenas categorias com produtos visíveis.
-    
-    Query params:
-    - empresaSlug: slug da empresa (obrigatório)
-    """
-    try:
-        # Resolver empresa_id a partir do slug
-        empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
-        
         service = CategoriaService(session)
-        categorias, total = await service.listar_categorias(empresa_id=empresa_id, skip=0, limit=100)
-        
-        # Converter para schema
+        categorias, total = await service.listar_categorias(
+            empresa_id=empresa_id,
+            skip=skip,
+            limit=limit
+        )
         categorias_response = [CategoriaRead.model_validate(cat) for cat in categorias]
-        
         return {
             "total": total,
+            "skip": skip,
+            "limit": limit,
             "items": categorias_response
         }
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Erro ao listar categorias")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar categorias: {str(e)}")
+
+
+@router_loja_online_publico.get("/produto/{produto_id}", response_model=ProdutoReadSimples)
+async def obter_produto_loja_online_publico(
+    produto_id: UUID,
+    empresaSlug: str = Query(..., description="Slug da empresa"),
+    session: AsyncSession = Depends(get_db),
+):
+    """Obtém detalhes de um produto na loja online pública."""
+    try:
+        empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
+        service = ProdutoService(session)
+        produto = await service.obter_produto(empresa_id, produto_id)
+        
+        if not produto.ativo:
+            raise HTTPException(status_code=404, detail="Produto não encontrado")
+        
+        return ProdutoReadSimples.model_validate(produto)
+    
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao obter produto: {str(e)}")
 
 
 # ======================== ROUTER LOJA ONLINE ========================
