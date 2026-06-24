@@ -9,6 +9,7 @@ import { unmask, maskCurrency } from '@/utils/masks';
 import { Toast } from '@/utils/toast';
 import './CheckoutPage.scss';
 
+// API Configuration
 const apiPublica = axios.create({
   baseURL: '/api',
   timeout: 30000,
