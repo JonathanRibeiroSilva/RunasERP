@@ -93,12 +93,7 @@ jobs:
           MODIFIED_COUNT=$(git diff --cached --numstat | wc -l)
           
           # Commit com mensagem descritiva
-          git commit -m "chore(graphify): auto-update knowledge graph [skip graphify]
-
-- Updated by GitHub Actions after code changes
-- Modified $MODIFIED_COUNT graphify files
-- Triggered by commit: ${{ github.sha }}
-- Branch: ${{ github.ref_name }}"
+          git commit -m "chore(graphify): auto-update knowledge graph [skip graphify]" -m "Updated by GitHub Actions after code changes" -m "Modified $MODIFIED_COUNT graphify files" -m "Triggered by commit: ${{ github.sha }}" -m "Branch: ${{ github.ref_name }}"
           
           echo "✅ Commit criado com sucesso"
       
