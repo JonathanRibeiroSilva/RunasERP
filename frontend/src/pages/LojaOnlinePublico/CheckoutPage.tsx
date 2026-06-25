@@ -949,7 +949,23 @@ const CheckoutPage = () => {
               <h2>Seus dados</h2>
               <p className="section-description">Informe seus dados para contato</p>
 
-              <div className="form-group">
+              {/* Banner OAuth */}
+              {clienteAutenticado && (
+                <div className="oauth-info-banner">
+                  <div className="banner-icon">
+                    <FiCheck />
+                  </div>
+                  <div className="banner-content">
+                    <strong>Login realizado com sucesso!</strong>
+                    <p>
+                      Seus dados foram preenchidos automaticamente. 
+                      Você pode editá-los se desejar antes de continuar.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className={`form-group ${clienteAutenticado ? 'prefilled' : ''}`}>
                 <label>Nome completo *</label>
                 <input
                   type="text"
@@ -958,6 +974,12 @@ const CheckoutPage = () => {
                   placeholder="Digite seu nome completo"
                   autoComplete="name"
                 />
+                {clienteAutenticado && (
+                  <div className="prefilled-indicator">
+                    <FiCheck />
+                    <span>Dados do OAuth</span>
+                  </div>
+                )}
               </div>
 
               <MaskedInput
@@ -972,15 +994,23 @@ const CheckoutPage = () => {
                 required
               />
 
-              <MaskedInput
-                value={clienteNovo.email || ''}
-                onChange={(value) => setClienteNovo({ ...clienteNovo, email: value })}
-                onValidate={validateEmail}
-                label="E-mail"
-                placeholder="Digite seu e-mail"
-                type="email"
-                showValidation={true}
-              />
+              <div className={`form-group ${clienteAutenticado ? 'prefilled' : ''}`}>
+                <MaskedInput
+                  value={clienteNovo.email || ''}
+                  onChange={(value) => setClienteNovo({ ...clienteNovo, email: value })}
+                  onValidate={validateEmail}
+                  label="E-mail"
+                  placeholder="Digite seu e-mail"
+                  type="email"
+                  showValidation={true}
+                />
+                {clienteAutenticado && (
+                  <div className="prefilled-indicator">
+                    <FiCheck />
+                    <span>Dados do OAuth</span>
+                  </div>
+                )}
+              </div>
 
               <MaskedInput
                 mask="cpf"

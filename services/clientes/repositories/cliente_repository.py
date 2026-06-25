@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlalchemy import select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.cliente import Cliente, Endereco
-from schemas.cliente import ClienteCreate, ClienteUpdate, EnderecoCreate, EnderecoUpdate
+from schemas.cliente import ClienteCreate, ClienteCreateOAuth, ClienteUpdate, EnderecoCreate, EnderecoUpdate
 import structlog
 
 log = structlog.get_logger()
@@ -50,6 +50,33 @@ class ClienteRepository:
         result = await self.db.execute(
             select(Cliente).where(
                 Cliente.cpf == cpf,
+                Cliente.empresa_id == empresa_id
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def criar_oauth(self, data: ClienteCreateOAuth) -> Cliente:
+        """Cria um novo cliente via OAuth (CPF e telefone opcionais)."""
+        cliente = Cliente(
+            empresa_id=data.empresa_id,
+            cpf=data.cpf,  # Pode ser None
+            nome=data.nome,
+            telefone=data.telefone,  # Pode ser None
+            email=data.email,
+            data_nasc=data.data_nasc
+        )
+        self.db.add(cliente)
+        await self.db.flush()
+        await self.db.refresh(cliente)
+        await self.db.commit()
+        log.info("cliente.oauth.criado", cliente_id=str(cliente.id), empresa_id=data.empresa_id, email=data.email)
+        return cliente
+    
+    async def buscar_por_email(self, email: str, empresa_id: int) -> Cliente | None:
+        """Busca cliente por email (filtrado por empresa)."""
+        result = await self.db.execute(
+            select(Cliente).where(
+                Cliente.email == email,
                 Cliente.empresa_id == empresa_id
             )
         )

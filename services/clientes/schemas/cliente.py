@@ -41,6 +41,38 @@ class ClienteCreate(ClienteBase):
     pass
 
 
+class ClienteCreateOAuth(BaseModel):
+    """Schema para criação de cliente via OAuth (sem CPF/telefone obrigatórios)."""
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
+    nome: str = Field(..., min_length=3, max_length=255)
+    email: str = Field(..., description="Email do cliente (obrigatório para OAuth)")
+    cpf: str | None = Field(None, description="CPF opcional para OAuth")
+    telefone: str | None = Field(None, description="Telefone opcional para OAuth")
+    data_nasc: date | None = None
+    
+    @field_validator('cpf')
+    @classmethod
+    def validate_cpf(cls, v: str | None) -> str | None:
+        """Valida e normaliza CPF se fornecido."""
+        if v is None:
+            return None
+        cpf_limpo = normalizar_cpf(v)
+        if not validar_cpf(cpf_limpo):
+            raise ValueError('CPF inválido')
+        return cpf_limpo
+    
+    @field_validator('telefone')
+    @classmethod
+    def validate_telefone(cls, v: str | None) -> str | None:
+        """Normaliza telefone para E.164 se fornecido."""
+        if v is None:
+            return None
+        try:
+            return normalizar_telefone(v)
+        except ValueError as e:
+            raise ValueError(str(e))
+
+
 class ClienteUpdate(BaseModel):
     """Schema para atualização de cliente."""
     nome: str | None = Field(None, min_length=3, max_length=255)
@@ -60,9 +92,15 @@ class ClienteUpdate(BaseModel):
             raise ValueError(str(e))
 
 
-class ClienteResponse(ClienteBase):
+class ClienteResponse(BaseModel):
     """Schema de resposta de cliente."""
     id: UUID
+    empresa_id: int
+    nome: str
+    cpf: str | None  # Opcional para clientes OAuth
+    telefone: str | None  # Opcional para clientes OAuth
+    email: str | None
+    data_nasc: date | None
     limite_credito: Decimal
     credito_disponivel: Decimal
     dia_vencimento: int | None

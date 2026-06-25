@@ -50,11 +50,19 @@ const MicrosoftCallback = () => {
         const { access_token, cliente } = response.data;
 
         localStorage.setItem('cliente_token', access_token);
+
+        // Get return URL (where user was before OAuth)
+        const returnUrl = localStorage.getItem('oauth_return_url') || `/c/${empresaSlug}/checkout`;
+
         localStorage.removeItem('oauth_state');
         localStorage.removeItem('oauth_empresa_slug');
+        localStorage.removeItem('oauth_return_url');
+
+        // Sinalizar para recarregar carrinho após retornar
+        localStorage.setItem('reload_cart_after_oauth', 'true');
 
         Toast.success(`Bem-vindo, ${cliente.nome}!`);
-        navigate(`/c/${empresaSlug}/checkout`);
+        navigate(returnUrl);
       } catch (error: any) {
         const mensagem = error.response?.data?.detail || 'Erro ao processar login';
         setErro(mensagem);

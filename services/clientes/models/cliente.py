@@ -31,9 +31,9 @@ class Cliente(Base):
         comment="ID da empresa (multi-tenancy)"
     )
     
-    cpf: Mapped[str] = mapped_column(String(11), nullable=False, index=True)
+    cpf: Mapped[str | None] = mapped_column(String(11), nullable=True, index=True, comment="CPF opcional para clientes OAuth")
     nome: Mapped[str] = mapped_column(String(255), nullable=False)
-    telefone: Mapped[str] = mapped_column(String(20), nullable=False)
+    telefone: Mapped[str | None] = mapped_column(String(20), nullable=True, comment="Telefone opcional para clientes OAuth")
     email: Mapped[str | None] = mapped_column(String(255))
     data_nasc: Mapped[date | None] = mapped_column(Date)
     limite_credito: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))

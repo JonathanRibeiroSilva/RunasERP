@@ -362,30 +362,35 @@ async def oauth_google_callback_cliente(
     cliente_auth = await repo.buscar_por_email(email)
     
     if not cliente_auth:
-        # Criar cliente no serviço de clientes
+        # Criar cliente no serviço de clientes via endpoint OAuth
         async with httpx.AsyncClient() as client:
             try:
                 cliente_response = await client.post(
-                    f"{settings.CLIENTES_URL}/clientes",
+                    f"{settings.CLIENTES_URL}/clientes/oauth",
                     json={
-                        "cpf": "00000000000",  # CPF temporário para OAuth
+                        "empresa_id": empresa_id,
                         "nome": nome,
-                        "telefone": "0000000000",  # Telefone temporário
                         "email": email
+                        # CPF e telefone não são enviados (opcionais para OAuth)
                     },
                     headers={"X-Empresa-Id": str(empresa_id)},
                     timeout=10.0
                 )
                 
-                if cliente_response.status_code != 201:
+                if cliente_response.status_code in [200, 201]:
+                    # Cliente criado ou já existente
+                    cliente_data = cliente_response.json()
+                    cliente_id = UUID(cliente_data["id"])
+                    if cliente_response.status_code == 201:
+                        log.info("oauth.cliente.google.created", cliente_id=str(cliente_id))
+                    else:
+                        log.info("oauth.cliente.google.existing", cliente_id=str(cliente_id))
+                else:
                     log.error("oauth.cliente.google.create_error", status=cliente_response.status_code)
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Erro ao criar cliente"
                     )
-                
-                cliente_data = cliente_response.json()
-                cliente_id = UUID(cliente_data["id"])
                 
             except httpx.RequestError as e:
                 log.error("oauth.cliente.google.request_error", error=str(e))

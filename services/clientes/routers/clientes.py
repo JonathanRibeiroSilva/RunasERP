@@ -12,6 +12,7 @@ from database import get_db
 from services.cliente_service import ClienteService
 from schemas.cliente import (
     ClienteCreate,
+    ClienteCreateOAuth,
     ClienteUpdate,
     ClienteResponse,
     ClienteComEnderecos,
@@ -62,6 +63,39 @@ async def criar_cliente(
         )
     
     return await service.criar_cliente(data)
+
+
+@router.post(
+    "/oauth",
+    response_model=ClienteResponse,
+    status_code=status.HTTP_200_OK,  # Alterado para 200 pois pode retornar cliente existente
+    summary="Criar cliente via OAuth"
+)
+async def criar_cliente_oauth(
+    data: ClienteCreateOAuth,
+    service: Annotated[ClienteService, Depends(get_cliente_service)],
+    empresa_id: Annotated[int, Depends(get_empresa_id)]
+):
+    """
+    Cria um novo cliente via OAuth (Google/Microsoft).
+    
+    - **empresa_id**: ID da empresa (multi-tenancy)
+    - **nome**: Nome completo do usuário OAuth
+    - **email**: Email do usuário OAuth (obrigatório)
+    - **cpf**: CPF (opcional - pode ser preenchido depois)
+    - **telefone**: Telefone (opcional - pode ser preenchido depois)
+    
+    **Headers obrigatórios**:
+    - X-Empresa-Id: ID da empresa
+    """
+    # Validar que empresa_id do body == empresa_id do header
+    if data.empresa_id != empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"empresa_id no body ({data.empresa_id}) deve ser igual ao header X-Empresa-Id ({empresa_id})"
+        )
+    
+    return await service.criar_cliente_oauth(data)
 
 
 @router.get(
