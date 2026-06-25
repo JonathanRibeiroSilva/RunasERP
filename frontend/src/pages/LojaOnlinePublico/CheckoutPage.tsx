@@ -548,6 +548,71 @@ const CheckoutPage = () => {
     setCurrentStep((prev) => Math.max(1, prev - 1) as Step);
   };
 
+  /**
+   * Atualiza cadastro do cliente autenticado com CPF/telefone preenchidos no checkout.
+   * Executado antes de finalizar compra para garantir dados atualizados.
+   */
+  const atualizarCadastroSeNecessario = async (): Promise<boolean> => {
+    if (!clienteAutenticado) return true; // Não aplicável para convidados
+
+    // Verificar se há dados novos para atualizar
+    const cpfNovo = clienteNovo.cpf && clienteNovo.cpf !== clienteAutenticado.cpf;
+    const telefoneNovo = clienteNovo.telefone && clienteNovo.telefone !== clienteAutenticado.telefone;
+
+    if (!cpfNovo && !telefoneNovo) {
+      console.log('ℹ️ Cadastro já está atualizado, nenhuma mudança necessária');
+      return true;
+    }
+
+    console.log('📝 Atualizando cadastro:', {
+      cpfNovo,
+      telefoneNovo,
+      cpfAtual: clienteAutenticado.cpf,
+      telefoneAtual: clienteAutenticado.telefone,
+    });
+
+    try {
+      const payload: any = {};
+      if (cpfNovo) payload.cpf = unmask(clienteNovo.cpf);
+      if (telefoneNovo) payload.telefone = unmask(clienteNovo.telefone);
+
+      const token = localStorage.getItem('cliente_token');
+      const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+
+      const response = await apiPublica.patch(
+        `/clientes/${clienteAutenticado.id}`,
+        payload,
+        {
+          headers: {
+            'X-Empresa-Id': empresaRes.data.id.toString(),
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // Atualizar estado local com dados do servidor
+      setClienteAutenticado(response.data);
+
+      console.log('✅ Cadastro atualizado com sucesso:', payload);
+      return true;
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar cadastro:', error);
+
+      if (error.response?.status === 409) {
+        Toast.error('CPF já cadastrado em outra conta. Por favor, verifique.');
+      } else if (error.response?.status === 400) {
+        const detail = error.response.data.detail;
+        const mensagem = typeof detail === 'string' ? detail : JSON.stringify(detail);
+        Toast.error(`Dados inválidos: ${mensagem}`);
+      } else {
+        // Não bloquear checkout em erro de atualização - apenas avisar
+        console.warn('⚠️ Continuando checkout sem atualizar cadastro');
+      }
+
+      return true; // Permitir continuar mesmo com erro
+    }
+  };
+
   // Finalizar Compra
   const finalizarCompra = async () => {
     setErro('');
@@ -557,6 +622,26 @@ const CheckoutPage = () => {
     const toastId = Toast.loading('Processando pedido...');
 
     try {
+      console.log('📦 Iniciando checkout:', {
+        clienteAutenticado: !!clienteAutenticado,
+        cpfPreenchido: !!clienteNovo.cpf,
+        telefonePreenchido: !!clienteNovo.telefone,
+        precisaAtualizar: clienteAutenticado && (
+          (clienteNovo.cpf && clienteNovo.cpf !== clienteAutenticado.cpf) ||
+          (clienteNovo.telefone && clienteNovo.telefone !== clienteAutenticado.telefone)
+        )
+      });
+
+      // 1. Atualizar cadastro se necessário (para usuários autenticados)
+      const atualizacaoOk = await atualizarCadastroSeNecessario();
+      if (!atualizacaoOk) {
+        Toast.dismiss(toastId);
+        Toast.error('Erro ao atualizar seus dados. Tente novamente.');
+        setFinalizando(false);
+        return;
+      }
+
+      // 2. Continuar com criação da venda
       const payload: any = {
         cliente_novo: {
           nome: clienteNovo.nome,
