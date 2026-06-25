@@ -277,6 +277,49 @@
         }
       }
     }
+
+    // Aviso de dados opcionais recomendados
+    .optional-data-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: $spacer-3;
+      padding: $spacer-3;
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: $border-radius;
+      margin-top: $spacer-4;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        gap: $spacer-2;
+        padding: $spacer-2;
+      }
+
+      .icon-warning {
+        color: #f39c12;
+        font-size: 20px;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .warning-content {
+        flex: 1;
+
+        strong {
+          display: block;
+          color: #856404;
+          margin-bottom: $spacer-1;
+          font-size: $font-size-sm;
+          font-weight: $font-weight-semibold;
+        }
+
+        p {
+          margin: 0;
+          color: #856404;
+          font-size: $font-size-xs;
+          line-height: 1.4;
+        }
+      }
+    }
   }
 
   .form-group {

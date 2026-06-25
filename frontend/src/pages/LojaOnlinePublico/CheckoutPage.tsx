@@ -1028,10 +1028,24 @@ const CheckoutPage = () => {
                 value={clienteNovo.cpf || ''}
                 onChange={(value) => setClienteNovo({ ...clienteNovo, cpf: value })}
                 onValidate={validateCPF}
-                label="CPF (opcional)"
+                label={clienteAutenticado ? "CPF (recomendado)" : "CPF (opcional)"}
                 placeholder="Digite seu CPF"
                 showValidation={true}
               />
+
+              {/* Aviso de dados opcionais recomendados */}
+              {clienteAutenticado && (!clienteNovo.cpf || !clienteNovo.telefone) && (
+                <div className="optional-data-warning">
+                  <FiAlertCircle className="icon-warning" />
+                  <div className="warning-content">
+                    <strong>Recomendamos preencher estes dados</strong>
+                    <p>
+                      CPF e telefone ajudam na identificação em caso de problemas 
+                      com a entrega e facilitam o suporte.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Checkbox Criar Conta - só para convidados */}
               {!clienteAutenticado && (
