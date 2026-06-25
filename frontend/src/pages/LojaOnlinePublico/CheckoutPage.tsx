@@ -7,14 +7,30 @@ import MaskedInput from '@/components/common/MaskedInput/MaskedInput';
 import { validateCPF, validateEmail, validatePhone, validateCEP, validateRequired } from '@/utils/validators';
 import { unmask, maskCurrency } from '@/utils/masks';
 import { Toast } from '@/utils/toast';
+import { logCheckoutError, isRetryableError, extractErrorMessage, sleep } from '@/utils/errorLogger';
 import './CheckoutPage.scss';
 
 // API Configuration
 const apiPublica = axios.create({
   baseURL: '/api',
-  timeout: 30000,
+  timeout: 30000, // 30 segundos
   headers: { 'Content-Type': 'application/json' },
 });
+
+// Interceptor para tratar timeout e erros de conexão
+apiPublica.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.code === 'ECONNABORTED') {
+      console.warn('⏱️ Timeout de requisição detectado');
+      Toast.error('Conexão lenta. Por favor, tente novamente.');
+    } else if (!error.response) {
+      console.warn('🔌 Erro de conexão detectado');
+      Toast.error('Erro de conexão. Verifique sua internet.');
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Types - Checkout Form Data Structures
 interface ClienteNovo {
@@ -180,6 +196,58 @@ const CheckoutPage = () => {
   };
 
   /**
+   * Busca dados do cliente com retry automático em caso de falha.
+   * Implementa exponential backoff: 1s, 2s, 4s.
+   * 
+   * @param clienteId - ID do cliente a buscar
+   * @param empresaId - ID da empresa (header X-Empresa-Id)
+   * @param maxRetries - Número máximo de tentativas (padrão: 3)
+   * @returns Dados do cliente
+   */
+  const buscarClienteComRetry = async (
+    clienteId: string,
+    empresaId: number,
+    maxRetries = 3
+  ): Promise<Cliente> => {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const token = localStorage.getItem('cliente_token');
+        const response = await apiPublica.get(`/clientes/${clienteId}`, {
+          headers: {
+            'X-Empresa-Id': empresaId.toString(),
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (attempt > 0) {
+          console.log(`✅ Sucesso na tentativa ${attempt + 1}`);
+        }
+        
+        return response.data;
+      } catch (error: any) {
+        const isLastAttempt = attempt === maxRetries - 1;
+        const shouldRetry = isRetryableError(error);
+
+        if (isLastAttempt || !shouldRetry) {
+          logCheckoutError(error, {
+            component: 'CheckoutPage',
+            action: 'buscarClienteComRetry',
+            metadata: { clienteId, attempt: attempt + 1, maxRetries }
+          });
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = 1000 * Math.pow(2, attempt);
+        console.warn(`⚠️ Tentativa ${attempt + 1} falhou, retry em ${delay}ms...`);
+        await sleep(delay);
+      }
+    }
+
+    throw new Error('Falha após todas as tentativas');
+  };
+
+  /**
    * Busca dados do cliente autenticado e pré-preenche o formulário.
    * Executado ao montar o componente se token existe em localStorage.
    */
@@ -197,22 +265,21 @@ const CheckoutPage = () => {
       const tokenPayload = JSON.parse(atob(token.split('.')[1]));
       const cliente_id = tokenPayload.sub; // JWT padrão usa 'sub' para subject
 
-      // Buscar dados do cliente
-      const clienteRes = await apiPublica.get(`/clientes/${cliente_id}`, {
-        headers: {
-          'X-Empresa-Id': empresa_id.toString(),
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Buscar dados do cliente com retry automático
+      const cliente = await buscarClienteComRetry(cliente_id, empresa_id);
 
-      setClienteAutenticado(clienteRes.data);
-      preencherDadosCliente(clienteRes.data);
+      setClienteAutenticado(cliente);
+      preencherDadosCliente(cliente);
       setModoCheckout('guest');
       setCurrentStep(1);
       
-      console.log('✅ Dados do cliente carregados:', clienteRes.data.nome);
+      console.log('✅ Dados do cliente carregados:', cliente.nome);
     } catch (error: any) {
-      console.error('❌ Erro ao buscar dados do cliente:', error);
+      logCheckoutError(error, {
+        component: 'CheckoutPage',
+        action: 'buscarDadosCliente',
+        metadata: { empresaSlug }
+      });
       
       if (error.response?.status === 401) {
         // Token inválido, limpar autenticação
@@ -222,6 +289,11 @@ const CheckoutPage = () => {
         setClienteAutenticado(null);
         setModoCheckout('selecao');
         Toast.error('Sessão expirada. Por favor, faça login novamente.');
+      } else if (error.response?.status === 404) {
+        localStorage.removeItem('cliente_token');
+        setClienteAutenticado(null);
+        setModoCheckout('selecao');
+        Toast.error('Conta não encontrada. Por favor, faça login novamente.');
       } else {
         Toast.error('Erro ao carregar seus dados. Tente recarregar a página.');
       }
@@ -596,14 +668,23 @@ const CheckoutPage = () => {
       console.log('✅ Cadastro atualizado com sucesso:', payload);
       return true;
     } catch (error: any) {
-      console.error('❌ Erro ao atualizar cadastro:', error);
+      logCheckoutError(error, {
+        component: 'CheckoutPage',
+        action: 'atualizarCadastroSeNecessario',
+        metadata: { 
+          clienteId: clienteAutenticado.id,
+          cpfNovo,
+          telefoneNovo
+        }
+      });
 
       if (error.response?.status === 409) {
         Toast.error('CPF já cadastrado em outra conta. Por favor, verifique.');
       } else if (error.response?.status === 400) {
-        const detail = error.response.data.detail;
-        const mensagem = typeof detail === 'string' ? detail : JSON.stringify(detail);
+        const mensagem = extractErrorMessage(error);
         Toast.error(`Dados inválidos: ${mensagem}`);
+      } else if (error.response?.status === 404) {
+        Toast.error('Conta não encontrada. Por favor, faça login novamente.');
       } else {
         // Não bloquear checkout em erro de atualização - apenas avisar
         console.warn('⚠️ Continuando checkout sem atualizar cadastro');
@@ -691,32 +772,41 @@ const CheckoutPage = () => {
         state: { sucesso: true },
       });
     } catch (error: any) {
-      // Atualiza toast para erro e usa tratamento de erro da API
+      // Log estruturado do erro
+      logCheckoutError(error, {
+        component: 'CheckoutPage',
+        action: 'finalizarCompra',
+        metadata: {
+          clienteAutenticado: !!clienteAutenticado,
+          tipoEntrega,
+          formaPagamento,
+          criarConta
+        }
+      });
+
+      // Atualiza toast para erro
       Toast.dismiss(toastId);
-      
-      // Extrair mensagem de erro do objeto
-      let mensagemErro = 'Erro ao processar pedido';
-      
-      if (error.response?.data) {
-        const { detail } = error.response.data;
-        
-        // Se detail for um array de erros de validação
-        if (Array.isArray(detail)) {
-          mensagemErro = detail.map((err: any) => err.msg || err.message || JSON.stringify(err)).join('; ');
-        }
-        // Se detail for uma string
-        else if (typeof detail === 'string') {
-          mensagemErro = detail;
-        }
-        // Se detail for um objeto
-        else if (typeof detail === 'object') {
-          mensagemErro = detail.msg || detail.message || JSON.stringify(detail);
-        }
-      } else if (error.message) {
-        mensagemErro = error.message;
+
+      // Extrair mensagem de erro amigável
+      const mensagemErro = extractErrorMessage(error);
+
+      // Mensagens específicas por status code
+      if (error.response?.status === 400) {
+        Toast.error(`Dados inválidos: ${mensagemErro}`);
+      } else if (error.response?.status === 401) {
+        Toast.error('Sessão expirada. Por favor, faça login novamente.');
+        localStorage.removeItem('cliente_token');
+        setModoCheckout('selecao');
+      } else if (error.response?.status === 404) {
+        Toast.error('Recurso não encontrado. Por favor, tente novamente.');
+      } else if (error.response?.status === 409) {
+        Toast.error(`Conflito: ${mensagemErro}`);
+      } else if (error.response?.status >= 500) {
+        Toast.error('Erro no servidor. Por favor, tente novamente em alguns instantes.');
+      } else {
+        Toast.error(mensagemErro);
       }
-      
-      Toast.error(mensagemErro);
+
       setErro(mensagemErro);
     } finally {
       setFinalizando(false);
