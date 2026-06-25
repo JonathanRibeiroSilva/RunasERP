@@ -141,7 +141,8 @@ async def register_cliente(
         user_id=cliente_auth.id,
         role="CLIENTE",
         user_type="cliente",
-        empresa_id=data.empresa_id
+        empresa_id=data.empresa_id,
+        cliente_id=cliente_id
     )
     refresh_token = create_refresh_token(cliente_auth.id)
     
@@ -225,7 +226,8 @@ async def login_cliente(
         user_id=cliente_auth.id,
         role="CLIENTE",
         user_type="cliente",
-        empresa_id=cliente_auth.empresa_id
+        empresa_id=cliente_auth.empresa_id,
+        cliente_id=cliente_auth.cliente_id
     )
     refresh_token = create_refresh_token(cliente_auth.id)
     
@@ -440,7 +442,8 @@ async def oauth_google_callback_cliente(
         user_id=cliente_auth.id,
         role="CLIENTE",
         user_type="cliente",
-        empresa_id=empresa_id
+        empresa_id=empresa_id,
+        cliente_id=cliente_auth.cliente_id
     )
     refresh_token = create_refresh_token(cliente_auth.id)
     
@@ -649,7 +652,8 @@ async def oauth_microsoft_callback_cliente(
         user_id=cliente_auth.id,
         role="CLIENTE",
         user_type="cliente",
-        empresa_id=empresa_id
+        empresa_id=empresa_id,
+        cliente_id=cliente_auth.cliente_id
     )
     refresh_token = create_refresh_token(cliente_auth.id)
     

@@ -49,6 +49,10 @@ const GoogleCallback = () => {
 
         const { access_token, cliente } = response.data;
 
+        // Debug: verificar se token foi recebido
+        console.log('🔑 Token OAuth recebido:', access_token ? 'SIM' : 'FALHOU');
+        console.log('👤 Cliente:', cliente?.nome);
+
         // Salvar token
         localStorage.setItem('cliente_token', access_token);
 

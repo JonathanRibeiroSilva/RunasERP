@@ -263,7 +263,7 @@ const CheckoutPage = () => {
 
       // Decodificar token JWT para obter cliente_id
       const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-      const cliente_id = tokenPayload.sub; // JWT padrão usa 'sub' para subject
+      const cliente_id = tokenPayload.cliente_id; // JWT agora inclui cliente_id explícito
 
       // Buscar dados do cliente com retry automático
       const cliente = await buscarClienteComRetry(cliente_id, empresa_id);
