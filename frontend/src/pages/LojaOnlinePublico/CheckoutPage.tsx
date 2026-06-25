@@ -134,15 +134,37 @@ const CheckoutPage = () => {
     }
   }, [valorDinheiro, formaPagamento, carrinho, frete]);
 
-  // Detectar retorno do OAuth e recarregar carrinho
+  /**
+   * Detecta retorno do OAuth flow e recarrega carrinho + dados do cliente.
+   * Flag 'reload_cart_after_oauth' é setada pelo OAuthCallbackPage após sucesso.
+   */
   useEffect(() => {
-    const reloadCart = localStorage.getItem('reload_cart_after_oauth');
-    if (reloadCart === 'true') {
-      localStorage.removeItem('reload_cart_after_oauth');
-      // Forçar reload do carrinho
-      carregarCarrinho();
-    }
-  }, [carregarCarrinho]);
+    const detectarRetornoOAuth = async () => {
+      const reloadCart = localStorage.getItem('reload_cart_after_oauth');
+      if (reloadCart === 'true') {
+        console.log('🔄 Retorno OAuth detectado, recarregando dados...');
+        
+        // Remove flag para não reprocessar
+        localStorage.removeItem('reload_cart_after_oauth');
+        setRetornoOAuth(true);
+        
+        try {
+          // Forçar reload do carrinho (mantém carrinho via cookie de sessão)
+          await carregarCarrinho();
+          
+          // Buscar dados do cliente (reutiliza função do T2)
+          await buscarDadosCliente();
+          
+          Toast.success('Login realizado com sucesso!');
+        } catch (error) {
+          console.error('❌ Erro ao processar retorno OAuth:', error);
+          Toast.error('Erro ao carregar dados. Por favor, tente novamente.');
+        }
+      }
+    };
+    
+    detectarRetornoOAuth();
+  }, [carregarCarrinho]); // buscarDadosCliente é estável, não precisa na dependência
 
   /**
    * Pré-preenche o formulário com dados do cliente autenticado.
@@ -213,6 +235,20 @@ const CheckoutPage = () => {
     buscarDadosCliente();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empresaSlug]);
+
+  /**
+   * Detecta carrinho vazio após OAuth e redireciona para loja.
+   * Previne que usuário fique preso no checkout sem produtos.
+   */
+  useEffect(() => {
+    if (retornoOAuth && carrinho?.itens.length === 0) {
+      console.warn('⚠️ Carrinho vazio após OAuth, redirecionando...');
+      Toast.warning('Seu carrinho está vazio. Adicione produtos para continuar.');
+      setTimeout(() => {
+        navigate(`/c/${empresaSlug}`);
+      }, 2000);
+    }
+  }, [retornoOAuth, carrinho, empresaSlug, navigate]);
 
   // Função de Login
   const fazerLogin = async () => {
