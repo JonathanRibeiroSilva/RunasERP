@@ -47,7 +47,7 @@ type ModoCheckout = 'selecao' | 'login' | 'guest';
 const CheckoutPage = () => {
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
   const navigate = useNavigate();
-  const { carrinho, limparCarrinho } = useCarrinho({ empresaSlug });
+  const { carrinho, limparCarrinho, carregarCarrinho } = useCarrinho({ empresaSlug });
 
   // Modo de checkout
   const [modoCheckout, setModoCheckout] = useState<ModoCheckout>('selecao');
@@ -114,6 +114,16 @@ const CheckoutPage = () => {
     }
   }, [valorDinheiro, formaPagamento, carrinho, frete]);
 
+  // Detectar retorno do OAuth e recarregar carrinho
+  useEffect(() => {
+    const reloadCart = localStorage.getItem('reload_cart_after_oauth');
+    if (reloadCart === 'true') {
+      localStorage.removeItem('reload_cart_after_oauth');
+      // Forçar reload do carrinho
+      carregarCarrinho();
+    }
+  }, [carregarCarrinho]);
+
   // Função de Login
   const fazerLogin = async () => {
     if (!loginEmail || !loginSenha) {
@@ -158,6 +168,12 @@ const CheckoutPage = () => {
   const fazerLoginGoogle = async () => {
     setFazendoLogin(true);
     try {
+      // 1. Garantir que carrinho existe (cria sessão se não existir)
+      await carregarCarrinho();
+      
+      // 2. Aguardar um momento para cookie ser setado
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       const empresaResponse = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
       const empresa_id = empresaResponse.data.id;
       const redirect_uri = `${window.location.origin}/auth/callback/google`;
@@ -170,6 +186,8 @@ const CheckoutPage = () => {
       const { auth_url, state } = response.data;
       localStorage.setItem('oauth_state', state);
       localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      // Save the return URL - after login, go back to checkout
+      localStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
       window.location.href = auth_url;
     } catch (error: any) {
       Toast.error('Erro ao iniciar login com Google');
@@ -181,6 +199,12 @@ const CheckoutPage = () => {
   const fazerLoginMicrosoft = async () => {
     setFazendoLogin(true);
     try {
+      // 1. Garantir que carrinho existe (cria sessão se não existir)
+      await carregarCarrinho();
+      
+      // 2. Aguardar um momento para cookie ser setado
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       const empresaResponse = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
       const empresa_id = empresaResponse.data.id;
       const redirect_uri = `${window.location.origin}/auth/callback/microsoft`;
@@ -193,6 +217,8 @@ const CheckoutPage = () => {
       const { auth_url, state } = response.data;
       localStorage.setItem('oauth_state', state);
       localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      // Save the return URL - after login, go back to checkout
+      localStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
       window.location.href = auth_url;
     } catch (error: any) {
       Toast.error('Erro ao iniciar login com Microsoft');
