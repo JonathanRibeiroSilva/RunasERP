@@ -44,6 +44,21 @@ type TipoEntrega = 'RETIRADA' | 'DELIVERY';
 type Step = 1 | 2 | 3;
 type ModoCheckout = 'selecao' | 'login' | 'guest';
 
+// Interface para dados completos do cliente autenticado
+interface Cliente {
+  id: string;
+  empresa_id: number;
+  nome: string;
+  cpf: string | null;
+  telefone: string | null;
+  email: string;
+  limite_credito: number;
+  credito_disponivel: number;
+  bloqueado: boolean;
+  ativo: boolean;
+  criado_em: string;
+}
+
 const CheckoutPage = () => {
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
   const navigate = useNavigate();
@@ -67,6 +82,11 @@ const CheckoutPage = () => {
   const [registroTelefone, setRegistroTelefone] = useState('');
   const [registroCpf, setRegistroCpf] = useState('');
   const [fazendoRegistro, setFazendoRegistro] = useState(false);
+
+  // Estados para autenticação OAuth
+  const [clienteAutenticado, setClienteAutenticado] = useState<Cliente | null>(null);
+  const [carregandoCliente, setCarregandoCliente] = useState<boolean>(false);
+  const [retornoOAuth, setRetornoOAuth] = useState<boolean>(false);
 
   // Steps
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -123,6 +143,76 @@ const CheckoutPage = () => {
       carregarCarrinho();
     }
   }, [carregarCarrinho]);
+
+  /**
+   * Pré-preenche o formulário com dados do cliente autenticado.
+   * Campos pré-preenchidos permanecem editáveis.
+   */
+  const preencherDadosCliente = (cliente: Cliente) => {
+    setClienteNovo({
+      nome: cliente.nome,
+      telefone: cliente.telefone || '',
+      email: cliente.email,
+      cpf: cliente.cpf || '',
+    });
+  };
+
+  /**
+   * Busca dados do cliente autenticado e pré-preenche o formulário.
+   * Executado ao montar o componente se token existe em localStorage.
+   */
+  const buscarDadosCliente = async () => {
+    const token = localStorage.getItem('cliente_token');
+    if (!token) return;
+
+    setCarregandoCliente(true);
+    try {
+      // Buscar empresa_id
+      const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+      const empresa_id = empresaRes.data.id;
+
+      // Decodificar token JWT para obter cliente_id
+      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+      const cliente_id = tokenPayload.sub; // JWT padrão usa 'sub' para subject
+
+      // Buscar dados do cliente
+      const clienteRes = await apiPublica.get(`/clientes/${cliente_id}`, {
+        headers: {
+          'X-Empresa-Id': empresa_id.toString(),
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      setClienteAutenticado(clienteRes.data);
+      preencherDadosCliente(clienteRes.data);
+      setModoCheckout('guest');
+      setCurrentStep(1);
+      
+      console.log('✅ Dados do cliente carregados:', clienteRes.data.nome);
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar dados do cliente:', error);
+      
+      if (error.response?.status === 401) {
+        // Token inválido, limpar autenticação
+        localStorage.removeItem('cliente_token');
+        localStorage.removeItem('oauth_state');
+        localStorage.removeItem('oauth_empresa_slug');
+        setClienteAutenticado(null);
+        setModoCheckout('selecao');
+        Toast.error('Sessão expirada. Por favor, faça login novamente.');
+      } else {
+        Toast.error('Erro ao carregar seus dados. Tente recarregar a página.');
+      }
+    } finally {
+      setCarregandoCliente(false);
+    }
+  };
+
+  // useEffect para detectar autenticação ao montar componente
+  useEffect(() => {
+    buscarDadosCliente();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaSlug]);
 
   // Função de Login
   const fazerLogin = async () => {
@@ -560,6 +650,14 @@ const CheckoutPage = () => {
       {erro && (
         <div className="erro-mensagem">
           <FiAlertCircle /> {erro}
+        </div>
+      )}
+
+      {/* Loading overlay quando busca dados do cliente */}
+      {carregandoCliente && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Carregando seus dados...</p>
         </div>
       )}
 
