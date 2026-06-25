@@ -199,20 +199,20 @@ const CheckoutPage = () => {
    * Busca dados do cliente com retry automático em caso de falha.
    * Implementa exponential backoff: 1s, 2s, 4s.
    * 
-   * @param clienteId - ID do cliente a buscar
+   * Usa rota /clientes/me que extrai o cliente_id do token automaticamente.
+   * 
    * @param empresaId - ID da empresa (header X-Empresa-Id)
    * @param maxRetries - Número máximo de tentativas (padrão: 3)
    * @returns Dados do cliente
    */
   const buscarClienteComRetry = async (
-    clienteId: string,
     empresaId: number,
     maxRetries = 3
   ): Promise<Cliente> => {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const token = localStorage.getItem('cliente_token');
-        const response = await apiPublica.get(`/clientes/${clienteId}`, {
+        const response = await apiPublica.get('/clientes/me', {
           headers: {
             'X-Empresa-Id': empresaId.toString(),
             'Authorization': `Bearer ${token}`
@@ -232,7 +232,7 @@ const CheckoutPage = () => {
           logCheckoutError(error, {
             component: 'CheckoutPage',
             action: 'buscarClienteComRetry',
-            metadata: { clienteId, attempt: attempt + 1, maxRetries }
+            metadata: { empresaId, attempt: attempt + 1, maxRetries }
           });
           throw error;
         }
@@ -261,12 +261,9 @@ const CheckoutPage = () => {
       const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
       const empresa_id = empresaRes.data.id;
 
-      // Decodificar token JWT para obter cliente_id
-      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-      const cliente_id = tokenPayload.cliente_id; // JWT agora inclui cliente_id explícito
-
-      // Buscar dados do cliente com retry automático
-      const cliente = await buscarClienteComRetry(cliente_id, empresa_id);
+      // Buscar dados do cliente usando rota /me (mais simples e seguro)
+      // O backend extrai o cliente_id do token automaticamente
+      const cliente = await buscarClienteComRetry(empresa_id);
 
       setClienteAutenticado(cliente);
       preencherDadosCliente(cliente);

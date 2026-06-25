@@ -9,8 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
 from database import get_db
 from repositories.usuario_repository import UsuarioRepository
+from repositories.cliente_auth_repository import ClienteAuthRepository
 from auth.jwt import verify_token
 from models.usuario import Usuario, RoleEnum
+from models.cliente_auth import ClienteAuth
 from auth.redis_client import get_redis
 
 
@@ -168,3 +170,89 @@ async def require_admin_or_operador(
             detail="Acesso negado"
         )
     return current_user
+
+
+# ============================================================
+# AUTENTICAÇÃO DE CLIENTES (LOJA ONLINE)
+# ============================================================
+
+async def get_current_cliente(
+    token: Annotated[str, Depends(get_token_from_cookie_or_header)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)]
+) -> ClienteAuth:
+    """
+    Obtém o cliente atual a partir do token JWT.
+    
+    Valida que o token é de um CLIENTE (não de usuário operador).
+    
+    Args:
+        token: Token JWT
+        db: Sessão do banco de dados
+        redis: Cliente Redis
+        
+    Returns:
+        ClienteAuth autenticado
+        
+    Raises:
+        HTTPException: Se o token for inválido, não for de cliente, ou cliente não encontrado
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Credenciais inválidas",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    # Verificar se token está na blacklist
+    is_blacklisted = await redis.get(f"blacklist:{token}")
+    if is_blacklisted:
+        raise credentials_exception
+    
+    # Decodificar token
+    payload = verify_token(token)
+    if payload is None:
+        raise credentials_exception
+    
+    # Validar que é token de CLIENTE
+    user_type = payload.get("user_type")
+    if user_type != "cliente":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Token de cliente requerido"
+        )
+    
+    user_id: str | None = payload.get("sub")
+    if user_id is None:
+        raise credentials_exception
+    
+    # Buscar cliente_auth no banco
+    repo = ClienteAuthRepository(db)
+    cliente_auth = await repo.buscar_por_id(UUID(user_id))
+    
+    if cliente_auth is None or not cliente_auth.ativo:
+        raise credentials_exception
+    
+    return cliente_auth
+
+
+async def get_current_active_cliente(
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_cliente)]
+) -> ClienteAuth:
+    """
+    Verifica se o cliente está ativo.
+    
+    Args:
+        current_cliente: Cliente atual
+        
+    Returns:
+        Cliente ativo
+        
+    Raises:
+        HTTPException: Se o cliente estiver inativo
+    """
+    if not current_cliente.ativo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cliente inativo"
+        )
+    return current_cliente
