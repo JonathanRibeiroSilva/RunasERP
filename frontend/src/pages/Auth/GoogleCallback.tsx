@@ -52,6 +52,10 @@ const GoogleCallback = () => {
         // Salvar token
         localStorage.setItem('cliente_token', access_token);
 
+        // Limpar qualquer token antigo do AuthContext
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('usuario_token');
+
         // Get return URL (where user was before OAuth)
         const returnUrl = localStorage.getItem('oauth_return_url') || `/c/${empresaSlug}/checkout`;
 
