@@ -18,8 +18,6 @@ interface Cliente {
 }
 
 const ClientesPage = () => {
-  console.log('[ClientesPage] Componente montado');
-  
   const navigate = useNavigate();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +117,6 @@ const ClientesPage = () => {
       setClientes(clientesData || []);
       setTotalPages(Math.ceil((total || 0) / itemsPerPage));
     } catch (error: any) {
-      console.error('[ClientesPage] Erro ao carregar clientes:', error);
       
       if (error.response?.status >= 500) {
         toast.error('Erro no servidor. Tente novamente mais tarde.');

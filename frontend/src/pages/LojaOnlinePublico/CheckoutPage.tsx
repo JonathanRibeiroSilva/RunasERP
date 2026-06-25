@@ -15,6 +15,7 @@ const apiPublica = axios.create({
   baseURL: '/api',
   timeout: 30000, // 30 segundos
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true  // ✅ CRITICAL: Envia cookies HTTP-only em todas as requisições
 });
 
 // Interceptor para tratar timeout e erros de conexão
@@ -22,10 +23,8 @@ apiPublica.interceptors.response.use(
   response => response,
   error => {
     if (error.code === 'ECONNABORTED') {
-      console.warn('⏱️ Timeout de requisição detectado');
       Toast.error('Conexão lenta. Por favor, tente novamente.');
     } else if (!error.response) {
-      console.warn('🔌 Erro de conexão detectado');
       Toast.error('Erro de conexão. Verifique sua internet.');
     }
     return Promise.reject(error);
@@ -156,12 +155,11 @@ const CheckoutPage = () => {
    */
   useEffect(() => {
     const detectarRetornoOAuth = async () => {
-      const reloadCart = localStorage.getItem('reload_cart_after_oauth');
+      const reloadCart = sessionStorage.getItem('reload_cart_after_oauth');
       if (reloadCart === 'true') {
-        console.log('🔄 Retorno OAuth detectado, recarregando dados...');
         
         // Remove flag para não reprocessar
-        localStorage.removeItem('reload_cart_after_oauth');
+        sessionStorage.removeItem('reload_cart_after_oauth');
         setRetornoOAuth(true);
         
         try {
@@ -173,7 +171,6 @@ const CheckoutPage = () => {
           
           Toast.success('Login realizado com sucesso!');
         } catch (error) {
-          console.error('❌ Erro ao processar retorno OAuth:', error);
           Toast.error('Erro ao carregar dados. Por favor, tente novamente.');
         }
       }
@@ -200,6 +197,7 @@ const CheckoutPage = () => {
    * Implementa exponential backoff: 1s, 2s, 4s.
    * 
    * Usa rota /clientes/me que extrai o cliente_id do token automaticamente.
+   * Cookies HTTP-only são enviados automaticamente pelo navegador (withCredentials: true).
    * 
    * @param empresaId - ID da empresa (header X-Empresa-Id)
    * @param maxRetries - Número máximo de tentativas (padrão: 3)
@@ -211,18 +209,12 @@ const CheckoutPage = () => {
   ): Promise<Cliente> => {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const token = localStorage.getItem('cliente_token');
         const response = await apiPublica.get('/clientes/me', {
           headers: {
-            'X-Empresa-Id': empresaId.toString(),
-            'Authorization': `Bearer ${token}`
-          }
+            'X-Empresa-Id': empresaId.toString()
+          },
+          withCredentials: true  // ✅ Envia cookies HTTP-only automaticamente
         });
-        
-        if (attempt > 0) {
-          console.log(`✅ Sucesso na tentativa ${attempt + 1}`);
-        }
-        
         return response.data;
       } catch (error: any) {
         const isLastAttempt = attempt === maxRetries - 1;
@@ -239,7 +231,6 @@ const CheckoutPage = () => {
 
         // Exponential backoff: 1s, 2s, 4s
         const delay = 1000 * Math.pow(2, attempt);
-        console.warn(`⚠️ Tentativa ${attempt + 1} falhou, retry em ${delay}ms...`);
         await sleep(delay);
       }
     }
@@ -249,11 +240,11 @@ const CheckoutPage = () => {
 
   /**
    * Busca dados do cliente autenticado e pré-preenche o formulário.
-   * Executado ao montar o componente se token existe em localStorage.
+   * Usa cookies HTTP-only (token gerenciado automaticamente pelo navegador).
    */
   const buscarDadosCliente = async () => {
-    const token = localStorage.getItem('cliente_token');
-    if (!token) return;
+    // ✅ Não precisa verificar localStorage - cookies são automáticos
+    // O navegador envia os cookies HTTP-only automaticamente
 
     setCarregandoCliente(true);
     try {
@@ -261,16 +252,14 @@ const CheckoutPage = () => {
       const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
       const empresa_id = empresaRes.data.id;
 
-      // Buscar dados do cliente usando rota /me (mais simples e seguro)
-      // O backend extrai o cliente_id do token automaticamente
+      // Buscar dados do cliente usando rota /me
+      // Cookies HTTP-only são enviados automaticamente pelo navegador
       const cliente = await buscarClienteComRetry(empresa_id);
 
       setClienteAutenticado(cliente);
       preencherDadosCliente(cliente);
       setModoCheckout('guest');
       setCurrentStep(1);
-      
-      console.log('✅ Dados do cliente carregados:', cliente.nome);
     } catch (error: any) {
       logCheckoutError(error, {
         component: 'CheckoutPage',
@@ -279,20 +268,16 @@ const CheckoutPage = () => {
       });
       
       if (error.response?.status === 401) {
-        // Token inválido, limpar autenticação
-        localStorage.removeItem('cliente_token');
-        localStorage.removeItem('oauth_state');
-        localStorage.removeItem('oauth_empresa_slug');
+        // Cookies expirados ou inválidos
         setClienteAutenticado(null);
         setModoCheckout('selecao');
         Toast.error('Sessão expirada. Por favor, faça login novamente.');
       } else if (error.response?.status === 404) {
-        localStorage.removeItem('cliente_token');
         setClienteAutenticado(null);
         setModoCheckout('selecao');
         Toast.error('Conta não encontrada. Por favor, faça login novamente.');
       } else {
-        Toast.error('Erro ao carregar seus dados. Tente recarregar a página.');
+        // Não autenticado - comportamento normal
       }
     } finally {
       setCarregandoCliente(false);
@@ -311,7 +296,6 @@ const CheckoutPage = () => {
    */
   useEffect(() => {
     if (retornoOAuth && carrinho?.itens.length === 0) {
-      console.warn('⚠️ Carrinho vazio após OAuth, redirecionando...');
       Toast.warning('Seu carrinho está vazio. Adicione produtos para continuar.');
       setTimeout(() => {
         navigate(`/c/${empresaSlug}`);
@@ -326,7 +310,6 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (clienteAutenticado) {
       setCriarConta(false);
-      console.log('ℹ️ Usuário autenticado - checkbox "criar conta" desabilitada');
     }
   }, [clienteAutenticado]);
 
@@ -342,12 +325,14 @@ const CheckoutPage = () => {
       const response = await apiPublica.post(`/auth/cliente/login?empresaSlug=${empresaSlug}`, {
         email: loginEmail,
         senha: loginSenha,
+      }, {
+        withCredentials: true  // ✅ Recebe cookies HTTP-only
       });
 
-      const { access_token, cliente } = response.data;
+      const { cliente } = response.data;
 
-      // Salvar token
-      localStorage.setItem('cliente_token', access_token);
+      // ✅ Backend setou cookies HTTP-only automaticamente
+      // ❌ NÃO usar localStorage
       
       // Preencher dados do cliente
       setClienteNovo({
@@ -390,10 +375,10 @@ const CheckoutPage = () => {
       });
 
       const { auth_url, state } = response.data;
-      localStorage.setItem('oauth_state', state);
-      localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      sessionStorage.setItem('oauth_state', state);
+      sessionStorage.setItem('oauth_empresa_slug', empresaSlug);
       // Save the return URL - after login, go back to checkout
-      localStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
+      sessionStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
       window.location.href = auth_url;
     } catch (error: any) {
       Toast.error('Erro ao iniciar login com Google');
@@ -421,10 +406,10 @@ const CheckoutPage = () => {
       });
 
       const { auth_url, state } = response.data;
-      localStorage.setItem('oauth_state', state);
-      localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      sessionStorage.setItem('oauth_state', state);
+      sessionStorage.setItem('oauth_empresa_slug', empresaSlug);
       // Save the return URL - after login, go back to checkout
-      localStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
+      sessionStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
       window.location.href = auth_url;
     } catch (error: any) {
       Toast.error('Erro ao iniciar login com Microsoft');
@@ -484,9 +469,15 @@ const CheckoutPage = () => {
         cpf: cpfLimpo,
         telefone: telefoneLimpo,
         empresa_id
+      }, {
+        withCredentials: true  // ✅ Recebe cookies HTTP-only
       });
-      const { access_token, cliente } = response.data;
-      localStorage.setItem('cliente_token', access_token);
+      
+      const { cliente } = response.data;
+      
+      // ✅ Backend setou cookies HTTP-only automaticamente
+      // ❌ NÃO usar localStorage
+      
       setClienteNovo({
         nome: cliente.nome,
         telefone: cliente.telefone || '',
@@ -629,32 +620,25 @@ const CheckoutPage = () => {
     const telefoneNovo = clienteNovo.telefone && clienteNovo.telefone !== clienteAutenticado.telefone;
 
     if (!cpfNovo && !telefoneNovo) {
-      console.log('ℹ️ Cadastro já está atualizado, nenhuma mudança necessária');
       return true;
     }
-
-    console.log('📝 Atualizando cadastro:', {
-      cpfNovo,
-      telefoneNovo,
-      cpfAtual: clienteAutenticado.cpf,
-      telefoneAtual: clienteAutenticado.telefone,
-    });
 
     try {
       const payload: any = {};
       if (cpfNovo) payload.cpf = unmask(clienteNovo.cpf);
       if (telefoneNovo) payload.telefone = unmask(clienteNovo.telefone);
 
-      const token = localStorage.getItem('cliente_token');
+      // ✅ Usa cookies HTTP-only automaticamente
       const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
 
       const response = await apiPublica.patch(
-        `/clientes/${clienteAutenticado.id}`,
+        `/clientes/me`,  // ✅ Usa /me em vez de ID
         payload,
         {
+          withCredentials: true,  // ✅ Envia cookies HTTP-only
           headers: {
-            'X-Empresa-Id': empresaRes.data.id.toString(),
-            'Authorization': `Bearer ${token}`
+            'X-Empresa-Id': empresaRes.data.id.toString()
+            // ❌ NÃO enviar Authorization header - cookies são automáticos
           }
         }
       );
@@ -662,7 +646,6 @@ const CheckoutPage = () => {
       // Atualizar estado local com dados do servidor
       setClienteAutenticado(response.data);
 
-      console.log('✅ Cadastro atualizado com sucesso:', payload);
       return true;
     } catch (error: any) {
       logCheckoutError(error, {
@@ -684,7 +667,6 @@ const CheckoutPage = () => {
         Toast.error('Conta não encontrada. Por favor, faça login novamente.');
       } else {
         // Não bloquear checkout em erro de atualização - apenas avisar
-        console.warn('⚠️ Continuando checkout sem atualizar cadastro');
       }
 
       return true; // Permitir continuar mesmo com erro
@@ -700,16 +682,6 @@ const CheckoutPage = () => {
     const toastId = Toast.loading('Processando pedido...');
 
     try {
-      console.log('📦 Iniciando checkout:', {
-        clienteAutenticado: !!clienteAutenticado,
-        cpfPreenchido: !!clienteNovo.cpf,
-        telefonePreenchido: !!clienteNovo.telefone,
-        precisaAtualizar: clienteAutenticado && (
-          (clienteNovo.cpf && clienteNovo.cpf !== clienteAutenticado.cpf) ||
-          (clienteNovo.telefone && clienteNovo.telefone !== clienteAutenticado.telefone)
-        )
-      });
-
       // 1. Atualizar cadastro se necessário (para usuários autenticados)
       const atualizacaoOk = await atualizarCadastroSeNecessario();
       if (!atualizacaoOk) {
@@ -745,8 +717,6 @@ const CheckoutPage = () => {
           },
         ],
       };
-
-      console.log('📦 Payload enviado:', JSON.stringify(payload, null, 2));
 
       const response = await apiPublica.post(`/loja/checkout?empresaSlug=${empresaSlug}`, payload);
       const { venda_id, numero_venda, mercadopago_init_point } = response.data;
@@ -792,7 +762,7 @@ const CheckoutPage = () => {
         Toast.error(`Dados inválidos: ${mensagemErro}`);
       } else if (error.response?.status === 401) {
         Toast.error('Sessão expirada. Por favor, faça login novamente.');
-        localStorage.removeItem('cliente_token');
+        // ✅ Backend limpa cookies automaticamente ao expirar
         setModoCheckout('selecao');
       } else if (error.response?.status === 404) {
         Toast.error('Recurso não encontrado. Por favor, tente novamente.');

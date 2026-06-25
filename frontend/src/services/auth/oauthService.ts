@@ -29,7 +29,6 @@ export const oauthService = {
       // Redirecionar para o provider
       window.location.href = auth_url;
     } catch (error) {
-      console.error('[OAuth] Erro ao iniciar OAuth:', error);
       throw new Error(`Erro ao iniciar autenticação com ${provider}`);
     }
   },
@@ -67,7 +66,6 @@ export const oauthService = {
 
       return response.data;
     } catch (error) {
-      console.error('[OAuth] Erro ao processar callback:', error);
       throw error;
     }
   },

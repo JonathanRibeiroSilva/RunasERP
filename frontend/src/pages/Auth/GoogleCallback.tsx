@@ -8,6 +8,7 @@ const apiPublica = axios.create({
   baseURL: '/api',
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true  // ✅ CRITICAL: Permite receber e enviar cookies HTTP-only
 });
 
 const GoogleCallback = () => {
@@ -20,8 +21,8 @@ const GoogleCallback = () => {
     const processarCallback = async () => {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
-      const savedState = localStorage.getItem('oauth_state');
-      const empresaSlug = localStorage.getItem('oauth_empresa_slug');
+      const savedState = sessionStorage.getItem('oauth_state');
+      const empresaSlug = sessionStorage.getItem('oauth_empresa_slug');
 
       if (!code || !state) {
         setErro('Parâmetros inválidos');
@@ -45,31 +46,29 @@ const GoogleCallback = () => {
         const response = await apiPublica.post('/auth/cliente/oauth/google/callback', {
           code,
           state,
+        }, {
+          withCredentials: true  // ✅ Importante: permite cookies HTTP-only
         });
 
-        const { access_token, cliente } = response.data;
+        const { cliente } = response.data;
 
-        // Debug: verificar se token foi recebido
-        console.log('🔑 Token OAuth recebido:', access_token ? 'SIM' : 'FALHOU');
-        console.log('👤 Cliente:', cliente?.nome);
+        // Debug: verificar se callback foi bem-sucedido
+        console.log('✅ OAuth callback bem-sucedido');
+        console.log('🍪 Cookies HTTP-only foram setados pelo backend');
 
-        // Salvar token
-        localStorage.setItem('cliente_token', access_token);
-
-        // Limpar qualquer token antigo do AuthContext
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('usuario_token');
+        // ✅ Backend setou cookies HTTP-only automaticamente
+        // ❌ NÃO usar localStorage (vulnerável a XSS)
 
         // Get return URL (where user was before OAuth)
-        const returnUrl = localStorage.getItem('oauth_return_url') || `/c/${empresaSlug}/checkout`;
+        const returnUrl = sessionStorage.getItem('oauth_return_url') || `/c/${empresaSlug}/checkout`;
 
-        // Limpar dados OAuth
-        localStorage.removeItem('oauth_state');
-        localStorage.removeItem('oauth_empresa_slug');
-        localStorage.removeItem('oauth_return_url');
+        // Limpar dados OAuth do sessionStorage
+        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('oauth_empresa_slug');
+        sessionStorage.removeItem('oauth_return_url');
 
         // Sinalizar para recarregar carrinho após retornar
-        localStorage.setItem('reload_cart_after_oauth', 'true');
+        sessionStorage.setItem('reload_cart_after_oauth', 'true');
 
         Toast.success(`Bem-vindo, ${cliente.nome}!`);
 
