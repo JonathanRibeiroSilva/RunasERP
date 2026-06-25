@@ -250,6 +250,17 @@ const CheckoutPage = () => {
     }
   }, [retornoOAuth, carrinho, empresaSlug, navigate]);
 
+  /**
+   * Garante que checkbox "criar conta" não seja marcada para usuários autenticados.
+   * Previne tentativa de criar conta duplicada no backend.
+   */
+  useEffect(() => {
+    if (clienteAutenticado) {
+      setCriarConta(false);
+      console.log('ℹ️ Usuário autenticado - checkbox "criar conta" desabilitada');
+    }
+  }, [clienteAutenticado]);
+
   // Função de Login
   const fazerLogin = async () => {
     if (!loginEmail || !loginSenha) {
@@ -1022,23 +1033,25 @@ const CheckoutPage = () => {
                 showValidation={true}
               />
 
-              {/* Checkbox Criar Conta */}
-              <div className="criar-conta-checkbox">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={criarConta}
-                    onChange={(e) => setCriarConta(e.target.checked)}
-                  />
-                  <span className="checkbox-text">
-                    <strong>Criar uma conta para mim</strong>
-                    <small>
-                      Facilita rastreamento de pedidos e recompras rápidas. 
-                      Você receberá suas credenciais por email.
-                    </small>
-                  </span>
-                </label>
-              </div>
+              {/* Checkbox Criar Conta - só para convidados */}
+              {!clienteAutenticado && (
+                <div className="criar-conta-checkbox">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={criarConta}
+                      onChange={(e) => setCriarConta(e.target.checked)}
+                    />
+                    <span className="checkbox-text">
+                      <strong>Criar uma conta para mim</strong>
+                      <small>
+                        Facilita rastreamento de pedidos e recompras rápidas. 
+                        Você receberá suas credenciais por email.
+                      </small>
+                    </span>
+                  </label>
+                </div>
+              )}
 
               <button className="btn-proximo" onClick={proximoStep}>
                 Continuar <FiCheck />
