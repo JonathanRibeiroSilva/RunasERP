@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiPackage, FiCheck, FiClock, FiTruck, FiMapPin } from 'react-icons/fi';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { FiArrowLeft, FiPackage, FiCheck, FiClock, FiTruck, FiMapPin, FiCheckCircle, FiXCircle, FiAlertCircle } from 'react-icons/fi';
 import axios from 'axios';
+import { Toast } from '@/utils/toast';
 import './RastreamentoPedidoPage.scss';
 
 const apiPublica = axios.create({
@@ -60,10 +61,39 @@ const STATUS_ORDER = ['PEDIDO', 'PENDENTE', 'CONFIRMADA', 'SEPARADA', 'EM_ENTREG
 const RastreamentoPedidoPage = () => {
   const { empresaSlug, numeroPedido } = useParams<{ empresaSlug: string; numeroPedido: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [dados, setDados] = useState<RastreamentoDados | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
+  const [mostrarAlertaPagamento, setMostrarAlertaPagamento] = useState(false);
+  const [statusPagamento, setStatusPagamento] = useState<'success' | 'failure' | 'pending' | null>(null);
+
+  // Detectar retorno do Mercado Pago e mostrar mensagem
+  useEffect(() => {
+    const status = searchParams.get('status') as 'success' | 'failure' | 'pending' | null;
+    
+    if (status) {
+      setStatusPagamento(status);
+      setMostrarAlertaPagamento(true);
+      
+      // Mostrar toast baseado no status
+      if (status === 'success') {
+        Toast.success('Pagamento aprovado! Seu pedido foi confirmado.');
+      } else if (status === 'failure') {
+        Toast.error('Pagamento recusado. Tente novamente ou escolha outro método.');
+      } else if (status === 'pending') {
+        Toast.info('Pagamento pendente. Você receberá uma notificação quando for confirmado.');
+      }
+      
+      // Limpar parâmetro da URL após 5 segundos
+      setTimeout(() => {
+        setMostrarAlertaPagamento(false);
+        searchParams.delete('status');
+        setSearchParams(searchParams, { replace: true });
+      }, 5000);
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (numeroPedido) carregarRastreamento();
@@ -133,6 +163,11 @@ const RastreamentoPedidoPage = () => {
     );
   }
 
+  // Verificação de segurança: se dados ainda é null, não renderizar
+  if (!dados) {
+    return null;
+  }
+
   const { venda, itens, historico } = dados;
   const statusInfo = STATUS_INFO[venda.status] || STATUS_INFO.PEDIDO;
   const statusAtualIndex = getStatusIndex(venda.status);
@@ -154,6 +189,39 @@ const RastreamentoPedidoPage = () => {
           </span>
         </div>
       </header>
+
+      {/* Alerta de Status do Pagamento */}
+      {mostrarAlertaPagamento && statusPagamento && (
+        <div className={`alerta-pagamento ${statusPagamento}`}>
+          {statusPagamento === 'success' && (
+            <>
+              <FiCheckCircle size={32} />
+              <div className="alerta-conteudo">
+                <h3>✅ Pagamento Aprovado!</h3>
+                <p>Seu pedido foi confirmado e já está sendo processado. Você receberá atualizações sobre o status da entrega.</p>
+              </div>
+            </>
+          )}
+          {statusPagamento === 'failure' && (
+            <>
+              <FiXCircle size={32} />
+              <div className="alerta-conteudo">
+                <h3>❌ Pagamento Recusado</h3>
+                <p>Não foi possível processar o pagamento. Entre em contato para tentar novamente ou escolha outro método de pagamento.</p>
+              </div>
+            </>
+          )}
+          {statusPagamento === 'pending' && (
+            <>
+              <FiAlertCircle size={32} />
+              <div className="alerta-conteudo">
+                <h3>⏳ Pagamento Pendente</h3>
+                <p>Seu pagamento está sendo processado. Você receberá uma notificação quando for confirmado (geralmente em alguns minutos para PIX).</p>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="rastreamento-container">
         {/* Timeline de Status */}

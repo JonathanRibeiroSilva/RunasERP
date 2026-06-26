@@ -3,7 +3,41 @@ Utilidades para Multi-Tenancy.
 """
 from typing import Annotated, Optional
 from fastapi import Header, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import httpx
+
+
+async def get_empresa_id_by_slug(
+    db: AsyncSession,
+    slug: str
+) -> Optional[int]:
+    """
+    Obtém empresa_id a partir do slug consultando o serviço de empresas.
+    
+    Args:
+        db: Sessão do banco (não utilizada, mas mantida para consistência)
+        slug: Slug da empresa
+    
+    Returns:
+        int: ID da empresa ou None se não encontrada
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"http://empresas:8007/empresas/publico/{slug}",
+                timeout=5.0
+            )
+            
+            if response.status_code == 404:
+                return None
+            
+            response.raise_for_status()
+            empresa = response.json()
+            return empresa['id']
+            
+    except httpx.HTTPError:
+        return None
 
 
 def get_empresa_id(

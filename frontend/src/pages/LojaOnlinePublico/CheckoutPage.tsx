@@ -7,14 +7,29 @@ import MaskedInput from '@/components/common/MaskedInput/MaskedInput';
 import { validateCPF, validateEmail, validatePhone, validateCEP, validateRequired } from '@/utils/validators';
 import { unmask, maskCurrency } from '@/utils/masks';
 import { Toast } from '@/utils/toast';
+import { logCheckoutError, isRetryableError, extractErrorMessage, sleep } from '@/utils/errorLogger';
 import './CheckoutPage.scss';
 
 // API Configuration
 const apiPublica = axios.create({
   baseURL: '/api',
-  timeout: 30000,
+  timeout: 30000, // 30 segundos
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true  // ✅ CRITICAL: Envia cookies HTTP-only em todas as requisições
 });
+
+// Interceptor para tratar timeout e erros de conexão
+apiPublica.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.code === 'ECONNABORTED') {
+      Toast.error('Conexão lenta. Por favor, tente novamente.');
+    } else if (!error.response) {
+      Toast.error('Erro de conexão. Verifique sua internet.');
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Types - Checkout Form Data Structures
 interface ClienteNovo {
@@ -44,10 +59,25 @@ type TipoEntrega = 'RETIRADA' | 'DELIVERY';
 type Step = 1 | 2 | 3;
 type ModoCheckout = 'selecao' | 'login' | 'guest';
 
+// Interface para dados completos do cliente autenticado
+interface Cliente {
+  id: string;
+  empresa_id: number;
+  nome: string;
+  cpf: string | null;
+  telefone: string | null;
+  email: string;
+  limite_credito: number;
+  credito_disponivel: number;
+  bloqueado: boolean;
+  ativo: boolean;
+  criado_em: string;
+}
+
 const CheckoutPage = () => {
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
   const navigate = useNavigate();
-  const { carrinho, limparCarrinho } = useCarrinho({ empresaSlug });
+  const { carrinho, loading: carrinhoLoading, limparCarrinho, carregarCarrinho } = useCarrinho({ empresaSlug });
 
   // Modo de checkout
   const [modoCheckout, setModoCheckout] = useState<ModoCheckout>('selecao');
@@ -67,6 +97,11 @@ const CheckoutPage = () => {
   const [registroTelefone, setRegistroTelefone] = useState('');
   const [registroCpf, setRegistroCpf] = useState('');
   const [fazendoRegistro, setFazendoRegistro] = useState(false);
+
+  // Estados para autenticação OAuth
+  const [clienteAutenticado, setClienteAutenticado] = useState<Cliente | null>(null);
+  const [carregandoCliente, setCarregandoCliente] = useState<boolean>(false);
+  const [retornoOAuth, setRetornoOAuth] = useState<boolean>(false);
 
   // Steps
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -114,6 +149,169 @@ const CheckoutPage = () => {
     }
   }, [valorDinheiro, formaPagamento, carrinho, frete]);
 
+  /**
+   * Detecta retorno do OAuth flow e recarrega carrinho + dados do cliente.
+   * Flag 'reload_cart_after_oauth' é setada pelo OAuthCallbackPage após sucesso.
+   */
+  useEffect(() => {
+    const detectarRetornoOAuth = async () => {
+      const reloadCart = sessionStorage.getItem('reload_cart_after_oauth');
+      if (reloadCart === 'true') {
+        
+        // Remove flag para não reprocessar
+        sessionStorage.removeItem('reload_cart_after_oauth');
+        setRetornoOAuth(true);
+        
+        try {
+          // Forçar reload do carrinho (mantém carrinho via cookie de sessão)
+          await carregarCarrinho();
+          
+          // Buscar dados do cliente (reutiliza função do T2)
+          await buscarDadosCliente();
+          
+          Toast.success('Login realizado com sucesso!');
+        } catch (error) {
+          Toast.error('Erro ao carregar dados. Por favor, tente novamente.');
+        }
+      }
+    };
+    
+    detectarRetornoOAuth();
+  }, [carregarCarrinho]); // buscarDadosCliente é estável, não precisa na dependência
+
+  /**
+   * Pré-preenche o formulário com dados do cliente autenticado.
+   * Campos pré-preenchidos permanecem editáveis.
+   */
+  const preencherDadosCliente = (cliente: Cliente) => {
+    setClienteNovo({
+      nome: cliente.nome,
+      telefone: cliente.telefone || '',
+      email: cliente.email,
+      cpf: cliente.cpf || '',
+    });
+  };
+
+  /**
+   * Busca dados do cliente com retry automático em caso de falha.
+   * Implementa exponential backoff: 1s, 2s, 4s.
+   * 
+   * Usa rota /clientes/me que extrai o cliente_id do token automaticamente.
+   * Cookies HTTP-only são enviados automaticamente pelo navegador (withCredentials: true).
+   * 
+   * @param empresaId - ID da empresa (header X-Empresa-Id)
+   * @param maxRetries - Número máximo de tentativas (padrão: 3)
+   * @returns Dados do cliente
+   */
+  const buscarClienteComRetry = async (
+    empresaId: number,
+    maxRetries = 3
+  ): Promise<Cliente> => {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const response = await apiPublica.get('/clientes/me', {
+          headers: {
+            'X-Empresa-Id': empresaId.toString()
+          },
+          withCredentials: true  // ✅ Envia cookies HTTP-only automaticamente
+        });
+        return response.data;
+      } catch (error: any) {
+        const isLastAttempt = attempt === maxRetries - 1;
+        const shouldRetry = isRetryableError(error);
+
+        if (isLastAttempt || !shouldRetry) {
+          logCheckoutError(error, {
+            component: 'CheckoutPage',
+            action: 'buscarClienteComRetry',
+            metadata: { empresaId, attempt: attempt + 1, maxRetries }
+          });
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = 1000 * Math.pow(2, attempt);
+        await sleep(delay);
+      }
+    }
+
+    throw new Error('Falha após todas as tentativas');
+  };
+
+  /**
+   * Busca dados do cliente autenticado e pré-preenche o formulário.
+   * Usa cookies HTTP-only (token gerenciado automaticamente pelo navegador).
+   */
+  const buscarDadosCliente = async () => {
+    // ✅ Não precisa verificar localStorage - cookies são automáticos
+    // O navegador envia os cookies HTTP-only automaticamente
+
+    setCarregandoCliente(true);
+    try {
+      // Buscar empresa_id
+      const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+      const empresa_id = empresaRes.data.id;
+
+      // Buscar dados do cliente usando rota /me
+      // Cookies HTTP-only são enviados automaticamente pelo navegador
+      const cliente = await buscarClienteComRetry(empresa_id);
+
+      setClienteAutenticado(cliente);
+      preencherDadosCliente(cliente);
+      setModoCheckout('guest');
+      setCurrentStep(1);
+    } catch (error: any) {
+      // ✅ CORREÇÃO: 401 é esperado quando não está logado - não logar como erro
+      if (error.response?.status === 401) {
+        // Silenciosamente ignorar - usuário não está logado
+        setClienteAutenticado(null);
+      } else if (error.response?.status === 404) {
+        // Cliente não encontrado
+        setClienteAutenticado(null);
+        setModoCheckout('selecao');
+        Toast.error('Conta não encontrada. Por favor, faça login novamente.');
+      } else {
+        // Logar apenas erros reais (não 401/404)
+        logCheckoutError(error, {
+          component: 'CheckoutPage',
+          action: 'buscarDadosCliente',
+          metadata: { empresaSlug }
+        });
+      }
+    } finally {
+      setCarregandoCliente(false);
+    }
+  };
+
+  // useEffect para detectar autenticação ao montar componente
+  useEffect(() => {
+    buscarDadosCliente();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaSlug]);
+
+  /**
+   * Detecta carrinho vazio após OAuth e redireciona para loja.
+   * Previne que usuário fique preso no checkout sem produtos.
+   */
+  useEffect(() => {
+    if (retornoOAuth && carrinho?.itens.length === 0) {
+      Toast.warning('Seu carrinho está vazio. Adicione produtos para continuar.');
+      setTimeout(() => {
+        navigate(`/c/${empresaSlug}`);
+      }, 2000);
+    }
+  }, [retornoOAuth, carrinho, empresaSlug, navigate]);
+
+  /**
+   * Garante que checkbox "criar conta" não seja marcada para usuários autenticados.
+   * Previne tentativa de criar conta duplicada no backend.
+   */
+  useEffect(() => {
+    if (clienteAutenticado) {
+      setCriarConta(false);
+    }
+  }, [clienteAutenticado]);
+
   // Função de Login
   const fazerLogin = async () => {
     if (!loginEmail || !loginSenha) {
@@ -126,12 +324,14 @@ const CheckoutPage = () => {
       const response = await apiPublica.post(`/auth/cliente/login?empresaSlug=${empresaSlug}`, {
         email: loginEmail,
         senha: loginSenha,
+      }, {
+        withCredentials: true  // ✅ Recebe cookies HTTP-only
       });
 
-      const { access_token, cliente } = response.data;
+      const { cliente } = response.data;
 
-      // Salvar token
-      localStorage.setItem('cliente_token', access_token);
+      // ✅ Backend setou cookies HTTP-only automaticamente
+      // ❌ NÃO usar localStorage
       
       // Preencher dados do cliente
       setClienteNovo({
@@ -158,6 +358,12 @@ const CheckoutPage = () => {
   const fazerLoginGoogle = async () => {
     setFazendoLogin(true);
     try {
+      // 1. Garantir que carrinho existe (cria sessão se não existir)
+      await carregarCarrinho();
+      
+      // 2. Aguardar um momento para cookie ser setado
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       const empresaResponse = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
       const empresa_id = empresaResponse.data.id;
       const redirect_uri = `${window.location.origin}/auth/callback/google`;
@@ -168,8 +374,10 @@ const CheckoutPage = () => {
       });
 
       const { auth_url, state } = response.data;
-      localStorage.setItem('oauth_state', state);
-      localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      sessionStorage.setItem('oauth_state', state);
+      sessionStorage.setItem('oauth_empresa_slug', empresaSlug);
+      // Save the return URL - after login, go back to checkout
+      sessionStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
       window.location.href = auth_url;
     } catch (error: any) {
       Toast.error('Erro ao iniciar login com Google');
@@ -181,6 +389,12 @@ const CheckoutPage = () => {
   const fazerLoginMicrosoft = async () => {
     setFazendoLogin(true);
     try {
+      // 1. Garantir que carrinho existe (cria sessão se não existir)
+      await carregarCarrinho();
+      
+      // 2. Aguardar um momento para cookie ser setado
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       const empresaResponse = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
       const empresa_id = empresaResponse.data.id;
       const redirect_uri = `${window.location.origin}/auth/callback/microsoft`;
@@ -191,8 +405,10 @@ const CheckoutPage = () => {
       });
 
       const { auth_url, state } = response.data;
-      localStorage.setItem('oauth_state', state);
-      localStorage.setItem('oauth_empresa_slug', empresaSlug);
+      sessionStorage.setItem('oauth_state', state);
+      sessionStorage.setItem('oauth_empresa_slug', empresaSlug);
+      // Save the return URL - after login, go back to checkout
+      sessionStorage.setItem('oauth_return_url', `/c/${empresaSlug}/checkout`);
       window.location.href = auth_url;
     } catch (error: any) {
       Toast.error('Erro ao iniciar login com Microsoft');
@@ -252,9 +468,15 @@ const CheckoutPage = () => {
         cpf: cpfLimpo,
         telefone: telefoneLimpo,
         empresa_id
+      }, {
+        withCredentials: true  // ✅ Recebe cookies HTTP-only
       });
-      const { access_token, cliente } = response.data;
-      localStorage.setItem('cliente_token', access_token);
+      
+      const { cliente } = response.data;
+      
+      // ✅ Backend setou cookies HTTP-only automaticamente
+      // ❌ NÃO usar localStorage
+      
       setClienteNovo({
         nome: cliente.nome,
         telefone: cliente.telefone || '',
@@ -385,6 +607,71 @@ const CheckoutPage = () => {
     setCurrentStep((prev) => Math.max(1, prev - 1) as Step);
   };
 
+  /**
+   * Atualiza cadastro do cliente autenticado com CPF/telefone preenchidos no checkout.
+   * Executado antes de finalizar compra para garantir dados atualizados.
+   */
+  const atualizarCadastroSeNecessario = async (): Promise<boolean> => {
+    if (!clienteAutenticado) return true; // Não aplicável para convidados
+
+    // Verificar se há dados novos para atualizar
+    const cpfNovo = clienteNovo.cpf && clienteNovo.cpf !== clienteAutenticado.cpf;
+    const telefoneNovo = clienteNovo.telefone && clienteNovo.telefone !== clienteAutenticado.telefone;
+
+    if (!cpfNovo && !telefoneNovo) {
+      return true;
+    }
+
+    try {
+      const payload: any = {};
+      if (cpfNovo) payload.cpf = unmask(clienteNovo.cpf);
+      if (telefoneNovo) payload.telefone = unmask(clienteNovo.telefone);
+
+      // ✅ Usa cookies HTTP-only automaticamente
+      const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
+
+      const response = await apiPublica.patch(
+        `/clientes/me`,  // ✅ Usa /me em vez de ID
+        payload,
+        {
+          withCredentials: true,  // ✅ Envia cookies HTTP-only
+          headers: {
+            'X-Empresa-Id': empresaRes.data.id.toString()
+            // ❌ NÃO enviar Authorization header - cookies são automáticos
+          }
+        }
+      );
+
+      // Atualizar estado local com dados do servidor
+      setClienteAutenticado(response.data);
+
+      return true;
+    } catch (error: any) {
+      logCheckoutError(error, {
+        component: 'CheckoutPage',
+        action: 'atualizarCadastroSeNecessario',
+        metadata: { 
+          clienteId: clienteAutenticado.id,
+          cpfNovo,
+          telefoneNovo
+        }
+      });
+
+      if (error.response?.status === 409) {
+        Toast.error('CPF já cadastrado em outra conta. Por favor, verifique.');
+      } else if (error.response?.status === 400) {
+        const mensagem = extractErrorMessage(error);
+        Toast.error(`Dados inválidos: ${mensagem}`);
+      } else if (error.response?.status === 404) {
+        Toast.error('Conta não encontrada. Por favor, faça login novamente.');
+      } else {
+        // Não bloquear checkout em erro de atualização - apenas avisar
+      }
+
+      return true; // Permitir continuar mesmo com erro
+    }
+  };
+
   // Finalizar Compra
   const finalizarCompra = async () => {
     setErro('');
@@ -392,8 +679,23 @@ const CheckoutPage = () => {
 
     // Toast de loading
     const toastId = Toast.loading('Processando pedido...');
+    
+    // 🔍 DEBUG: Verificar cookies antes do checkout
+    console.log('🔍 DEBUG: Cookies antes do checkout:', document.cookie);
+    const cartCookie = document.cookie.split('; ').find(row => row.startsWith('cart_session_id='));
+    console.log('🔍 DEBUG: Cookie cart_session_id:', cartCookie ? cartCookie.split('=')[1] : 'NÃO ENCONTRADO');
 
     try {
+      // 1. Atualizar cadastro se necessário (para usuários autenticados)
+      const atualizacaoOk = await atualizarCadastroSeNecessario();
+      if (!atualizacaoOk) {
+        Toast.dismiss(toastId);
+        Toast.error('Erro ao atualizar seus dados. Tente novamente.');
+        setFinalizando(false);
+        return;
+      }
+
+      // 2. Continuar com criação da venda
       const payload: any = {
         cliente_novo: {
           nome: clienteNovo.nome,
@@ -420,20 +722,30 @@ const CheckoutPage = () => {
         ],
       };
 
-      console.log('📦 Payload enviado:', JSON.stringify(payload, null, 2));
-
       const response = await apiPublica.post(`/loja/checkout?empresaSlug=${empresaSlug}`, payload);
       const { venda_id, numero_venda, mercadopago_init_point } = response.data;
+
+      // 🔍 DEBUG: Log da resposta do checkout
+      console.log('🔍 DEBUG: Resposta do checkout:', {
+        venda_id,
+        numero_venda,
+        tem_mercadopago_link: !!mercadopago_init_point,
+        mercadopago_link: mercadopago_init_point
+      });
 
       // Atualiza toast para sucesso
       Toast.update(toastId, 'success', 'Pedido realizado com sucesso!');
 
-      // Se pagamento online (PIX/Cartão), redirecionar IMEDIATAMENTE para Mercado Pago
-      // O backend já limpou o carrinho, não precisamos fazer no frontend antes de sair
+      // Se pagamento online (PIX/Cartão), redirecionar para Mercado Pago
+      // Backend manterá o carrinho até webhook confirmar pagamento
+      // Não precisamos fazer nada no frontend - backend gerencia tudo
       if (mercadopago_init_point) {
-        // Redirecionar imediatamente sem limpar carrinho no frontend
-        // (evita mostrar carrinho vazio antes de redirecionar)
+        console.log('🔍 DEBUG: Redirecionando para Mercado Pago');
+        console.log('🔍 DEBUG: Carrinho será limpo pelo webhook após confirmação');
+        
+        // Redirecionar imediatamente
         window.location.href = mercadopago_init_point;
+        
         return; // Importante: retornar para não executar código abaixo
       }
 
@@ -443,32 +755,41 @@ const CheckoutPage = () => {
         state: { sucesso: true },
       });
     } catch (error: any) {
-      // Atualiza toast para erro e usa tratamento de erro da API
+      // Log estruturado do erro
+      logCheckoutError(error, {
+        component: 'CheckoutPage',
+        action: 'finalizarCompra',
+        metadata: {
+          clienteAutenticado: !!clienteAutenticado,
+          tipoEntrega,
+          formaPagamento,
+          criarConta
+        }
+      });
+
+      // Atualiza toast para erro
       Toast.dismiss(toastId);
-      
-      // Extrair mensagem de erro do objeto
-      let mensagemErro = 'Erro ao processar pedido';
-      
-      if (error.response?.data) {
-        const { detail } = error.response.data;
-        
-        // Se detail for um array de erros de validação
-        if (Array.isArray(detail)) {
-          mensagemErro = detail.map((err: any) => err.msg || err.message || JSON.stringify(err)).join('; ');
-        }
-        // Se detail for uma string
-        else if (typeof detail === 'string') {
-          mensagemErro = detail;
-        }
-        // Se detail for um objeto
-        else if (typeof detail === 'object') {
-          mensagemErro = detail.msg || detail.message || JSON.stringify(detail);
-        }
-      } else if (error.message) {
-        mensagemErro = error.message;
+
+      // Extrair mensagem de erro amigável
+      const mensagemErro = extractErrorMessage(error);
+
+      // Mensagens específicas por status code
+      if (error.response?.status === 400) {
+        Toast.error(`Dados inválidos: ${mensagemErro}`);
+      } else if (error.response?.status === 401) {
+        Toast.error('Sessão expirada. Por favor, faça login novamente.');
+        // ✅ Backend limpa cookies automaticamente ao expirar
+        setModoCheckout('selecao');
+      } else if (error.response?.status === 404) {
+        Toast.error('Recurso não encontrado. Por favor, tente novamente.');
+      } else if (error.response?.status === 409) {
+        Toast.error(`Conflito: ${mensagemErro}`);
+      } else if (error.response?.status >= 500) {
+        Toast.error('Erro no servidor. Por favor, tente novamente em alguns instantes.');
+      } else {
+        Toast.error(mensagemErro);
       }
-      
-      Toast.error(mensagemErro);
+
       setErro(mensagemErro);
     } finally {
       setFinalizando(false);
@@ -499,7 +820,19 @@ const CheckoutPage = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorNum);
   };
 
-  // Early return se carrinho vazio
+  // Loading state - mostra enquanto carrega o carrinho
+  if (carrinhoLoading || (!carrinho && carregandoCliente)) {
+    return (
+      <div className="checkout-page">
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Carregando checkout...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Early return se carrinho vazio (mas NÃO se ainda está carregando)
   if (!carrinho || carrinho.itens.length === 0) {
     return (
       <div className="checkout-page">
@@ -534,6 +867,14 @@ const CheckoutPage = () => {
       {erro && (
         <div className="erro-mensagem">
           <FiAlertCircle /> {erro}
+        </div>
+      )}
+
+      {/* Loading overlay quando busca dados do cliente */}
+      {carregandoCliente && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Carregando seus dados...</p>
         </div>
       )}
 
@@ -789,7 +1130,23 @@ const CheckoutPage = () => {
               <h2>Seus dados</h2>
               <p className="section-description">Informe seus dados para contato</p>
 
-              <div className="form-group">
+              {/* Banner OAuth */}
+              {clienteAutenticado && (
+                <div className="oauth-info-banner">
+                  <div className="banner-icon">
+                    <FiCheck />
+                  </div>
+                  <div className="banner-content">
+                    <strong>Login realizado com sucesso!</strong>
+                    <p>
+                      Seus dados foram preenchidos automaticamente. 
+                      Você pode editá-los se desejar antes de continuar.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className={`form-group ${clienteAutenticado ? 'prefilled' : ''}`}>
                 <label>Nome completo *</label>
                 <input
                   type="text"
@@ -798,6 +1155,12 @@ const CheckoutPage = () => {
                   placeholder="Digite seu nome completo"
                   autoComplete="name"
                 />
+                {clienteAutenticado && (
+                  <div className="prefilled-indicator">
+                    <FiCheck />
+                    <span>Dados do OAuth</span>
+                  </div>
+                )}
               </div>
 
               <MaskedInput
@@ -812,43 +1175,67 @@ const CheckoutPage = () => {
                 required
               />
 
-              <MaskedInput
-                value={clienteNovo.email || ''}
-                onChange={(value) => setClienteNovo({ ...clienteNovo, email: value })}
-                onValidate={validateEmail}
-                label="E-mail"
-                placeholder="Digite seu e-mail"
-                type="email"
-                showValidation={true}
-              />
+              <div className={`form-group ${clienteAutenticado ? 'prefilled' : ''}`}>
+                <MaskedInput
+                  value={clienteNovo.email || ''}
+                  onChange={(value) => setClienteNovo({ ...clienteNovo, email: value })}
+                  onValidate={validateEmail}
+                  label="E-mail"
+                  placeholder="Digite seu e-mail"
+                  type="email"
+                  showValidation={true}
+                />
+                {clienteAutenticado && (
+                  <div className="prefilled-indicator">
+                    <FiCheck />
+                    <span>Dados do OAuth</span>
+                  </div>
+                )}
+              </div>
 
               <MaskedInput
                 mask="cpf"
                 value={clienteNovo.cpf || ''}
                 onChange={(value) => setClienteNovo({ ...clienteNovo, cpf: value })}
                 onValidate={validateCPF}
-                label="CPF (opcional)"
+                label={clienteAutenticado ? "CPF (recomendado)" : "CPF (opcional)"}
                 placeholder="Digite seu CPF"
                 showValidation={true}
               />
 
-              {/* Checkbox Criar Conta */}
-              <div className="criar-conta-checkbox">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={criarConta}
-                    onChange={(e) => setCriarConta(e.target.checked)}
-                  />
-                  <span className="checkbox-text">
-                    <strong>Criar uma conta para mim</strong>
-                    <small>
-                      Facilita rastreamento de pedidos e recompras rápidas. 
-                      Você receberá suas credenciais por email.
-                    </small>
-                  </span>
-                </label>
-              </div>
+              {/* Aviso de dados opcionais recomendados */}
+              {clienteAutenticado && (!clienteNovo.cpf || !clienteNovo.telefone) && (
+                <div className="optional-data-warning">
+                  <FiAlertCircle className="icon-warning" />
+                  <div className="warning-content">
+                    <strong>Recomendamos preencher estes dados</strong>
+                    <p>
+                      CPF e telefone ajudam na identificação em caso de problemas 
+                      com a entrega e facilitam o suporte.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Checkbox Criar Conta - só para convidados */}
+              {!clienteAutenticado && (
+                <div className="criar-conta-checkbox">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={criarConta}
+                      onChange={(e) => setCriarConta(e.target.checked)}
+                    />
+                    <span className="checkbox-text">
+                      <strong>Criar uma conta para mim</strong>
+                      <small>
+                        Facilita rastreamento de pedidos e recompras rápidas. 
+                        Você receberá suas credenciais por email.
+                      </small>
+                    </span>
+                  </label>
+                </div>
+              )}
 
               <button className="btn-proximo" onClick={proximoStep}>
                 Continuar <FiCheck />

@@ -3,8 +3,13 @@ Router de proxy para microsserviços.
 """
 from typing import Annotated
 from fastapi import APIRouter, Request, Depends
-from auth.oauth2 import get_current_active_user, require_admin
+from auth.oauth2 import (
+    get_current_active_user, 
+    require_admin,
+    get_current_active_cliente
+)
 from models.usuario import Usuario
+from models.cliente_auth import ClienteAuth
 from proxy.service_proxy import ServiceProxy
 
 
@@ -81,7 +86,59 @@ async def proxy_carrinho_publico(
 
 # Rotas protegidas (requerem autenticação)
 
-# Rota específica para listar/criar clientes
+# ============================================================
+# ROTAS DE CLIENTES (PÚBLICO - CLIENTE AUTENTICADO)
+# ============================================================
+
+@router.get(
+    "/clientes/me",
+    tags=["Clientes Público"],
+    summary="Cliente busca seus próprios dados"
+)
+async def proxy_cliente_me(
+    request: Request,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)]
+):
+    """
+    Rota para cliente autenticado buscar seus próprios dados.
+    
+    Usa o cliente_id do token JWT automaticamente.
+    Não requer passar ID na URL (mais seguro e simples).
+    
+    Exemplo: GET /clientes/me
+    """
+    cliente_id = str(current_cliente.cliente_id)
+    full_path = f"/clientes/{cliente_id}"
+    return await ServiceProxy.proxy_request(request, full_path)
+
+
+@router.patch(
+    "/clientes/me",
+    tags=["Clientes Público"],
+    summary="Cliente atualiza seus próprios dados"
+)
+async def proxy_cliente_me_update(
+    request: Request,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)]
+):
+    """
+    Rota para cliente autenticado atualizar seus próprios dados.
+    
+    Usa o cliente_id do token JWT automaticamente.
+    Cliente só pode atualizar seus próprios dados.
+    
+    Exemplo: PATCH /clientes/me
+    """
+    cliente_id = str(current_cliente.cliente_id)
+    full_path = f"/clientes/{cliente_id}"
+    return await ServiceProxy.proxy_request(request, full_path)
+
+
+# ============================================================
+# ROTAS DE CLIENTES (ADMIN)
+# ============================================================
+
+# Rota específica para listar/criar clientes (ADMIN)
 @router.api_route(
     "/clientes",
     methods=["GET", "POST"],
@@ -93,7 +150,7 @@ async def proxy_clientes_root(
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
     """
-    Proxy para serviço de clientes (autenticado).
+    Proxy para serviço de clientes (autenticado admin).
     
     - GET: Lista clientes com filtros opcionais
     - POST: Cria novo cliente
@@ -101,25 +158,22 @@ async def proxy_clientes_root(
     return await ServiceProxy.proxy_request(request, "/clientes", current_user)
 
 
-# Rota para operações com ID específico
+# Rota para operações administrativas com clientes (path genérico - ADMIN)
 @router.api_route(
-    "/clientes/{path:path}",
+    "/clientes/admin/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     tags=["Clientes"],
-    summary="Operações com cliente específico"
+    summary="Operações administrativas com clientes"
 )
-async def proxy_clientes_path(
+async def proxy_clientes_admin_path(
     request: Request,
     path: str,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
     """
-    Proxy para serviço de clientes (autenticado).
+    Proxy para serviço de clientes - operações admin (autenticado).
     
-    - GET /clientes/{id}: Busca cliente por ID
-    - PUT /clientes/{id}: Atualiza cliente
-    - DELETE /clientes/{id}: Desativa cliente
-    - POST /clientes/{id}/enderecos: Adiciona endereço
+    Movido para /clientes/admin/{path} para evitar conflito com rota pública.
     """
     full_path = f"/clientes/{path}"
     return await ServiceProxy.proxy_request(request, full_path, current_user)

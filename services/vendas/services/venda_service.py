@@ -66,6 +66,16 @@ class VendaService:
                 if response.status_code == 200:
                     produto = response.json()
                     
+                    # Log para debug: ver estrutura do produto
+                    log.info(
+                        "produto_buscado_sucesso",
+                        produto_id=str(produto_id),
+                        tem_nome=bool(produto.get('nome')),
+                        nome_valor=produto.get('nome'),  # ✅ Ver o valor real
+                        nome_tipo=type(produto.get('nome')).__name__,  # ✅ Ver o tipo
+                        chaves_produto=list(produto.keys())[:10]  # Primeiras 10 chaves
+                    )
+                    
                     # Se tem variante, validar se ela existe no produto
                     if variante_id and produto.get('variantes'):
                         variantes = produto.get('variantes', [])
@@ -254,11 +264,16 @@ class VendaService:
                     preco_unitario = item.preco_unitario if item.preco_unitario else Decimal(str(produto.get('preco', produto.get('preco_venda', 0))))
                     subtotal = item.quantidade * preco_unitario
                     
+                    # 🔧 CORREÇÃO: Se item já vem com codigo/descricao (do carrinho), usar eles
+                    # Caso contrário, buscar do produto (para vendas diretas sem carrinho)
+                    codigo_produto = item.codigo_produto if item.codigo_produto else produto.get('sku', produto.get('codigo', produto.get('codigo_barras')))
+                    descricao_produto = item.descricao_produto if item.descricao_produto else produto.get('nome', 'Produto sem nome')
+                    
                     itens_dados.append({
                         'produto_id': item.produto_id,
                         'variante_id': item.variante_id,
-                        'codigo_produto': produto.get('sku', produto.get('codigo', produto.get('codigo_barras'))),
-                        'descricao_produto': produto.get('nome', 'Produto sem nome'),
+                        'codigo_produto': codigo_produto,
+                        'descricao_produto': descricao_produto,
                         'quantidade': item.quantidade,
                         'preco_unitario': preco_unitario,
                         'subtotal': subtotal

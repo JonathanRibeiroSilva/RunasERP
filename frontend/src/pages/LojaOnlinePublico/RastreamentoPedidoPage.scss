@@ -451,3 +451,85 @@
     }
   }
 }
+
+
+// Alerta de Status do Pagamento
+.alerta-pagamento {
+  margin: $spacer-4 auto;
+  max-width: 1200px;
+  padding: $spacer-4 $spacer-5;
+  border-radius: $border-radius;
+  display: flex;
+  align-items: center;
+  gap: $spacer-4;
+  animation: slideDown 0.3s ease-out;
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: $spacer-3 $spacer-3;
+    margin: $spacer-3 $spacer-2;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  .alerta-conteudo {
+    flex: 1;
+
+    h3 {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-bold;
+      margin: 0 0 $spacer-2 0;
+    }
+
+    p {
+      font-size: $font-size-base;
+      margin: 0;
+      opacity: 0.9;
+    }
+  }
+
+  // Variações de cor
+  &.success {
+    background: rgba($success, 0.1);
+    border: 2px solid $success;
+    color: darken($success, 15%);
+
+    svg {
+      color: $success;
+    }
+  }
+
+  &.failure {
+    background: rgba($danger, 0.1);
+    border: 2px solid $danger;
+    color: darken($danger, 10%);
+
+    svg {
+      color: $danger;
+    }
+  }
+
+  &.pending {
+    background: rgba($warning, 0.1);
+    border: 2px solid $warning;
+    color: darken($warning, 15%);
+
+    svg {
+      color: $warning;
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

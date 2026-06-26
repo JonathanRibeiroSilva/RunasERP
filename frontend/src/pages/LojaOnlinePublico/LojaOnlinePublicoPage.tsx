@@ -58,7 +58,7 @@ const LojaOnlinePublicoPage = () => {
         const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
         setEmpresaInfo(empresaRes.data);
       } catch (err) {
-        console.error('Erro ao carregar empresa:', err);
+        // Erro ao carregar dados da empresa
       }
 
       // Carregar produtos e categorias (agora usando empresaSlug como query param)
@@ -71,24 +71,18 @@ const LojaOnlinePublicoPage = () => {
       if (buscaParam && buscaParam.length >= 2) params.append('busca', buscaParam);
 
       const [produtosRes, categoriasRes] = await Promise.all([
-        apiPublica.get(`/loja-online/publico/produtos?${params}`).catch((err) => {
-          console.error('❌ Erro ao carregar produtos:', err);
-          console.error('URL tentada:', `/loja-online/publico/produtos?${params}`);
+        apiPublica.get(`/loja-online/publico/produtos?${params}`).catch(() => {
           return { data: { items: [] } };
         }),
-        apiPublica.get(`/loja-online/publico/categorias?empresaSlug=${empresaSlug}`).catch((err) => {
-          console.error('❌ Erro ao carregar categorias:', err);
+        apiPublica.get(`/loja-online/publico/categorias?empresaSlug=${empresaSlug}`).catch(() => {
           return { data: { items: [] } };
         }),
       ]);
 
-      console.log('✅ Produtos carregados:', produtosRes.data.items?.length || 0);
-      console.log('✅ Categorias carregadas:', categoriasRes.data.items?.length || 0);
-
       setProdutos(produtosRes.data.items || []);
       setCategorias(categoriasRes.data.items || []);
     } catch (error) {
-      console.error('Erro ao carregar catálogo:', error);
+      // Erro ao carregar catálogo
     } finally {
       setLoading(false);
     }
@@ -146,7 +140,6 @@ const LojaOnlinePublicoPage = () => {
         navigate(`/c/${empresaSlug}/produto/${produtoId}`);
       }
     } catch (error) {
-      console.error('Erro ao adicionar ao carrinho:', error);
       alert('Erro ao adicionar produto ao carrinho');
     }
   };

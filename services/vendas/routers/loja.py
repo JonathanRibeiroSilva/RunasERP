@@ -38,15 +38,54 @@ router = APIRouter(prefix="/loja", tags=["loja-online"])
 async def obter_carrinho(
     empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     sessao_id: Annotated[str | None, Cookie(alias="cart_session_id")] = None,
-    response: Response = None
+    response: Response = None,
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Obtém carrinho existente ou cria novo.
     
     O sessao_id é armazenado em cookie (cart_session_id).
     Se não existir, gera novo e retorna no header Set-Cookie.
+    
+    🔐 SEGURANÇA: Se sessao_id foi usado em checkout mas carrinho foi limpo pelo webhook,
+    gera novo sessao_id para evitar reutilização.
     """
     try:
+        # Verificar se sessao_id já foi usado em alguma venda
+        if sessao_id:
+            from repositories.venda_repository import VendaRepository
+            
+            # Buscar venda com este sessao_carrinho_id
+            venda_vinculada = await VendaRepository.buscar_por_sessao_carrinho(
+                db, empresa_id, sessao_id
+            )
+            
+            if venda_vinculada:
+                # ✅ Esta sessão foi usada em checkout - verificar se carrinho ainda existe
+                carrinho_existe = await CarrinhoService.carrinho_existe(sessao_id, empresa_id)
+                
+                if not carrinho_existe:
+                    # Carrinho foi limpo pelo webhook → gerar novo sessao_id
+                    log.info(
+                        "carrinho_processado_gerando_novo",
+                        sessao_antiga=sessao_id,
+                        venda_id=str(venda_vinculada.id),
+                        numero_venda=venda_vinculada.numero_venda
+                    )
+                    
+                    sessao_id = await CarrinhoService.gerar_sessao_id()
+                    
+                    # ✅ Definir novo cookie
+                    response.set_cookie(
+                        key="cart_session_id",
+                        value=sessao_id,
+                        max_age=604800,
+                        httponly=True,
+                        secure=True,
+                        samesite="none",
+                        path="/"
+                    )
+        
         # Gerar sessao_id se não existir
         if not sessao_id:
             sessao_id = await CarrinhoService.gerar_sessao_id()
@@ -56,7 +95,9 @@ async def obter_carrinho(
                 value=sessao_id,
                 max_age=604800,
                 httponly=True,
-                samesite="lax"
+                secure=True,  # ✅ HTTPS only
+                samesite="none",  # ✅ Permite cross-site (necessário para Cloudflare)
+                path="/"  # ✅ Disponível em todo o site
             )
         
         carrinho = await CarrinhoService.obter_ou_criar_carrinho(
@@ -96,7 +137,9 @@ async def adicionar_item_carrinho(
                 value=sessao_id,
                 max_age=604800,
                 httponly=True,
-                samesite="lax"
+                secure=True,  # ✅ HTTPS only
+                samesite="none",  # ✅ Permite cross-site (necessário para Cloudflare)
+                path="/"  # ✅ Disponível em todo o site
             )
         
         carrinho = await CarrinhoService.adicionar_item(
@@ -229,6 +272,16 @@ async def processar_checkout(
     """
     import structlog
     log = structlog.get_logger()
+    
+    # 🔍 DEBUG: Log do cookie recebido
+    log.info(
+        "🔍 DEBUG: Checkout - Cookie recebido no router",
+        sessao_id=sessao_id,
+        sessao_id_exists=bool(sessao_id),
+        sessao_id_length=len(sessao_id) if sessao_id else 0,
+        empresa_id=empresa_id,
+        cliente_nome=data.cliente_novo.nome if data.cliente_novo else None
+    )
     
     log.info("checkout_recebido", 
              cliente_nome=data.cliente_novo.nome if data.cliente_novo else None,

@@ -34,7 +34,6 @@ const CarrinhoPage = () => {
       setProcessandoItem(key);
       await removerItem(produtoId, varianteId);
     } catch (error) {
-      console.error('Erro ao remover item:', error);
     } finally {
       setProcessandoItem(null);
     }
@@ -48,7 +47,6 @@ const CarrinhoPage = () => {
       setProcessandoItem(key);
       await atualizarQuantidade(produtoId, varianteId, novaQuantidade);
     } catch (error) {
-      console.error('Erro ao atualizar quantidade:', error);
     } finally {
       setProcessandoItem(null);
     }
@@ -60,7 +58,6 @@ const CarrinhoPage = () => {
     try {
       await limparCarrinho();
     } catch (error) {
-      console.error('Erro ao limpar carrinho:', error);
     }
   };
 

@@ -8,6 +8,7 @@ const apiPublica = axios.create({
   baseURL: '/api',
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true  // ✅ CRITICAL: Permite receber e enviar cookies HTTP-only
 });
 
 const MicrosoftCallback = () => {
@@ -20,8 +21,8 @@ const MicrosoftCallback = () => {
     const processarCallback = async () => {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
-      const savedState = localStorage.getItem('oauth_state');
-      const empresaSlug = localStorage.getItem('oauth_empresa_slug');
+      const savedState = sessionStorage.getItem('oauth_state');
+      const empresaSlug = sessionStorage.getItem('oauth_empresa_slug');
 
       if (!code || !state) {
         setErro('Parâmetros inválidos');
@@ -45,16 +46,31 @@ const MicrosoftCallback = () => {
         const response = await apiPublica.post('/auth/cliente/oauth/microsoft/callback', {
           code,
           state,
+        }, {
+          withCredentials: true  // ✅ Permite receber cookies HTTP-only
         });
 
-        const { access_token, cliente } = response.data;
+        const { cliente } = response.data;
 
-        localStorage.setItem('cliente_token', access_token);
-        localStorage.removeItem('oauth_state');
-        localStorage.removeItem('oauth_empresa_slug');
+        // Debug: verificar se callback foi bem-sucedido
+        console.log('✅ OAuth Microsoft callback bem-sucedido');
+        console.log('🍪 Cookies HTTP-only foram setados pelo backend');
+
+        // ✅ Backend setou cookies HTTP-only automaticamente
+        // ❌ NÃO usar localStorage (vulnerável a XSS)
+
+        // Get return URL (where user was before OAuth)
+        const returnUrl = sessionStorage.getItem('oauth_return_url') || `/c/${empresaSlug}/checkout`;
+
+        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('oauth_empresa_slug');
+        sessionStorage.removeItem('oauth_return_url');
+
+        // Sinalizar para recarregar carrinho após retornar
+        sessionStorage.setItem('reload_cart_after_oauth', 'true');
 
         Toast.success(`Bem-vindo, ${cliente.nome}!`);
-        navigate(`/c/${empresaSlug}/checkout`);
+        navigate(returnUrl);
       } catch (error: any) {
         const mensagem = error.response?.data?.detail || 'Erro ao processar login';
         setErro(mensagem);

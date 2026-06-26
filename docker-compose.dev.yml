@@ -11,7 +11,6 @@ volumes:
   rabbitmq_data:
   redis_data:
   db_data:
-  nginx_logs:
 
 services:
   # ============================================
@@ -81,38 +80,38 @@ services:
   # PGADMIN
   # ============================================
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: erp-pgadmin-dev
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@runas.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
-      - ./pgadmin/pgpass:/tmp/pgpass:ro
-    depends_on:
-      - db
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/misc/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    entrypoint: >
-      /bin/sh -c "
-      mkdir -p /var/lib/pgadmin/storage/admin_runas.com &&
-      cp /tmp/pgpass /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
-      chmod 600 /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
-      chown -R pgadmin:root /var/lib/pgadmin/storage &&
-      /entrypoint.sh
-      "
+  # pgadmin:
+  #  image: dpage/pgadmin4:latest
+  #  container_name: erp-pgadmin-dev
+  #  environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@runas.com}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #     PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+  #     PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+  #  ports:
+  #    - "5050:80"
+  # volumes:docker compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
+  #    - pgadmin_data:/var/lib/pgadmin
+  #    - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+  #    - ./pgadmin/pgpass:/tmp/pgpass:ro
+  #  depends_on:
+  #    - db
+  #  networks:
+  #    - erp-network
+  #  healthcheck:
+  #     test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/misc/ping"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #     mkdir -p /var/lib/pgadmin/storage/admin_runas.com &&
+  #     cp /tmp/pgpass /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+  #     chmod 600 /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+  #     chown -R pgadmin:root /var/lib/pgadmin/storage &&
+  #     /entrypoint.sh
+  #     "
 
   # ============================================
   # EVOLUTION API (WhatsApp)
@@ -472,8 +471,9 @@ services:
       # Intervalo aumentado para 1000ms reduz falsos positivos de mudança
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "1000"
-      # VITE_HMR_* não são mais necessárias — o Vite usa defaults e o nginx faz proxy
-      VITE_USE_PROXY: ${VITE_USE_PROXY:-false}
+      # Vite proxy: habilitado para rotear /api/* para api-gateway:8000
+      # Necessário porque removemos o nginx
+      VITE_USE_PROXY: "true"
     depends_on:
       - api-gateway
     networks:
@@ -488,33 +488,9 @@ services:
     restart: unless-stopped
 
   # ============================================
-  # PROXY REVERSO (apenas com --profile proxy)
+  # PROXY REVERSO
   # ============================================
-
-  nginx:
-    profiles: ["proxy"]
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    container_name: erp-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - frontend-dev
-      - api-gateway
-    networks:
-      - erp-network
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - nginx_logs:/var/log/nginx
-    environment:
-      - TZ=America/Sao_Paulo
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+  # NOTA: Nginx foi removido - usando Cloudflare Tunnel
+  # Para ativar o túnel, use:
+  # docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
 

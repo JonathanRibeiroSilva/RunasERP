@@ -41,9 +41,12 @@ Documentação do frontend React.
 - [Guias](./05-frontend/guias/)
 - [Deployment](./05-frontend/deployment/)
 
-### 👨‍💻 [07. Desenvolvimento](./07-desenvolvimento/)
-Guias para desenvolvedores.
-- [Guia de Implementação](./07-desenvolvimento/guia-implementacao.md)
+### 👨‍💻 [02. Desenvolvimento](./02-desenvolvimento/)
+Guias técnicos para desenvolvedores.
+- [Setup Graphify](./02-desenvolvimento/GRAPHIFY_SETUP.md)
+- [Máscaras e Validações](./02-desenvolvimento/GUIA_MASCARAS_VALIDACOES.md)
+- [OAuth Completo](./02-desenvolvimento/OAUTH_FLUXO_COMPLETO.md)
+- [OAuth Providers](./02-desenvolvimento/OAUTH_PROVIDERS_CONFIG.md)
 
 ### 🔧 [09. Troubleshooting](./09-troubleshooting/)
 Resolução de problemas comuns.
@@ -70,10 +73,15 @@ Regras de negócio do sistema.
 - [Estoque](./11-regras-negocio/estoque.md)
 - [Financeiro](./11-regras-negocio/financeiro.md)
 
-### 📝 [12. Changelog](./12-changelog/)
-Histórico de versões e mudanças.
-- [Changelog Completo](./12-changelog/CHANGELOG.md)
-- [Versão 1.0.0 (MVP)](./12-changelog/v1.0.0.md)
+### 📝 Histórico de Mudanças
+Use `git log` para ver o histórico completo:
+```bash
+# Ver changelog completo
+git log --oneline --graph --all
+
+# Ver mudanças desde a v1.0.0
+git log v1.0.0..HEAD --oneline
+```
 
 ---
 
@@ -105,7 +113,6 @@ RunasERP/
 │   ├── financeiro/
 │   └── notificacoes/
 ├── frontend/             # Frontend (React + TypeScript)
-├── nginx/                # Configuração Nginx
 ├── shared/               # Código compartilhado
 ├── tests/                # Testes
 └── docs/                 # Documentação (você está aqui!)
@@ -124,12 +131,13 @@ RunasERP/
 | 09-troubleshooting | 2 | Resolução de problemas |
 | 10-api-reference | 9 | ~3.271 linhas de documentação de APIs |
 | 11-regras-negocio | 5 | Regras de negócio por domínio |
-| 12-changelog | 3 | Histórico de versões |
-| **TOTAL** | **~40+** | Documentação completa e organizada |
+| **TOTAL** | **~35** | Documentação limpa e otimizada |
 
-## 📦 Arquivo
+## 📦 Política de Documentação
 
-Documentos obsoletos e versões antigas foram movidos para [`_archive/`](./_archive/README.md).
+**Zero Changelogs**: Use `git log` como fonte da verdade  
+**Zero Arquivos Temporários**: Documentos temporários são deletados após merge  
+**Zero Arquivos de Archive**: Documentação obsoleta é deletada, não arquivada
 
 ## 🔗 Links Úteis
 

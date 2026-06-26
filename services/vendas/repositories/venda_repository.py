@@ -147,6 +147,28 @@ class VendaRepository:
         count = await VendaRepository.contar_por_empresa(db, empresa_id)
         return count + 1
 
+    @staticmethod
+    async def buscar_por_sessao_carrinho(
+        db: AsyncSession,
+        empresa_id: int,
+        sessao_carrinho_id: str
+    ) -> Optional[Venda]:
+        """
+        Busca venda por sessao_carrinho_id.
+        
+        Retorna a venda mais recente se houver múltiplas com mesmo sessao_id
+        (caso de bug onde mesmo carrinho foi usado em múltiplas vendas).
+        """
+        query = select(Venda).where(
+            and_(
+                Venda.empresa_id == empresa_id,
+                Venda.sessao_carrinho_id == sessao_carrinho_id
+            )
+        ).order_by(desc(Venda.created_at))
+        
+        result = await db.execute(query)
+        return result.scalars().first()  # Retorna a mais recente
+
 
 class ItemVendaRepository:
     """Repository para operações de Item de Venda."""

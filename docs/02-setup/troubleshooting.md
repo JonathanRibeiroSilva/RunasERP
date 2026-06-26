@@ -496,10 +496,9 @@ Webhook não recebe notificações de pagamento
 **Soluções:**
 
 1. **Verificar URL do webhook**
-```bash
-# Deve ser acessível publicamente
-# Use ngrok para desenvolvimento
-ngrok http 8000
+```powershell
+# Deve ser acessível publicamente via Cloudflare Tunnel
+# Exemplo: https://www.runaserp.com.br/api/vendas/webhook/mercadopago
 ```
 
 2. **Verificar assinatura HMAC**

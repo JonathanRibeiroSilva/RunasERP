@@ -51,10 +51,15 @@ bash tests/test-mvp.sh
 
 ### Acessar a Aplicação
 
+**Desenvolvimento Local**:
+- **Frontend**: http://localhost:3000
 - **API Gateway**: http://localhost:8000
 - **Documentação API (Swagger)**: http://localhost:8000/docs
-- **pgAdmin**: http://localhost:5050 (admin@runas.local / admin123)
-- **RabbitMQ Management**: http://localhost:15672 (guest / guest)
+
+**Com Cloudflare Tunnel**:
+- **Frontend**: https://www.runaserp.com.br
+- **API Gateway**: https://www.runaserp.com.br/api
+- **Documentação API**: https://www.runaserp.com.br/api/docs
 
 ### Login Padrão
 
@@ -69,38 +74,41 @@ Senha: Admin@123
 
 ## 🏗️ Arquitetura
 
-O sistema é composto por **7 microsserviços independentes**:
+O sistema é composto por **8 serviços** (1 API Gateway + 7 microsserviços):
 
 ```
 ┌─────────────────┐
-│   API Gateway   │  ← Autenticação JWT + Roteamento
+│   API Gateway   │  ← Autenticação JWT + Roteamento + OAuth2
 │   (porta 8000)  │
 └────────┬────────┘
          │
-    ┌────┴────┬────────┬────────┬──────────┬────────────┐
-    │         │        │        │          │            │
-┌───▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼───┐ ┌────▼────┐ ┌────▼─────┐
-│Cliente│ │Produto│ │Estoque│ │Vendas│ │Financeiro│ │Notificação│
-│ 8001  │ │ 8002  │ │ 8003  │ │ 8004 │ │  8005   │ │   8006   │
-└───────┘ └───────┘ └───────┘ └──────┘ └─────────┘ └──────────┘
-    │         │         │         │          │            │
-    └─────────┴─────────┴─────────┴──────────┴────────────┘
-                         │
-              ┌──────────┴──────────┐
-              │                     │
-         ┌────▼────┐          ┌────▼────┐
-         │RabbitMQ │          │  Redis  │
-         └─────────┘          └─────────┘
+    ┌────┴────┬────────┬─────────┬──────────┬────────────┬─────────┐
+    │         │        │         │          │            │         │
+┌───▼───┐ ┌──▼────┐ ┌──▼────┐ ┌──▼───┐ ┌────▼────┐ ┌─────▼─────┐ ┌───▼───┐
+│Empresa│ │Cliente│ │Produto│ │Estoque│ │Financeiro│ │Notificação│ │Vendas │
+│ 8001  │ │ 8002  │ │ 8003  │ │ 8004  │ │  8005   │ │   8006   │ │ 8007  │
+└───────┘ └───────┘ └───────┘ └───────┘ └─────────┘ └──────────┘ └───────┘
+    │         │         │         │          │            │          │
+    └─────────┴─────────┴─────────┴──────────┴────────────┴──────────┘
+                                  │
+                       ┌──────────┴──────────┐
+                       │                     │
+                  ┌────▼────┐          ┌─────▼────┐
+                  │RabbitMQ │          │  Redis   │
+                  └─────────┘          └──────────┘
 ```
 
 ### Características Técnicas
 
-- ✅ **Database per Service** - Cada microsserviço tem seu próprio PostgreSQL
+- ✅ **8 Serviços** - 1 API Gateway + 7 microsserviços independentes
+- ✅ **Database per Service** - Cada microsserviço tem seu próprio schema PostgreSQL
+- ✅ **Multi-tenancy** - Isolamento de dados por empresa_id
 - ✅ **Event-Driven** - Comunicação assíncrona via RabbitMQ
 - ✅ **Cache Distribuído** - Redis para sessões e blacklist de tokens
-- ✅ **API Gateway** - Ponto único de entrada com autenticação centralizada
+- ✅ **API Gateway** - Ponto único de entrada com autenticação centralizada (OAuth2 + JWT)
 - ✅ **Health Checks** - Monitoramento de saúde de todos os serviços
 - ✅ **Docker Compose** - Orquestração completa de containers
+- ✅ **Cloudflare Tunnel** - Acesso externo seguro (www.runaserp.com.br)
 
 ---
 
@@ -110,13 +118,14 @@ O sistema é composto por **7 microsserviços independentes**:
 
 | Componente | Status | Endpoints | Descrição |
 |------------|--------|-----------|-----------|
-| **API Gateway** | 🟢 100% | 15 | Autenticação JWT, RBAC, Proxy, Rate Limiting |
+| **API Gateway** | 🟢 100% | 15 | Autenticação JWT, OAuth2, RBAC, Proxy, Rate Limiting |
+| **Serviço Empresas** | 🟢 100% | 8 | CRUD de empresas, multi-tenancy |
 | **Serviço Clientes** | 🟢 100% | 12 | CRUD de clientes (PF/PJ), endereços, crédito |
 | **Serviço Produtos** | 🟢 100% | 25 | CRUD de produtos, categorias, variantes, fornecedores |
 | **Loja Online** | 🟢 100% | 26 | Catálogo público, carrinho, checkout, rastreamento |
-| **Infraestrutura** | 🟢 100% | - | 8 bancos PostgreSQL, Redis, RabbitMQ, pgAdmin |
+| **Infraestrutura** | 🟢 100% | - | PostgreSQL unificado com schemas, Redis, RabbitMQ |
 
-**Total Backend**: 78 endpoints REST funcionais | ~15.000 linhas de código  
+**Total Backend**: 86 endpoints REST funcionais | ~18.000 linhas de código  
 **Total Frontend**: Interface completa com React + TypeScript
 
 ### 🟡 Componentes Backend Completos (Frontend Pendente)
@@ -179,6 +188,7 @@ erp-runas/
 │   └── main.py
 │
 ├── 📁 services/                    # Microsserviços
+│   ├── empresas/                   # Multi-tenancy (empresas)
 │   ├── clientes/                   # Gestão de clientes
 │   ├── produtos/                   # Produtos e catálogo
 │   ├── estoque/                    # Controle de estoque
@@ -433,12 +443,13 @@ Para suporte técnico:
 
 ## 📊 Métricas do Projeto
 
-- **Linhas de código**: ~15.000 linhas Python
-- **Arquivos criados**: ~180 arquivos
-- **Endpoints REST**: 78 endpoints funcionais
-- **Microsserviços**: 5 funcionais (Gateway, Clientes, Produtos, Vendas, Estoque)
-- **Bancos de dados**: 8 PostgreSQL
+- **Linhas de código**: ~18.000 linhas Python
+- **Arquivos criados**: ~200 arquivos
+- **Endpoints REST**: 86 endpoints funcionais
+- **Microsserviços**: 8 serviços (1 Gateway + 7 microsserviços)
+- **Banco de dados**: 1 PostgreSQL com 8 schemas isolados
 - **Frontend**: React + TypeScript com Loja Online completa
+- **Multi-tenancy**: 100% implementado (isolamento por empresa_id)
 - **Cobertura de testes**: Em desenvolvimento
 
 ---
