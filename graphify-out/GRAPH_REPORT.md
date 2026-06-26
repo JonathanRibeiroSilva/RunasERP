@@ -1,16 +1,16 @@
-# Graph Report - RunasERP  (2026-06-24)
+# Graph Report - RunasERP  (2026-06-26)
 
 ## Corpus Check
-- 510 files · ~347,658 words
+- 390 files · ~190,168 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 9432 nodes · 12236 edges · 706 communities (604 shown, 102 thin omitted)
-- Extraction: 94% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 528 edges (avg confidence: 0.5)
+- 5307 nodes · 8196 edges · 427 communities (326 shown, 101 thin omitted)
+- Extraction: 92% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 532 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f8474cfb`
+- Built from commit: `ec61b1b6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -212,6 +212,7 @@
 - [[_COMMUNITY_Community 196|Community 196]]
 - [[_COMMUNITY_Community 197|Community 197]]
 - [[_COMMUNITY_Community 198|Community 198]]
+- [[_COMMUNITY_Community 199|Community 199]]
 - [[_COMMUNITY_Community 200|Community 200]]
 - [[_COMMUNITY_Community 201|Community 201]]
 - [[_COMMUNITY_Community 202|Community 202]]
@@ -326,376 +327,97 @@
 - [[_COMMUNITY_Community 335|Community 335]]
 - [[_COMMUNITY_Community 336|Community 336]]
 - [[_COMMUNITY_Community 337|Community 337]]
-- [[_COMMUNITY_Community 338|Community 338]]
 - [[_COMMUNITY_Community 339|Community 339]]
 - [[_COMMUNITY_Community 340|Community 340]]
-- [[_COMMUNITY_Community 341|Community 341]]
-- [[_COMMUNITY_Community 342|Community 342]]
-- [[_COMMUNITY_Community 343|Community 343]]
-- [[_COMMUNITY_Community 344|Community 344]]
-- [[_COMMUNITY_Community 345|Community 345]]
 - [[_COMMUNITY_Community 346|Community 346]]
 - [[_COMMUNITY_Community 347|Community 347]]
 - [[_COMMUNITY_Community 348|Community 348]]
-- [[_COMMUNITY_Community 349|Community 349]]
-- [[_COMMUNITY_Community 350|Community 350]]
-- [[_COMMUNITY_Community 351|Community 351]]
 - [[_COMMUNITY_Community 352|Community 352]]
-- [[_COMMUNITY_Community 353|Community 353]]
 - [[_COMMUNITY_Community 354|Community 354]]
-- [[_COMMUNITY_Community 355|Community 355]]
 - [[_COMMUNITY_Community 356|Community 356]]
-- [[_COMMUNITY_Community 357|Community 357]]
 - [[_COMMUNITY_Community 358|Community 358]]
 - [[_COMMUNITY_Community 359|Community 359]]
-- [[_COMMUNITY_Community 360|Community 360]]
-- [[_COMMUNITY_Community 361|Community 361]]
-- [[_COMMUNITY_Community 362|Community 362]]
-- [[_COMMUNITY_Community 363|Community 363]]
-- [[_COMMUNITY_Community 364|Community 364]]
 - [[_COMMUNITY_Community 365|Community 365]]
 - [[_COMMUNITY_Community 366|Community 366]]
-- [[_COMMUNITY_Community 367|Community 367]]
-- [[_COMMUNITY_Community 368|Community 368]]
-- [[_COMMUNITY_Community 369|Community 369]]
-- [[_COMMUNITY_Community 370|Community 370]]
 - [[_COMMUNITY_Community 372|Community 372]]
 - [[_COMMUNITY_Community 373|Community 373]]
 - [[_COMMUNITY_Community 374|Community 374]]
-- [[_COMMUNITY_Community 375|Community 375]]
 - [[_COMMUNITY_Community 376|Community 376]]
-- [[_COMMUNITY_Community 377|Community 377]]
-- [[_COMMUNITY_Community 378|Community 378]]
-- [[_COMMUNITY_Community 379|Community 379]]
-- [[_COMMUNITY_Community 380|Community 380]]
-- [[_COMMUNITY_Community 381|Community 381]]
-- [[_COMMUNITY_Community 382|Community 382]]
-- [[_COMMUNITY_Community 383|Community 383]]
 - [[_COMMUNITY_Community 384|Community 384]]
 - [[_COMMUNITY_Community 385|Community 385]]
-- [[_COMMUNITY_Community 386|Community 386]]
-- [[_COMMUNITY_Community 387|Community 387]]
-- [[_COMMUNITY_Community 388|Community 388]]
-- [[_COMMUNITY_Community 389|Community 389]]
-- [[_COMMUNITY_Community 390|Community 390]]
 - [[_COMMUNITY_Community 391|Community 391]]
-- [[_COMMUNITY_Community 392|Community 392]]
-- [[_COMMUNITY_Community 393|Community 393]]
 - [[_COMMUNITY_Community 394|Community 394]]
-- [[_COMMUNITY_Community 395|Community 395]]
-- [[_COMMUNITY_Community 396|Community 396]]
-- [[_COMMUNITY_Community 397|Community 397]]
-- [[_COMMUNITY_Community 398|Community 398]]
-- [[_COMMUNITY_Community 399|Community 399]]
-- [[_COMMUNITY_Community 400|Community 400]]
-- [[_COMMUNITY_Community 401|Community 401]]
-- [[_COMMUNITY_Community 402|Community 402]]
-- [[_COMMUNITY_Community 403|Community 403]]
-- [[_COMMUNITY_Community 404|Community 404]]
-- [[_COMMUNITY_Community 405|Community 405]]
 - [[_COMMUNITY_Community 406|Community 406]]
-- [[_COMMUNITY_Community 407|Community 407]]
 - [[_COMMUNITY_Community 408|Community 408]]
-- [[_COMMUNITY_Community 409|Community 409]]
-- [[_COMMUNITY_Community 410|Community 410]]
 - [[_COMMUNITY_Community 411|Community 411]]
 - [[_COMMUNITY_Community 412|Community 412]]
 - [[_COMMUNITY_Community 413|Community 413]]
 - [[_COMMUNITY_Community 414|Community 414]]
-- [[_COMMUNITY_Community 415|Community 415]]
-- [[_COMMUNITY_Community 416|Community 416]]
-- [[_COMMUNITY_Community 417|Community 417]]
-- [[_COMMUNITY_Community 418|Community 418]]
-- [[_COMMUNITY_Community 419|Community 419]]
-- [[_COMMUNITY_Community 420|Community 420]]
 - [[_COMMUNITY_Community 421|Community 421]]
-- [[_COMMUNITY_Community 422|Community 422]]
-- [[_COMMUNITY_Community 423|Community 423]]
 - [[_COMMUNITY_Community 424|Community 424]]
-- [[_COMMUNITY_Community 425|Community 425]]
-- [[_COMMUNITY_Community 426|Community 426]]
 - [[_COMMUNITY_Community 427|Community 427]]
-- [[_COMMUNITY_Community 428|Community 428]]
-- [[_COMMUNITY_Community 429|Community 429]]
-- [[_COMMUNITY_Community 430|Community 430]]
-- [[_COMMUNITY_Community 431|Community 431]]
 - [[_COMMUNITY_Community 432|Community 432]]
 - [[_COMMUNITY_Community 433|Community 433]]
 - [[_COMMUNITY_Community 434|Community 434]]
-- [[_COMMUNITY_Community 436|Community 436]]
-- [[_COMMUNITY_Community 437|Community 437]]
-- [[_COMMUNITY_Community 438|Community 438]]
-- [[_COMMUNITY_Community 440|Community 440]]
-- [[_COMMUNITY_Community 441|Community 441]]
-- [[_COMMUNITY_Community 442|Community 442]]
-- [[_COMMUNITY_Community 443|Community 443]]
-- [[_COMMUNITY_Community 444|Community 444]]
-- [[_COMMUNITY_Community 445|Community 445]]
-- [[_COMMUNITY_Community 446|Community 446]]
-- [[_COMMUNITY_Community 447|Community 447]]
 - [[_COMMUNITY_Community 448|Community 448]]
 - [[_COMMUNITY_Community 449|Community 449]]
-- [[_COMMUNITY_Community 450|Community 450]]
-- [[_COMMUNITY_Community 451|Community 451]]
-- [[_COMMUNITY_Community 452|Community 452]]
-- [[_COMMUNITY_Community 453|Community 453]]
-- [[_COMMUNITY_Community 454|Community 454]]
-- [[_COMMUNITY_Community 455|Community 455]]
-- [[_COMMUNITY_Community 456|Community 456]]
-- [[_COMMUNITY_Community 457|Community 457]]
-- [[_COMMUNITY_Community 458|Community 458]]
-- [[_COMMUNITY_Community 459|Community 459]]
-- [[_COMMUNITY_Community 460|Community 460]]
-- [[_COMMUNITY_Community 461|Community 461]]
-- [[_COMMUNITY_Community 462|Community 462]]
-- [[_COMMUNITY_Community 463|Community 463]]
-- [[_COMMUNITY_Community 464|Community 464]]
-- [[_COMMUNITY_Community 465|Community 465]]
 - [[_COMMUNITY_Community 466|Community 466]]
 - [[_COMMUNITY_Community 467|Community 467]]
-- [[_COMMUNITY_Community 468|Community 468]]
-- [[_COMMUNITY_Community 469|Community 469]]
 - [[_COMMUNITY_Community 470|Community 470]]
-- [[_COMMUNITY_Community 471|Community 471]]
-- [[_COMMUNITY_Community 472|Community 472]]
-- [[_COMMUNITY_Community 473|Community 473]]
-- [[_COMMUNITY_Community 474|Community 474]]
-- [[_COMMUNITY_Community 475|Community 475]]
-- [[_COMMUNITY_Community 476|Community 476]]
-- [[_COMMUNITY_Community 477|Community 477]]
-- [[_COMMUNITY_Community 478|Community 478]]
-- [[_COMMUNITY_Community 479|Community 479]]
-- [[_COMMUNITY_Community 480|Community 480]]
-- [[_COMMUNITY_Community 481|Community 481]]
 - [[_COMMUNITY_Community 482|Community 482]]
 - [[_COMMUNITY_Community 483|Community 483]]
 - [[_COMMUNITY_Community 484|Community 484]]
 - [[_COMMUNITY_Community 485|Community 485]]
-- [[_COMMUNITY_Community 486|Community 486]]
-- [[_COMMUNITY_Community 487|Community 487]]
-- [[_COMMUNITY_Community 488|Community 488]]
-- [[_COMMUNITY_Community 489|Community 489]]
-- [[_COMMUNITY_Community 490|Community 490]]
-- [[_COMMUNITY_Community 491|Community 491]]
 - [[_COMMUNITY_Community 492|Community 492]]
-- [[_COMMUNITY_Community 493|Community 493]]
-- [[_COMMUNITY_Community 494|Community 494]]
-- [[_COMMUNITY_Community 495|Community 495]]
-- [[_COMMUNITY_Community 496|Community 496]]
-- [[_COMMUNITY_Community 497|Community 497]]
-- [[_COMMUNITY_Community 498|Community 498]]
 - [[_COMMUNITY_Community 499|Community 499]]
-- [[_COMMUNITY_Community 500|Community 500]]
-- [[_COMMUNITY_Community 501|Community 501]]
-- [[_COMMUNITY_Community 502|Community 502]]
 - [[_COMMUNITY_Community 503|Community 503]]
 - [[_COMMUNITY_Community 504|Community 504]]
-- [[_COMMUNITY_Community 505|Community 505]]
-- [[_COMMUNITY_Community 506|Community 506]]
-- [[_COMMUNITY_Community 507|Community 507]]
-- [[_COMMUNITY_Community 508|Community 508]]
-- [[_COMMUNITY_Community 509|Community 509]]
-- [[_COMMUNITY_Community 510|Community 510]]
-- [[_COMMUNITY_Community 511|Community 511]]
-- [[_COMMUNITY_Community 512|Community 512]]
-- [[_COMMUNITY_Community 513|Community 513]]
-- [[_COMMUNITY_Community 514|Community 514]]
 - [[_COMMUNITY_Community 515|Community 515]]
 - [[_COMMUNITY_Community 516|Community 516]]
 - [[_COMMUNITY_Community 517|Community 517]]
-- [[_COMMUNITY_Community 518|Community 518]]
-- [[_COMMUNITY_Community 519|Community 519]]
-- [[_COMMUNITY_Community 520|Community 520]]
-- [[_COMMUNITY_Community 521|Community 521]]
 - [[_COMMUNITY_Community 522|Community 522]]
-- [[_COMMUNITY_Community 523|Community 523]]
-- [[_COMMUNITY_Community 524|Community 524]]
-- [[_COMMUNITY_Community 525|Community 525]]
-- [[_COMMUNITY_Community 526|Community 526]]
-- [[_COMMUNITY_Community 527|Community 527]]
-- [[_COMMUNITY_Community 528|Community 528]]
-- [[_COMMUNITY_Community 529|Community 529]]
-- [[_COMMUNITY_Community 530|Community 530]]
-- [[_COMMUNITY_Community 531|Community 531]]
-- [[_COMMUNITY_Community 532|Community 532]]
-- [[_COMMUNITY_Community 533|Community 533]]
 - [[_COMMUNITY_Community 534|Community 534]]
 - [[_COMMUNITY_Community 535|Community 535]]
 - [[_COMMUNITY_Community 536|Community 536]]
 - [[_COMMUNITY_Community 537|Community 537]]
 - [[_COMMUNITY_Community 538|Community 538]]
-- [[_COMMUNITY_Community 539|Community 539]]
-- [[_COMMUNITY_Community 540|Community 540]]
-- [[_COMMUNITY_Community 541|Community 541]]
-- [[_COMMUNITY_Community 542|Community 542]]
-- [[_COMMUNITY_Community 543|Community 543]]
-- [[_COMMUNITY_Community 544|Community 544]]
-- [[_COMMUNITY_Community 545|Community 545]]
-- [[_COMMUNITY_Community 546|Community 546]]
-- [[_COMMUNITY_Community 547|Community 547]]
-- [[_COMMUNITY_Community 548|Community 548]]
-- [[_COMMUNITY_Community 549|Community 549]]
-- [[_COMMUNITY_Community 550|Community 550]]
-- [[_COMMUNITY_Community 551|Community 551]]
-- [[_COMMUNITY_Community 552|Community 552]]
-- [[_COMMUNITY_Community 553|Community 553]]
-- [[_COMMUNITY_Community 554|Community 554]]
-- [[_COMMUNITY_Community 555|Community 555]]
-- [[_COMMUNITY_Community 556|Community 556]]
-- [[_COMMUNITY_Community 557|Community 557]]
-- [[_COMMUNITY_Community 558|Community 558]]
-- [[_COMMUNITY_Community 559|Community 559]]
 - [[_COMMUNITY_Community 560|Community 560]]
 - [[_COMMUNITY_Community 561|Community 561]]
 - [[_COMMUNITY_Community 562|Community 562]]
 - [[_COMMUNITY_Community 563|Community 563]]
-- [[_COMMUNITY_Community 564|Community 564]]
 - [[_COMMUNITY_Community 565|Community 565]]
 - [[_COMMUNITY_Community 566|Community 566]]
-- [[_COMMUNITY_Community 567|Community 567]]
-- [[_COMMUNITY_Community 568|Community 568]]
-- [[_COMMUNITY_Community 569|Community 569]]
-- [[_COMMUNITY_Community 570|Community 570]]
-- [[_COMMUNITY_Community 571|Community 571]]
-- [[_COMMUNITY_Community 572|Community 572]]
-- [[_COMMUNITY_Community 574|Community 574]]
-- [[_COMMUNITY_Community 575|Community 575]]
-- [[_COMMUNITY_Community 576|Community 576]]
-- [[_COMMUNITY_Community 577|Community 577]]
-- [[_COMMUNITY_Community 578|Community 578]]
-- [[_COMMUNITY_Community 579|Community 579]]
-- [[_COMMUNITY_Community 580|Community 580]]
-- [[_COMMUNITY_Community 581|Community 581]]
-- [[_COMMUNITY_Community 582|Community 582]]
-- [[_COMMUNITY_Community 583|Community 583]]
-- [[_COMMUNITY_Community 584|Community 584]]
 - [[_COMMUNITY_Community 585|Community 585]]
 - [[_COMMUNITY_Community 586|Community 586]]
 - [[_COMMUNITY_Community 587|Community 587]]
-- [[_COMMUNITY_Community 588|Community 588]]
-- [[_COMMUNITY_Community 589|Community 589]]
-- [[_COMMUNITY_Community 590|Community 590]]
-- [[_COMMUNITY_Community 591|Community 591]]
-- [[_COMMUNITY_Community 592|Community 592]]
-- [[_COMMUNITY_Community 593|Community 593]]
-- [[_COMMUNITY_Community 594|Community 594]]
-- [[_COMMUNITY_Community 595|Community 595]]
-- [[_COMMUNITY_Community 596|Community 596]]
-- [[_COMMUNITY_Community 597|Community 597]]
-- [[_COMMUNITY_Community 598|Community 598]]
-- [[_COMMUNITY_Community 599|Community 599]]
-- [[_COMMUNITY_Community 600|Community 600]]
-- [[_COMMUNITY_Community 601|Community 601]]
-- [[_COMMUNITY_Community 602|Community 602]]
-- [[_COMMUNITY_Community 603|Community 603]]
-- [[_COMMUNITY_Community 604|Community 604]]
-- [[_COMMUNITY_Community 605|Community 605]]
-- [[_COMMUNITY_Community 606|Community 606]]
-- [[_COMMUNITY_Community 607|Community 607]]
 - [[_COMMUNITY_Community 608|Community 608]]
-- [[_COMMUNITY_Community 609|Community 609]]
-- [[_COMMUNITY_Community 610|Community 610]]
 - [[_COMMUNITY_Community 611|Community 611]]
 - [[_COMMUNITY_Community 612|Community 612]]
 - [[_COMMUNITY_Community 613|Community 613]]
 - [[_COMMUNITY_Community 614|Community 614]]
-- [[_COMMUNITY_Community 615|Community 615]]
-- [[_COMMUNITY_Community 616|Community 616]]
 - [[_COMMUNITY_Community 617|Community 617]]
-- [[_COMMUNITY_Community 618|Community 618]]
-- [[_COMMUNITY_Community 619|Community 619]]
-- [[_COMMUNITY_Community 620|Community 620]]
-- [[_COMMUNITY_Community 621|Community 621]]
-- [[_COMMUNITY_Community 622|Community 622]]
-- [[_COMMUNITY_Community 623|Community 623]]
-- [[_COMMUNITY_Community 624|Community 624]]
-- [[_COMMUNITY_Community 625|Community 625]]
-- [[_COMMUNITY_Community 626|Community 626]]
 - [[_COMMUNITY_Community 627|Community 627]]
 - [[_COMMUNITY_Community 628|Community 628]]
 - [[_COMMUNITY_Community 629|Community 629]]
 - [[_COMMUNITY_Community 630|Community 630]]
-- [[_COMMUNITY_Community 631|Community 631]]
-- [[_COMMUNITY_Community 632|Community 632]]
-- [[_COMMUNITY_Community 633|Community 633]]
-- [[_COMMUNITY_Community 634|Community 634]]
-- [[_COMMUNITY_Community 635|Community 635]]
-- [[_COMMUNITY_Community 636|Community 636]]
 - [[_COMMUNITY_Community 637|Community 637]]
 - [[_COMMUNITY_Community 638|Community 638]]
-- [[_COMMUNITY_Community 639|Community 639]]
-- [[_COMMUNITY_Community 640|Community 640]]
-- [[_COMMUNITY_Community 641|Community 641]]
-- [[_COMMUNITY_Community 642|Community 642]]
-- [[_COMMUNITY_Community 643|Community 643]]
-- [[_COMMUNITY_Community 644|Community 644]]
-- [[_COMMUNITY_Community 645|Community 645]]
 - [[_COMMUNITY_Community 646|Community 646]]
 - [[_COMMUNITY_Community 647|Community 647]]
-- [[_COMMUNITY_Community 648|Community 648]]
-- [[_COMMUNITY_Community 649|Community 649]]
-- [[_COMMUNITY_Community 650|Community 650]]
 - [[_COMMUNITY_Community 651|Community 651]]
 - [[_COMMUNITY_Community 652|Community 652]]
-- [[_COMMUNITY_Community 653|Community 653]]
 - [[_COMMUNITY_Community 654|Community 654]]
 - [[_COMMUNITY_Community 655|Community 655]]
-- [[_COMMUNITY_Community 656|Community 656]]
-- [[_COMMUNITY_Community 657|Community 657]]
-- [[_COMMUNITY_Community 658|Community 658]]
-- [[_COMMUNITY_Community 659|Community 659]]
 - [[_COMMUNITY_Community 660|Community 660]]
-- [[_COMMUNITY_Community 661|Community 661]]
-- [[_COMMUNITY_Community 662|Community 662]]
-- [[_COMMUNITY_Community 663|Community 663]]
-- [[_COMMUNITY_Community 664|Community 664]]
-- [[_COMMUNITY_Community 665|Community 665]]
-- [[_COMMUNITY_Community 666|Community 666]]
-- [[_COMMUNITY_Community 667|Community 667]]
-- [[_COMMUNITY_Community 668|Community 668]]
-- [[_COMMUNITY_Community 669|Community 669]]
-- [[_COMMUNITY_Community 670|Community 670]]
-- [[_COMMUNITY_Community 671|Community 671]]
-- [[_COMMUNITY_Community 672|Community 672]]
-- [[_COMMUNITY_Community 673|Community 673]]
-- [[_COMMUNITY_Community 674|Community 674]]
-- [[_COMMUNITY_Community 675|Community 675]]
-- [[_COMMUNITY_Community 676|Community 676]]
-- [[_COMMUNITY_Community 677|Community 677]]
-- [[_COMMUNITY_Community 678|Community 678]]
-- [[_COMMUNITY_Community 679|Community 679]]
-- [[_COMMUNITY_Community 680|Community 680]]
-- [[_COMMUNITY_Community 681|Community 681]]
-- [[_COMMUNITY_Community 682|Community 682]]
-- [[_COMMUNITY_Community 683|Community 683]]
-- [[_COMMUNITY_Community 684|Community 684]]
-- [[_COMMUNITY_Community 685|Community 685]]
-- [[_COMMUNITY_Community 686|Community 686]]
-- [[_COMMUNITY_Community 687|Community 687]]
-- [[_COMMUNITY_Community 688|Community 688]]
-- [[_COMMUNITY_Community 689|Community 689]]
-- [[_COMMUNITY_Community 690|Community 690]]
-- [[_COMMUNITY_Community 691|Community 691]]
-- [[_COMMUNITY_Community 692|Community 692]]
 - [[_COMMUNITY_Community 693|Community 693]]
-- [[_COMMUNITY_Community 694|Community 694]]
-- [[_COMMUNITY_Community 695|Community 695]]
-- [[_COMMUNITY_Community 696|Community 696]]
-- [[_COMMUNITY_Community 698|Community 698]]
-- [[_COMMUNITY_Community 699|Community 699]]
 - [[_COMMUNITY_Community 700|Community 700]]
-- [[_COMMUNITY_Community 701|Community 701]]
-- [[_COMMUNITY_Community 702|Community 702]]
-- [[_COMMUNITY_Community 703|Community 703]]
-- [[_COMMUNITY_Community 704|Community 704]]
-- [[_COMMUNITY_Community 705|Community 705]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `FormaPagamento` - 46 edges
-2. `TipoMovimentacao` - 43 edges
-3. `Base` - 42 edges
-4. `Usuario` - 42 edges
-5. `ClienteService` - 41 edges
+2. `ClienteService` - 44 edges
+3. `TipoMovimentacao` - 43 edges
+4. `Base` - 42 edges
+5. `Usuario` - 42 edges
 6. `StatusLote` - 39 edges
 7. `TipoEntrega` - 39 edges
 8. `StatusVenda` - 34 edges
@@ -743,63 +465,63 @@
 - **chunk_13_hyperedge_brand_ecosystem** — chunk_13_logo_png_visual_identity, chunk_13_logo_png_brand_runas, chunk_13_logo_png_brand_attributes, chunk_13_logo_png_erp_system [0.95]
 - **chunk_13_hyperedge_documentation_archive** — chunk_13_logo_png_documentation_asset, chunk_13_logo_png_image_archive, chunk_13_logo_png_visual_identity [1.0]
 
-## Communities (706 total, 102 thin omitted)
+## Communities (427 total, 101 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.03
-Nodes (64): global_exception_handler(), health_check(), lifespan(), Serviço Clientes - Runas, Gerencia o ciclo de vida da aplicação., Health check endpoint., Handler global de exceções., global_exception_handler() (+56 more)
+Nodes (76): global_exception_handler(), Handler global de exceções., global_exception_handler(), health_check(), lifespan(), Serviço Clientes - Runas, Gerencia o ciclo de vida da aplicação., Health check endpoint. (+68 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.06
-Nodes (70): create_access_token(), create_refresh_token(), decode_token(), Utilitários para geração e validação de tokens JWT., Cria um access token JWT.          Args:         user_id: ID do usuário ou cl, Cria um refresh token JWT.          Args:         user_id: ID do usuário, Decodifica e valida um token JWT.          Args:         token: Token JWT, Verifica se um token é válido.          Args:         token: Token JWT (+62 more)
+Cohesion: 0.05
+Nodes (83): create_access_token(), create_refresh_token(), decode_token(), Utilitários para geração e validação de tokens JWT., Cria um access token JWT.          Args:         user_id: ID do usuário ou cl, Cria um refresh token JWT.          Args:         user_id: ID do usuário, Decodifica e valida um token JWT.          Args:         token: Token JWT, Verifica se um token é válido.          Args:         token: Token JWT (+75 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.03
-Nodes (184): AsyncSession, Depends, get_empresa_id, Busca faixa de entrega por ID., atualizar_faixa_entrega(), criar_faixa_entrega(), deletar_faixa_entrega(), listar_faixas_entrega() (+176 more)
+Cohesion: 0.04
+Nodes (68): get_empresa_id, atualizar_variante(), atualizar_vinculo(), buscar_por_nome(), criar_categoria(), criar_config_loja_online(), criar_fornecedor(), criar_variante() (+60 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.08
-Nodes (20): atualizar_produto(), criar_produto(), obter_produto(), obter_produto_loja_online_publico(), Cria um novo produto., Obtém um produto por ID., Obtém detalhes de um produto na loja online pública., ProdutoCreate (+12 more)
+Cohesion: 0.04
+Nodes (36): Categoria, CategoriaRepository, Repository para Categoria., Cria uma nova categoria., Obtém uma categoria por ID., Obtém uma categoria por nome., Lista todas as categorias com paginação., atualizar_categoria() (+28 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.06
-Nodes (82): BaseModel, Enum, FormaPagamento, Status do fluxo de venda., Tipo de entrega da venda., Tipo de desconto aplicado., Formas de pagamento aceitas., StatusVenda (+74 more)
+Cohesion: 0.05
+Nodes (85): BaseModel, Enum, FormaPagamento, Status do fluxo de venda., Tipo de entrega da venda., Tipo de desconto aplicado., Formas de pagamento aceitas., StatusVenda (+77 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.04
-Nodes (48): 2027, 📊 ANÁLISES E RELATÓRIOS, Atalhos de Teclado 🟡, Auditoria Completa 🟡, Automações de Estoque 🔥, Automações de Financeiro 🔥, 🤖 AUTOMAÇÕES E INTEGRAÇÕES, Backup e Recuperação 🔥 (+40 more)
+Cohesion: 0.05
+Nodes (24): Soft delete de um produto (marca como deletado)., Restaura um produto deletado., Cria uma nova variante., Obtém uma variante por ID., Obtém uma variante por SKU., Lista variantes de um produto., Atualiza uma variante., Deleta uma configuração de loja online. (+16 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.06
-Nodes (42): Modelos do API Gateway., Schemas do API Gateway., Seed para criar o usuário administrador padrão. Executado automaticamente no st, get_current_active_user(), get_token_from_cookie_or_header(), Configuração OAuth2 e dependências de autenticação., Verifica se o usuário está ativo.          Args:         current_user: Usuári, Verifica se o usuário tem role ADMIN.          Args:         current_user: Us (+34 more)
+Nodes (40): Modelos do API Gateway., Schemas do API Gateway., Seed para criar o usuário administrador padrão. Executado automaticamente no st, Configuração OAuth2 e dependências de autenticação., Modelo de autenticação de clientes (compradores). Separado de Usuario (operador, Modelo de usuário para autenticação., RoleEnum, PyEnum (+32 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.08
-Nodes (52): get_current_active_user, Usuario, Proxy para comunicação com microsserviços., Determina a URL do serviço baseado no caminho.                  Args:, Resolve empresa_id a partir do slug.                  Args:             slug:, Faz proxy da requisição para o microsserviço apropriado.                  Args, ServiceProxy, Busca usuário por email. (+44 more)
+Cohesion: 0.09
+Nodes (58): get_current_active_user(), Verifica se o usuário está ativo.          Args:         current_user: Usuári, Verifica se o usuário tem role ADMIN.          Args:         current_user: Us, Verifica se o usuário tem role ADMIN ou OPERADOR.          Args:         curr, require_admin(), require_admin_or_operador(), Depends, get_current_active_cliente (+50 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.06
-Nodes (25): Busca configuração da loja por empresa., Atualiza configuração da loja., Busca faixa de entrega por empresa e bairro., atualizar_configuracao_loja(), ConfiguracaoLojaResponse, ConfiguracaoLojaUpdate, FaixaEntregaCreate, FaixaEntregaResponse (+17 more)
+Nodes (39): Any, Busca faixa de entrega por ID., Deleta faixa de entrega., atualizar_configuracao_loja(), atualizar_faixa_entrega(), ConfiguracaoLojaResponse, ConfiguracaoLojaUpdate, criar_faixa_entrega() (+31 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.04
 Nodes (48): dependencies, axios, bootstrap, chart.js, date-fns, @hookform/resolvers, react, react-bootstrap (+40 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.04
-Nodes (47): main(), Seed de clientes com CPFs válidos., Cria clientes de exemplo., seed_clientes(), Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), datetime (+39 more)
+Cohesion: 0.17
+Nodes (10): main(), Seed de clientes com CPFs válidos., Cria clientes de exemplo., seed_clientes(), Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), Cliente (+2 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.05
-Nodes (60): Any, Base, Classe base para os modelos., Base, ConfiguracaoLoja, ConfiguracaoPagamento, FaixaEntrega, HistoricoStatusVenda (+52 more)
+Nodes (62): Base, Classe base para os modelos., Base, Job para verificar pagamentos online pendentes. - Timeout Mercado Pago: 5 minut, Job para verificar timeouts de separação de vendas. - Alerta em 12h (aviso para, # TODO: Enviar notificação interna para admin/lojista, ConfiguracaoLoja, ConfiguracaoPagamento (+54 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.09
-Nodes (24): Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), Inventario, ItemInventario, Movimentacao, Modelo de Inventário.     Registra contagens físicas de estoque., Modelo de Item de Inventário.     Registra a contagem de cada produto no invent (+16 more)
+Nodes (26): datetime, Script para popular banco com dados de teste., Popula banco com dados de teste., seed_data(), Estoque, ItemInventario, Movimentacao, Modelo de Item de Inventário.     Registra a contagem de cada produto no invent (+18 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.15
-Nodes (8): CategoriaUpdate, Schema para atualizar Categoria., CategoriaService, Service para Categoria., Obtém uma categoria por ID., Lista todas as categorias., Atualiza uma categoria., Deleta uma categoria.
+Cohesion: 0.04
+Nodes (48): 1. Acesse o Console do Google Cloud, 1. Acesse o Portal do Azure, 1. Verificar Variáveis de Ambiente, 2. Criar Credenciais OAuth 2.0, 2. Criar Novo Registro de Aplicativo, 2. Reiniciar o API Gateway, 3. Configurar URIs Autorizadas, 3. Configurar URIs de Redirecionamento (+40 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.07
@@ -807,19 +529,19 @@ Nodes (21): main(), Script para popular dados iniciais de empresas., Popula empr
 
 ### Community 15 - "Community 15"
 Cohesion: 0.05
-Nodes (36): 1. Tela de Seleção Inicial, 1. Testar Registro via Formulário, 2. Tela de Login, 2. Testar Login via E-mail/Senha, 3. Tela de Registro, 3. Testar OAuth Google, 4. Checkout como Convidado, 4. Testar OAuth Microsoft (+28 more)
+Nodes (41): 1. Setup do Ambiente, 2. Escolher uma Feature, 3. Seguir o Padrão, 4. Implementar, 5. Testar, 6. Commitar, Backend (✅ 90% completo), Backend (✅ 95% completo) (+33 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.07
-Nodes (26): 1.1. Conectar via SSH, 1.2. Atualizar Sistema, 1.3. Instalar Docker, ✅ Checklist, Container não sobe, 💰 Custos, 🚀 Migração: Local → VPS (com Cloudflare Tunnel), Opção A: Via Git (+18 more)
+Cohesion: 0.05
+Nodes (39): 🧪 Arquivos de Teste, Assertions, Bug #1: carregarCarrinho undefined, Bug #2: Navegação incorreta para modo guest, Bug #3: OAuth não recarrega carrinho, Bug #4: Dados não pré-preenchidos após OAuth, Bug #5: Checkbox Criar Conta aparece para autenticados, Bug #6: CPF/Telefone não salvos no cadastro (+31 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.11
-Nodes (18): 🔧 Comandos Úteis, 📚 Documentação Completa, Erro: 502 Bad Gateway, Erro: CORS, Erro: SSL certificate problem, Google, Mercado Pago, Microsoft (+10 more)
+Cohesion: 0.05
+Nodes (38): 1. Changelogs Manuais, 1. Documentação Principal, 1. **Git como Fonte da Verdade**, 2. Documentos Temporários, 2. Guias Técnicos, 2. **Zero Redundância**, 3. Arquitetura, 3. Documentos de Debugging (+30 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.11
-Nodes (14): ConfiguracaoPagamentoCreate, ConfiguracaoPagamentoResponse, ConfiguracaoPagamentoStatusResponse, ConfiguracaoPagamentoUpdate, Schema para criar configuração de pagamento., Schema para atualizar configuração de pagamento., Schema de resposta da configuração de pagamento., Schema de status da configuração (sem credenciais). (+6 more)
+Cohesion: 0.08
+Nodes (30): ativar_configuracao_pagamento(), atualizar_configuracao_pagamento(), ConfiguracaoPagamentoCreate, ConfiguracaoPagamentoResponse, ConfiguracaoPagamentoStatusResponse, ConfiguracaoPagamentoUpdate, criar_configuracao_pagamento(), deletar_configuracao_pagamento() (+22 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.06
@@ -834,12 +556,12 @@ Cohesion: 0.13
 Nodes (24): Modelos do domínio de Empresas (Multi-tenancy)., Regime tributário da empresa., RegimeTributario, StatusEmpresa, TipoEmpresa, EmpresaBase, EmpresaCreate, EmpresaListItem (+16 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.09
-Nodes (46): Tipos de movimentação de estoque., StatusLote, TipoMovimentacao, Lista lotes com filtros., Config, EntradaEstoqueRequest, EstoqueComAlerta, InventarioBase (+38 more)
+Cohesion: 0.08
+Nodes (59): Tipos de movimentação de estoque., StatusLote, TipoMovimentacao, AjusteEstoqueRequest, Config, EntradaEstoqueRequest, EstoqueBase, EstoqueComAlerta (+51 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.04
-Nodes (48): 1. Catálogo de Produtos (JÁ EXISTIA), 1. Por que Steps no Checkout?, 2. Detalhes do Produto (JÁ EXISTIA + MELHORIAS), 2. Por que ViaCEP?, 3. Carrinho de Compras (JÁ IMPLEMENTADO), 3. Por que Timeline Visual?, 4. Checkout (NOVO) ⭐, 4. Por que Formatação de Inputs? (+40 more)
+Cohesion: 0.10
+Nodes (27): ajustar_credito(), atualizar_cliente(), bloquear_cliente(), buscar_cliente(), buscar_cliente_completo(), buscar_por_cpf(), criar_cliente(), criar_cliente_oauth() (+19 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.06
@@ -850,12 +572,12 @@ Cohesion: 0.08
 Nodes (24): atualizar_empresa(), buscar_empresa(), buscar_empresa_por_slug(), buscar_info_publica(), criar_empresa(), desativar_empresa(), listar_empresas(), listar_filiais() (+16 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.22
-Nodes (11): CarrinhoResponse, Schema de resposta do carrinho completo., CarrinhoService, Adiciona ou atualiza item no carrinho COM RESERVA DE ESTOQUE., Atualiza quantidade de um item específico., Service para gerenciar carrinho de compras no Redis.          Estrutura no Red, Remove item do carrinho., Remove carrinho completamente do Redis. (+3 more)
+Cohesion: 0.21
+Nodes (10): CarrinhoService, Adiciona ou atualiza item no carrinho COM RESERVA DE ESTOQUE., Service para gerenciar carrinho de compras no Redis.          Estrutura no Red, Atualiza quantidade de um item específico., Remove item do carrinho., Remove carrinho completamente do Redis., Gera chave Redis para o carrinho., Verifica se carrinho existe no Redis. (+2 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.02
-Nodes (102): Categoria, Categoria, Modelo de Categoria de Produtos., Fornecedor, FornecedorProduto, Modelo de Fornecedor., Modelo de Associação entre Fornecedor e Produto., LojaOnlineConfig (+94 more)
+Cohesion: 0.04
+Nodes (57): Categoria, Modelo de Categoria de Produtos., Fornecedor, FornecedorProduto, Modelos de Fornecedor e FornecedorProduto., Modelo de Fornecedor., Modelo de Associação entre Fornecedor e Produto., LojaOnlineConfig (+49 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.10
@@ -870,28 +592,28 @@ Cohesion: 0.14
 Nodes (13): 📋 Comandos Detalhados, ⚙️ Como Funciona, 🤝 Contribuindo, 💡 Dicas, 📚 Documentação Relacionada, 📊 Exemplo de Output, 🎯 Quando Usar Cada Modo, 🔧 Requisitos (+5 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.10
-Nodes (13): Busca venda por número isolada por empresa., Lista vendas isoladas por empresa com filtros., HistoricoStatusService, Obtém o último registro de status de uma venda.                  Args:, Service para operações de histórico de status., Lista histórico de status de uma venda (ordenado por data).                  A, LojaService, Service para operações de loja online. (+5 more)
+Cohesion: 0.09
+Nodes (17): Busca venda por número isolada por empresa., Lista vendas isoladas por empresa com filtros., listar_vendas(), Relatório resumido de vendas no período.          Retorna:     - Total de ven, Lista vendas com filtros opcionais.          Filtros disponíveis:     - statu, relatorio_resumo(), HistoricoStatusService, Obtém o último registro de status de uma venda.                  Args: (+9 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.12
-Nodes (13): limpar_reservas_expiradas(), Job para limpar reservas temporárias expiradas. Deve rodar a cada 1 minuto via, Limpa reservas temporárias expiradas do banco de dados., Atualiza quantidade de uma reserva existente com Redis Lock., Service para gerenciar reservas temporárias de estoque (carrinho).          Us, Libera (remove) reserva de estoque.         Usado quando item é removido do car, Libera todas as reservas de uma sessão (ao finalizar checkout ou limpar carrinho, Retorna conexão Redis. (+5 more)
+Cohesion: 0.06
+Nodes (28): Decimal, limpar_reservas_expiradas(), Job para limpar reservas temporárias expiradas. Deve rodar a cada 1 minuto via, Limpa reservas temporárias expiradas do banco de dados., Service de Cache de Produtos para Loja Online. Usa Redis para cache de produtos, Service de Carrinho (Redis). Gerencia carrinho de compras temporário usando Red, Service de Entrega e Frete. Gerencia validação de CEP, cálculo de taxa de entre, Cria faixa de entrega específica para um bairro.                  Returns: (+20 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.18
 Nodes (10): 🔗 Arquivos Relacionados, 📦 Arquivos Versionados, 🤖 Automação Implementada, 🎯 Benefícios, Como Funciona:, GitHub Actions - Atualização Automática, ❌ Ignorados: *.html, cache/ (~7 MB economizados), 📊 O que é o Graphify? (+2 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.04
-Nodes (48): 1. Aplicar Migration, 1. Header Obrigatório, 1. Isolamento Completo ✅, 1. Isolamento Total ✅, 1. Modelo de Dados ✅, 1. Ordem de Implementação, 1. Teste de Isolamento, 2. Body do POST (+40 more)
+Cohesion: 0.07
+Nodes (29): 1. Desenvolvimento Local (antes de commitar), 1. `graphify query "<pergunta>"`, 2. `graphify path "<Componente A>" "<Componente B>"`, 2. Troubleshooting, 3. `graphify explain "<conceito>"`, 3. Update Completo com Docs/Imagens, 💡 AI Assistant Usage, 🤖 Atualização Automática via GitHub Actions (+21 more)
 
 ### Community 35 - "Community 35"
 Cohesion: 0.12
 Nodes (24): ClientBlockedError, ConflictError, ExpiredCartError, ForbiddenError, InsufficientCreditError, InsufficientStockError, InvalidCNPJError, InvalidCPFError (+16 more)
 
 ### Community 36 - "Community 36"
-Cohesion: 0.04
-Nodes (48): Aplicação, 🎓 Aprendizados e Decisões Técnicas, Arquitetura, ✅ Autenticação (100%), ✅ BACKEND - API GATEWAY (100%), ✅ BACKEND - CLIENTES (100%), ✅ BACKEND - EMPRESAS (100%), ✅ BACKEND - ESTOQUE (100%) (+40 more)
+Cohesion: 0.07
+Nodes (27): 1. Desenvolvimento Local (antes de commitar), 2. Troubleshooting, 3. Update Completo com Docs/Imagens, Arquivos Importantes, 🤖 Atualização Automática via GitHub Actions, 🚀 Benefícios do Workflow Automático, 📊 Como Funciona o GitHub Actions, 🔧 Configuração do Projeto (+19 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.10
@@ -902,40 +624,40 @@ Cohesion: 0.12
 Nodes (13): RoleProtectedRoute(), EstoquePage(), FinanceiroPage(), useAuth(), Navbar(), NavbarProps, AlterarSenhaFormData, alterarSenhaSchema (+5 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.11
-Nodes (26): alias, Cookie, get_empresa_id_from_slug, adicionar_item_carrinho(), atualizar_quantidade_item(), debug_checkout(), limpar_carrinho(), listar_meus_pedidos() (+18 more)
+Cohesion: 0.14
+Nodes (23): alias, Cookie, get_empresa_id_from_slug, adicionar_item_carrinho(), atualizar_quantidade_item(), debug_checkout(), limpar_carrinho(), listar_meus_pedidos() (+15 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.08
-Nodes (20): global_exception_handler(), health_check(), lifespan(), API Gateway - Ponto de entrada único para todos os microsserviços., Gerencia o ciclo de vida da aplicação., Health check endpoint., Handler global de exceções., Cria o usuário administrador padrão se não existir.          Usa as variáveis (+12 more)
+Cohesion: 0.09
+Nodes (18): health_check(), lifespan(), API Gateway - Ponto de entrada único para todos os microsserviços., Gerencia o ciclo de vida da aplicação., Health check endpoint., Cria o usuário administrador padrão se não existir.          Usa as variáveis, seed_admin(), close_redis() (+10 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.08
-Nodes (25): 1. Dashboard, 2. Clientes, 3. Produtos, 4. Estoque, 5. Vendas, 6. Financeiro, 🔐 Autenticação, Backend (+17 more)
+Cohesion: 0.07
+Nodes (27): 1. Pre-Commit Hook (`.git/hooks/pre-commit`), Adicionar Novo Padrão de Detecção, ❌ Arquivos `.env` Bloqueados, ✅ Arquivos `.env` Permitidos, Ações Tomadas, 📚 Boas Práticas, 🎯 Como Funciona, Como garantir que todos tenham o hook: (+19 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.03
-Nodes (63): Cliente, Endereco, ClienteRepository, EnderecoRepository, Repository para operações de Cliente no banco de dados., Atualiza um cliente (filtrado por empresa)., Soft delete de um cliente (filtrado por empresa)., Atualiza limite de crédito e dia de vencimento (filtrado por empresa). (+55 more)
+Cohesion: 0.07
+Nodes (20): Cliente, ClienteRepository, Atualiza um cliente (filtrado por empresa)., Soft delete de um cliente (filtrado por empresa)., Repository de Cliente., Atualiza limite de crédito e dia de vencimento (filtrado por empresa)., Ajusta crédito disponível (positivo = crédito, negativo = débito) (filtrado por, Bloqueia um cliente (filtrado por empresa). (+12 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.19
 Nodes (9): OAuthCallbackPage(), OAuthInitResponse, OAuthProvider, oauthService, env, AuthProvider(), App(), queryClient (+1 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.13
-Nodes (12): apiPublica, ClienteNovo, Endereco, ModoCheckout, Pagamento, Step, TipoEntrega, validateCEP() (+4 more)
+Cohesion: 0.12
+Nodes (13): apiPublica, Cliente, ClienteNovo, Endereco, ModoCheckout, Pagamento, Step, TipoEntrega (+5 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.12
-Nodes (14): ClienteAuth, Modelo de autenticação de clientes (compradores). Separado de Usuario (operador, Modelo de autenticação para clientes compradores.          Este modelo armazen, ClienteAuthRepository, Repository para ClienteAuth (autenticação de clientes compradores)., Repository para gerenciar autenticação de clientes., Busca um cliente de autenticação por email.                  Args:, Busca um cliente de autenticação por ID.                  Args:             c (+6 more)
+Cohesion: 0.18
+Nodes (7): get_current_active_cliente(), Verifica se o cliente está ativo.          Args:         current_cliente: Cli, ClienteAuth, Modelo de autenticação para clientes compradores.          Este modelo armazen, Busca um cliente de autenticação por email.                  Args:, Busca um cliente de autenticação por ID.                  Args:             c, Cria um novo registro de autenticação de cliente.                  Args:
 
 ### Community 46 - "Community 46"
 Cohesion: 0.04
 Nodes (48): 1. Listagem de Categorias, 2. Criação de Categoria, 3. Edição de Categoria, 400 - Bad Request, 400 - Bad Request, 404 - Not Found, 4. Exclusão de Categoria, 500 - Internal Server Error (+40 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.04
-Nodes (47): 1. API Gateway (`api-gateway/` — porta 8000), 2. Serviço de Clientes (`services/clientes/` — porta 8001), 3. Serviço de Produtos (`services/produtos/` — porta 8002), 4. Serviço de Estoque (`services/estoque/` — porta 8003), 5. Serviço de Vendas (`services/vendas/` — porta 8004), 6. Serviço Financeiro (`services/financeiro/` — porta 8005), 7. Serviço de Notificações (`services/notificacoes/` — porta 8006), Acesso após `docker-compose up`: (+39 more)
+Cohesion: 0.08
+Nodes (25): 1. Carrinho no Backend (Session-based), 1. **Carrinho Preservado**, 2. Pre-fill de Dados, 2. **Return URL Dinâmica**, 3. **CSRF Protection**, 3. Login Silencioso (Prompt None), 4. **Dados Opcionais (CPF/Telefone)**, 4. Social Login Buttons (+17 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.18
@@ -950,44 +672,44 @@ Cohesion: 0.14
 Nodes (6): getErrorMessage(), authService, PasswordRule, passwordRules, RegisterFormData, registerSchema
 
 ### Community 51 - "Community 51"
-Cohesion: 0.12
-Nodes (17): 📚 Arquivos de Configuração, Cenário 1: Local + Cloudflare (15 min), Cenário 2: VPS + Let's Encrypt (30 min), 🎯 Comparação Rápida, 📞 Contato, 🧪 **Desenvolvimento/Teste**, 🚀 Guias de Deploy - Runas ERP, 🎯 **MVP/Startup** (+9 more)
+Cohesion: 0.11
+Nodes (16): Endereco, Lista endereços de um cliente., Atualiza um endereço., atualizar_endereco(), Atualiza um endereço do cliente (filtrado por empresa).          Apenas os cam, EnderecoUpdate, Schema para atualização de endereço., ClienteService (+8 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.16
 Nodes (16): CobrancaLembreteEvent, CobrancaVencidaEvent, Config, ContaQuitadaEvent, DomainEvent, EstoqueMinimoEvent, PedidoCanceladoEvent, PedidoConfirmadoEvent (+8 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.24
-Nodes (8): useCarrinho(), CarrinhoPage(), CheckoutPage(), LojaOnlinePublicoPage(), apiPublica, Produto, ProdutoDetalhePage(), Variante
+Cohesion: 0.17
+Nodes (12): apiPublica, Carrinho, ItemCarrinho, useCarrinho(), UseCarrinhoProps, UseCarrinhoReturn, CarrinhoPage(), CheckoutPage() (+4 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.12
-Nodes (16): 1.1. Criar Registros DNS, 1.2. Verificar Propagação DNS, 1. Configuração DNS, 3.1. Criar Configuração de Produção, 3.2. Configurar Docker Compose para Produção, 3.3. Atualizar Variáveis de Ambiente, 3. Configuração do Nginx para Produção, 4.1. Preparar Ambiente (+8 more)
+Cohesion: 0.08
+Nodes (25): 1. Criar nova migration, 1. Modificar o model, 2. Gerar migration, 2. Revisar a migration gerada, 3. Aplicar a migration, 3. Revisar arquivo gerado, 4. Aplicar, 4. Verificar no banco (+17 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.04
-Nodes (47): 1. ✅ Arquivo `.env` Criado, 2. ✅ Docker Compose Completo, 3. ✅ Seed de Admin Funcional, 4. ✅ Portas e Configurações Corretas, API Gateway (100%), Arquivos Criados, 📝 Arquivos de Referência, ✅ Checklist de Validação (+39 more)
+Cohesion: 0.08
+Nodes (25): A - Avoid else (Don't Use the ELSE Keyword), Aplicação no Projeto, Clean Code, Code Structure (FastAPI + SQLAlchemy), Design Patterns (em uso no projeto), Documentation, Engineering Standards, Error Handling (+17 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.17
 Nodes (9): ClienteValidacaoService, Service de Validação de Cliente Convidado. Valida dados de clientes não cadastr, Valida CPF brasileiro (dígitos verificadores).                  Regra:, Service para validar dados de cliente convidado.          Validações:     - T, Valida todos os dados do cliente convidado.                  Args:, Valida nome do cliente.                  Regras:         - Mínimo 3 caractere, Normaliza telefone removendo caracteres não numéricos.                  Exempl, Valida telefone brasileiro.                  Regras:         - DDD: 2 dígitos (+1 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.13
-Nodes (9): Conta movimentações por tipo., Soma quantidade movimentada por tipo., EstoqueService, Service de Estoque. Contém a lógica de negócio para gestão de estoque., Service para operações de estoque., Verifica se produto/variante existe no serviço de produtos., Gera relatório de movimentações., Busca estoque por ID com alertas. (+1 more)
+Cohesion: 0.09
+Nodes (18): Cria um novo registro de estoque., Busca estoque por produto e variante., buscar_estoque(), criar_estoque(), entrada_estoque(), Busca estoque por ID., Registra entrada de estoque., Reserva estoque para venda. (+10 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.13
 Nodes (9): Cliente, CreditoFormData, creditoSchema, HistoricoCredito, Cliente, Endereco, EnderecoFormData, enderecoSchema (+1 more)
 
 ### Community 59 - "Community 59"
-Cohesion: 0.04
-Nodes (46): **1. Clareza**, **1. Obter Slug Dinâmico** (TODO), 1. Sidebar Atualizado, **1. Verificar Menu**, **2. Badge de Notificações** (Futuro), 2. Botão "Ver Minha Loja" no Navbar, **2. Testar Botão "Ver Minha Loja"**, **2. Usabilidade** (+38 more)
+Cohesion: 0.10
+Nodes (19): adicionar_foto_loja_online(), atualizar_config_loja_online(), atualizar_foto_loja_online(), deletar_foto_loja_online(), listar_fotos_loja_online(), Atualiza configuração de loja online., Adiciona foto à loja online., Lista fotos de um produto. (+11 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.04
-Nodes (47): 1. Login e obter token, 2. Criar um cliente, 3. Listar clientes, 🖥️ Acessar Interfaces Web, Ambos os Métodos, Ambos os Métodos, Atualizar `.env`, Autenticação (+39 more)
+Cohesion: 0.12
+Nodes (17): 1. Login e obter token, 2. Criar um cliente, 3. Listar produtos, ❌ "Cannot connect to database", 🛠️ Comandos Úteis, ❌ "Container exited with code 1", 🚀 Escolha seu Método de Inicialização, 🎯 Estrutura do Projeto (+9 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.20
@@ -1007,7 +729,7 @@ Nodes (13): docs_archive_documentacao_original_imagens_diagrama_de_classes_uml_a
 
 ### Community 65 - "Community 65"
 Cohesion: 0.10
-Nodes (17): Estoque, Modelo de Estoque.     Controla a quantidade disponível de cada produto/variant, EstoqueRepository, Atualiza a quantidade de estoque., Reserva quantidade de estoque., Libera reserva de estoque., Conta total de estoques., Conta estoques abaixo do mínimo. (+9 more)
+Nodes (15): EstoqueRepository, Atualiza a quantidade de estoque., Reserva quantidade de estoque., Conta total de estoques., Conta estoques abaixo do mínimo., Conta estoques zerados., Repository para operações de Estoque., Busca estoque por ID. (+7 more)
 
 ### Community 66 - "Community 66"
 Cohesion: 0.15
@@ -1026,16 +748,16 @@ Cohesion: 0.17
 Nodes (8): Testes de Integração - Serviço de Produtos Cobre: CRUD Produtos, Categorias, Va, Suite de testes de categorias., Teste: Criar categoria com sucesso., Suite de testes de produtos., Teste: Criar produto completo com categoria., Teste: Produto de empresa 1 não aparece para empresa 2., TestCategorias, TestProdutos
 
 ### Community 70 - "Community 70"
-Cohesion: 0.04
-Nodes (47): 10.1. Máquina de Estados - Reserva de Estoque, 10.2. Tabela Comparativa: Operações de Estoque, 10. Diagrama de Estados do Estoque, 12. Glossário Técnico, 5.1. Padrões de Autenticação, 5.2. Padrões de Validação, 5.3. Padrões de Resposta, 5.4. Padrões de Eventos (RabbitMQ) (+39 more)
+Cohesion: 0.14
+Nodes (18): ClienteBase, ClienteComEnderecos, ClienteCreate, ClienteResponse, CreditoDelta, EnderecoBase, EnderecoCreate, EnderecoResponse (+10 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.17
 Nodes (6): Atualiza a senha de um usuário., Atualiza a senha de um usuário., Hash de senha usando bcrypt., Cria um novo usuário., Busca usuário por ID., Deleta um usuário (soft delete).
 
 ### Community 72 - "Community 72"
-Cohesion: 0.18
-Nodes (10): Valida e normaliza CPF., Validadores de CPF e telefone., normalizar_cpf(), normalizar_telefone(), Valida CPF usando algoritmo dos dígitos verificadores.          Args:, Remove formatação do CPF.          Args:         cpf: CPF formatado, Valida se telefone está no formato E.164.          Args:         telefone: Te, Normaliza telefone para formato E.164.          Args:         telefone: Telef (+2 more)
+Cohesion: 0.15
+Nodes (11): Valida e normaliza CPF., Valida e normaliza CPF se fornecido., Validadores de CPF e telefone., normalizar_cpf(), normalizar_telefone(), Valida CPF usando algoritmo dos dígitos verificadores.          Args:, Remove formatação do CPF.          Args:         cpf: CPF formatado, Valida se telefone está no formato E.164.          Args:         telefone: Te (+3 more)
 
 ### Community 73 - "Community 73"
 Cohesion: 0.20
@@ -1066,8 +788,8 @@ Cohesion: 0.22
 Nodes (6): EventPublisher, get_publisher(), Publisher de eventos para RabbitMQ., Publisher de eventos de domínio., Publica um evento.                  Args:             routing_key: Chave de r, Obtém instância do publisher.
 
 ### Community 80 - "Community 80"
-Cohesion: 0.21
-Nodes (8): Lote, Modelo de Lote.     Controla lotes de produtos com data de validade., LoteRepository, Repository para operações de Lote., Busca lote por código., Atualiza quantidade do lote., Marca lotes vencidos., Registra saída de estoque com transação atômica.
+Cohesion: 0.07
+Nodes (21): AsyncSession, Lote, Modelo de Lote.     Controla lotes de produtos com data de validade., LoteRepository, Cria uma nova movimentação., Repository para operações de Lote., Busca lote por código., Lista lotes com filtros. (+13 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.22
@@ -1090,44 +812,44 @@ Cohesion: 0.20
 Nodes (6): Testes de Integração - Serviço de Clientes Cobre: CRUD, Endereços, Crédito, Val, Suite de testes de CRUD de clientes., Teste: Criar cliente pessoa física com sucesso., Teste: Listar clientes com paginação., Teste: Cliente de empresa 1 não aparece para empresa 2., TestClientesCRUD
 
 ### Community 86 - "Community 86"
-Cohesion: 0.04
-Nodes (45): 1. Hook `useCarrinho` (NOVO), 1. Por que Hook Customizado?, 2. Por que Não Usar Context?, 2. Página do Carrinho (NOVO), 3. Gestão de Estado Local vs Redux, 3. Integração com ProdutoDetalhePage (ATUALIZADO), 4. Axios vs Fetch, 4. Indicador de Carrinho no Catálogo (ATUALIZADO) (+37 more)
+Cohesion: 0.10
+Nodes (19): Acesso a Banco de Dados, 📝 Checklist de Migração (Concluído), Cloudflare Tunnel, 🔧 Configuração do Cloudflare, Docker Compose Files, 🌐 Domínio e Túnel, ⚠️ IMPORTANTE: Implementações Obsoletas, Infraestrutura e Acesso ao Sistema (+11 more)
 
 ### Community 87 - "Community 87"
-Cohesion: 0.04
-Nodes (45): 10. Configuração Docker ✅, 1. Estrutura Completa do Microsserviço ✅, 1. PostgreSQL ✅, 1. Schema PostgreSQL, 1. Subir o serviço, 2. Docker Compose ✅, 2. Modelo de Dados Completo ✅, 2. Popular dados de teste (+37 more)
+Cohesion: 0.12
+Nodes (17): 1. Code Splitting e Lazy Loading, 2. Otimização de Renders, 3. TanStack Query (React Query), 4. Otimização de Bundle (Vite), 5. Imagens Otimizadas, 6. Virtualização de Listas, Análise de Bundle, Cache Automático (+9 more)
 
 ### Community 88 - "Community 88"
 Cohesion: 0.04
 Nodes (45): 1. Instalar Dependências, 2. Configurar Variáveis de Ambiente, 3. Criar Tabelas, 4. Popular Dados de Teste, 5. Iniciar Serviço, 6. Acessar Documentação, Atualizar Empresa, BASICO (+37 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.03
-Nodes (74): AtributoVarianteBase, AtributoVarianteCreate, AtributoVarianteRead, CategoriaBase, CategoriaCreate, CategoriaRead, FornecedorBase, FornecedorCreate (+66 more)
+Cohesion: 0.04
+Nodes (59): AtributoVarianteBase, AtributoVarianteCreate, AtributoVarianteRead, CategoriaBase, CategoriaCreate, CategoriaRead, FornecedorBase, FornecedorCreate (+51 more)
 
 ### Community 90 - "Community 90"
 Cohesion: 0.24
 Nodes (8): Utils do serviço empresas., Validadores customizados para o serviço de empresas., formatar_cnpj(), limpar_cnpj(), Formata um CNPJ para o padrão XX.XXX.XXX/XXXX-XX.          Args:         cnpj, Remove formatação do CNPJ, deixando apenas números.          Args:         cn, Valida um CNPJ usando validação de dígitos verificadores.          Args:, validar_cnpj()
 
 ### Community 92 - "Community 92"
-Cohesion: 0.22
-Nodes (6): Produto, ProdutoCardProps, apiPublica, Categoria, EmpresaInfo, Produto
+Cohesion: 0.20
+Nodes (7): Produto, ProdutoCardProps, apiPublica, Categoria, EmpresaInfo, LojaOnlinePublicoPage(), Produto
 
 ### Community 93 - "Community 93"
-Cohesion: 0.04
-Nodes (46): 1️⃣1️⃣ [TASKS.md](./TASKS.md) - **PLANO DE IMPLEMENTAÇÃO**, 1️⃣2️⃣ [API-EXAMPLES.md](./API-EXAMPLES.md) - **EXEMPLOS DE API**, 1️⃣3️⃣ [DOCKER.md](./DOCKER.md) - **DOCKER COMPLETO**, 1️⃣4️⃣ [IMPLEMENTATION-LOG.md](./IMPLEMENTATION-LOG.md) - **LOG DE IMPLEMENTAÇÃO**, 1️⃣ [TESTING-READY.md](./TESTING-READY.md) - **LEIA PRIMEIRO**, 2️⃣ [DOCKER-QUICK-START.md](./DOCKER-QUICK-START.md) - **COMECE COM DOCKER**, 3️⃣ [PREREQUISITES.md](./PREREQUISITES.md) - **ANTES DE COMEÇAR**, 4️⃣ [QUICK-TEST-GUIDE.md](./QUICK-TEST-GUIDE.md) - **GUIA RÁPIDO** (+38 more)
+Cohesion: 0.14
+Nodes (11): atualizar_fornecedor(), deletar_fornecedor(), Atualiza um fornecedor., Deleta um fornecedor., FornecedorUpdate, Schema para atualizar Fornecedor., FornecedorService, Service para Fornecedor. (+3 more)
 
 ### Community 94 - "Community 94"
-Cohesion: 0.22
-Nodes (7): apiPublica, HistoricoStatus, ItemVenda, RastreamentoDados, STATUS_INFO, STATUS_ORDER, Venda
+Cohesion: 0.18
+Nodes (9): Inventario, Modelo de Inventário.     Registra contagens físicas de estoque., InventarioRepository, Repository para operações de Inventário., Cria um novo inventário., Busca inventário por ID., Finaliza um inventário., Adiciona item ao inventário. (+1 more)
 
 ### Community 95 - "Community 95"
 Cohesion: 0.22
 Nodes (5): Repository para Empresas. Responsável por todas as queries ao banco de dados., Service para Empresas. Contém toda a lógica de negócio relacionada a empresas (, # TODO: Validar se não tem dados dependentes (clientes, produtos, vendas), Repositories do serviço empresas., Services do serviço empresas.
 
 ### Community 96 - "Community 96"
-Cohesion: 0.20
-Nodes (7): Schemas Pydantic para autenticação de clientes compradores., ClienteAuthResponse, ClienteRegisterRequest, Request para registro de cliente (comprador)., Valida força da senha., Valida que CPF contém apenas números., Schema de resposta de autenticação de cliente.
+Cohesion: 0.50
+Nodes (3): Schemas Pydantic para autenticação de clientes compradores., ClienteAuthResponse, Schema de resposta de autenticação de cliente.
 
 ### Community 97 - "Community 97"
 Cohesion: 0.29
@@ -1150,12 +872,12 @@ Cohesion: 0.25
 Nodes (7): compilerOptions, allowSyntheticDefaultImports, composite, module, moduleResolution, skipLibCheck, include
 
 ### Community 102 - "Community 102"
-Cohesion: 0.15
-Nodes (13): 10. Subir Sistema Localmente, 11. Iniciar Tunnel, 12. Configurar OAuth2, 1. Criar Conta Cloudflare (5 min), 2. Adicionar Domínio (5 min), 3. Atualizar DNS no Registro.br (10 min), 4. Instalar Cloudflared (Windows), 5. Autenticar (+5 more)
+Cohesion: 0.14
+Nodes (14): 1. Análise Inicial, 2. Implementar Otimizações, 3. Medir Resultados, Artigos Úteis, 🚀 Como Aplicar, Documentação Interna, Dúvidas sobre Performance, Ferramentas (+6 more)
 
 ### Community 103 - "Community 103"
 Cohesion: 0.25
-Nodes (5): Testes de Integração - Serviço de Empresas Cobre: CRUD, Validação CNPJ, Slug ún, Suite de testes de CRUD de empresas., Teste: Listar empresas., Teste: Buscar empresa pública por slug., TestEmpresasCRUD
+Nodes (6): AsyncClient, Testes de Integração - Serviço de Empresas Cobre: CRUD, Validação CNPJ, Slug ún, Suite de testes de CRUD de empresas., Teste: Listar empresas., Teste: Buscar empresa pública por slug., TestEmpresasCRUD
 
 ### Community 104 - "Community 104"
 Cohesion: 0.25
@@ -1182,28 +904,28 @@ Cohesion: 0.25
 Nodes (8): API Gateway Dependencies, Microservices Architecture, Authentication System, Backend Ready Modules, Complete Modules, Runas ERP Project, Backend Technologies, Frontend Technologies
 
 ### Community 110 - "Community 110"
-Cohesion: 0.04
-Nodes (44): 1. ✅ Criação do Arquivo `.env`, 2. ✅ Documentação de Testes, 3. ✅ Atualização do README.md, a) `test-mvp.sh` - Script de Testes Automatizados, 📋 Análise Inicial, API Gateway, Arquivos Criados/Modificados, b) `MVP-TESTE-MANUAL.md` - Guia Completo de Testes (+36 more)
+Cohesion: 0.15
+Nodes (8): EnderecoRepository, Repository para operações de Cliente no banco de dados., Repository de Endereço., Cria um novo endereço., Service de Cliente com regras de negócio., # TODO: Verificar pedidos em aberto (integração com serviço de vendas), # TODO: Verificar contas pendentes (integração com serviço financeiro), # TODO: Buscar saldo devedor do serviço financeiro
 
 ### Community 111 - "Community 111"
-Cohesion: 0.25
-Nodes (8): Ambiente de Desenvolvimento, Ambiente de Produção (MVP), 📦 Dependências Externas, 📚 Próximos Passos, 💻 Requisitos de Hardware, Requisitos do Sistema - Runas, Serviços Obrigatórios, Serviços Opcionais
+Cohesion: 0.21
+Nodes (8): MercadoPagoService, Service para integração com Mercado Pago.          Funcionalidades:     - Cri, Verifica se webhook já foi processado (idempotência).                  Returns, Marca webhook como processado para evitar duplicação.                  Returns, Obtém credenciais do Mercado Pago da empresa.                  Returns:, Obtém detalhes do pagamento via API do Mercado Pago.                  Returns:, Processa webhook de pagamento do Mercado Pago.                  Tipos de event, Cria preferência de pagamento no Mercado Pago.                  Args:
 
 ### Community 112 - "Community 112"
-Cohesion: 0.15
-Nodes (13): Alternativa: Ngrok Free + Subdomínio, 💰 Comparação: Ngrok vs Cloudflare Tunnel, ✅ Conclusão, ⚠️ Importante, Passo 1: Adicionar Domínio no Ngrok Dashboard, Passo 2: Configurar DNS, Passo 3: Atualizar .env.ngrok, Passo 4: Atualizar docker-compose.nginx.yml (+5 more)
+Cohesion: 0.17
+Nodes (12): 1. Configuração do Uvicorn, 3. Caching com Redis, 4. Processamento Assíncrono, 5. Connection Pooling, Background Tasks (FastAPI), Cache de Queries Frequentes, Celery (Tarefas Agendadas), Configuração (+4 more)
 
 ### Community 113 - "Community 113"
-Cohesion: 0.05
-Nodes (43): 1. `/estoque` - Dashboard Estoque, 1. `/vendas` - Lista de Vendas, 2. `/estoque/produtos` - Lista Produtos, 2. `/vendas/nova` - PDV (Ponto de Venda), 3. `/estoque/movimentacoes` - Histórico, 3. `/vendas/:id` - Detalhes da Venda, 4. `/estoque/entrada` - Registrar Entrada, 4. Modais de Workflow (+35 more)
+Cohesion: 0.17
+Nodes (12): 1. Documentação Redundante, 2. Scripts Desnecessários, 3. Arquivos de Configuração Excessivos, 4. Código Boilerplate, Eficiência e Economia de Tokens, Exemplos, Fluxo Recomendado, ❌ NÃO Criar Automaticamente (+4 more)
 
 ### Community 114 - "Community 114"
-Cohesion: 0.05
-Nodes (42): 1. `routers/admin_entrega.py`, 2. `routers/admin_pagamento.py`, 3. `repositories/venda_repository.py`, 4. `services/entrega_service.py`, Ativar/Desativar, 📊 Banco de Dados, Changelog - Loja Online MVP - FASE 6: Endpoints Administrativos, Como Encontrar Nome do Bairro (+34 more)
+Cohesion: 0.18
+Nodes (6): ItemVenda, Busca venda por sessao_carrinho_id.                  Retorna a venda mais rece, Cria um novo item de venda., Cria múltiplos itens de venda., Lista itens de uma venda., Atualiza um item de venda.
 
 ### Community 115 - "Community 115"
-Cohesion: 0.05
-Nodes (43): 1. Compressão Gzip, 1. HTTPS, 2. Secrets, 2. Security Headers, 3. Cache de Assets, 3. Health Checks, 4. SPA Fallback, 5. Proxy para API (opcional) (+35 more)
+Cohesion: 0.18
+Nodes (6): Produto, Obtém um produto por ID (incluindo deletados)., Obtém produtos por nome (busca parcial)., Lista produtos de uma categoria., Lista todos os produtos com filtros opcionais.                  Args:, Cria um novo produto.
 
 ### Community 116 - "Community 116"
 Cohesion: 0.25
@@ -1226,8 +948,8 @@ Cohesion: 0.29
 Nodes (5): Configuração do Alembic para migrations do API Gateway., Run migrations in 'offline' mode.      This configures the context with just a, Run migrations in 'online' mode.      In this scenario we need to create an En, run_migrations_offline(), run_migrations_online()
 
 ### Community 122 - "Community 122"
-Cohesion: 0.29
-Nodes (5): Request para resetar senha com token., Valida força da nova senha., Request para resetar senha., Valida força da senha., ResetPasswordRequest
+Cohesion: 0.24
+Nodes (8): createMockCarrinho(), createMockCliente(), createMockToken(), localStorageMock, mockAxios, mockCarrinho, mockCliente, mockNavigate
 
 ### Community 123 - "Community 123"
 Cohesion: 0.29
@@ -1246,8 +968,8 @@ Cohesion: 0.40
 Nodes (5): Serviço de envio de email via SMTP (Gmail)., _build_reset_email_html(), Envia email de reset de senha via SMTP Gmail.      Args:         to_email: Em, Monta o HTML do email de reset de senha., send_reset_password_email()
 
 ### Community 127 - "Community 127"
-Cohesion: 0.17
-Nodes (10): liberar_reserva(), Registra saída de estoque., Libera reserva de estoque., Gera relatório geral de estoque., relatorio_geral(), saida_estoque(), LiberarReservaRequest, Schema para liberar reserva de estoque. (+2 more)
+Cohesion: 0.33
+Nodes (4): Libera reserva de estoque., liberar_reserva(), Libera reserva de estoque., Libera reserva de estoque com transação atômica.
 
 ### Community 128 - "Community 128"
 Cohesion: 0.33
@@ -1262,16 +984,16 @@ Cohesion: 0.40
 Nodes (5): _get_redis(), limpar_carrinhos_abandonados(), Job para limpar carrinhos abandonados (>7 dias). Remove carrinhos do Redis que, Retorna cliente Redis., Limpa carrinhos abandonados do Redis (>7 dias sem acesso).          Critério:
 
 ### Community 131 - "Community 131"
-Cohesion: 0.16
-Nodes (8): apiPublica, apiPublica, features, LoginFormData, LoginPage(), loginSchema, defaultOptions, Toast
+Cohesion: 0.10
+Nodes (15): apiPublica, apiPublica, features, LoginFormData, LoginPage(), loginSchema, apiPublica, HistoricoStatus (+7 more)
 
 ### Community 132 - "Community 132"
-Cohesion: 0.05
-Nodes (42): 1. Análise Completa do Projeto, 2. Correção Aplicada, 3. Documentação Criada, 4. Atualização do README, API (Login), Arquitetura, Autenticação (API Gateway), Como começar: (+34 more)
+Cohesion: 0.20
+Nodes (9): 🤖 Agentes Customizados do Kiro, 📊 Comparação: Agente vs Hook, Defesa em Profundidade, 📚 Documentation Agent, Exemplo de Uso Seguro, Fluxo de Trabalho, Propósito, Quando Usar (+1 more)
 
 ### Community 133 - "Community 133"
-Cohesion: 0.05
-Nodes (41): 1. Aplicar Migration:, 1. **Models** (`services/estoque/models/estoque.py`), 2. Popular com dados de teste:, 2. **Schemas** (`services/estoque/schemas/estoque.py`), 3. Testar endpoints:, 3. **Utils** (`services/estoque/utils/tenant.py`), 4. **Repositories** (`services/estoque/repositories/estoque_repository.py`), 5. **Services** (`services/estoque/services/estoque_service.py`) (+33 more)
+Cohesion: 0.20
+Nodes (10): Ambiente de Desenvolvimento, 📋 Antes de Começar, ✅ Checklist de Desenvolvimento - Runas ERP, Checklist de Segurança, 🚀 Deploy, Desenvolvimento, Documentação Lida, Produção (+2 more)
 
 ### Community 134 - "Community 134"
 Cohesion: 0.33
@@ -1326,8 +1048,8 @@ Cohesion: 0.33
 Nodes (5): client(), Configuração de fixtures para testes., Fixture de banco de dados em memória para testes., Fixture de cliente HTTP para testes., test_db()
 
 ### Community 147 - "Community 147"
-Cohesion: 0.40
-Nodes (4): AsyncClient, Teste End-to-End: Fluxo Completo de Venda Simula: Criar Produto → Adicionar Est, Teste E2E: Fluxo completo de venda desde criação do produto até pagamento., test_fluxo_venda_completo()
+Cohesion: 0.50
+Nodes (3): Teste End-to-End: Fluxo Completo de Venda Simula: Criar Produto → Adicionar Est, Teste E2E: Fluxo completo de venda desde criação do produto até pagamento., test_fluxo_venda_completo()
 
 ### Community 148 - "Community 148"
 Cohesion: 0.40
@@ -1342,7 +1064,7 @@ Cohesion: 0.40
 Nodes (4): Script para popular banco com dados de teste., # TODO: Implementar seed de dados, Popula banco com dados de teste., seed_data()
 
 ### Community 151 - "Community 151"
-Cohesion: 0.40
+Cohesion: 0.33
 Nodes (3): apiPublica, Pedido, STATUS_INFO
 
 ### Community 152 - "Community 152"
@@ -1350,8 +1072,8 @@ Cohesion: 0.40
 Nodes (4): Script para popular banco com dados de teste., # TODO: Implementar seed de dados, Popula banco com dados de teste., seed_data()
 
 ### Community 153 - "Community 153"
-Cohesion: 0.05
-Nodes (41): Backend:, 🎯 Checklist de Validação, CheckoutPage, Cliente:, 🎯 Como Testar o Checkout, 📸 Comportamentos Esperados, 📝 Dados de Teste Válidos, Email fake sendo enviado? (+33 more)
+Cohesion: 0.20
+Nodes (10): 1. Análise de Queries Lentas, 2. Otimizações Específicas, 3. Vacuum e Analyze, 4. Configurações do PostgreSQL, ✅ Full-Text Search (Busca Textual), Habilitar Log de Queries, ✅ Partial Index (Para Soft Delete), 🗄️ Performance do Banco de Dados (+2 more)
 
 ### Community 154 - "Community 154"
 Cohesion: 0.40
@@ -1422,40 +1144,40 @@ Cohesion: 0.50
 Nodes (4): System Requirements, Setup Documentation, Technology Documentation, Troubleshooting Guide
 
 ### Community 172 - "Community 172"
-Cohesion: 0.05
-Nodes (41): 1. Teste Unitário - Service, 2. Teste Integração - Router, 3. Factories, 4. Fixtures, API Gateway, Arrange-Act-Assert, Bibliotecas, 📝 Boas Práticas (+33 more)
+Cohesion: 0.20
+Nodes (10): 1. Backend Profiling, 2. Frontend Profiling, 3. Monitoramento de Produção, FastAPI Middleware de Timing, Lighthouse (Métricas Web), 📊 Monitoramento e Profiling, Prometheus + Grafana (Recomendado), py-spy (Profiler Python) (+2 more)
 
 ### Community 173 - "Community 173"
 Cohesion: 0.05
 Nodes (41): Acessar a Aplicação, 🏗️ Arquitetura, 🔐 Autenticação e Autorização, Características Técnicas, 📝 Comandos Úteis, 🟡 Componentes Backend Completos (Frontend Pendente), ✅ Componentes Completos (Backend + Frontend), 🤝 Contribuindo (+33 more)
 
 ### Community 174 - "Community 174"
-Cohesion: 0.05
-Nodes (40): [1.0.0] - 2026-05-26, 🙏 Agradecimentos, API Gateway, Arquitetura, Autenticação, 📝 Changelog - Versão 1.0.0 (MVP), 🐛 Correções, Código (+32 more)
+Cohesion: 0.25
+Nodes (5): Proxy HTTP para rotear requisições aos microsserviços., Proxy para comunicação com microsserviços., Determina a URL do serviço baseado no caminho.                  Args:, Resolve empresa_id a partir do slug.                  Args:             slug:, ServiceProxy
 
 ### Community 175 - "Community 175"
-Cohesion: 0.05
-Nodes (40): 1. CPF Único por Empresa ✅, 1. Empresa Padrão, 1. Header Obrigatório, 1. Modelo de Dados ✅, 2. Criar Cliente com Empresa, 2. Filtro Automático ✅, 2. Header HTTP, 2. Schemas Pydantic ✅ (+32 more)
+Cohesion: 0.25
+Nodes (5): Cria um novo cliente via OAuth (CPF e telefone opcionais)., ClienteCreateOAuth, Schema para criação de cliente via OAuth (sem CPF/telefone obrigatórios)., Normaliza telefone para E.164 se fornecido., Cria um novo cliente via OAuth (Google/Microsoft).                  Regras:
 
 ### Community 176 - "Community 176"
-Cohesion: 0.05
-Nodes (39): 1. Login como ADMIN, 1. Segurança, 1. Sidebar com Controle de Acesso, 2. Extensibilidade, 2. Login como OPERADOR, 2. Página "Meu Perfil", 3. Alterar Senha, 3. Manutenibilidade (+31 more)
+Cohesion: 0.32
+Nodes (7): listar_estoque_baixo(), listar_estoque_zerado(), listar_estoques(), Lista estoques com alertas., Lista produtos com estoque abaixo do mínimo., Lista produtos sem estoque., Lista estoques com alertas.
 
 ### Community 177 - "Community 177"
 Cohesion: 0.05
 Nodes (40): Armazenamento de Tokens, 🏗️ Arquitetura do Frontend, 🔐 Autenticação, 🚀 Build e Deploy, Build para Produção, Com Docker, Componentes de Dados, Componentes de Feedback (+32 more)
 
 ### Community 178 - "Community 178"
-Cohesion: 0.05
-Nodes (39): 1. `services/historico_status_service.py`, 2. `services/cache_service.py`, 3. `services/notificacao_service.py`, 4. `services/loja_service.py` - **REESCRITO COMPLETO**, 5. `schemas/loja.py`, 6. `config.py`, 📊 Banco de Dados, Changelog - Loja Online MVP - FASE 4: Complete Checkout (+31 more)
+Cohesion: 0.25
+Nodes (6): ClienteUpdate, CreditoUpdate, Schema para atualização de crédito., Schema para atualização de cliente., Normaliza telefone para E.164., Atualiza dados do cliente com transação atômica (filtrado por empresa).
 
 ### Community 179 - "Community 179"
-Cohesion: 0.05
-Nodes (39): 1. `jobs/verificar_timeouts_separacao.py`, 2. `jobs/limpar_carrinhos_abandonados.py`, 3. `jobs/verificar_pagamentos_pendentes.py`, 4. `jobs/__init__.py`, 5. `jobs/README.md`, Carrinho → Checkout → Venda, Celery Migration, Changelog - Loja Online MVP - FASE 5: Jobs e Automações (+31 more)
+Cohesion: 0.39
+Nodes (6): ErrorLogContext, ErrorLogData, extractErrorMessage(), isRetryableError(), logCheckoutError(), sleep()
 
 ### Community 180 - "Community 180"
-Cohesion: 0.25
-Nodes (7): Header, Query, get_empresa_id(), Utilidades para Multi-Tenancy., get_empresa_id_from_slug(), Extrai empresa_id do header X-Empresa-Id.          Args:         x_empresa_id, Obtém empresa_id a partir do slug.          Args:         empresaSlug: Slug d
+Cohesion: 0.20
+Nodes (9): Header, Query, get_empresa_id(), Utilidades para Multi-Tenancy., get_empresa_id_by_slug(), get_empresa_id_from_slug(), Obtém empresa_id a partir do slug consultando o serviço de empresas., Extrai empresa_id do header X-Empresa-Id.          Args:         x_empresa_id (+1 more)
 
 ### Community 181 - "Community 181"
 Cohesion: 0.67
@@ -1470,28 +1192,32 @@ Cohesion: 0.67
 Nodes (3): Security Corrective Actions, Mercado Pago Sandbox Keys Exposure, Security Incident Report
 
 ### Community 185 - "Community 185"
-Cohesion: 0.07
-Nodes (30): ItemVenda, Verifica vendas com status PENDENTE_PAGAMENTO e cancela se expirou (5min)., verificar_pagamentos_pendentes(), Verifica timeouts de separação de vendas CONFIRMADAS.          Fluxo:     - 1, verificar_timeouts(), Cria um novo item de venda., Cria múltiplos itens de venda., Atualiza um item de venda. (+22 more)
+Cohesion: 0.05
+Nodes (50): Verifica vendas com status PENDENTE_PAGAMENTO e cancela se expirou (5min)., verificar_pagamentos_pendentes(), Verifica timeouts de separação de vendas CONFIRMADAS.          Fluxo:     - 1, verificar_timeouts(), Atualiza uma reserva de estoque., Busca venda por ID isolada por empresa., adicionar_pagamento(), atualizar_venda() (+42 more)
 
 ### Community 186 - "Community 186"
-Cohesion: 0.05
-Nodes (39): 1. `services/venda_service.py` - Integração com Histórico, 2. `services/loja_service.py` - Rastreamento Melhorado, Antes (FASE 4), Auditoria Avançada, ✅ Auditoria Completa, 📝 Backward Compatibility, Changelog - Loja Online MVP - FASE 7: Melhorias e Ajustes Finais, `confirmar_venda()` (+31 more)
+Cohesion: 0.29
+Nodes (7): 3. Implementação, Migration, Models (SQLAlchemy), Repository, Router, Schemas (Pydantic), Service
+
+### Community 199 - "Community 199"
+Cohesion: 0.29
+Nodes (7): 1. Otimização de Builds, 2. Volumes em Produção, 3. Recursos de Containers, ❌ Desenvolvimento (Volumes Montados), Multi-stage Build (Produção), 🐳 Performance Docker, ✅ Produção (Sem Volumes)
 
 ### Community 205 - "Community 205"
 Cohesion: 0.22
 Nodes (8): 🎯 Benefícios, ⚙️ Como Funciona, 🚀 Execução Manual, 📝 Exemplo de Uso, GitHub Actions Workflows, 🔄 `graphify-update.yml` - Auto-Update Graphify Knowledge Graph, 🔗 Integração com Kiro AI, 📋 Workflows Disponíveis
 
 ### Community 206 - "Community 206"
-Cohesion: 0.05
-Nodes (44): 1. API GATEWAY ✅, 2. CLIENTES ✅, 3. PRODUTOS ✅, 4. ESTOQUE ✅, 5. VENDAS ✅, 6. LOJA ONLINE ✅, Autenticação ✅, Carrinho ✅ (+36 more)
+Cohesion: 0.33
+Nodes (6): Backend, Banco de Dados, 🎯 Checklist de Performance, Docker, Frontend, Monitoramento
 
 ### Community 207 - "Community 207"
-Cohesion: 0.05
-Nodes (40): Fase 10: Testes e Refinamentos, Fase 1: Setup e Configuração Inicial, Fase 2: Autenticação e Layout, Fase 3: Componentes Comuns, Fase 4: Módulo de Clientes, Fase 5: Módulo de Produtos, Fase 6: Módulo de Estoque, Fase 7: Módulo de Vendas (+32 more)
+Cohesion: 0.40
+Nodes (5): 1. Planejamento, 2. Estrutura do Código, 4. Testes, 5. Documentação, 🎯 Desenvolvimento Backend
 
 ### Community 208 - "Community 208"
-Cohesion: 0.05
-Nodes (37): Autenticação e Segurança, Autenticação Social (Futuro), 🐍 Backend, Backend Framework, Banco de Dados, Cache e Sessões, 📊 Comparação de Alternativas, Comunidades (+29 more)
+Cohesion: 0.40
+Nodes (5): 1. Planejamento, 2. Estrutura do Código, 4. Qualidade, 5. Documentação, 🎨 Desenvolvimento Frontend
 
 ### Community 308 - "Community 308"
 Cohesion: 0.05
@@ -1510,56 +1236,56 @@ Cohesion: 0.06
 Nodes (35): 🔹 Atomicidade, Boas Práticas, ✅ Clientes, Conceitos ACID, Configuração Base, 🔹 Consistência, ✅ DO (Faça), ❌ DON'T (Não Faça) (+27 more)
 
 ### Community 312 - "Community 312"
-Cohesion: 0.06
-Nodes (34): 1.1 Pré-requisitos, 1.2 Configuração Inicial, 1.3 Subir Infraestrutura, 1. Preparação do Ambiente, 2.1 Estrutura Já Criada, 2.2 Seed de Usuário Admin, 2.3 Testar API Gateway, 2. Implementação do API Gateway (+26 more)
+Cohesion: 0.40
+Nodes (5): Backend, ✅ Checklist Rápido (TL;DR), Deploy, Frontend, Segurança
 
 ### Community 313 - "Community 313"
-Cohesion: 0.06
-Nodes (34): Adaptado:, Arquivos:, Checklist por Serviço:, ✅ Clientes (100%), Commits Realizados: 4, 🏆 Conclusão, Concluído:, Criado: (+26 more)
+Cohesion: 0.40
+Nodes (5): 2. Otimização de Queries SQL, ✅ Eager Loading (USAR), ❌ N+1 Problem (EVITAR), ✅ Paginação (SEMPRE USAR), ✅ Índices (CRIAR EM CAMPOS FREQUENTES)
 
 ### Community 314 - "Community 314"
-Cohesion: 0.06
-Nodes (35): 1. Verificar Pré-requisitos, 2. Clonar/Atualizar Repositório, 3. Iniciar Backend, 4. Iniciar Frontend, Autenticação Básica, "Botões OAuth não aparecem", 📊 Checklist de Testes, "CORS error" (+27 more)
+Cohesion: 0.50
+Nodes (4): main(), Seed de categorias de produtos., Cria categorias de exemplo., seed_categorias()
 
 ### Community 315 - "Community 315"
-Cohesion: 0.06
-Nodes (34): 1. Clonar o Repositório, 1. Criar Usuário Admin, 1. Verificar Serviços, 2. Configurar OAuth (Opcional), 2. Configurar Variáveis de Ambiente, 2. Testar API Gateway, 3. Configurar WhatsApp (Opcional), 3. Iniciar com Docker (+26 more)
+Cohesion: 0.50
+Nodes (4): main(), Seed de variantes para produtos existentes. Cria uma variante padrão para cada, Cria variantes padrão para produtos sem variantes., seed_variantes()
 
 ### Community 316 - "Community 316"
 Cohesion: 0.06
 Nodes (34): 1. Testar Autenticação, 2. Testar Rota Pública, 3. Testar Rota Protegida, 4. Testar Rota Admin, Carrinho de Compras, Catálogo de Produtos, ✅ Checklist de Verificação, Clientes (+26 more)
 
 ### Community 317 - "Community 317"
-Cohesion: 0.06
-Nodes (33): 1. Model (`models/produto.py`), 1. Rodar a migration, 1. State (`ProdutosPage.tsx`), 2. Parâmetros da API, 2. Reiniciar o backend, 2. Repository (`repositories/produtos.py`), 3. Botões de Filtro, 3. Rebuild do frontend (se necessário) (+25 more)
+Cohesion: 0.40
+Nodes (4): downgrade(), Torna CPF e telefone opcionais para suportar clientes OAuth., Reverte CPF e telefone para obrigatórios., upgrade()
 
 ### Community 318 - "Community 318"
-Cohesion: 0.06
-Nodes (33): Backend, Breakpoints Padrão, Checklist de Implementação, Componente "EmDesenvolvimento", Componentes Faltantes, 📅 Cronograma Sugerido, 📱 FASE 1: Responsividade (PRIORIDADE ALTA), 🎨 FASE 2: Tema Claro/Escuro (PRIORIDADE ALTA) (+25 more)
+Cohesion: 0.40
+Nodes (4): downgrade(), Adiciona campo sessao_carrinho_id à tabela vendas.          Este campo armazen, Remove campo sessao_carrinho_id da tabela vendas., upgrade()
 
 ### Community 319 - "Community 319"
-Cohesion: 0.06
-Nodes (33): 1. Iniciar o Sistema, 2.1 - Criar categoria válida, 2.2 - Validação de campo obrigatório, 2.3 - Criar categoria duplicada, 2.4 - Cancelar criação, 2. Acessar o Sistema, 3.1 - Editar categoria existente, 3.2 - Cancelar edição (+25 more)
+Cohesion: 0.50
+Nodes (4): Adicionar máscara a input existente, 🔧 Migração de Código Existente, Substituir alerts, Validar antes de enviar
 
 ### Community 320 - "Community 320"
-Cohesion: 0.06
-Nodes (32): 1. API Gateway (`api-gateway/` — porta 8000), 2. Serviço de Clientes (`services/clientes/` — porta 8001), 3. Serviço de Produtos (`services/produtos/` — porta 8002), 4. Serviço de Estoque (`services/estoque/` — porta 8003), 5. Serviço de Vendas (`services/vendas/` — porta 8004), 6. Serviço Financeiro (`services/financeiro/` — porta 8005), 7. Serviço de Notificações (`services/notificacoes/` — porta 8006), Consumer Events (RabbitMQ) (+24 more)
+Cohesion: 0.05
+Nodes (36): 1. API Gateway (`api-gateway/` — porta 8000), 2. Serviço de Empresas (`services/empresas/` — porta 8001), 3. Serviço de Clientes (`services/clientes/` — porta 8002), 4. Serviço de Produtos (`services/produtos/` — porta 8003), 5. Serviço de Estoque (`services/estoque/` — porta 8004), 6. Serviço de Vendas (`services/vendas/` — porta 8007), 7. Serviço Financeiro (`services/financeiro/` — porta 8005), 8. Serviço de Notificações (`services/notificacoes/` — porta 8006) (+28 more)
 
 ### Community 321 - "Community 321"
-Cohesion: 0.06
-Nodes (32): 1. **Corrigir MainLayout para Responsividade**, 1. **Sidebar Não Está Responsiva no Mobile**, 1. **Usar Grid do Bootstrap Corretamente**, 2. **Atualizar SCSS do MainLayout**, 2. **Formulários Responsivos**, 2. **MainLayout Não Adapta Margem no Mobile**, 3. **Atualizar Sidebar para Responsividade**, 3. **Cards Responsivos** (+24 more)
+Cohesion: 0.50
+Nodes (4): Antes de Commitar, Commit (Conventional Commits), 📦 Commit e Deploy, Git Workflow
 
 ### Community 322 - "Community 322"
 Cohesion: 0.06
 Nodes (32): 🆘 Ainda com Problemas?, 🔐 Autenticação, 🔧 Backend / API, 🗄️ Banco de Dados, 🐳 Docker e Containers, 💻 Frontend, 🔌 Integrações Externas, Obter Ajuda (+24 more)
 
 ### Community 323 - "Community 323"
-Cohesion: 0.06
-Nodes (31): 1. Checkbox "Criar Conta" no Guest Checkout, 1. Tela de Checkout com 3 Opções, 2. Backend Criar Cliente Se Checkbox Marcado, 2. Fluxo: Cliente com Conta, 3. Email Pós-Checkout, 3. Fluxo: Cliente Convidado (Atual), 🎯 Benefícios da Implementação, Boas Práticas (+23 more)
+Cohesion: 0.50
+Nodes (4): Backend (pytest), Frontend (Vitest - planejado), 🧪 Testes, Testes Manuais
 
 ### Community 324 - "Community 324"
-Cohesion: 0.06
-Nodes (32): 400 - Bad Request, 401 - Unauthorized, 403 - Forbidden, 404 - Not Found, 409 - Conflict, 422 - Validation Error, 500 - Internal Server Error, Adicionar Endereço (+24 more)
+Cohesion: 0.50
+Nodes (4): Convenções, Documentação Interna, Ferramentas, 📚 Recursos
 
 ### Community 325 - "Community 325"
 Cohesion: 0.06
@@ -1582,68 +1308,36 @@ Cohesion: 0.07
 Nodes (30): Adicionar Item ao Carrinho, Ajustar Frete (ADMIN), Alterar Quantidade de Item, API de Vendas - Runas, � Autenticação, Avançar Status do Pedido (ADMIN), Cancelar Pedido, Carrinho (Público) (+22 more)
 
 ### Community 330 - "Community 330"
-Cohesion: 0.07
-Nodes (29): Análise: Catálogo Público vs Estoque, 🏗️ Arquitetura, Cenário 1: Mostrar Produtos Sem Estoque (Atual), Cenário 2: Ocultar Produtos Sem Estoque (Futuro), Cenário 3: Badge "Fora de Estoque" (Recomendado), Cenários de Uso, 📝 Comandos Úteis, Como funciona HOJE: (+21 more)
+Cohesion: 0.67
+Nodes (3): H, Health Check, HTTP Status Codes
 
 ### Community 331 - "Community 331"
-Cohesion: 0.07
-Nodes (29): 1. **Frontend - Checkbox "Criar Conta"**, 1. **Reiniciar Serviços** (instalar novas dependências), 2. **Backend - Serviço de Email**, 2. **Verificar Logs**, 3. **Backend - Lógica de Criação de Conta**, 3. **Testar Checkout**, 4. **API Gateway - Endpoint Interno**, 4. **Verificar Banco de Dados** (+21 more)
+Cohesion: 0.67
+Nodes (3): 📚 Arquitetura Implementada, Backend, Frontend
 
 ### Community 332 - "Community 332"
 Cohesion: 0.07
 Nodes (30): ♿ Acessibilidade, 🏷️ Badges, 🔲 Botões, 📇 Cards, Componentes - Design System Runas, Contraste Mínimo (WCAG AA) - Dark Mode, Empty, Error (+22 more)
 
 ### Community 333 - "Community 333"
-Cohesion: 0.04
-Nodes (46): 1️⃣1️⃣ [TASKS.md](./TASKS.md) - **PLANO DE IMPLEMENTAÇÃO**, 1️⃣2️⃣ [API-EXAMPLES.md](./API-EXAMPLES.md) - **EXEMPLOS DE API**, 1️⃣3️⃣ [DOCKER.md](./DOCKER.md) - **DOCKER COMPLETO**, 1️⃣4️⃣ [IMPLEMENTATION-LOG.md](./IMPLEMENTATION-LOG.md) - **LOG DE IMPLEMENTAÇÃO**, 1️⃣ [TESTING-READY.md](./TESTING-READY.md) - **LEIA PRIMEIRO**, 2️⃣ [DOCKER-QUICK-START.md](./DOCKER-QUICK-START.md) - **COMECE COM DOCKER**, 3️⃣ [PREREQUISITES.md](./PREREQUISITES.md) - **ANTES DE COMEÇAR**, 4️⃣ [QUICK-TEST-GUIDE.md](./QUICK-TEST-GUIDE.md) - **GUIA RÁPIDO** (+38 more)
+Cohesion: 0.67
+Nodes (3): 🎯 Guias Rápidos, Para Criar Componente, Para Implementar Nova Rota
 
 ### Community 334 - "Community 334"
 Cohesion: 0.07
 Nodes (30): Backend (.env), 🗄️ Banco de Dados, "Cannot connect to Docker daemon", ✅ Checklist de Pré-requisitos, 📋 Checklist Final, Com Docker (Recomendado), 🔧 Configuração de Variáveis de Ambiente, Configuração Geral (+22 more)
 
 ### Community 335 - "Community 335"
-Cohesion: 0.07
-Nodes (28): 1. `docs/02-desenvolvimento/FRONTEND_IMPLEMENTACAO.md`, 1. MVP Documentado por Sprint, 2. `docs/05-frontend/README.md`, 2. Vendas/PDV Estruturado, 3. Priorização Clara, 4. Resumo Final, 📄 Arquivos Atualizados, 📝 Arquivos Modificados (+20 more)
-
-### Community 336 - "Community 336"
-Cohesion: 0.07
-Nodes (28): 1. Adicionar Item ao Carrinho, 1. ✅ Endpoints do Carrinho Usando `get_empresa_id` Incorreto, 1. Página de Rastreamento - Erro de Estado, 2. Buscar Produto, 2. ✅ Schemas de Produto Sem Campo `preco`, 3. Criar Venda no Checkout, 3. ✅ VendaService Buscando Campos Incorretos, 4. ✅ Configuração do Mercado Pago Ausente (+20 more)
-
-### Community 337 - "Community 337"
-Cohesion: 0.07
-Nodes (28): 1. **Models** (100%), 2. **Schemas** (100%), 3. **Utils** (100%), 4. **Repositories** (100%), 5. **Services** (100%), 6. **Routers** (100%), 7. **Migration** (100%), 8. **Seed** (100%) (+20 more)
-
-### Community 338 - "Community 338"
-Cohesion: 0.07
-Nodes (28): 1. Interface do Usuário, 1. Webhook do Mercado Pago, 2. Cartões de Teste, 2. Checkout, 3. Mercado Pago (Sandbox), Acessar banco de dados, Background branco, Carrinho não aparece quando vazio (+20 more)
+Cohesion: 0.67
+Nodes (3): get_token_from_cookie_or_header(), Obtém o token do cookie HTTP-only ou do header Authorization.     Prioriza o co, oauth2_scheme
 
 ### Community 339 - "Community 339"
-Cohesion: 0.07
-Nodes (26): Backend, Backend (APIs REST), Docs Técnicos, 📚 DOCUMENTAÇÃO, Documentos Principais, Frontend, Frontend (React + TypeScript), Implementadas ✅ (+18 more)
+Cohesion: 0.15
+Nodes (12): API Testing Routes, Chat, Code, Examples, Exception: Local Service Debugging, Format, Git Commit Conventions, Language Conventions (+4 more)
 
 ### Community 340 - "Community 340"
 Cohesion: 0.07
 Nodes (29): Animações Suaves, 🔵 **Azul Primary (#3B82F6)**, Badges de Status - Exemplos de Uso, 🔷 **Ciano Secondary (#22D3EE)**, Cores Base (Dark Mode First), Cores e Tipografia - Design System Runas, Cores Neutras (Dark Mode), Cores Semânticas por Contexto (+21 more)
-
-### Community 341 - "Community 341"
-Cohesion: 0.07
-Nodes (29): ♿ Acessibilidade, 🙏 Agradecimentos, 🎓 Aprendizados, 🚀 Como Usar, 🚀 Conclusão, 🔧 Configuração Necessária, Cores Principais, Curto Prazo (Fases 5-9) (+21 more)
-
-### Community 342 - "Community 342"
-Cohesion: 0.07
-Nodes (29): 3.1. Criar Registro de Estoque (POST /api/estoque), 3.2. Entrada de Estoque (POST /api/estoque/entrada), 3.3. Saída de Estoque (POST /api/estoque/saida), 3.4. Reservar Estoque (POST /api/estoque/reservar), 3.5. Liberar Reserva (POST /api/estoque/liberar-reserva), 3.6. Confirmar Reserva (POST /api/estoque/confirmar-reserva), 3.7. Realizar Inventário (POST /api/estoque/inventario), 3.8. Finalizar Inventário e Ajustar Estoque (POST /api/estoque/inventario/{id}/finalizar) (+21 more)
-
-### Community 343 - "Community 343"
-Cohesion: 0.07
-Nodes (29): Adicionando Novos Diagramas, Atualizando Diagramas Existentes, 🔐 [Autenticação](./autenticacao.md), 👥 [Clientes](./clientes.md), 🎯 Como Usar Esta Documentação, 📝 Contribuindo, 🔍 Convenções dos Diagramas, Códigos HTTP (+21 more)
-
-### Community 344 - "Community 344"
-Cohesion: 0.07
-Nodes (27): 1. ✅ Remoção de Duplicata, 2. 📝 Atualização do `FEATURES_FUTURAS.md`, 3. 📝 Atualização do `O SISTEMA.md`, 4. 📝 Atualização do `FRONTEND_IMPLEMENTACAO.md`, 📋 Alterações Realizadas, Arquivos Alterados, Arquivos Removidos, ✅ Benefícios (+19 more)
-
-### Community 345 - "Community 345"
-Cohesion: 0.07
-Nodes (27): 1. Iniciação (Frontend), 2. Autorização (Google), 3. Callback (Frontend + Backend), Backend (FastAPI + Python), Botões OAuth não aparecem, 🧪 Como Testar, 👥 Contribuidores, Curto Prazo (+19 more)
 
 ### Community 346 - "Community 346"
 Cohesion: 0.07
@@ -1657,69 +1351,25 @@ Nodes (26): Adicionar Foto ao Catálogo (ADMIN), Adicionar Variante, API de Prod
 Cohesion: 0.08
 Nodes (26): 1. Entidade: Conta a Receber, 2. Entidade: Pagamento Fiado, 3. Controle de Crédito, 4.1. Verificar Contas Vencidas, 4.2. Lembrete de Vencimento, 4.3. Bloqueio por Inadimplência, 4. Jobs Agendados (Celery), 5. Eventos Assíncronos (+18 more)
 
-### Community 349 - "Community 349"
-Cohesion: 0.08
-Nodes (25): Backend, 📋 Checklist de Teste, ✅ Com Checkbox Marcada (Fluxo Novo), 🧪 Como Testar, 🔍 Como Verificar no Banco de Dados, 📊 Comparação: Com vs Sem Criação de Conta, Frontend, 📦 O Que Foi Implementado (+17 more)
-
-### Community 350 - "Community 350"
-Cohesion: 0.10
-Nodes (21): Backend (.env), 🗄️ Banco de Dados, ✅ Checklist de Pré-requisitos, 📋 Checklist Final, Com Docker (Recomendado), 🔧 Configuração de Variáveis de Ambiente, Configuração Geral, 🔐 Credenciais de Teste (+13 more)
-
-### Community 351 - "Community 351"
-Cohesion: 0.08
-Nodes (25): 1. Serviço de Clientes (porta 8001), 2. Serviço de Produtos (porta 8002), 3. Serviço de Estoque (porta 8003), 4. Serviço de Vendas (porta 8004), 5. Serviço Financeiro (porta 8005), 6. Serviço de Notificações (porta 8006), Alta Prioridade (Semana 1-2), 📋 Arquivos Faltantes para Implementação Completa (+17 more)
-
 ### Community 352 - "Community 352"
 Cohesion: 0.08
 Nodes (25): 1. `limpar_reservas.py`, 2. `verificar_timeouts_separacao.py`, 3. `limpar_carrinhos_abandonados.py`, 4. `verificar_pagamentos_pendentes.py`, ⚙️ Configuração, Erros de conexão com banco, Erros de conexão com Redis, Job 1: Limpar Reservas (1 minuto) (+17 more)
-
-### Community 353 - "Community 353"
-Cohesion: 0.08
-Nodes (26): 3.9.1. Criar Carrinho (POST /api/carrinho), 3.9.2. Adicionar Item ao Carrinho (POST /api/carrinho/{token}/itens), 3.9.3. Remover Item do Carrinho (DELETE /api/carrinho/{token}/itens/{item_id}), 3.9.4. Finalizar Carrinho (Criar Pedido) (POST /api/carrinho/{token}/checkout), 3.9.5. Confirmar Pagamento e Converter Pedido em Venda (Webhook), 3.9.6. Cancelar Pedido (POST /api/pedidos/{id}/cancelar), Atualizar Quantidade, Carrinho Anônimo vs Autenticado (+18 more)
 
 ### Community 354 - "Community 354"
 Cohesion: 0.08
 Nodes (26): "Build failed", "Cannot connect to Docker daemon", Comandos Rápidos, 📊 Comandos Úteis, docker-compose.dev.yml, 🐳 Docker Quick Start - Frontend, Documentação Relacionada, 📁 Estrutura Docker (+18 more)
 
-### Community 355 - "Community 355"
-Cohesion: 0.08
-Nodes (25): Antes de Começar, Após Implementação, ✅ Checklist de Implementação, ❌ Commit no Repository, ❌ Commit no Router, CREATE (Criar), 🔍 Debugging, DELETE (Deletar) (+17 more)
-
 ### Community 356 - "Community 356"
 Cohesion: 0.08
 Nodes (25): 1. Armazenamento Seguro, 1. Fazer Login, 2. Renovação Automática, 2. Usar o Token, 3. Interceptors (Axios), 3. Renovar Token (quando expirar), 401 Unauthorized, 403 Forbidden (+17 more)
 
-### Community 357 - "Community 357"
-Cohesion: 0.08
-Nodes (25): Adicionar ao docker-compose.yml, Automação de Infraestrutura, Automação de Migrations e Inicialização, Automação de Seed — Dados Iniciais Obrigatórios, Configuração de Ambiente (.env.example), database.py (padrão para todos os serviços), Dependência dos Serviços no Migrate, Docker Compose — Estrutura Completa (+17 more)
-
 ### Community 358 - "Community 358"
-Cohesion: 0.08
-Nodes (25): 1. VENDAS/PDV - Frontend 🔥, 2. ESTOQUE - Frontend 🔥, 3. FINANCEIRO - Backend + Frontend 🟡, 4. NOTIFICAÇÕES - Backend + Frontend 🟡, 5. RELATÓRIOS E DASHBOARDS 🟡, 6. MELHORIAS UX/UI 🟡, Acessibilidade, Backend APIs (+17 more)
+Cohesion: 0.33
+Nodes (6): 3. Implementação, API Service, Componentes, Formulários, Página, Tabelas
 
 ### Community 359 - "Community 359"
 Cohesion: 0.08
 Nodes (24): Backend (.env), ✅ Backup e Disaster Recovery, Build, Build de Produção, ✅ Build e Deploy, Checklist de Produção - Frontend, Comandos Úteis, Docker (+16 more)
-
-### Community 360 - "Community 360"
-Cohesion: 0.08
-Nodes (24): Backend (.env), ✅ Backup e Disaster Recovery, Build, Build de Produção, ✅ Build e Deploy, Checklist de Produção - Frontend, Comandos Úteis, Docker (+16 more)
-
-### Community 361 - "Community 361"
-Cohesion: 0.08
-Nodes (25): Fase 1: Setup e Configuração Inicial, Fase 3: Componentes Comuns, Fase 5: Módulo de Produtos, Fase 6: Módulo de Estoque, Fase 7: Módulo de Vendas, Fase 8: Módulo Financeiro, Fase 9: Dashboard, Resumo de Estimativas (+17 more)
-
-### Community 362 - "Community 362"
-Cohesion: 0.08
-Nodes (25): 1. Orquestração (Criar Venda), 2. Coreografia (Alerta Estoque), 3. Scheduled Jobs (Verificar Lotes), 4.1. Fluxo Completo: Criar Venda com Estoque, 4.2. Fluxo: Alerta de Estoque Baixo com Notificação, 4.3. Fluxo: Verificação de Lotes Vencidos (Job Agendado), Arquitetura Event-Driven, Circuit Breaker (+17 more)
-
-### Community 363 - "Community 363"
-Cohesion: 0.08
-Nodes (24): 2. PRODUTOS, 3. ESTOQUE, 4. VENDAS ✅ IMPLEMENTAÇÃO COMPLETA, 5. FINANCEIRO 🔴 NÃO IMPLEMENTADO, Backend - Endpoints Implementados ✅, Backend - Estatísticas ✅, Backend - Melhorias Futuras 🔴, Backend - Melhorias Necessárias 🔴 (+16 more)
-
-### Community 364 - "Community 364"
-Cohesion: 0.08
-Nodes (24): Acessibilidade Avançada 🔴, Breakpoints Definidos ✅, Checklist de Testes, Clientes 🔴, Componentes Responsivos ✅ CRIADOS, Dashboard 🔴, Dispositivos Testados, Documentação Criada ✅ (+16 more)
 
 ### Community 365 - "Community 365"
 Cohesion: 0.08
@@ -1728,22 +1378,6 @@ Nodes (23): 1. Criar Conta no Mercado Pago, 2. Obter Credenciais de Teste (Sandb
 ### Community 366 - "Community 366"
 Cohesion: 0.08
 Nodes (24): API Financeiro - Runas, 🔐 Autenticação, Caso 1: Consultar Contas em Aberto de um Cliente, Caso 2: Registrar Pagamento Parcial, Caso 3: Quitar Conta Completamente, Caso 4: Monitorar Contas a Vencer, Caso 5: Listar Contas Vencidas, Caso 6: Histórico de Pagamentos de uma Conta (+16 more)
-
-### Community 367 - "Community 367"
-Cohesion: 0.07
-Nodes (29): 1. Verificar Pré-requisitos, 2. Clonar/Atualizar Repositório, 3. Iniciar Backend, 4. Iniciar Frontend, "Botões OAuth não aparecem", "CORS error", Decodificar JWT, 📚 Documentação Relacionada (+21 more)
-
-### Community 368 - "Community 368"
-Cohesion: 0.08
-Nodes (24): 1. **Raiz Limpa**, 2. **Documentação Centralizada**, 3. **Testes Organizados**, 4. **Scripts Separados**, Antes da Organização, Arquivos Atualizados, 📝 Arquivos Criados/Atualizados, 🔍 Como Encontrar Documentação (+16 more)
-
-### Community 369 - "Community 369"
-Cohesion: 0.08
-Nodes (24): 2.1. Criar Produto (POST /api/produtos), 2.2. Criar Variante (POST /api/produtos/{id}/variantes), 2.3. Listar Produtos com Filtros (GET /api/produtos), 2.4. Vincular Fornecedor ao Produto (POST /api/fornecedores-produtos), 2.5. Atualizar Configuração de Catálogo (PUT /api/produtos/{id}/catalogo), Campos da Variante, Campos do Produto, Campos do Vínculo (+16 more)
-
-### Community 370 - "Community 370"
-Cohesion: 0.09
-Nodes (23): Clientes, Contas a Pagar, Contas a Receber, Cálculo de Preço, Estoque, Financeiro (A Implementar), Inventário, Lotes (+15 more)
 
 ### Community 372 - "Community 372"
 Cohesion: 0.09
@@ -1757,149 +1391,33 @@ Nodes (23): Adicionar Endereço, Ajustar Limite de Crédito, API de Clientes - R
 Cohesion: 0.09
 Nodes (23): 1. Entidade: Categoria, 2. Entidade: Produto, 3. Entidade: Variante, 4. Entidade: Fornecedor, 5. Entidade: Fornecedor-Produto (Vínculo), 6. Entidade: Catálogo (Configuração), 7. Entidade: Catálogo (Fotos), 📊 Estrutura de Dados (+15 more)
 
-### Community 375 - "Community 375"
-Cohesion: 0.09
-Nodes (23): Concluído (28h de 162h estimadas - 17%), ✅ Design System Runas (Concluído), ✅ Docker e Deploy (Concluída), 📦 EXTRA: OAuth e Docker, 📦 Fase 1: Setup e Configuração Inicial, 📦 Fase 2: Autenticação e Layout, 📦 Fase 3: Design System e Estilos, 📦 Fase 4: Dashboard (+15 more)
-
 ### Community 376 - "Community 376"
 Cohesion: 0.09
-Nodes (23): 🏗️ Arquitetura, 🔐 Autenticação, Backend, 🟡 Backend Pronto (Frontend Pendente), 📝 Comandos Úteis, 📞 Contato, 🤝 Contribuindo, DevOps (+15 more)
-
-### Community 377 - "Community 377"
-Cohesion: 0.09
-Nodes (21): 1. **Novo componente Sidebar com submenus**, 2. **Nova estrutura de menu**, 3. **Novas páginas criadas**, 4. **Rotas adicionadas ao App.tsx**, 5. **Estilos atualizados**, 📦 Arquivos modificados, Componentes, Configurações (`/pages/Configuracoes/`) (+13 more)
-
-### Community 378 - "Community 378"
-Cohesion: 0.07
-Nodes (27): Acessibilidade, Concluído (28h de 162h estimadas - 17%), Decisões de Arquitetura, ✅ Design System Runas (Concluído), ✅ Docker e Deploy (Concluída), 📦 EXTRA: OAuth e Docker, 📦 Fase 1: Setup e Configuração Inicial, 📦 Fase 2: Autenticação e Layout (+19 more)
-
-### Community 379 - "Community 379"
-Cohesion: 0.12
-Nodes (16): 🏗️ Arquitetura, 🔄 Atualizações, 🔍 Busca Rápida por Palavra-Chave, 📝 Convenções, 💻 Desenvolvimento, 📖 Documentos por Categoria, Emojis Usados, 🗂️ Estrutura da Documentação (+8 more)
-
-### Community 380 - "Community 380"
-Cohesion: 0.09
-Nodes (22): 1.1. Criar Cliente (POST /api/clientes), 1.2. Listar Clientes (GET /api/clientes), 1.3. Buscar Cliente por ID (GET /api/clientes/{id}), 1.4. Atualizar Cliente (PUT /api/clientes/{id}), 1.5. Adicionar Endereço (POST /api/clientes/{id}/enderecos), 1.6. Desativar Cliente (DELETE /api/clientes/{id}), Campos Atualizáveis, Campos do Endereço (+14 more)
-
-### Community 381 - "Community 381"
-Cohesion: 0.10
-Nodes (21): 12. MÓDULO DE DELIVERY 🔴, 13. MÓDULO DE FIDELIDADE 🔴, 14. BI E ANALYTICS 🔴, 15. INTEGRAÇÕES ADICIONAIS 🔴, 16. INFRAESTRUTURA AVANÇADA 🔴, 17. APP MOBILE 🔴, Backend, Backend (+13 more)
-
-### Community 382 - "Community 382"
-Cohesion: 0.10
-Nodes (21): 1. **API Gateway** (✅ Migrado), 2. **Empresas** (✅ Migrado), 3. **Clientes** (🟡 Migrations OK), 4. **Produtos** (🟡 Migrations OK), 5. **Estoque** (🟡 Migrations OK), 6. **Vendas** (🟡 Migrations OK), 7. **Financeiro** (🔴 Sem implementação), 8. **Notificações** (🔴 Sem implementação) (+13 more)
-
-### Community 383 - "Community 383"
-Cohesion: 0.10
-Nodes (20): 1. **Double Scrolling (Scroll Duplo)**, 1. **Remoção de Scroll Duplo**, 2. **Correção do Grid de Seleção**, 2. **Framing Incorreto**, 3. **Responsividade da Tela de Login**, 3. **Responsividade Desktop**, 4. **Remoção do Divider CSS**, Antes ❌ (+12 more)
+Nodes (23): Alta Prioridade, 🏗️ Arquitetura, 🔐 Autenticação, Backend, 🟡 Backend Pronto (Frontend Pendente), 📝 Comandos Úteis, 📞 Contato, 🤝 Contribuindo (+15 more)
 
 ### Community 384 - "Community 384"
 Cohesion: 0.10
 Nodes (21): 1. Movimentações são Imutáveis, 2. Quantidade Nunca Negativa, 3. Alertas Automáticos, 4. Transações Atômicas, Ajuste de Inventário, Alertas de Estoque Mínimo, API de Estoque - Runas, Caso 1: Receber Mercadoria do Fornecedor (+13 more)
 
 ### Community 385 - "Community 385"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (21): 1. Carrinho, 2. Pedido, 3. Venda, 4.1. Fluxo: Carrinho → Pedido → Venda (À Vista), 4.2. Fluxo: Carrinho → Pedido → Venda (Fiado), 4.3. Fluxo: Cancelamento de Pedido, 4. Fluxos Completos, 5.1. Integração com Mercado Pago (+13 more)
-
-### Community 386 - "Community 386"
-Cohesion: 0.10
-Nodes (20): 1. Autenticação Separada, 1. Slug Hardcoded, 2. Controle de Acesso (RBAC), 2. Painel de Usuários, 3. Loja Online - UX, 3. Produtos no Catálogo, 4. Catálogo Público, 🚀 Como Rodar (+12 more)
-
-### Community 387 - "Community 387"
-Cohesion: 0.10
-Nodes (20): 1. Handler para Cada Tipo de Exceção, 2. Handler para HTTPException do FastAPI, 3. Handler Global com Request ID, ✅ Boas Práticas (Recomendado), 🎯 Como Funciona (Teoria), Erro (4xx, 5xx), 📋 Estado Atual, 💡 Exemplos de Uso (+12 more)
-
-### Community 388 - "Community 388"
-Cohesion: 0.10
-Nodes (17): 📁 Arquivos Criados, 🚀 Como Executar, Configuração (10 arquivos), Código Fonte (28 arquivos), Desenvolvimento (com hot reload), Docker (4 arquivos), Documentação (1 arquivo), Documentação Disponível: (+9 more)
-
-### Community 389 - "Community 389"
-Cohesion: 0.10
-Nodes (21): ♿ Acessibilidade, 🙏 Agradecimentos, 🎓 Aprendizados, 🚀 Como Usar, 🚀 Conclusão, Cores Principais, 💡 Decisões Técnicas Importantes, 🎨 Design System Highlights (+13 more)
-
-### Community 390 - "Community 390"
-Cohesion: 0.13
-Nodes (15): 🔄 Atualizações Recentes, Cobertura, Documentos Criados, 📈 Estatísticas da Documentação, Nível 1: Iniciante (1-2 horas), Nível 2: Intermediário (4-6 horas), Nível 3: Avançado (8-12 horas), 🎯 Próximos Passos na Documentação (+7 more)
 
 ### Community 391 - "Community 391"
 Cohesion: 0.10
 Nodes (20): Acessibilidade, 🏗️ Arquitetura, Backend, Componentes Principais, Controle, 📚 Documentos Relacionados, 👥 Equipe, Flexibilidade (+12 more)
 
-### Community 392 - "Community 392"
-Cohesion: 0.10
-Nodes (20): A Criar 🔴, A Criar 🔴, A Instalar 🔴, 📚 Bibliotecas, 📝 Checklist por Rota, 🎨 Componentes Compartilhados, Features Implementadas ✅, 🎨 Frontend - Guia de Implementação (+12 more)
-
-### Community 393 - "Community 393"
-Cohesion: 0.10
-Nodes (20): 10. Erro de memória insuficiente, 1. Containers não sobem, 2. Erro "no space left on device", 3. Container reiniciando constantemente, 4. Erro de permissão em volumes, 5. Erro "network not found", 6. Imagens não atualizam, 7. Erro "port is already allocated" (+12 more)
-
 ### Community 394 - "Community 394"
 Cohesion: 0.11
 Nodes (19): 1. Entidade: Estoque, 2. Entidade: Movimentação, 3. Entidade: Lote, 4. Entidade: Inventário, 5.1. Venda com Estoque Insuficiente, 5.2. Lote Vencido com Estoque, 5.3. Inventário com Grandes Diferenças, 5. Casos de Uso (+11 more)
 
-### Community 395 - "Community 395"
-Cohesion: 0.10
-Nodes (20): [0.1.0] - 2026-05-01, [0.2.0] - 2026-05-15, [1.0.0] - 2026-05-26, ✨ Adicionado, ✨ Adicionado, ✨ Adicionado, ✨ Adicionado, Changelog - Runas (+12 more)
-
-### Community 396 - "Community 396"
-Cohesion: 0.10
-Nodes (19): 1. Backend: Endpoints Públicos Atualizados, 1. Endpoint de Produtos, 2. Endpoint de Categorias, 2. Frontend: Atualizado para Enviar empresaSlug, 3. Fix de Dados: Produtos Migrados para Empresa Correta, 3. Frontend, 📝 Arquivos Modificados, Backend (+11 more)
-
-### Community 397 - "Community 397"
-Cohesion: 0.10
-Nodes (19): Antes do Fix:, 📋 Arquivos Modificados, 🐛 Bug Fix: Endpoint Público Bloqueado, Catálogo Público:, Causa Raiz, Changelog - Fix: Nome Fantasia no Catálogo Público, 🚀 Como Testar, Data: 12/06/2026 (+11 more)
-
-### Community 398 - "Community 398"
-Cohesion: 0.10
-Nodes (19): 🎯 Benefícios, Campos, Campos Adicionados, 🔐 Compliance e LGPD, Exemplo de Consulta SQL, Exemplo de Consulta SQL, Histórico de Status, 🔄 Histórico de Status de Vendas (+11 more)
-
-### Community 399 - "Community 399"
-Cohesion: 0.10
-Nodes (19): 10. Cache Estratégico com Redis, 11. Testes Automatizados, 12. Documentação Swagger/OpenAPI, 13. Backup Automatizado, 1. Multi-Tenant (Empresa ID), 2. Banco de Dados Unificado ✅ IMPLEMENTADO, 3. Auditoria e Logs Estruturados, 4. Validação de CEP no Backend (+11 more)
-
-### Community 400 - "Community 400"
-Cohesion: 0.10
-Nodes (19): 🔍 Comandos de Monitoramento, 📊 Comparativo de Estratégias, Configurar PostgreSQL para Baixo Consumo, 🎯 Configurações por Tipo de VPS, Consumo Estimado (Antes da Consolidação), ✅ Estratégia 1: Banco de Dados Unificado — IMPLEMENTADO, 🔴 Estratégia 2: Otimizações de Runtime (Pendente), 🔴 Estratégia 3: Consolidar Microsserviços (Para VPS Pequenas) (+11 more)
-
-### Community 401 - "Community 401"
-Cohesion: 0.08
-Nodes (26): "Build failed", "Cannot connect to Docker daemon", Comandos Rápidos, 📊 Comandos Úteis, docker-compose.dev.yml, 🐳 Docker Quick Start - Frontend, Documentação Relacionada, 📁 Estrutura Docker (+18 more)
-
-### Community 402 - "Community 402"
-Cohesion: 0.11
-Nodes (19): 🏗️ Arquitetura, Características Técnicas, 📝 Comandos Úteis, 🤝 Contribuindo, 👥 Equipe, 📦 Estrutura do Projeto, Evolution API (WhatsApp), 🌐 Integrações (+11 more)
-
-### Community 403 - "Community 403"
-Cohesion: 0.11
-Nodes (18): 1. AuthContext (`frontend/src/contexts/AuthContext.tsx`), 2. OAuthCallbackPage (`frontend/src/pages/Auth/OAuthCallbackPage.tsx`), 3. ProtectedRoute e PublicRoute (`frontend/src/App.tsx`), Arquivos Modificados, Cenário com Problema, Cenário Esperado (Sucesso), Debug OAuth Redirect Issue, Hipótese 1: React StrictMode causando race condition (+10 more)
-
-### Community 404 - "Community 404"
-Cohesion: 0.11
-Nodes (19): API Gateway (15 arquivos), 🎯 Arquivos Mais Importantes, 🎉 Conclusão, Documentação (10 arquivos), 📈 Estatísticas Detalhadas, 🗂️ Estrutura Detalhada, Infraestrutura (2 arquivos), Linhas de Código por Categoria (+11 more)
-
-### Community 405 - "Community 405"
-Cohesion: 0.11
-Nodes (18): 1. AuthContext (`frontend/src/contexts/AuthContext.tsx`), 2. OAuthCallbackPage (`frontend/src/pages/Auth/OAuthCallbackPage.tsx`), 3. ProtectedRoute e PublicRoute (`frontend/src/App.tsx`), Arquivos Modificados, Cenário com Problema, Cenário Esperado (Sucesso), Debug OAuth Redirect Issue, Hipótese 1: React StrictMode causando race condition (+10 more)
-
 ### Community 406 - "Community 406"
 Cohesion: 0.11
-Nodes (18): Glossário - Runas, H, Health Check, HTTP Status Codes, I, Idempotência, Inventário, J (+10 more)
-
-### Community 407 - "Community 407"
-Cohesion: 0.11
-Nodes (18): 1. **Financeiro** (🔴 0%), 1. **Produtos** (✅ 100%), 2. **Estoque** (✅ 100%), 3. **Vendas** (✅ 100% - Nativo), 4. **Clientes** (✅ 100%), 5. **Empresas** (✅ 100%), Benefícios Alcançados ✅, Estratégia Adotada (+10 more)
+Nodes (18): Glossário - Runas, I, Idempotência, Inventário, J, JWT (JSON Web Token), O, OAuth2 (+10 more)
 
 ### Community 408 - "Community 408"
 Cohesion: 0.11
 Nodes (17): 10. **Próximos Passos Recomendados**, 1. **Verificar Configuração da Conta de Teste**, 2. **Verificar suas Credenciais**, 3. **Criar Novo Usuário de Teste com PIX**, 4. **Alternativa: Usar Produção**, 5. **Verificar Configuração Atual**, 6. **Documentação Oficial do Mercado Pago**, 7. **Workaround para Desenvolvimento** (+9 more)
-
-### Community 409 - "Community 409"
-Cohesion: 0.11
-Nodes (18): 📦 Arquivo de Documentação - Runas, ⚠️ Aviso Importante, 🔍 Como Encontrar Documentos Atualizados, `/documentacao-original/`, 📊 Estatísticas do Arquivo, 📂 Estrutura do Arquivo, Fase 1: Reorganizar Estrutura, Fase 2: Consolidar e Dividir (+10 more)
-
-### Community 410 - "Community 410"
-Cohesion: 0.11
-Nodes (17): 1. ✅ Bug do Submenu (Sidebar), 1. ✅ Campos Essenciais no Modelo Produto, 2. ✅ Ícones React Icons, 3. ✅ Variáveis SCSS, ✅ Categorias (8), Clientes, ✅ Clientes (15), 🚀 Como executar novamente (+9 more)
 
 ### Community 411 - "Community 411"
 Cohesion: 0.11
@@ -1907,83 +1425,27 @@ Nodes (18): Adaptações Mobile, 📱 Breakpoints Responsivos, ✅ Checklist de 
 
 ### Community 412 - "Community 412"
 Cohesion: 0.11
-Nodes (18): 📖 [01. Visão Geral](./01-visao-geral/), 🔧 [02. Setup e Instalação](./02-setup/), 🏗️ [03. Arquitetura](./03-arquitetura/), ⚙️ [04. Backend](./04-backend/), 🎨 [05. Frontend](./05-frontend/), 👨‍💻 [07. Desenvolvimento](./07-desenvolvimento/), 🔧 [09. Troubleshooting](./09-troubleshooting/), 📡 [10. Referência de APIs](./10-api-reference/) (+10 more)
+Nodes (18): 📖 [01. Visão Geral](./01-visao-geral/), 👨‍💻 [02. Desenvolvimento](./02-desenvolvimento/), 🔧 [02. Setup e Instalação](./02-setup/), 🏗️ [03. Arquitetura](./03-arquitetura/), ⚙️ [04. Backend](./04-backend/), 🎨 [05. Frontend](./05-frontend/), 🔧 [09. Troubleshooting](./09-troubleshooting/), 📡 [10. Referência de APIs](./10-api-reference/) (+10 more)
 
 ### Community 413 - "Community 413"
-Cohesion: 0.12
-Nodes (13): Commits (English), 💡 Convenções, Código (PT-BR), 📚 Documentação de Desenvolvimento, 🎯 Guias Rápidos, ✅ MVP Entregue (98%), Para Criar Componente, Para Implementar Nova Rota (+5 more)
+Cohesion: 0.17
+Nodes (10): Commits (English), 💡 Convenções, Código (PT-BR), 📚 Documentação de Desenvolvimento, ✅ MVP Entregue (98%), Próxima Implementação, 🔴 Próximas Entregas, 🚀 Quick Start - Frontend (+2 more)
 
 ### Community 414 - "Community 414"
-Cohesion: 0.12
-Nodes (17): Adicionar máscara a input existente, 📚 Arquitetura Implementada, Backend, ✅ CORRETO, ❌ ERRADO, 🎯 Fluxo Completo, Frontend, Guia: Máscaras e Validações (+9 more)
-
-### Community 415 - "Community 415"
-Cohesion: 0.12
-Nodes (16): Arquivos Afetados, Backend (Python), Componentes, Diretórios, Frontend (TypeScript/React), Mapeamento de Nomes, Modelos, Objetivo (+8 more)
-
-### Community 416 - "Community 416"
-Cohesion: 0.12
-Nodes (16): Código de Referência, Desktop, Implementações Futuras, Mobile, Nomenclatura Correta, Opção 1: Stepper Compacto Fixo no Topo, Opção 2: Stepper no Título da Seção, Opção 3: Progress Bar Linear (+8 more)
-
-### Community 417 - "Community 417"
-Cohesion: 0.12
-Nodes (16): 1. Proteção contra Múltiplas Execuções, 2. Redirecionamento Reativo, 3. Método setAuthUser no AuthContext, 4. Logs de Diagnóstico (Temporários), Arquivos Modificados, Causa Raiz Identificada, Fluxo Correto Após as Alterações, OAuth Redirect Fix - Resumo das Alterações (+8 more)
-
-### Community 418 - "Community 418"
-Cohesion: 0.12
-Nodes (16): 1. Proteção contra Múltiplas Execuções, 2. Redirecionamento Reativo, 3. Método setAuthUser no AuthContext, 4. Logs de Diagnóstico (Temporários), Arquivos Modificados, Causa Raiz Identificada, Fluxo Correto Após as Alterações, OAuth Redirect Fix - Resumo das Alterações (+8 more)
-
-### Community 419 - "Community 419"
-Cohesion: 0.12
-Nodes (16): 1. Login e obter token, 2. Criar um cliente, 3. Listar clientes, 🖥️ Acessar Interfaces Web, ✅ Checklist Rápido, 🔧 Comandos Úteis, 🔐 Credenciais Padrão, 📚 Documentação Completa (+8 more)
-
-### Community 420 - "Community 420"
-Cohesion: 0.12
-Nodes (15): 1. Remoção Imediata das Chaves ✅, 2. Pre-commit Hook Git ✅, 3. Kiro Hook ✅, 4. Documentação de Segurança ✅, Arquivos Afetados, ⚠️ Avaliação de Risco, 🛠️ Ações Corretivas Implementadas, 🎯 Chaves Expostas (+7 more)
+Cohesion: 0.20
+Nodes (10): ✅ CORRETO, ❌ ERRADO, 🎯 Fluxo Completo, Guia: Máscaras e Validações, Importar Validadores, ✨ Melhorias Futuras, 📝 Padrões de Envio ao Backend, 📚 Referências (+2 more)
 
 ### Community 421 - "Community 421"
-Cohesion: 0.12
-Nodes (16): 1. API Gateway (porta 8000), 2. Serviço de Clientes (porta 8001), 3. Serviço de Produtos (porta 8002), 4. Serviço de Estoque (porta 8003), 5. Serviço de Vendas (porta 8004), 6. Serviço Financeiro (porta 8005), 7. Serviço de Notificações (porta 8006), Arquitetura de Microsserviços (+8 more)
-
-### Community 422 - "Community 422"
-Cohesion: 0.12
-Nodes (16): 🏗️ Arquitetura Visual - Runas, Assíncrona (RabbitMQ), 📊 Camadas da Aplicação, Clientes, 🔄 Comunicação entre Serviços, 🎯 Conclusão, 🔄 Fluxo de Autenticação, 📅 Fluxo de Cobrança Automática (+8 more)
-
-### Community 423 - "Community 423"
-Cohesion: 0.12
-Nodes (15): Animações Suaves, 📱 Breakpoints Responsivos, Design System - ERP Runas Frontend, 📏 Espaçamento, Ferramentas Recomendadas, 🪟 Glassmorphism (Uso Sutil), Media Queries, Quando Usar Glassmorphism (+7 more)
+Cohesion: 0.11
+Nodes (18): 1. API Gateway (porta 8000), 2. Serviço de Empresas (porta 8001), 3. Serviço de Clientes (porta 8002), 4. Serviço de Produtos (porta 8003), 5. Serviço de Estoque (porta 8004), 6. Serviço de Vendas (porta 8007), 7. Serviço Financeiro (porta 8005), 8. Serviço de Notificações (porta 8006) (+10 more)
 
 ### Community 424 - "Community 424"
 Cohesion: 0.13
 Nodes (15): 1. Cadastrar Cliente Completo, 2. Criar Produto com Variantes, 3. Fluxo Completo de Venda, 4. Gestão de Estoque, 5. Relatório de Vendas, 6. Cobrança Automática, 7. Integração com Sistema Externo, Backup de Dados (+7 more)
 
-### Community 425 - "Community 425"
-Cohesion: 0.13
-Nodes (14): 1. Consultas (GET) — Apenas Ativos, 2. Cadastro (POST) — Reativação Inteligente, 3. Campos que Atualizam vs Mantêm na Reativação, 🎯 Aplicação, Clientes, Estrutura de Tabelas, 📊 Exemplo de Cenário, 🔧 Implementação Técnica (+6 more)
-
-### Community 426 - "Community 426"
-Cohesion: 0.13
-Nodes (15): Animações Suaves, 📱 Breakpoints Responsivos, Design System - ERP Runas Frontend, 🪟 Glassmorphism (Uso Sutil), 🌈 Gradientes (Uso Minimalista), Media Queries, Quando Usar Glassmorphism, Quando Usar Glow (+7 more)
-
 ### Community 427 - "Community 427"
-Cohesion: 0.14
-Nodes (14): 10. Exportação, 11. Lei Aplicável, 12. Acordo Integral, 13. Modificações, 1. Concessão de Licença, 2. Restrições, 3. Propriedade Intelectual, 4. Confidencialidade (+6 more)
-
-### Community 428 - "Community 428"
-Cohesion: 0.14
-Nodes (14): Atualizar `.env`, 📋 Checklist Completo de Setup, 🌐 Configuração Avançada do Ngrok, 🔐 Configuração de OAuth (Opcional), ❌ Cookies não funcionam, ❌ CORS errors, 📚 Documentação Adicional, Google Cloud Console (+6 more)
-
-### Community 429 - "Community 429"
-Cohesion: 0.14
-Nodes (13): 1. **Catálogo (LojaOnlinePublicoPage)** ✅ **Excelente**, ✅ **Acessibilidade**, **🔴 Alta Prioridade (Crítico para UX)**, 📱 Análise de Responsividade e UI/UX - Loja Online, 📊 Análise Detalhada por Página, 📏 Breakpoints Utilizados, ✅ Conclusão, ✅ **Design System Consistente** (+5 more)
-
-### Community 430 - "Community 430"
-Cohesion: 0.14
-Nodes (13): Arquivos Modificados, 📋 Checklist de Qualidade, 🔍 Contexto, Correção: Endpoints Públicos do Carrinho - Uso de empresa_slug, Diferença entre `get_empresa_id` e `get_empresa_id_from_slug`, Endpoints Já Corretos, 🎓 Lições Aprendidas, Por que essa correção é importante? (+5 more)
-
-### Community 431 - "Community 431"
-Cohesion: 0.14
-Nodes (13): 1. Validação de CPF no Backend, 2. CPFs Válidos Atualizados, 3. Dados Recriados, 🔧 Como Gerar CPFs Válidos, ✅ Correção: CPFs Válidos nos Seeds, Empresas/Comércio (7), 📝 Lições Aprendidas, Online (+5 more)
+Cohesion: 0.11
+Nodes (17): 10. Exportação, 11. Lei Aplicável, 12. Acordo Integral, 13. Modificações, 1. Concessão de Licença, 2. Restrições, 3. Propriedade Intelectual, 4. Confidencialidade (+9 more)
 
 ### Community 432 - "Community 432"
 Cohesion: 0.14
@@ -1994,52 +1456,8 @@ Cohesion: 0.15
 Nodes (12): **1. Desenvolvimento (aplicado):**, 1. **Uvicorn `--reload` (Principal Culpado)**, 2. **CHOKIDAR_USEPOLLING no Frontend**, 3. **Volumes Montados (Docker + Windows)**, 🚀 Aplicando as Mudanças, 🐛 Causas Identificadas, **Desenvolvimento (docker-compose.dev.yml)**, ✅ Otimizações Aplicadas (+4 more)
 
 ### Community 434 - "Community 434"
-Cohesion: 0.15
+Cohesion: 0.17
 Nodes (12): 1. Entidade: Cliente, 2. Entidade: Endereço, 3.1. Cliente com Crédito Insuficiente, 3. Casos de Uso, 📊 Estrutura de Dados, 📊 Estrutura de Dados, 📚 Referências, 💳 Regras de Crédito (+4 more)
-
-### Community 436 - "Community 436"
-Cohesion: 0.17
-Nodes (11): 1️⃣ **Desenvolvimento Local Simples** (Sem proxy), 2️⃣ **MVP com Domínio Real** (Cloudflare Tunnel) ⭐ RECOMENDADO, 3️⃣ **Desenvolvimento com Ngrok** (URL temporária), 4️⃣ **Produção em VPS** (Deploy real), 🎯 Cenários Comuns, 🔍 Como Saber Qual Está Rodando?, 📝 Credenciais de Acesso, 🚨 Erro Comum: "404 Not Found" no Login (+3 more)
-
-### Community 437 - "Community 437"
-Cohesion: 0.17
-Nodes (12): Ambos os Métodos, Ambos os Métodos, Banco de dados não conecta, ❌ "Bind for 0.0.0.0:80 failed: port is already allocated", Container não sobe, Método Localhost, Método Ngrok, ❌ "nginx: host not found in upstream" (+4 more)
-
-### Community 438 - "Community 438"
-Cohesion: 0.17
-Nodes (12): 📅 CRONOGRAMA SUGERIDO, Sprint 10 (1 semana) - Melhorias e Testes, Sprint 1 (2 semanas) - Clientes Frontend, Sprint 2 (2 semanas) - Produtos Frontend ✅, Sprint 2.5 (1-2 semanas) - Loja Online (E-commerce Básico) 🟡, Sprint 3 (2 semanas) - Estoque Frontend, Sprint 4 (3 semanas) - Vendas Backend ✅ CONCLUÍDO, Sprint 5 (2 semanas) - Vendas Frontend (+4 more)
-
-### Community 440 - "Community 440"
-Cohesion: 0.17
-Nodes (11): 1. `.gitignore`, 2. Pre-commit Hook, 3. Kiro Hook, 4. Documentation Agent, 🔒 Boas Práticas de Segurança - Runas ERP, 📝 Checklist Antes de Commitar, ⚠️ NUNCA Commite Segredos, ✅ O que fazer: (+3 more)
-
-### Community 441 - "Community 441"
-Cohesion: 0.17
-Nodes (11): A Reorganizar, Arquivos a Manter na Raiz, Arquivos a Remover/Consolidar, Benefícios da Nova Estrutura, Duplicados, Estrutura Proposta, Frontend, 📁 Nova Estrutura de Documentação (+3 more)
-
-### Community 442 - "Community 442"
-Cohesion: 0.18
-Nodes (11): 6. NOTIFICAÇÕES ✅ Implementado, 7. RELATÓRIOS E DASHBOARDS 🔴, 8. USUÁRIOS E PERMISSÕES 🟡, Backend - Implementado ✅, Backend - Melhorias Necessárias 🔴, Dashboards a Implementar 🔴, Frontend - Rotas a Implementar 🔴, Funcionalidades Implementadas ✅ (+3 more)
-
-### Community 443 - "Community 443"
-Cohesion: 0.18
-Nodes (11): 1. Novo Modelo `ClienteAuth`, 2. Novo Repository `ClienteAuthRepository`, 3. Novos Schemas, 4. JWT Atualizado, 5.1 Router de Cliente (`auth_cliente.py`), 5.2 Router Admin (`auth_admin.py`), 5. Novos Routers, 6. Router Original (`auth.py`) (+3 more)
-
-### Community 444 - "Community 444"
-Cohesion: 0.18
-Nodes (10): CHANGELOG - Vendas Implementation (com Multi-Tenancy), ✅ **CHECKLIST DE QUALIDADE**, **Contexto do Negócio**, **Estrutura de Isolamento:**, **Implementado:**, ✅ Implementação Completa, 🔒 **ISOLAMENTO MULTI-TENANCY**, 🎯 **PRÓXIMOS PASSOS** (+2 more)
-
-### Community 445 - "Community 445"
-Cohesion: 0.18
-Nodes (10): Arquivo Principal, Changelog - Runas, 🔄 Como Atualizar, 📝 Contribuir com o Changelog, 📚 Documentação de Versões, 📋 Formato do Changelog, 🔢 Versionamento Semântico, Versão Atual (+2 more)
-
-### Community 446 - "Community 446"
-Cohesion: 0.18
-Nodes (11): 🛒 Carrinho de Compras, 💳 Checkout Completo, 🚚 Entrega, 🎯 Funcionalidades Implementadas, 📦 Gestão de Estoque, 💰 Mercado Pago, 📱 Notificações WhatsApp, ⚙️ Painel Administrativo (+3 more)
-
-### Community 447 - "Community 447"
-Cohesion: 0.18
-Nodes (10): 1. Reiniciar o API Gateway, 2. Acessar o Catálogo, 3. Verificar o Título, Abrir Console do Navegador (F12), 🔍 Debug (se não funcionar), ✅ Fix Aplicado, 📞 Me Avise!, 🚀 PARA TESTAR AGORA: (+2 more)
 
 ### Community 448 - "Community 448"
 Cohesion: 0.18
@@ -2049,70 +1467,6 @@ Nodes (10): CRITICAL GAPS (MVP Blockers), Current Coverage, ❌ Current State: N
 Cohesion: 0.20
 Nodes (10): API Gateway (85% completo), Entregas, 🚧 Fase 1: MVP Backend (Em Progresso - Junho 2026), Objetivos, Serviço de Clientes (90% completo), Serviço de Estoque (95% completo), Serviço de Notificações (75% completo), Serviço de Produtos (95% completo) (+2 more)
 
-### Community 450 - "Community 450"
-Cohesion: 0.20
-Nodes (10): Arquivos Relacionados, Benefícios, Como Usar, Compatibilidade com Multitenancy, CONSOLIDAÇÃO POSTGRESQL ✅ Implementado, Economia de Recursos, Implementação ✅, Objetivo (+2 more)
-
-### Community 451 - "Community 451"
-Cohesion: 0.20
-Nodes (10): 1. `/estoque` - Dashboard, 2. `/estoque/produtos` - Lista, 3. `/estoque/movimentacoes` - Histórico, 4. `/estoque/entrada` - Entrada, 5. `/estoque/saida` - Saída, 6. `/estoque/ajuste` - Ajuste, 7. `/estoque/alertas` - Alertas, Backend Status (+2 more)
-
-### Community 452 - "Community 452"
-Cohesion: 0.20
-Nodes (9): ✅ **1. Skeleton Loading**, ✅ **2. Acessibilidade (WCAG 2.1)**, ✅ **3. Remoção do SKU**, ✅ **4. Fix Crítico: Variantes na API**, Alta Prioridade:, 📊 Impacto, ✅ Melhorias de UI/UX Aplicadas - Loja Online, 🎯 Próximas Melhorias (+1 more)
-
-### Community 453 - "Community 453"
-Cohesion: 0.20
-Nodes (9): Arquitetura Atualizada, ✅ Checklist de Implementação, 🚀 Deploy, 📚 Documentação Adicional, Exemplo de Integração Frontend, 🎯 Objetivo, Ordem de Deploy:, Separação de Autenticação: Operadores vs Clientes (+1 more)
-
-### Community 454 - "Community 454"
-Cohesion: 0.20
-Nodes (10): **1. Models** (`models/venda.py`), **2. Schemas** (`schemas/venda.py`), **3. Utils**, **4. Repositories** (`repositories/venda_repository.py`), **5. Services** (`services/venda_service.py`), **6. Routers** (`routers/vendas.py`), **7. Migration** (`alembic/versions/20260609_initial_vendas_multitenancy.py`), **8. Seed** (`seed.py`) (+2 more)
-
-### Community 455 - "Community 455"
-Cohesion: 0.20
-Nodes (10): 10. Usuário Não Está Sendo Criado, Causa, Passo 1: Verificar Logs do Backend, Passo 2: Se Não Houver Nenhuma Mensagem, Passo 3: Verificar se Há Erro, Passo 4: Se o Erro For "Email já cadastrado", Passo 5: Se o Erro For Outro, Passo 6: Se Não Estiver, Iniciar (+2 more)
-
-### Community 456 - "Community 456"
-Cohesion: 0.20
-Nodes (10): 2. Infinite Page Reload, Causa, 📋 Checklist de Verificação, 🔍 Comandos Úteis, Exemplo de Relatório de Erro, 📞 Quando Pedir Ajuda, Sintoma, Solução (+2 more)
-
-### Community 457 - "Community 457"
-Cohesion: 0.20
-Nodes (10): 11. Checklist de Validação, 12. Glossário Técnico, 8.1. Métricas Importantes, 8.2. Logs Estruturados, 8. Métricas e Monitoramento, ✅ Correções Aplicadas, 🔄 Diagramas de Sequência - Runas, ✅ Documentação Completa (+2 more)
-
-### Community 458 - "Community 458"
-Cohesion: 0.20
-Nodes (9): Antes:, 🔧 Arquivos Modificados, 🚀 Como Verificar, Consolidação PostgreSQL - 8 Containers → 1 Container, Depois:, 🔄 Migração de Dados (Se Necessário), 📊 Resumo das Mudanças, 🔄 Rollback (+1 more)
-
-### Community 459 - "Community 459"
-Cohesion: 0.20
-Nodes (9): Arquivos Criados, Endpoints Utilizados, 📦 Entregas Realizadas, 🎓 Lições Aprendidas, 📊 Métricas, 🎯 Objetivos da Sprint, 🔮 Próximos Passos, Páginas Implementadas (+1 more)
-
-### Community 460 - "Community 460"
-Cohesion: 0.20
-Nodes (10): 🔵 **Azul Primary (#3B82F6)**, Badges de Status - Exemplos de Uso, 🔷 **Ciano Secondary (#22D3EE)**, Cores Base (Dark Mode First), Cores Neutras (Dark Mode), Cores Semânticas por Contexto, 🟡 **Dourado Accent (#D4A017) - RARO!**, 🎨 Paleta de Cores - Runas Identity (+2 more)
-
-### Community 461 - "Community 461"
-Cohesion: 0.20
-Nodes (10): 1. Axios Interceptors, 2. React Query, 3. Context API para Auth, 4. SASS com Modules, 5. Path Aliases, 6. Dark Mode First, 7. OAuth Social Login, 8. Docker Multi-Stage Build (+2 more)
-
-### Community 462 - "Community 462"
-Cohesion: 0.20
-Nodes (10): 🔵 **Azul Primary (#3B82F6)**, Badges de Status - Exemplos de Uso, 🔷 **Ciano Secondary (#22D3EE)**, Cores Base (Dark Mode First), Cores Neutras (Dark Mode), Cores Semânticas por Contexto, 🟡 **Dourado Accent (#D4A017) - RARO!**, 🎨 Paleta de Cores - Runas Identity (+2 more)
-
-### Community 463 - "Community 463"
-Cohesion: 0.20
-Nodes (10): 1. Axios Interceptors, 2. React Query, 3. Context API para Auth, 4. SASS com Modules, 5. Path Aliases, 6. Dark Mode First, 7. OAuth Social Login, 8. Docker Multi-Stage Build (+2 more)
-
-### Community 464 - "Community 464"
-Cohesion: 0.18
-Nodes (10): 1. Instalar CLI, 2. Login, 3. Criar Tunnel, 4. Configurar, 5. Subir, 6. Testar, 📄 Documentação Completa, ✅ Resumo (+2 more)
-
-### Community 465 - "Community 465"
-Cohesion: 0.20
-Nodes (9): ✅ Checklist de Validação - MVP ERP Runas, Checklist Geral, 📋 Como Usar Este Checklist, Documentação, 📊 Estatísticas de Validação, Executar Script de Testes, 🧪 Fase 3: Testes Automatizados, 🎯 Fase 8: Validação Final (+1 more)
-
 ### Community 466 - "Community 466"
 Cohesion: 0.22
 Nodes (9): R, RabbitMQ, Rate Limiting, Redis, Refresh Token, Repository Pattern, Retry, Role (+1 more)
@@ -2121,61 +1475,9 @@ Nodes (9): R, RabbitMQ, Rate Limiting, Redis, Refresh Token, Repository Pattern,
 Cohesion: 0.22
 Nodes (9): S, Saldo Devedor, Schema, Seed, SKU (Stock Keeping Unit), Snapshot, Soft Delete, SQLAlchemy (+1 more)
 
-### Community 468 - "Community 468"
-Cohesion: 0.22
-Nodes (9): AUDITORIA E RASTREABILIDADE 🔴, BACKUP AUTOMATIZADO 🔴, DOCUMENTAÇÃO SWAGGER/OPENAPI 🔴, ERROR HANDLING PADRONIZADO 🔴, 🔧 QUALIDADE E SEGURANÇA DO BACKEND, RATE LIMITING POR USUÁRIO 🔴, TESTES AUTOMATIZADOS 🔴, VALIDAÇÃO DE CEP NO BACKEND 🔴 (+1 more)
-
-### Community 469 - "Community 469"
-Cohesion: 0.22
-Nodes (9): 1. Operador (ADMIN/OPERADOR), 2. Cliente Comprador, Criação:, 🔄 Fluxos de Autenticação, Login:, Login:, OAuth Google:, OAuth Microsoft: (+1 more)
-
 ### Community 470 - "Community 470"
 Cohesion: 0.22
 Nodes (8): Categorias (8), Clientes (20), Como executar, Dados que serão criados, Empresas (3), Ordem de execução, Produtos (30), 🌱 Seed de Dados Completo - Ambiente Realista
-
-### Community 471 - "Community 471"
-Cohesion: 0.22
-Nodes (9): 1. Erro: redirect_uri_mismatch, Causa, Passo 1: Obter URL atual do ngrok, Passo 2: Atualizar Google Console, Passo 3: Atualizar .env.development, Passo 4: Reconstruir Frontend, Passo 5: Fazer o mesmo para Microsoft Azure, Sintoma (+1 more)
-
-### Community 472 - "Community 472"
-Cohesion: 0.22
-Nodes (9): 6. Invalid State Error, Causa, Passo 1: Verificar se o Redis Está Rodando, Passo 2: Se Não Estiver, Iniciar, Passo 3: Verificar se o State Foi Salvo, Passo 4: Tentar Novamente, Passo 5: Se o Problema Persistir, Sintoma (+1 more)
-
-### Community 473 - "Community 473"
-Cohesion: 0.22
-Nodes (9): 8. Frontend Não Consegue Conectar com Backend, Causa, Passo 1: Verificar se o Backend Está Rodando, Passo 2: Verificar se a URL da API Está Correta, Passo 3: Verificar se o Backend Está Respondendo, Passo 4: Se Não Estiver Respondendo, Passo 5: Se o Backend Estiver Rodando mas Não Respondendo, Sintoma (+1 more)
-
-### Community 474 - "Community 474"
-Cohesion: 0.22
-Nodes (8): 📝 Arquivos Modificados, 🔍 Causa Raiz, 🧪 Como Testar, Fix: Produtos não aparecem no catálogo público, 🐛 Problema, ⚠️ Próximos Passos, 🎯 Resultado, ✅ Solução Implementada
-
-### Community 475 - "Community 475"
-Cohesion: 0.22
-Nodes (9): **2. Services**, **3. Routers** (`routers/loja.py`), **4. Main.py**, 🗂️ **ARQUIVOS IMPLEMENTADOS**, Endpoints de Carrinho (5), Endpoints de Checkout (1), Endpoints de Pedidos (2), `services/carrinho_service.py` (+1 more)
-
-### Community 476 - "Community 476"
-Cohesion: 0.22
-Nodes (8): 1. Modelos Atualizados, 2. Utilitários ✅, Categoria ✅, 📦 CHANGELOG - Produtos Multi-tenancy (WIP), ✅ Concluído, Produto ✅, 🔄 Próximos Passos, Variante ✅
-
-### Community 477 - "Community 477"
-Cohesion: 0.22
-Nodes (9): Configuração, Documentação, 📁 Estrutura de Arquivos Criados/Modificados, Jobs (Automações), Models, Repositories, Routers (Endpoints), Schemas (+1 more)
-
-### Community 478 - "Community 478"
-Cohesion: 0.22
-Nodes (9): 3.1. Criar Registro de Estoque (POST /api/estoque), 3.2. Entrada de Estoque (POST /api/estoque/entrada), 3.3. Saída de Estoque (POST /api/estoque/saida), 3.4. Reservar Estoque (POST /api/estoque/reservar), 3.5. Liberar Reserva (POST /api/estoque/liberar-reserva), 3.6. Confirmar Reserva (POST /api/estoque/confirmar-reserva), 3.7. Realizar Inventário (POST /api/estoque/inventario), 3.8. Finalizar Inventário e Ajustar Estoque (POST /api/estoque/inventario/{id}/finalizar) (+1 more)
-
-### Community 479 - "Community 479"
-Cohesion: 0.22
-Nodes (8): 📖 01 - Documentação Principal, 💻 02 - Desenvolvimento, 📝 03 - Changelogs, ⚙️ 04 - Configuração, 🔐 05 - Segurança, 🚀 Documentos na Raiz do Projeto, 📂 Estrutura de Pastas, 📚 Índice da Documentação - Runas ERP
-
-### Community 480 - "Community 480"
-Cohesion: 0.22
-Nodes (9): ♿ Acessibilidade, 🔐 Autenticação Robusta, 🎨 Design System Runas, ✨ Destaques da Implementação, 🐳 Docker Ready, 🌐 OAuth Social Login, 🚀 Performance, 📱 Responsividade (+1 more)
-
-### Community 481 - "Community 481"
-Cohesion: 0.22
-Nodes (9): ♿ Acessibilidade, 🔐 Autenticação Robusta, 🎨 Design System Runas, ✨ Destaques da Implementação, 🐳 Docker Ready, 🌐 OAuth Social Login, 🚀 Performance, 📱 Responsividade (+1 more)
 
 ### Community 482 - "Community 482"
 Cohesion: 0.22
@@ -2193,73 +1495,13 @@ Nodes (8): M, Markup, Mercado Pago, Microsserviço, Migration, Modalidade de Ent
 Cohesion: 0.25
 Nodes (8): 💡 Como Contribuir, 📞 Contato, Entregas, ✅ Fase 0: Fundação (Concluída - Maio 2026), Objetivos, 🔄 Processo de Atualização, Roadmap - Runas, 🎯 Visão Geral
 
-### Community 486 - "Community 486"
-Cohesion: 0.25
-Nodes (8): 10. INTEGRAÇÕES EXTERNAS 🔴, 11. MOBILE 🔴, 9. LOJA ONLINE / E-COMMERCE 🟡, A Implementar 🔴, A Implementar 🔴, Backend - Implementado ✅, Frontend - Em Implementação 🟡, 🎯 PRIORIDADE 3: Funcionalidades Avançadas
-
-### Community 487 - "Community 487"
-Cohesion: 0.25
-Nodes (8): 1. `/vendas` - Lista de Vendas, 2. `/vendas/nova` - PDV, 3. `/vendas/:id` - Detalhes da Venda, 4. Modais de Workflow, 5. `/vendas/relatorios` - Relatórios, Backend Status, Rotas a Implementar (5), 💰 VENDAS/PDV - 🔴 SPRINT 1 (PRÓXIMA)
-
-### Community 488 - "Community 488"
-Cohesion: 0.25
-Nodes (8): **1. Criar Venda**, **2. Confirmar Venda**, **3. Separar Venda**, **4. Entregar Venda**, **5. Finalizar Venda**, **6. Cancelar Venda**, **7. Adicionar Pagamento**, 🔧 **REGRAS DE NEGÓCIO IMPLEMENTADAS**
-
-### Community 489 - "Community 489"
-Cohesion: 0.25
-Nodes (8): 5. 401 Unauthorized ao Acessar /auth/me, Causa, Passo 1: Verificar se os Cookies Existem, Passo 2: Se os Cookies Não Estiverem Lá, Passo 3: Se os Cookies Estiverem Lá, Passo 4: Verificar se o Token Expirou, Sintoma, Solução
-
-### Community 490 - "Community 490"
-Cohesion: 0.25
-Nodes (7): 🗄️ Banco de Dados, Campos Adicionados em `vendas`, 🎉 Conclusão, 📚 Documentação de Referência, 🛒 Loja Online MVP - Implementação Completa, 📋 Resumo Executivo, Tabelas Criadas (8)
-
-### Community 491 - "Community 491"
-Cohesion: 0.25
-Nodes (8): 📝 Checklist de Implementação, FASE 1 - Foundation and Infrastructure ✅, FASE 2 - Advanced Stock Validation ✅, FASE 3 - Mercado Pago Integration ✅, FASE 4 - Complete Checkout ✅, FASE 5 - Jobs e Automações ✅, FASE 6 - Endpoints Administrativos ✅, FASE 7 - Melhorias e Ajustes Finais ✅
-
 ### Community 492 - "Community 492"
 Cohesion: 0.25
 Nodes (8): Accessibility, Color Palette (Dark Mode First), Component States, Responsive Breakpoints, Runas Brand Identity, Spacing, Typography, UI/UX Design Principles
 
-### Community 493 - "Community 493"
-Cohesion: 0.25
-Nodes (7): ❌ API Gateway — Seed do Admin (CRÍTICO — JÁ CORRIGIDO), ⚠️ Bcrypt Version Warning (INFORMATIVO), ✅ Correções Já Aplicadas, ❌ Evolution API — Conexão com Banco (NÃO-CRÍTICO), Resumo dos Problemas Encontrados, Serviços Essenciais para MVP (na data), 📊 Status Atual do MVP - Análise do Terminal
-
-### Community 494 - "Community 494"
-Cohesion: 0.25
-Nodes (8): Accessibility, Color Palette (Dark Mode First), Component States, Responsive Breakpoints, Runas Brand Identity, Spacing, Typography, UI/UX Design Principles
-
-### Community 495 - "Community 495"
-Cohesion: 0.25
-Nodes (8): Checklist de Qualidade Visual, Exemplos de Uso Correto, Exemplos de Uso INCORRETO, 🎨 Filosofia Visual Runas, Inspirações, O Que NÃO Somos, O Que Somos, Princípios de Design
-
-### Community 496 - "Community 496"
-Cohesion: 0.25
-Nodes (8): Fase 10: Testes e Ajustes (0% - 5h estimadas), Fase 3: Componentes Comuns (0% - 20h estimadas), Fase 5: Módulo Clientes (0% - 24h estimadas), Fase 6: Módulo Produtos (0% - 24h estimadas), Fase 7: Módulo Vendas (0% - 20h estimadas), Fase 8: Módulo Estoque (0% - 16h estimadas), Fase 9: Módulo Financeiro (0% - 16h estimadas), ⏳ Próximas Etapas
-
-### Community 497 - "Community 497"
-Cohesion: 0.25
-Nodes (8): Checklist de Qualidade Visual, Exemplos de Uso Correto, Exemplos de Uso INCORRETO, 🎨 Filosofia Visual Runas, Inspirações, O Que NÃO Somos, O Que Somos, Princípios de Design
-
-### Community 498 - "Community 498"
-Cohesion: 0.25
-Nodes (8): Fase 10: Testes e Ajustes (0% - 5h estimadas), Fase 3: Componentes Comuns (0% - 20h estimadas), Fase 5: Módulo Clientes (0% - 24h estimadas), Fase 6: Módulo Produtos (0% - 24h estimadas), Fase 7: Módulo Vendas (0% - 20h estimadas), Fase 8: Módulo Estoque (0% - 16h estimadas), Fase 9: Módulo Financeiro (0% - 16h estimadas), ⏳ Próximas Etapas
-
 ### Community 499 - "Community 499"
 Cohesion: 0.25
 Nodes (8): 🎯 Acesso Rápido, 🔍 Encontre o Que Procura, 📂 Estrutura Completa, 📚 Guia de Documentação - Runas ERP, Preciso começar agora!, Preciso entender o sistema completo, Preciso implementar uma feature, Preciso ver o que fazer
-
-### Community 500 - "Community 500"
-Cohesion: 0.25
-Nodes (8): 4.4. CRUD de Produtos, Buscar Produto por ID, Criar Categoria, Criar Fornecedor, Criar Produto, Criar Variante de Produto, Listar Categorias, Listar Produtos
-
-### Community 501 - "Community 501"
-Cohesion: 0.25
-Nodes (7): 🧪 2. Executar Testes Automatizados, ✅ 8. Checklist de Validação do MVP, 🎯 9. Próximos Passos, 🧪 Guia de Teste Manual do MVP - ERP Runas, 📋 Pré-requisitos, Resultado Esperado, 📞 Suporte
-
-### Community 502 - "Community 502"
-Cohesion: 0.25
-Nodes (8): 3.4. CRUD de Produtos, Buscar produto por ID, Criar categoria, Criar fornecedor, Criar produto, Criar variante de produto, Listar categorias, Listar produtos
 
 ### Community 503 - "Community 503"
 Cohesion: 0.29
@@ -2268,46 +1510,6 @@ Nodes (7): Entregas Planejadas, 📈 Fase 5: Pós-MVP - Melhorias (Outubro-Dezem
 ### Community 504 - "Community 504"
 Cohesion: 0.29
 Nodes (7): Entregas Planejadas, 🎯 Fase 6: Expansão (2027), Internacionalização, Mobile, Multi-tenant, Novos Módulos, Objetivos
-
-### Community 505 - "Community 505"
-Cohesion: 0.29
-Nodes (7): 0. LOJA ONLINE ✅ 100% COMPLETO!, Backend - Funcionalidades ✅ 100% COMPLETO, Documentação ✅, Features Implementadas ✅, Frontend - Componentes ✅ IMPLEMENTADOS, Frontend - Rotas ✅ 100% COMPLETO!, Preparação Multi-Tenant ✅
-
-### Community 506 - "Community 506"
-Cohesion: 0.29
-Nodes (7): **1. Aplicar Migration:**, **2. Popular com dados de teste:**, **3. Testar endpoints:**, 🚀 **COMO USAR**, **Confirmar Venda:**, **Criar Venda:**, **Listar Vendas:**
-
-### Community 507 - "Community 507"
-Cohesion: 0.29
-Nodes (7): 3. Página em Branco Após Callback, Causa, Passo 1: Verificar Console do Navegador, Passo 2: Verificar Logs do Backend, Passo 3: Soluções Específicas, Sintoma, Solução
-
-### Community 508 - "Community 508"
-Cohesion: 0.29
-Nodes (7): 4. Cookies Não Estão Sendo Setados, Causa, Passo 1: Verificar Logs do Backend, Passo 2: Testar Requisição de Login, Passo 3: Verificar Configuração do Backend, Sintoma, Solução
-
-### Community 509 - "Community 509"
-Cohesion: 0.29
-Nodes (7): 9. CORS Error, Causa, Passo 1: Verificar Configuração do Backend, Passo 2: Se Não Estiver, Adicionar a Configuração, Passo 3: Reconstruir Backend, Sintoma, Solução
-
-### Community 510 - "Community 510"
-Cohesion: 0.29
-Nodes (7): 1. [Visão Geral](./visao-geral.md), 2. [Microsserviços](./microsservicos.md), 3. [Tecnologias e Padrões](./tecnologias.md), Arquitetura do Runas, 🎯 Objetivo desta Documentação, 🚀 Quick Start, 📚 Índice da Documentação
-
-### Community 511 - "Community 511"
-Cohesion: 0.29
-Nodes (6): **1. Carrinho de Compras (Redis)**, 📐 **ARQUITETURA**, CHANGELOG - Loja Online (E-commerce) Implementation, ✅ **CHECKLIST DE QUALIDADE**, **Contexto**, ✅ Implementação Completa
-
-### Community 512 - "Community 512"
-Cohesion: 0.29
-Nodes (7): 1. Aplicar Migrations, 2. Configurar Variáveis de Ambiente, 3. Configurar Jobs (Cron ou Task Scheduler), 4. Configurar Taxa de Entrega, 5. Configurar Mercado Pago, 6. Testar Fluxo Completo, 🚀 Como Usar
-
-### Community 513 - "Community 513"
-Cohesion: 0.29
-Nodes (6): APIs Consumidas (11 endpoints), 🎊 Celebração, 📁 Estrutura Final, 🔗 Integração com Backend, 🎯 Objetivo da Sessão, 🎉 Resumo da Sessão - Loja Online Frontend Completa
-
-### Community 514 - "Community 514"
-Cohesion: 0.29
-Nodes (7): 1️⃣ Catálogo de Produtos, 2️⃣ Detalhes do Produto, 3️⃣ Carrinho de Compras, 4️⃣ Checkout (3 Steps) ⭐, 5️⃣ Rastreamento de Pedidos ⭐, 6️⃣ Meus Pedidos ⭐, 🎨 Funcionalidades Implementadas
 
 ### Community 515 - "Community 515"
 Cohesion: 0.29
@@ -2321,69 +1523,9 @@ Nodes (7): API Documentation, Component Documentation, Design Document: Frontend
 Cohesion: 0.29
 Nodes (7): Core, Forms & Validation, HTTP & API, State Management, Tech Stack, UI/Styling, Utils
 
-### Community 518 - "Community 518"
-Cohesion: 0.29
-Nodes (7): 1.1. Criar Cliente (POST /api/clientes), 1.2. Listar Clientes (GET /api/clientes), 1.3. Buscar Cliente por ID (GET /api/clientes/{id}), 1.4. Atualizar Cliente (PUT /api/clientes/{id}), 1.5. Adicionar Endereço (POST /api/clientes/{id}/enderecos), 1.6. Desativar Cliente (DELETE /api/clientes/{id}), 1. Operações de Cliente
-
-### Community 519 - "Community 519"
-Cohesion: 0.29
-Nodes (7): 3.9.1. Criar Carrinho (POST /api/carrinho), 3.9.2. Adicionar Item ao Carrinho (POST /api/carrinho/{token}/itens), 3.9.3. Remover Item do Carrinho (DELETE /api/carrinho/{token}/itens/{item_id}), 3.9.4. Finalizar Carrinho (Criar Pedido) (POST /api/carrinho/{token}/checkout), 3.9.5. Confirmar Pagamento e Converter Pedido em Venda (Webhook), 3.9.6. Cancelar Pedido (POST /api/pedidos/{id}/cancelar), 3.9. Operações de Carrinho e Pedido
-
-### Community 520 - "Community 520"
-Cohesion: 0.29
-Nodes (7): 6.1. Gestão de Reservas de Estoque, 6.2. Transações Distribuídas, 6.2. Transações Distribuídas, 6.3. Consistência Eventual, 6.3. Locks e Concorrência, 6.4. Idempotência, 6. Considerações de Implementação
-
-### Community 521 - "Community 521"
-Cohesion: 0.29
-Nodes (7): 1. Dashboard, 2. Clientes, 3. Produtos, 4. Estoque, 5. Vendas, 6. Financeiro, Key Features Design
-
 ### Community 522 - "Community 522"
 Cohesion: 0.67
 Nodes (3): get_current_user, get_current_user_info(), Retorna informações do usuário logado.
-
-### Community 523 - "Community 523"
-Cohesion: 0.29
-Nodes (7): Core, Forms & Validation, HTTP & API, State Management, Tech Stack, UI/Styling, Utils
-
-### Community 524 - "Community 524"
-Cohesion: 0.29
-Nodes (7): ♿ Acessibilidade, Contraste Mínimo (WCAG AA) - Dark Mode, Foco Visível (Keyboard Navigation), Redução de Movimento, Screen Readers, Touch Targets (Mobile), Verificação de Contraste
-
-### Community 525 - "Community 525"
-Cohesion: 0.29
-Nodes (7): Badges, Botões, Cards, 🔲 Componentes, Inputs, Modais, Tabelas
-
-### Community 526 - "Community 526"
-Cohesion: 0.29
-Nodes (7): ♿ Acessibilidade, Contraste Mínimo (WCAG AA) - Dark Mode, Foco Visível (Keyboard Navigation), Redução de Movimento, Screen Readers, Touch Targets (Mobile), Verificação de Contraste
-
-### Community 527 - "Community 527"
-Cohesion: 0.29
-Nodes (7): Badges, Botões, Cards, 🔲 Componentes, Inputs, Modais, Tabelas
-
-### Community 528 - "Community 528"
-Cohesion: 0.29
-Nodes (7): API Gateway, ✅ Checklist de Arquivos, Documentação, Infraestrutura, Microsserviços (6 serviços), Raiz, Shared
-
-### Community 529 - "Community 529"
-Cohesion: 0.29
-Nodes (7): 🎨 Arquitetura e Design, 📋 Documentos por Categoria, 🎨 Frontend, 📊 Gestão e Planejamento, 🚀 Implementação, 📐 Regras e Validações, 🧪 Testes e Validação
-
-### Community 530 - "Community 530"
-Cohesion: 0.29
-Nodes (7): 🚀 Documentação por Caso de Uso, "Quero começar a usar o sistema", "Quero configurar integrações", "Quero desenvolver novos recursos", "Quero entender a arquitetura", "Quero entender o que está implementado", "Quero testar o sistema"
-
-### Community 531 - "Community 531"
-Cohesion: 0.29
-Nodes (7): 4.1. Health Checks, 4.2. Autenticação, 4.5. Logout, 🔍 Fase 4: Testes Manuais Básicos, Login, Verificar Blacklist (Deve Falhar), Verificar Usuário Logado
-
-### Community 532 - "Community 532"
-Cohesion: 0.29
-Nodes (7): 📊 5. Endpoints Disponíveis, API Gateway (http://localhost:8000), Autenticação, Proxy para Clientes, Proxy para Produtos, Serviço Clientes (http://localhost:8001), Serviço Produtos (http://localhost:8002)
-
-### Community 533 - "Community 533"
-Cohesion: 0.33
-Nodes (3): Aviso de Marcas Registradas, Contato, Licença Proprietária - Runas
 
 ### Community 534 - "Community 534"
 Cohesion: 0.33
@@ -2401,86 +1543,6 @@ Nodes (6): Componentes, Entregas, 📅 Fase 2: MVP Frontend (Julho 2026), Infrae
 Cohesion: 0.33
 Nodes (6): Erros da API, Importar, Loading com Atualização, Opções Avançadas, 🔔 Sistema de Notificações (Toast), Uso Básico
 
-### Community 539 - "Community 539"
-Cohesion: 0.33
-Nodes (6): **1. Snapshot de Produtos**, **2. Reserva Separada de Estoque**, **3. Múltiplas Formas de Pagamento**, **4. Entidades Filhas sem empresa_id**, **5. Número de Venda Composto**, 📝 **DECISÕES DE DESIGN**
-
-### Community 540 - "Community 540"
-Cohesion: 0.33
-Nodes (6): 7. ngrok URL Muda Após Reinicialização, Causa, Opção 1: Atualizar Manualmente (Gratuito), Opção 2: Usar URL Fixa (Pago), Sintoma, Solução
-
-### Community 541 - "Community 541"
-Cohesion: 0.33
-Nodes (6): Teste 1: Fluxo Completo de Compra, Teste 2: Pagamento Misto, Teste 3: Timeouts, Teste 4: Taxa de Entrega, Teste 5: Rastreamento, 🧪 Testes Recomendados
-
-### Community 542 - "Community 542"
-Cohesion: 0.33
-Nodes (6): 2.1. Criar Produto (POST /api/produtos), 2.2. Criar Variante (POST /api/produtos/{id}/variantes), 2.3. Listar Produtos com Filtros (GET /api/produtos), 2.4. Vincular Fornecedor ao Produto (POST /api/fornecedores-produtos), 2.5. Atualizar Configuração de Catálogo (PUT /api/produtos/{id}/catalogo), 2. Operações de Produto
-
-### Community 543 - "Community 543"
-Cohesion: 0.18
-Nodes (6): 🎯 Arquitetura, 🔧 Comandos Úteis, 🌐 Configuração com Cloudflare Tunnel (Local + Domínio), 💰 Custo, O que é Cloudflare Tunnel?, ✅ Pronto!
-
-### Community 544 - "Community 544"
-Cohesion: 0.29
-Nodes (7): Desenvolvimento, Docker e Docker Compose, Node.js (Frontend), Produção, Python (Apenas para desenvolvimento sem Docker), 🖥️ Requisitos de Software, Sistema Operacional
-
-### Community 545 - "Community 545"
-Cohesion: 0.33
-Nodes (6): 1. Infraestrutura Base (100%), 2. Autenticação (100%), 3. Layout (100%), 4. Design System (100%), 5. Dashboard (20%), ✅ O Que Foi Implementado
-
-### Community 546 - "Community 546"
-Cohesion: 0.33
-Nodes (6): 📁 Arquivos Criados, Configuração (10 arquivos), Código Fonte (28 arquivos), Docker (4 arquivos), Documentação (1 arquivo), Documentação Técnica (5 arquivos)
-
-### Community 547 - "Community 547"
-Cohesion: 0.33
-Nodes (6): Documentação Disponível:, 🐛 Issues Conhecidos, 📝 Notas Importantes, Para Continuar o Desenvolvimento:, 📊 Progresso Geral, Status da Implementação - Frontend ERP Runas
-
-### Community 548 - "Community 548"
-Cohesion: 0.33
-Nodes (6): 1. Infraestrutura Base (100%), 2. Autenticação (100%), 3. Layout (100%), 4. Design System (100%), 5. Dashboard (20%), ✅ O Que Foi Implementado
-
-### Community 550 - "Community 550"
-Cohesion: 0.33
-Nodes (6): 🎯 Guia Rápido por Perfil, 🏗️ Para Arquitetos, 👨‍💻 Para Desenvolvedores, 🎨 Para Desenvolvedores Frontend, 📊 Para Product Owners / Gestores, 🧪 Para QA / Testers
-
-### Community 551 - "Community 551"
-Cohesion: 0.33
-Nodes (6): 📋 Arquivos Movidos, Arquivos Removidos, Da Raiz para `docs/historico/`, Da Raiz para `docs/mvp/`, Da Raiz para `scripts/`, Da Raiz para `tests/`
-
-### Community 552 - "Community 552"
-Cohesion: 0.33
-Nodes (6): 4.3. CRUD de Clientes, Adicionar Endereço, Atualizar Cliente, Buscar Cliente por ID, Criar Cliente, Listar Clientes (Vazio Inicialmente)
-
-### Community 553 - "Community 553"
-Cohesion: 0.33
-Nodes (6): 3.1. Health Checks, 3.2. Autenticação, 3.5. Logout, 🔍 3. Testes Manuais com cURL, Definir variável de ambiente (facilita testes), Login (obter token)
-
-### Community 554 - "Community 554"
-Cohesion: 0.33
-Nodes (6): 3.3. CRUD de Clientes, Adicionar endereço ao cliente, Atualizar cliente, Buscar cliente por ID, Criar cliente, Listar clientes
-
-### Community 555 - "Community 555"
-Cohesion: 0.33
-Nodes (6): 🐛 6. Troubleshooting, Container não sobe, Erro 401 Unauthorized, Erro 503 Service Unavailable, Erro de conexão com banco de dados, Limpar tudo e recomeçar
-
-### Community 556 - "Community 556"
-Cohesion: 0.18
-Nodes (11): 🔌 [API-EXAMPLES.md](./API-EXAMPLES.md), 🏗️ [DESIGN.md](./DESIGN.md), 🎨 [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md), 🔧 [DOCKER.md](./DOCKER.md), 📚 Documentação, ⭐ [IMPLEMENTATION-LOG.md](./IMPLEMENTATION-LOG.md) - **LOG DE IMPLEMENTAÇÃO**, 🔐 [OAUTH-SETUP.md](./OAUTH-SETUP.md), ✅ [PREREQUISITES.md](./PREREQUISITES.md) (+3 more)
-
-### Community 557 - "Community 557"
-Cohesion: 0.20
-Nodes (10): 6.1. Verificar Logs, 6.2. Renovar Certificado Manualmente, 6.3. Reverter para Desenvolvimento, 6.4. Problemas Comuns, 6.5. Monitoring, 6. Manutenção e Troubleshooting, DNS não propaga, Erro: "502 Bad Gateway" (+2 more)
-
-### Community 558 - "Community 558"
-Cohesion: 0.40
-Nodes (5): Acessar a Aplicação, Instalação em 3 Passos, Login Padrão, Pré-requisitos, 🚀 Quick Start
-
-### Community 559 - "Community 559"
-Cohesion: 0.40
-Nodes (5): Autenticação, Categorias (via /api/categorias), Clientes (via /api/clientes), 🎯 Endpoints Principais, Produtos (via /api/produtos)
-
 ### Community 560 - "Community 560"
 Cohesion: 0.40
 Nodes (5): D, Dark Mode, Deduplicação, Docker Compose, Domain Event
@@ -2497,10 +1559,6 @@ Nodes (5): T, Toast, Token, Transação, TypeScript
 Cohesion: 0.40
 Nodes (5): Longo Prazo (2028+), MVP (Fase 1-4), 📊 Métricas de Sucesso, Progresso Atual (Junho 2026), Pós-MVP (Fase 5-6)
 
-### Community 564 - "Community 564"
-Cohesion: 0.24
-Nodes (9): criar_estoque(), Cria um novo registro de estoque., EstoqueBase, EstoqueCreate, EstoqueResponse, Schema base de Estoque., Schema para criar estoque., Schema de resposta de Estoque. (+1 more)
-
 ### Community 565 - "Community 565"
 Cohesion: 0.40
 Nodes (5): 🎨 Componente MaskedInput, Exemplo Completo, Máscaras Disponíveis no Componente, Props do MaskedInput, Uso Básico
@@ -2508,74 +1566,6 @@ Nodes (5): 🎨 Componente MaskedInput, Exemplo Completo, Máscaras Disponíveis
 ### Community 566 - "Community 566"
 Cohesion: 0.40
 Nodes (5): Checklist, 🎨 Frontend, Guia Principal, Guias Específicos, 📋 Índice de Documentos
-
-### Community 567 - "Community 567"
-Cohesion: 0.40
-Nodes (5): 1. Isolamento de Dados, 2. Controle de Acesso, 3. JWT com Tipo, 4. Multi-tenancy, 🔐 Segurança
-
-### Community 568 - "Community 568"
-Cohesion: 0.40
-Nodes (5): 1. OAuth Deprecated, 2. Register Deprecated, 3. JWT Payload Mudou, 4. Frontend Login, ⚠️ Breaking Changes
-
-### Community 569 - "Community 569"
-Cohesion: 0.40
-Nodes (5): 1. Remover OAuth Deprecated (v3.0.0), 2. Frontend da Loja Online, 3. Middleware de Autorização, 4. Testes, 📝 TODOs Futuros
-
-### Community 570 - "Community 570"
-Cohesion: 0.40
-Nodes (5): **1. Serviço de Produtos**, **2. Serviço de Clientes**, **3. Serviço de Estoque**, **4. Serviço de Financeiro (futuro)**, 🔗 **INTEGRAÇÕES COM OUTROS SERVIÇOS**
-
-### Community 571 - "Community 571"
-Cohesion: 0.40
-Nodes (5): **1. VENDA (Entidade Raiz)**, **2. ITEM_VENDA (Filho)**, **3. PAGAMENTO_VENDA (Filho - múltiplos)**, **4. RESERVA_ESTOQUE_VENDA (Controle)**, 📐 **MODELO DE DADOS**
-
-### Community 572 - "Community 572"
-Cohesion: 0.40
-Nodes (5): **Arquivos Criados:**, **Cobertura de Casos de Uso:**, 📈 **ESTATÍSTICAS**, **Funcionalidades:**, **Linhas de Código:**
-
-### Community 574 - "Community 574"
-Cohesion: 0.40
-Nodes (5): **1. Cliente navega na loja**, **2. Cliente adiciona produtos**, **3. Cliente finaliza compra**, **4. Cliente rastreia pedido**, 🔄 **FLUXO COMPLETO DA LOJA**
-
-### Community 575 - "Community 575"
-Cohesion: 0.40
-Nodes (5): **1. Com Vendas**, **2. Com Produtos**, **3. Com Estoque**, **4. Com Redis**, 🎯 **INTEGRAÇÕES**
-
-### Community 576 - "Community 576"
-Cohesion: 0.40
-Nodes (5): **1. Cupons de Desconto**, **2. Múltiplos Endereços**, **3. Cálculo de Frete**, **4. Gateway de Pagamento**, 🔮 **FUNCIONALIDADES FUTURAS**
-
-### Community 577 - "Community 577"
-Cohesion: 0.40
-Nodes (5): **1. Redis vs PostgreSQL para Carrinho**, **2. Cookie vs LocalStorage para Sessão**, **3. Checkout Simplificado**, **4. Cliente Opcional**, 📝 **DECISÕES DE DESIGN**
-
-### Community 578 - "Community 578"
-Cohesion: 0.40
-Nodes (5): **1. Sessão**, **2. Validações**, **3. Performance**, **4. Observabilidade**, 🔒 **SEGURANÇA E BOAS PRÁTICAS**
-
-### Community 579 - "Community 579"
-Cohesion: 0.40
-Nodes (5): Administração - Entrega, Administração - Pagamento, 📊 Endpoints Criados, Loja Online (Público), Webhooks
-
-### Community 580 - "Community 580"
-Cohesion: 0.40
-Nodes (5): Credenciais, Multi-tenancy, Race Conditions, 🔒 Segurança, Validações
-
-### Community 581 - "Community 581"
-Cohesion: 0.40
-Nodes (5): 1. Hook Customizado, 2. Páginas Completas, 3. Estilos (SCSS), 📦 Componentes Criados/Atualizados, ✅ O Que Foi Implementado
-
-### Community 582 - "Community 582"
-Cohesion: 0.40
-Nodes (5): 1. Hook `useCarrinho`, 2. Formatação Automática, 3. Steps no Checkout, 4. Timeline de Status, 💡 Destaques Técnicos
-
-### Community 583 - "Community 583"
-Cohesion: 0.40
-Nodes (5): ✅ Checklist Final, Código, Funcionalidades, Integração, UI/UX
-
-### Community 584 - "Community 584"
-Cohesion: 0.40
-Nodes (5): Cores por Status, 🎨 Design & UX, Estados Visuais, Formatação Automática, Responsividade
 
 ### Community 585 - "Community 585"
 Cohesion: 0.40
@@ -2589,97 +1579,9 @@ Nodes (5): Build, CI/CD, Deployment, Docker, Environment Variables
 Cohesion: 0.40
 Nodes (5): Bundle Optimization, Code Splitting, Image Optimization, Performance Optimization, React Query Configuration
 
-### Community 588 - "Community 588"
-Cohesion: 0.40
-Nodes (5): 5.1. Padrões de Autenticação, 5.2. Padrões de Validação, 5.3. Padrões de Resposta, 5.4. Padrões de Eventos (RabbitMQ), 5. Resumo de Padrões e Convenções
-
-### Community 589 - "Community 589"
-Cohesion: 0.33
-Nodes (5): apiPublica, Carrinho, ItemCarrinho, UseCarrinhoProps, UseCarrinhoReturn
-
-### Community 590 - "Community 590"
-Cohesion: 0.22
-Nodes (9): "Cannot connect to Docker daemon", "docker: command not found", "docker-compose: command not found", "node: command not found", "npm: command not found", "Permission denied", "Port already in use", 🆘 Problemas Comuns (+1 more)
-
-### Community 591 - "Community 591"
-Cohesion: 0.40
-Nodes (5): Bundle Optimization, Code Splitting, Image Optimization, Performance Optimization, React Query Configuration
-
-### Community 592 - "Community 592"
-Cohesion: 0.40
-Nodes (5): Empty, Error, 🎯 Estados de Componentes, Loading, Success
-
-### Community 593 - "Community 593"
-Cohesion: 0.40
-Nodes (5): Fonte, Line Height, Pesos, Tamanhos, 📝 Tipografia
-
-### Community 594 - "Community 594"
-Cohesion: 0.22
-Nodes (8): 1. Cloudflare Tunnel Token, 📋 Arquivos Disponíveis, 🎯 Como Usar, 🔐 Configuração Necessária, 📝 Credenciais Padrão, ✅ **Desenvolvimento/MVP (Padrão)**, 🐳 Docker Compose - Guia de Uso, 🔍 Verificar Status
-
-### Community 595 - "Community 595"
-Cohesion: 0.25
-Nodes (5): CheckoutRequest, Schema para processar checkout., Valida que endereço é obrigatório para DELIVERY., Valida que um dos dois (cliente_id ou cliente_novo) deve ser fornecido., Valida pagamentos (valores mínimos e formas).
-
-### Community 596 - "Community 596"
-Cohesion: 0.40
-Nodes (5): 🚀 Como Executar, Desenvolvimento (com hot reload), Login, Produção, Pré-requisitos
-
-### Community 597 - "Community 597"
-Cohesion: 0.40
-Nodes (5): Empty, Error, 🎯 Estados de Componentes, Loading, Success
-
-### Community 598 - "Community 598"
-Cohesion: 0.40
-Nodes (5): Fonte, Line Height, Pesos, Tamanhos, 📝 Tipografia
-
-### Community 599 - "Community 599"
-Cohesion: 0.40
-Nodes (5): Fase 10: Testes e Refinamentos, TASK-025: Implementar Testes Unitários, TASK-026: Otimizações de Performance, TASK-027: Acessibilidade, TASK-028: Documentação
-
-### Community 600 - "Community 600"
-Cohesion: 0.40
-Nodes (5): Fase 2: Autenticação e Layout, TASK-004: Implementar AuthContext, TASK-005: Criar Página de Login, TASK-006: Criar Layout Principal, TASK-007: Configurar Rotas
-
-### Community 601 - "Community 601"
-Cohesion: 0.40
-Nodes (5): Fase 4: Módulo de Clientes, TASK-010: Criar API Service de Clientes, TASK-011: Criar Página de Lista de Clientes, TASK-012: Criar Formulário de Cliente, TASK-013: Criar Página de Detalhes do Cliente
-
-### Community 602 - "Community 602"
-Cohesion: 0.40
-Nodes (5): 1. Começando, 2. Entendendo a Arquitetura, 3. Desenvolvendo, 4. Testando, 🔍 Como Navegar no Projeto
-
-### Community 603 - "Community 603"
-Cohesion: 0.40
-Nodes (5): 📦 Arquivos por Funcionalidade, Autenticação (API Gateway), Documentação, Infraestrutura, Microsserviços (Base)
-
-### Community 604 - "Community 604"
-Cohesion: 0.40
-Nodes (5): ✅ Benefícios da Nova Organização, Para Desenvolvedores, Para Manutenção, Para Novos Usuários, Para Testadores
-
-### Community 605 - "Community 605"
-Cohesion: 0.40
-Nodes (5): Autenticação, Cliente, 🔐 Fase 6: Segurança e Validações, Produto, Validações de Dados
-
-### Community 606 - "Community 606"
-Cohesion: 0.40
-Nodes (5): 🚀 1. Subir o Ambiente, Opção A: Usando Makefile (Recomendado), Opção B: Usando Docker Compose diretamente, ⏱️ Tempo de Inicialização, ✅ Verificar se subiu corretamente
-
-### Community 607 - "Community 607"
-Cohesion: 0.40
-Nodes (5): 📝 7. Credenciais Padrão, PostgreSQL, RabbitMQ, Redis, Usuário Admin (API Gateway)
-
 ### Community 608 - "Community 608"
 Cohesion: 0.40
 Nodes (4): Comandos, Como Rodar os Testes - Runas ERP MVP, Pré-requisitos, Testes Prioritários para MVP
-
-### Community 609 - "Community 609"
-Cohesion: 0.50
-Nodes (4): 🟡 Componentes Backend Completos (Frontend Pendente), ✅ Componentes Completos (Backend + Frontend), 🔴 Próximos Módulos, 📊 Status do Sistema (Junho 2026)
-
-### Community 610 - "Community 610"
-Cohesion: 0.50
-Nodes (4): 📚 Documentação, Documentação Essencial, Documentação Técnica, Testes
 
 ### Community 611 - "Community 611"
 Cohesion: 0.50
@@ -2697,53 +1599,9 @@ Nodes (4): E, Endpoint, Evolution API, Exchange
 Cohesion: 0.50
 Nodes (4): V, Variante, Vencimento, Vite
 
-### Community 615 - "Community 615"
-Cohesion: 0.50
-Nodes (4): Componentes (18), Features Principais, 🛒 Loja Online - ✅ COMPLETO, Rotas (6)
-
-### Community 616 - "Community 616"
-Cohesion: 0.50
-Nodes (4): 🚀 Priorização, Sprint 1: Vendas/PDV 🔥 URGENTE, Sprint 2: Estoque 🔥 ALTA, Sprint 3: Melhorias UX 🟡 MÉDIA
-
 ### Community 617 - "Community 617"
 Cohesion: 0.50
 Nodes (4): Importar Funções, Máscaras Disponíveis, Remover Máscaras, 🎭 Usando Máscaras
-
-### Community 618 - "Community 618"
-Cohesion: 0.50
-Nodes (4): **1. Frontend - Adicionar ao Carrinho**, **2. Frontend - Checkout**, **3. Frontend - Rastrear Pedido**, 🚀 **COMO USAR**
-
-### Community 619 - "Community 619"
-Cohesion: 0.50
-Nodes (4): **1. Schemas** (`schemas/loja.py`), Carrinho, Checkout, Pedidos
-
-### Community 620 - "Community 620"
-Cohesion: 0.50
-Nodes (4): **Arquivos Criados**:, 📊 **ESTATÍSTICAS**, **Funcionalidades**:, **Linhas de Código**:
-
-### Community 621 - "Community 621"
-Cohesion: 0.50
-Nodes (4): **Backend**, **Frontend**, **Melhorias**, 🎯 **PRÓXIMOS PASSOS**
-
-### Community 622 - "Community 622"
-Cohesion: 0.29
-Nodes (6): 🐛 O Problema, 🐳 Por que arquivos não sincronizavam?, ⚡ Por que não montar tudo?, 🔧 Quando precisar rebuild, 🛠️ Troubleshooting, 📋 Volumes Configurados
-
-### Community 623 - "Community 623"
-Cohesion: 0.50
-Nodes (4): Antes da Sessão, Depois da Sessão, 🎯 Progresso Geral do Projeto, Próximos Módulos
-
-### Community 624 - "Community 624"
-Cohesion: 0.50
-Nodes (4): 🏆 Conquistas, Negócio, Técnicas, UX
-
-### Community 625 - "Community 625"
-Cohesion: 0.50
-Nodes (4): Código, Funcionalidades, 📊 Métricas, Tempo
-
-### Community 626 - "Community 626"
-Cohesion: 0.50
-Nodes (4): O Que o Cliente Pode Fazer Agora?, O Que o Lojista Pode Fazer Agora?, 🎉 Resultado Final, Status da Loja Online
 
 ### Community 627 - "Community 627"
 Cohesion: 0.50
@@ -2761,58 +1619,6 @@ Nodes (4): E2E Tests (Playwright - Opcional), Integration Tests (React Testing L
 Cohesion: 0.50
 Nodes (4): HTTPS Only, Input Sanitization, Security, Token Storage
 
-### Community 631 - "Community 631"
-Cohesion: 0.50
-Nodes (4): 10.1. Máquina de Estados - Reserva de Estoque, 10.2. Fluxo Visual: Carrinho → Pedido → Venda, 10.3. Tabela Comparativa: Operações de Estoque, 10. Diagrama de Estados do Estoque
-
-### Community 632 - "Community 632"
-Cohesion: 0.50
-Nodes (4): 4.1. Fluxo Completo: Criar Venda com Estoque, 4.2. Fluxo: Alerta de Estoque Baixo com Notificação, 4.3. Fluxo: Verificação de Lotes Vencidos (Job Agendado), 4. Fluxos Integrados
-
-### Community 633 - "Community 633"
-Cohesion: 0.50
-Nodes (4): 7.1. Token Expirado, 7.2. Estoque Insuficiente, 7.3. Cliente Bloqueado, 7. Fluxos de Erro Comuns
-
-### Community 634 - "Community 634"
-Cohesion: 0.50
-Nodes (4): Analytics, Error Tracking, Monitoring, Performance Monitoring
-
-### Community 635 - "Community 635"
-Cohesion: 0.50
-Nodes (4): Architecture, Component Architecture, Data Flow, High-Level Architecture
-
-### Community 636 - "Community 636"
-Cohesion: 0.29
-Nodes (6): Backend, 📝 Falta Fazer, Frontend, Implementação OAuth e Registro no Checkout, ✅ Já Implementado, 🧪 Testando
-
-### Community 639 - "Community 639"
-Cohesion: 0.50
-Nodes (4): Acessibilidade, Decisões de Arquitetura, 📝 Notas Técnicas, Padrões de Código
-
-### Community 640 - "Community 640"
-Cohesion: 0.50
-Nodes (4): 🔧 Configuração Necessária, Para Desenvolvimento, Para Docker, Para OAuth (Opcional)
-
-### Community 641 - "Community 641"
-Cohesion: 0.50
-Nodes (4): Curto Prazo (Fases 5-9), Imediato (Fase 3), Médio Prazo, 🎯 Próximos Passos
-
-### Community 642 - "Community 642"
-Cohesion: 0.50
-Nodes (4): Carga Básica, 📊 Fase 7: Performance e Estabilidade, Health Checks Contínuos, Logs Limpos
-
-### Community 643 - "Community 643"
-Cohesion: 0.50
-Nodes (4): 🐳 Fase 2: Inicialização dos Serviços, Subir Containers, Verificar Logs (Sem Erros Críticos), Verificar Status dos Containers
-
-### Community 644 - "Community 644"
-Cohesion: 0.50
-Nodes (4): 🖥️ Fase 5: Interfaces Web, pgAdmin, RabbitMQ Management, Swagger UI (API Docs)
-
-### Community 645 - "Community 645"
-Cohesion: 0.50
-Nodes (4): 🖥️ 4. Acessar Interfaces Web, Evolution API (WhatsApp), pgAdmin (Gerenciamento de Banco de Dados), RabbitMQ Management
-
 ### Community 646 - "Community 646"
 Cohesion: 0.50
 Nodes (3): ✅ Completed, 🔴 Remaining (3-4 hours), Test Implementation Status - 23/06/2026
@@ -2820,18 +1626,6 @@ Nodes (3): ✅ Completed, 🔴 Remaining (3-4 hours), Test Implementation Status
 ### Community 647 - "Community 647"
 Cohesion: 0.50
 Nodes (3): How to Run, Test Files: 11 created, ✅ Tests Ready to Run!
-
-### Community 648 - "Community 648"
-Cohesion: 0.67
-Nodes (3): 🔐 Autenticação e Autorização, Fluxo de Autenticação, Roles Disponíveis
-
-### Community 649 - "Community 649"
-Cohesion: 0.67
-Nodes (3): Fluxo de Venda Fiada, Fluxo de Venda à Vista, 🔄 Fluxos Principais
-
-### Community 650 - "Community 650"
-Cohesion: 0.67
-Nodes (3): 🧪 Testes, Testes Automatizados, Testes Manuais
 
 ### Community 651 - "Community 651"
 Cohesion: 0.67
@@ -2841,10 +1635,6 @@ Nodes (3): G, Glassmorphism, Glow Effect
 Cohesion: 0.67
 Nodes (3): L, Limite de Crédito, Lote
 
-### Community 653 - "Community 653"
-Cohesion: 0.29
-Nodes (7): API Documentation, Component Documentation, Design Document: Frontend ERP Runas, Documentation, Folder Structure, Next Steps, Overview
-
 ### Community 654 - "Community 654"
 Cohesion: 0.67
 Nodes (3): Entregas, 🧪 Fase 3: Testes e Qualidade (Agosto 2026), Objetivos
@@ -2853,205 +1643,29 @@ Nodes (3): Entregas, 🧪 Fase 3: Testes e Qualidade (Agosto 2026), Objetivos
 Cohesion: 0.67
 Nodes (3): Entregas, 🚀 Fase 4: Deploy e Lançamento (Setembro 2026), Objetivos
 
-### Community 656 - "Community 656"
-Cohesion: 0.67
-Nodes (3): 1. LoginPage Atualizado, Frontend, 📋 Mudanças Implementadas
-
-### Community 657 - "Community 657"
-Cohesion: 0.67
-Nodes (3): 1. Rodar Migration, 2. Dados Existentes (Opcional), 📦 Migrações Necessárias
-
-### Community 658 - "Community 658"
-Cohesion: 0.67
-Nodes (3): 🎓 Aprendizados, Boas Práticas Aplicadas, Padrões de E-commerce
-
-### Community 659 - "Community 659"
-Cohesion: 0.67
-Nodes (3): Atualizados, 📚 Documentação Criada/Atualizada, Novos Documentos
-
-### Community 661 - "Community 661"
-Cohesion: 0.67
-Nodes (3): Imediato, Próximo Módulo, 🚀 Próximos Passos
-
-### Community 662 - "Community 662"
-Cohesion: 0.67
-Nodes (3): 9.1. Melhorias nos Diagramas, 9.2. Novos Fluxos a Documentar, 9. Próximos Passos
-
-### Community 663 - "Community 663"
-Cohesion: 0.67
-Nodes (3): Adaptações Mobile, 📱 Mobile First, Princípios
-
-### Community 664 - "Community 664"
-Cohesion: 0.67
-Nodes (3): Container, Grid, 📐 Layout
-
-### Community 665 - "Community 665"
-Cohesion: 0.67
-Nodes (3): 📏 Espaçamento, Sistema de Espaçamento (8px base), Uso
-
-### Community 666 - "Community 666"
-Cohesion: 0.67
-Nodes (3): Ferramentas Recomendadas, 📚 Recursos Adicionais, Referências de Design
-
-### Community 667 - "Community 667"
-Cohesion: 0.67
-Nodes (3): Adaptações Mobile, 📱 Mobile First, Princípios
-
-### Community 668 - "Community 668"
-Cohesion: 0.67
-Nodes (3): Container, Grid, 📐 Layout
-
-### Community 669 - "Community 669"
-Cohesion: 0.67
-Nodes (3): 🌈 Gradientes (Uso Minimalista), Quando Usar Gradientes, Regras de Gradientes
-
-### Community 670 - "Community 670"
-Cohesion: 0.67
-Nodes (3): React Icons, Tamanhos, 🎨 Ícones
-
-### Community 671 - "Community 671"
-Cohesion: 0.67
-Nodes (3): 🚀 Fase 1: Preparação do Ambiente, Pré-requisitos, Verificação de Arquivos
-
-### Community 672 - "Community 672"
-Cohesion: 0.67
-Nodes (3): ✅ Resultado Final, Se ALGUM item falhou:, Se TODOS os itens estão marcados:
-
-### Community 674 - "Community 674"
-Cohesion: 0.40
-Nodes (5): ✅ Checklist de Verificação, Contas e Credenciais, Rede, Sistema, Software
-
-### Community 675 - "Community 675"
-Cohesion: 0.50
-Nodes (4): Backup, Certificados SSL/TLS, 🔐 Requisitos de Segurança, Variáveis de Ambiente
-
-### Community 676 - "Community 676"
-Cohesion: 0.50
-Nodes (4): Configurações do Docker, 🔧 Configurações do Sistema, Limites do Sistema (Linux), Portas Necessárias
-
-### Community 677 - "Community 677"
-Cohesion: 0.50
-Nodes (4): Desenvolvimento, Domínio e SSL, Produção, 🌐 Requisitos de Rede
-
-### Community 678 - "Community 678"
-Cohesion: 0.50
-Nodes (4): Docker não inicia, Permissão negada (Linux), Porta já em uso, 🆘 Problemas Comuns
-
-### Community 679 - "Community 679"
-Cohesion: 0.50
-Nodes (4): Navegadores Suportados, 📱 Requisitos do Cliente (Navegador), Requisitos do Navegador, Resolução de Tela
-
-### Community 680 - "Community 680"
-Cohesion: 0.29
-Nodes (7): Core, Forms & Validation, HTTP & API, State Management, 🛠️ Tech Stack, UI/Styling, Utils
-
-### Community 681 - "Community 681"
-Cohesion: 0.33
-Nodes (5): atualizar_estoque(), Atualiza configurações de estoque., EstoqueUpdate, Schema para atualizar estoque., Atualiza configurações de estoque com transação atômica.
-
-### Community 682 - "Community 682"
-Cohesion: 0.33
-Nodes (6): Cancelamento ✅, Devolução 🔴 (A Implementar - Entidade Separada), Fluxo de Venda ✅, Formas de Pagamento ✅, Validações ✅, Vendas - Regras Detalhadas (Conforme Implementado)
-
-### Community 683 - "Community 683"
-Cohesion: 0.33
-Nodes (6): 5.1. Testar HTTPS, 5.2. Testar SSL no Navegador, 5.3. Verificar Nota SSL, 5.4. Testar OAuth2, 5.5. Testar Webhooks do Mercado Pago, 5. Verificação e Testes
-
-### Community 684 - "Community 684"
-Cohesion: 0.33
-Nodes (6): Escolha Seu Cenário, ✅ Opção 1: Cloudflare Tunnel (RECOMENDADO), Opção 2: Ngrok com Domínio Próprio, Opção 3: Deploy Tradicional (Nginx + Let's Encrypt), 🏠 Rodando Localmente (Seu PC/Servidor Local), 🌍 Servidor com IP Público (VPS, Cloud, etc.)
-
-### Community 685 - "Community 685"
-Cohesion: 0.67
-Nodes (3): Ferramentas de Desenvolvimento, IDE Recomendado, 🧪 Requisitos para Desenvolvimento
-
-### Community 686 - "Community 686"
-Cohesion: 0.33
-Nodes (6): Autenticação Básica, 📊 Checklist de Testes, OAuth Google, OAuth Microsoft, Segurança, UI/UX
-
-### Community 687 - "Community 687"
-Cohesion: 0.33
-Nodes (6): Acessar Aplicação, Instalação com Docker (Recomendado), Instalação sem Docker, Login Padrão, Pré-requisitos, 🚀 Quick Start
-
-### Community 688 - "Community 688"
-Cohesion: 0.33
-Nodes (6): 🏗️ Arquiteto, 👨‍💻 Desenvolvedor, 🔧 DevOps, 👥 Documentação por Perfil, 👨‍💼 Gerente / Stakeholder, 🧪 Testador / QA
-
-### Community 689 - "Community 689"
-Cohesion: 0.33
-Nodes (6): Autenticação e Autorização, 🔍 Busca Rápida por Tópico, Carrinho e Pedidos, Eventos e Mensageria, Gestão de Estoque, Reservas de Estoque
-
-### Community 690 - "Community 690"
-Cohesion: 0.40
-Nodes (5): ajustar_estoque(), Ajusta estoque (inventário)., AjusteEstoqueRequest, Schema para ajuste de estoque., Ajusta estoque (inventário) com transação atômica.
-
-### Community 691 - "Community 691"
-Cohesion: 0.40
-Nodes (5): Reserva estoque para venda., reservar_estoque(), Schema para reservar estoque., ReservaEstoqueRequest, Reserva estoque para venda com transação atômica.
-
-### Community 692 - "Community 692"
-Cohesion: 0.40
-Nodes (5): 1. CLIENTES, Backend - Melhorias Necessárias 🟡, Backend - Regras de Negócio ✅ Implementadas, Frontend - Componentes Necessários 🔴, Frontend - Rotas a Implementar 🟢
-
 ### Community 693 - "Community 693"
 Cohesion: 0.50
 Nodes (3): Cliente, ClienteFormData, clienteSchema
 
-### Community 694 - "Community 694"
-Cohesion: 0.40
-Nodes (5): 1. Authentication Flow, 2. API Service Pattern, 3. React Query Hook Pattern, 4. Form Validation Pattern, Core Patterns
-
-### Community 695 - "Community 695"
-Cohesion: 0.40
-Nodes (5): Build, CI/CD, Deployment, Docker, Environment Variables
-
-### Community 696 - "Community 696"
-Cohesion: 0.40
-Nodes (4): ⚠️ Ação Final, Implementação OAuth e Registro - COMPLETO, ✅ O que foi feito, 🧪 Teste
-
-### Community 698 - "Community 698"
-Cohesion: 0.50
-Nodes (4): 2.1. Instalar Certbot no Servidor, 2.2. Gerar Certificado SSL, 2.3. Renovação Automática, 2. Certificado SSL com Let's Encrypt
-
-### Community 699 - "Community 699"
-Cohesion: 0.50
-Nodes (4): Eventos Principais, Logs Estruturados (structlog), Métricas dos Jobs, 📈 Métricas e Monitoramento
-
-### Community 701 - "Community 701"
-Cohesion: 0.50
-Nodes (4): E2E Tests (Playwright - Opcional), Integration Tests (React Testing Library), Testing Strategy, Unit Tests (Vitest)
-
-### Community 702 - "Community 702"
-Cohesion: 0.50
-Nodes (4): HTTPS Only, Input Sanitization, Security, Token Storage
-
-### Community 704 - "Community 704"
-Cohesion: 0.67
-Nodes (3): O, OAuth2, ORM (Object-Relational Mapping)
-
-### Community 705 - "Community 705"
-Cohesion: 0.67
-Nodes (3): Cliente Final (E-commerce), 🚀 Fluxo de Uso Completo, Lojista (Interno)
-
 ## Knowledge Gaps
-- **4852 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+4847 more)
+- **1795 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+1790 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **102 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **101 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Glossário - Runas` connect `Community 406` to `Community 704`, `Community 611`, `Community 612`, `Community 483`, `Community 613`, `Community 199`, `Community 484`, `Community 614`, `Community 651`, `Community 652`, `Community 560`, `Community 561`, `Community 466`, `Community 467`, `Community 562`, `Community 534`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Why does `Changelog - Runas` connect `Community 395` to `Community 199`?**
+- **Why does `⚡ Guia de Performance e Otimização - Runas ERP` connect `Community 102` to `Community 199`, `Community 172`, `Community 206`, `Community 112`, `Community 339`, `Community 87`, `Community 153`?**
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
+- **Why does `FAQ - Perguntas Frequentes` connect `Community 108` to `Community 371`?**
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._
+- **Why does `🗄️ Performance do Banco de Dados` connect `Community 153` to `Community 102`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **Why does `Roadmap - Runas` connect `Community 485` to `Community 449`, `Community 535`, `Community 199`, `Community 504`, `Community 654`, `Community 655`, `Community 563`, `Community 503`, `Community 536`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **What connects `Configuração do Alembic para migrations do API Gateway.`, `Run migrations in 'offline' mode.      This configures the context with just a`, `Run migrations in 'online' mode.      In this scenario we need to create an En` to the rest of the system?**
-  _5950 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _2905 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.03063063063063063 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.027168234064785787 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.06306306306306306 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.051685393258426963 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.025323817076394396 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04452054794520548 - nodes in this community are weakly interconnected._

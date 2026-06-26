@@ -25,13 +25,13 @@
     "semantic_hash": ""
   },
   "api-gateway/auth/jwt.py": {
-    "mtime": 1782225876.507035,
-    "ast_hash": "0ca320077645707714e78acd7f349b44",
+    "mtime": 1782495502.395046,
+    "ast_hash": "62ff719111c728afddf454beecd33788",
     "semantic_hash": ""
   },
   "api-gateway/auth/oauth2.py": {
-    "mtime": 1779825716.26735,
-    "ast_hash": "a650e51d4aac1f1cd2b72f86ddc4d20a",
+    "mtime": 1782495502.3965535,
+    "ast_hash": "46ea42f736d2b780d51efaa8cd568928",
     "semantic_hash": ""
   },
   "api-gateway/auth/redis_client.py": {
@@ -125,13 +125,13 @@
     "semantic_hash": ""
   },
   "api-gateway/routers/auth_cliente.py": {
-    "mtime": 1782225876.5141199,
-    "ast_hash": "2a2536d466ce0855b984807d4a595470",
+    "mtime": 1782495502.3975606,
+    "ast_hash": "fc970c96c1169ba4e12a44af46abac36",
     "semantic_hash": ""
   },
   "api-gateway/routers/proxy.py": {
-    "mtime": 1782266370.8063512,
-    "ast_hash": "4dfcf75be1ea788074876f9846f74ac6",
+    "mtime": 1782495502.3995345,
+    "ast_hash": "6de61d2a9cbef62c0b1df63397db9173",
     "semantic_hash": ""
   },
   "api-gateway/schemas/__init__.py": {
@@ -170,8 +170,8 @@
     "semantic_hash": ""
   },
   "frontend/src/App.tsx": {
-    "mtime": 1782319660.5534155,
-    "ast_hash": "016d62065ca309435b8425331bbff1f9",
+    "mtime": 1782495502.4157712,
+    "ast_hash": "7661b5b9e8166f570526f8ae211ac500",
     "semantic_hash": ""
   },
   "frontend/src/components/common/MaskedInput/MaskedInput.tsx": {
@@ -220,13 +220,13 @@
     "semantic_hash": ""
   },
   "frontend/src/config/env.ts": {
-    "mtime": 1782225876.560298,
-    "ast_hash": "baecb0a0226c1c203207c1d8745a0d24",
+    "mtime": 1782495502.4157712,
+    "ast_hash": "aa45a5c9e1ab0df1151e7951b5c9a79e",
     "semantic_hash": ""
   },
   "frontend/src/contexts/AuthContext.tsx": {
-    "mtime": 1782225876.560894,
-    "ast_hash": "862a3f6a17f87e52612b43a096276dae",
+    "mtime": 1782495502.4177792,
+    "ast_hash": "4b347f8f2df8a0a7fb379d91a8a40cc6",
     "semantic_hash": ""
   },
   "frontend/src/hooks/useAuth.ts": {
@@ -235,8 +235,8 @@
     "semantic_hash": ""
   },
   "frontend/src/hooks/useCarrinho.ts": {
-    "mtime": 1782225876.560894,
-    "ast_hash": "e7bc4f7ebfbea3a1e3fd51a5a81f8bbd",
+    "mtime": 1782495502.4187758,
+    "ast_hash": "59ef18e25b9e443d2aae9fb9eddb79b6",
     "semantic_hash": ""
   },
   "frontend/src/main.tsx": {
@@ -250,8 +250,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/Auth/OAuthCallbackPage.tsx": {
-    "mtime": 1779825716.4999993,
-    "ast_hash": "8a23cf57cf5283629b4bfd68c6416218",
+    "mtime": 1782495502.4212823,
+    "ast_hash": "1fa3acd022c12f8fa628171e9e0873a5",
     "semantic_hash": ""
   },
   "frontend/src/pages/Auth/ResetPasswordPage.tsx": {
@@ -275,8 +275,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/Clientes/ClientesPage.tsx": {
-    "mtime": 1782225876.568941,
-    "ast_hash": "a57344126eb0981dbc3c86727c99c107",
+    "mtime": 1782495502.4228017,
+    "ast_hash": "6ad15d1860e764f1bd097b314db774ea",
     "semantic_hash": ""
   },
   "frontend/src/pages/Clientes/index.ts": {
@@ -335,18 +335,18 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/CarrinhoPage.tsx": {
-    "mtime": 1782309836.2059164,
-    "ast_hash": "47ee81b85c85efc458b41a587b114b56",
+    "mtime": 1782495502.4243882,
+    "ast_hash": "620abc3674cf121cfbce424796459ccc",
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/CheckoutPage.tsx": {
-    "mtime": 1782326431.0250738,
-    "ast_hash": "6fb637093144bbe8b9a2f381c740e227",
+    "mtime": 1782495535.367562,
+    "ast_hash": "22f09eaef3722f7b78cff756f145e24c",
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/LojaOnlinePublicoPage.tsx": {
-    "mtime": 1782225876.5850215,
-    "ast_hash": "f6f4cff74098b9973865249796d46170",
+    "mtime": 1782495502.4318995,
+    "ast_hash": "1872b0c10a27b44634dde06663b0707d",
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/MeusPedidosPage.tsx": {
@@ -360,8 +360,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/RastreamentoPedidoPage.tsx": {
-    "mtime": 1782225876.5880985,
-    "ast_hash": "8cbfc1c3c93308c455ca0ead36bfceb1",
+    "mtime": 1782495502.4349859,
+    "ast_hash": "71d64311e5c500309f7a1a773a756fda",
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/components/ProdutoCard.tsx": {
@@ -450,13 +450,13 @@
     "semantic_hash": ""
   },
   "frontend/src/services/auth/authService.ts": {
-    "mtime": 1782225876.6024504,
-    "ast_hash": "ac1a642e8dfc3efdb464ed7a3a154ae3",
+    "mtime": 1782495502.4437704,
+    "ast_hash": "1bd22cc67bd0e768d643d3b13813d64e",
     "semantic_hash": ""
   },
   "frontend/src/services/auth/oauthService.ts": {
-    "mtime": 1782225876.6039972,
-    "ast_hash": "c3e3f7e65f5e9f60ab0cfd47ec85fdaa",
+    "mtime": 1782495502.4447706,
+    "ast_hash": "413cbf5d696b1d1706f977e97e2c2c8c",
     "semantic_hash": ""
   },
   "frontend/src/services/auth/tokenService.ts": {
@@ -505,8 +505,8 @@
     "semantic_hash": ""
   },
   "frontend/vite.config.ts": {
-    "mtime": 1782337378.2856312,
-    "ast_hash": "12f9ddc7d38ef11064e246aeb23e1fad",
+    "mtime": 1782495535.368546,
+    "ast_hash": "ecbfbbe2449ffc88fde49a645077ca61",
     "semantic_hash": ""
   },
   "init-schemas.sql": {
@@ -565,8 +565,8 @@
     "semantic_hash": ""
   },
   "services/clientes/models/cliente.py": {
-    "mtime": 1782225876.6155417,
-    "ast_hash": "b83deb1b31e017613234143409be233f",
+    "mtime": 1782495502.4558268,
+    "ast_hash": "397219bf7860d516d406a2c28f539fde",
     "semantic_hash": ""
   },
   "services/clientes/repositories/__init__.py": {
@@ -575,8 +575,8 @@
     "semantic_hash": ""
   },
   "services/clientes/repositories/cliente_repository.py": {
-    "mtime": 1782225876.616548,
-    "ast_hash": "20fb394433e24d82e69aaa70da0aa11d",
+    "mtime": 1782495502.4568253,
+    "ast_hash": "a5bc5183c895fd32c1312cea922efc99",
     "semantic_hash": ""
   },
   "services/clientes/routers/__init__.py": {
@@ -585,8 +585,8 @@
     "semantic_hash": ""
   },
   "services/clientes/routers/clientes.py": {
-    "mtime": 1782225876.6175487,
-    "ast_hash": "3a7bcb462c5a000ffcb73a0b1b69fd84",
+    "mtime": 1782495502.457826,
+    "ast_hash": "ec5c2931258ccf029a8b6c3fd797e335",
     "semantic_hash": ""
   },
   "services/clientes/routers/enderecos.py": {
@@ -600,8 +600,8 @@
     "semantic_hash": ""
   },
   "services/clientes/schemas/cliente.py": {
-    "mtime": 1782225876.61855,
-    "ast_hash": "98be0e225308e9afd217639ea1666faa",
+    "mtime": 1782495502.4640164,
+    "ast_hash": "9ae62f4ac437ed1c6857e49d5012c347",
     "semantic_hash": ""
   },
   "services/clientes/seed.py": {
@@ -620,8 +620,8 @@
     "semantic_hash": ""
   },
   "services/clientes/services/cliente_service.py": {
-    "mtime": 1782225876.6205509,
-    "ast_hash": "f197f53f525ae5dde2d7f1a6deac2605",
+    "mtime": 1782495502.4650135,
+    "ast_hash": "0f7996ef611ac246d062023372a91ebf",
     "semantic_hash": ""
   },
   "services/clientes/tests/__init__.py": {
@@ -1205,8 +1205,8 @@
     "semantic_hash": ""
   },
   "services/vendas/config.py": {
-    "mtime": 1782225876.6708145,
-    "ast_hash": "b81127ec53fe11996a0fc58027b9bcea",
+    "mtime": 1782495502.4675255,
+    "ast_hash": "7739a71b258bde997746721aa0a3a817",
     "semantic_hash": ""
   },
   "services/vendas/database.py": {
@@ -1250,7 +1250,7 @@
     "semantic_hash": ""
   },
   "services/vendas/main.py": {
-    "mtime": 1782225876.6748588,
+    "mtime": 1782425324.2724166,
     "ast_hash": "73645f6d4bd62d8119a5248b2eb96fb2",
     "semantic_hash": ""
   },
@@ -1260,8 +1260,8 @@
     "semantic_hash": ""
   },
   "services/vendas/models/venda.py": {
-    "mtime": 1782225876.6768596,
-    "ast_hash": "a1c89315579afb6acff881c7b5dc6720",
+    "mtime": 1782495502.4685254,
+    "ast_hash": "d73466725847a830bf94e2149ad58e86",
     "semantic_hash": ""
   },
   "services/vendas/redis_client.py": {
@@ -1275,8 +1275,8 @@
     "semantic_hash": ""
   },
   "services/vendas/repositories/venda_repository.py": {
-    "mtime": 1782225876.677858,
-    "ast_hash": "9677b9b2ce8889eb3e1b86a16b90ef29",
+    "mtime": 1782495502.469525,
+    "ast_hash": "640541b4ab5024d87d72ac051d85a5d4",
     "semantic_hash": ""
   },
   "services/vendas/routers/__init__.py": {
@@ -1295,8 +1295,8 @@
     "semantic_hash": ""
   },
   "services/vendas/routers/loja.py": {
-    "mtime": 1782225876.6808593,
-    "ast_hash": "7d77f07ecea7b6692c1a915731c871c3",
+    "mtime": 1782495502.4756913,
+    "ast_hash": "e6621181bb9e362d2f119749c4353866",
     "semantic_hash": ""
   },
   "services/vendas/routers/vendas.py": {
@@ -1305,8 +1305,8 @@
     "semantic_hash": ""
   },
   "services/vendas/routers/webhook.py": {
-    "mtime": 1782225876.6823652,
-    "ast_hash": "5ba4662d113808de9a7862b93f9280a5",
+    "mtime": 1782495502.4766994,
+    "ast_hash": "20a941fca74c85f73b97ddcb1ed445b4",
     "semantic_hash": ""
   },
   "services/vendas/schemas/__init__.py": {
@@ -1320,8 +1320,8 @@
     "semantic_hash": ""
   },
   "services/vendas/schemas/venda.py": {
-    "mtime": 1782225876.6838915,
-    "ast_hash": "1b9729770be7fffa89a392f6bc6122fa",
+    "mtime": 1782495502.4776988,
+    "ast_hash": "9b630aea1724d26aeee36c2b38648732",
     "semantic_hash": ""
   },
   "services/vendas/seed.py": {
@@ -1340,8 +1340,8 @@
     "semantic_hash": ""
   },
   "services/vendas/services/carrinho_service.py": {
-    "mtime": 1782225876.6859019,
-    "ast_hash": "89dc7e77d4233171265007634e22472f",
+    "mtime": 1782495502.4786973,
+    "ast_hash": "eaedf8dd01143b375c7a56fb8b17b2a2",
     "semantic_hash": ""
   },
   "services/vendas/services/cliente_validacao_service.py": {
@@ -1370,13 +1370,13 @@
     "semantic_hash": ""
   },
   "services/vendas/services/loja_service.py": {
-    "mtime": 1782225876.6900475,
-    "ast_hash": "3f40bb4e042762351cb69f54a5da4c05",
+    "mtime": 1782495502.4806967,
+    "ast_hash": "9db225c591fa9efb9133fc99eb452584",
     "semantic_hash": ""
   },
   "services/vendas/services/mercadopago_service.py": {
-    "mtime": 1782225876.69111,
-    "ast_hash": "7b673909885dad60389a67e0c7de715c",
+    "mtime": 1782495502.4817002,
+    "ast_hash": "94eb9ff5dc9a1e9f664a9c0b4dbc2b8c",
     "semantic_hash": ""
   },
   "services/vendas/services/notificacao_service.py": {
@@ -1390,8 +1390,8 @@
     "semantic_hash": ""
   },
   "services/vendas/services/venda_service.py": {
-    "mtime": 1782225876.6927757,
-    "ast_hash": "759ca093b38d99ac1264810fe837b1ad",
+    "mtime": 1782495502.4837527,
+    "ast_hash": "e4c0d7a0b106d5fd6485e352d6b31551",
     "semantic_hash": ""
   },
   "services/vendas/tests/__init__.py": {
@@ -1415,8 +1415,8 @@
     "semantic_hash": ""
   },
   "services/vendas/utils/tenant.py": {
-    "mtime": 1782225876.6938558,
-    "ast_hash": "aff0b770cb63aa82bcd38d672f262395",
+    "mtime": 1782495502.484755,
+    "ast_hash": "19a177b53302905c7d4d2c97886dbf3e",
     "semantic_hash": ""
   },
   "shared/__init__.py": {
@@ -1515,33 +1515,28 @@
     "semantic_hash": ""
   },
   "CHECKLIST_DESENVOLVIMENTO.md": {
-    "mtime": 1782266370.8032863,
-    "ast_hash": "8a0baeee937ba288a321cfa5a4b076ec",
+    "mtime": 1782495535.3570223,
+    "ast_hash": "0a4082672cdcaa52a2883e555ad0d737",
     "semantic_hash": ""
   },
   "FRONTEND_IMPLEMENTACAO.md": {
-    "mtime": 1782266370.8043504,
-    "ast_hash": "e1a88813243bd5730ba420584a43d353",
-    "semantic_hash": ""
-  },
-  "GUIA_TESTES_AUTOMATIZADOS.md": {
-    "mtime": 1782266370.8053517,
-    "ast_hash": "9dfa590724e565e4bfdca378efa5b6b6",
+    "mtime": 1782495535.35803,
+    "ast_hash": "e8aadb14e511cd2509e9e64d573b6e67",
     "semantic_hash": ""
   },
   "O SISTEMA.md": {
-    "mtime": 1782225876.501005,
-    "ast_hash": "02d578f9d6e2ffb9f89810985a0c6fd0",
+    "mtime": 1782495502.3909223,
+    "ast_hash": "bc52762fbcb2781b779960c053038ea3",
     "semantic_hash": ""
   },
   "QUICK-START.md": {
-    "mtime": 1782225876.501005,
-    "ast_hash": "8da37fd9606262a11b8391fd444de58b",
+    "mtime": 1782495535.359033,
+    "ast_hash": "539e8171e7a8b805b4d6f52189b88df5",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1782225876.502509,
-    "ast_hash": "a61c5c5b800e814acb06852ebadcca53",
+    "mtime": 1782495502.3940463,
+    "ast_hash": "f9d420aed86c0e701ae824fd94b2d309",
     "semantic_hash": ""
   },
   "api-gateway/requirements.txt": {
@@ -1550,13 +1545,8 @@
     "semantic_hash": ""
   },
   "docker-compose.dev.yml": {
-    "mtime": 1782336759.7617304,
-    "ast_hash": "0807b6afd7630d1a89569c186f486cc1",
-    "semantic_hash": ""
-  },
-  "docs/01-principal/FEATURES_FUTURAS.md": {
-    "mtime": 1782225876.520126,
-    "ast_hash": "edb833d2dd910acd8daa4645516350b4",
+    "mtime": 1782495535.3625383,
+    "ast_hash": "c8570b8dbd50764d1cfc730746435d45",
     "semantic_hash": ""
   },
   "docs/01-principal/LICENSE.md": {
@@ -1564,39 +1554,19 @@
     "ast_hash": "23cf066827ff35e751a1cfbbd0777bb6",
     "semantic_hash": ""
   },
-  "docs/01-principal/O SISTEMA.md": {
-    "mtime": 1782225876.521128,
-    "ast_hash": "02d578f9d6e2ffb9f89810985a0c6fd0",
-    "semantic_hash": ""
-  },
-  "docs/01-principal/QUICK-START.md": {
-    "mtime": 1782225876.521128,
-    "ast_hash": "8da37fd9606262a11b8391fd444de58b",
-    "semantic_hash": ""
-  },
   "docs/01-visao-geral/README.md": {
     "mtime": 1779825716.274887,
     "ast_hash": "94d60631589c446163dab6bffae653d2",
     "semantic_hash": ""
   },
-  "docs/01-visao-geral/arquitetura/README.md": {
-    "mtime": 1779825716.275895,
-    "ast_hash": "6b10cfa04f592f104b42a6778edfe3ff",
-    "semantic_hash": ""
-  },
   "docs/01-visao-geral/arquitetura/microsservicos.md": {
-    "mtime": 1779825716.275895,
-    "ast_hash": "3af78f07fade659277fc0afa30ba571c",
-    "semantic_hash": ""
-  },
-  "docs/01-visao-geral/arquitetura/tecnologias.md": {
-    "mtime": 1779825716.2774453,
-    "ast_hash": "ad632b5a10738a804734af4f693120b9",
+    "mtime": 1782495502.4053009,
+    "ast_hash": "a3bac336f826a28d666012b517cf8919",
     "semantic_hash": ""
   },
   "docs/01-visao-geral/arquitetura/visao-geral.md": {
-    "mtime": 1779825716.292496,
-    "ast_hash": "80352081369a1aa20e01229150e6112c",
+    "mtime": 1782495502.406363,
+    "ast_hash": "e0a8d260f5d4eb7c4b8bbcd7eddf7fdb",
     "semantic_hash": ""
   },
   "docs/01-visao-geral/faq.md": {
@@ -1610,28 +1580,13 @@
     "semantic_hash": ""
   },
   "docs/01-visao-geral/roadmap.md": {
-    "mtime": 1782225876.521128,
-    "ast_hash": "24381a29c4e86c22d74df06e34ebbe41",
+    "mtime": 1782495502.4074075,
+    "ast_hash": "f2fabb5c924251e87f2705053e98372f",
     "semantic_hash": ""
   },
   "docs/01-visao-geral/status-projeto.md": {
     "mtime": 1779825716.2955043,
     "ast_hash": "3eb1650e293abc067053b9d1e3386294",
-    "semantic_hash": ""
-  },
-  "docs/02-desenvolvimento/CHECKLIST_DESENVOLVIMENTO.md": {
-    "mtime": 1781233531.0122123,
-    "ast_hash": "e90ea53d1e4a9fbd0f4ff826eb5a165f",
-    "semantic_hash": ""
-  },
-  "docs/02-desenvolvimento/CHECKOUT_SCROLL_FIX.md": {
-    "mtime": 1782312164.1134903,
-    "ast_hash": "b4fa216dcffa0295a1b9ab1029a57356",
-    "semantic_hash": ""
-  },
-  "docs/02-desenvolvimento/FRONTEND_IMPLEMENTACAO.md": {
-    "mtime": 1782266370.8073525,
-    "ast_hash": "7fa0a787d802526483dd1798c6267b7b",
     "semantic_hash": ""
   },
   "docs/02-desenvolvimento/GUIA_MASCARAS_VALIDACOES.md": {
@@ -1644,34 +1599,9 @@
     "ast_hash": "fb24abab614db650772ad9bb84384219",
     "semantic_hash": ""
   },
-  "docs/02-desenvolvimento/UI_UX_ANALYSIS.md": {
-    "mtime": 1782311472.2179763,
-    "ast_hash": "29e6daa2304e592313a6b6c0e92858c6",
-    "semantic_hash": ""
-  },
-  "docs/02-desenvolvimento/UI_UX_IMPROVEMENTS_APPLIED.md": {
-    "mtime": 1782311840.7130892,
-    "ast_hash": "d5defadaa59c8ead1778727101a631e4",
-    "semantic_hash": ""
-  },
-  "docs/02-setup/README.md": {
-    "mtime": 1779825716.2965033,
-    "ast_hash": "514cdad38446bf2babe2e1b79fac7422",
-    "semantic_hash": ""
-  },
-  "docs/02-setup/requisitos.md": {
-    "mtime": 1779825716.2975016,
-    "ast_hash": "3b214c42bf697a13ca275755216e0567",
-    "semantic_hash": ""
-  },
-  "docs/02-setup/tecnologias.md": {
-    "mtime": 1779825716.2975016,
-    "ast_hash": "00cbeb23af36551a14c7cbc9e20dd604",
-    "semantic_hash": ""
-  },
   "docs/02-setup/troubleshooting.md": {
-    "mtime": 1779825716.298501,
-    "ast_hash": "075b6caca1b7cc4750dc4a78591aa81a",
+    "mtime": 1782495502.4116383,
+    "ast_hash": "1c210dcf3a3ba323eb3fa2a22c0898c8",
     "semantic_hash": ""
   },
   "docs/03-arquitetura/README.md": {
@@ -1684,89 +1614,9 @@
     "ast_hash": "cdd03e4cb5cf99c72df6b81a85e2b4bc",
     "semantic_hash": ""
   },
-  "docs/03-arquitetura/diagramas/arquitetura-geral.md": {
-    "mtime": 1779825716.302014,
-    "ast_hash": "8d5f9dcdb36f3797dca031bd08096997",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia.md": {
-    "mtime": 1779825716.302014,
-    "ast_hash": "bcd91058954fef08c4481681808d00ca",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia/README.md": {
-    "mtime": 1779825716.303015,
-    "ast_hash": "61aa78315221fd68c8df6bb736b8513e",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia/clientes.md": {
-    "mtime": 1779825716.304521,
-    "ast_hash": "1358be704b3af91faf6d1bb92046d417",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia/estoque.md": {
-    "mtime": 1779825716.3055305,
-    "ast_hash": "14892a28276b9e4a799904e214b54505",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia/fluxos-integrados.md": {
-    "mtime": 1779825716.3065288,
-    "ast_hash": "3b950d784f0d5983f5b3f62597a3f528",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia/padroes.md": {
-    "mtime": 1779825716.314423,
-    "ast_hash": "7711ee72fc380b3c521562d79ca02e6f",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia/produtos.md": {
-    "mtime": 1779825716.315424,
-    "ast_hash": "d6fe664019b890283d08352e60fe8cb4",
-    "semantic_hash": ""
-  },
-  "docs/03-arquitetura/diagramas/sequencia/vendas.md": {
-    "mtime": 1779825716.315424,
-    "ast_hash": "9471ef0adf2640010bb493a1616d146f",
-    "semantic_hash": ""
-  },
   "docs/03-arquitetura/performance-cpu.md": {
     "mtime": 1782306471.5209403,
     "ast_hash": "5e1464e9b8fd993d3f68d7e847514a15",
-    "semantic_hash": ""
-  },
-  "docs/03-changelogs/CHANGELOG_AUTH_SEPARATION.md": {
-    "mtime": 1782225876.5226336,
-    "ast_hash": "c3da9eee6b88115899103c78f793c266",
-    "semantic_hash": ""
-  },
-  "docs/03-changelogs/CHANGELOG_DOCUMENTACAO_ATUALIZADA.md": {
-    "mtime": 1782225876.5241537,
-    "ast_hash": "6e8f6855cdc706b8b141f865af91d364",
-    "semantic_hash": ""
-  },
-  "docs/03-changelogs/CHANGELOG_DOCUMENTACAO_FRONTEND_ATUALIZADA.md": {
-    "mtime": 1782266370.808352,
-    "ast_hash": "84a315e78c3714037d4fa315b52bb76b",
-    "semantic_hash": ""
-  },
-  "docs/03-changelogs/CHANGELOG_LOJA_ONLINE_FRONTEND_COMPLETO.md": {
-    "mtime": 1782225876.5241537,
-    "ast_hash": "4991721b8521b39dc5a033f9ce233a2c",
-    "semantic_hash": ""
-  },
-  "docs/03-changelogs/CHANGELOG_ROLE_BASED_ACCESS.md": {
-    "mtime": 1782225876.5251615,
-    "ast_hash": "39d4365630a3695a8664836156ece4b1",
-    "semantic_hash": ""
-  },
-  "docs/03-changelogs/CHANGELOG_VENDAS_IMPLEMENTATION.md": {
-    "mtime": 1782225876.5251615,
-    "ast_hash": "4b5d0875e0e1230e88ea20ff6d5d16aa",
-    "semantic_hash": ""
-  },
-  "docs/04-backend/QUICK_REFERENCE_TRANSACOES.md": {
-    "mtime": 1779830329.1965885,
-    "ast_hash": "ee98e1d773112a365b16e124c7ae199a",
     "semantic_hash": ""
   },
   "docs/04-backend/README.md": {
@@ -1785,8 +1635,8 @@
     "semantic_hash": ""
   },
   "docs/04-configuracao/CONFIGURACAO_MERCADO_PAGO.md": {
-    "mtime": 1782225876.5261602,
-    "ast_hash": "758127c404dfe935c583361ff570794b",
+    "mtime": 1782495502.4126365,
+    "ast_hash": "9b7322def65635b1acb9e88ced816bea",
     "semantic_hash": ""
   },
   "docs/04-configuracao/MERCADOPAGO_PIX_SANDBOX.md": {
@@ -1829,11 +1679,6 @@
     "ast_hash": "4e57ad5ebc4e87b5428280e041649e3c",
     "semantic_hash": ""
   },
-  "docs/05-frontend/features/categorias-teste.md": {
-    "mtime": 1782225876.5271595,
-    "ast_hash": "04acbde113a5b10927b52b6bd48e60bf",
-    "semantic_hash": ""
-  },
   "docs/05-frontend/features/categorias.md": {
     "mtime": 1782225876.5271595,
     "ast_hash": "0965b0cda93ff4a8ce26e97dd8503560",
@@ -1842,26 +1687,6 @@
   "docs/05-frontend/guias/api-examples.md": {
     "mtime": 1779825716.3229375,
     "ast_hash": "e1fe6019bec8d777ca4d0ae7438c6041",
-    "semantic_hash": ""
-  },
-  "docs/05-frontend/guias/indice-testes.md": {
-    "mtime": 1779825716.3229375,
-    "ast_hash": "5c772f1d23fbee6bfc2cdfed2127defe",
-    "semantic_hash": ""
-  },
-  "docs/05-frontend/guias/quick-test-guide.md": {
-    "mtime": 1779825716.3246248,
-    "ast_hash": "f652dfb97d47e516bddef36b2a807737",
-    "semantic_hash": ""
-  },
-  "docs/05-frontend/oauth/debug-oauth-redirect.md": {
-    "mtime": 1779825716.3266327,
-    "ast_hash": "4d55c077f1d2d1c5c4add77455858da6",
-    "semantic_hash": ""
-  },
-  "docs/05-frontend/oauth/oauth-fix-summary.md": {
-    "mtime": 1779825716.327566,
-    "ast_hash": "7fffe8b2d93320b080d7e62121d7b8e5",
     "semantic_hash": ""
   },
   "docs/05-frontend/oauth/oauth-summary.md": {
@@ -1882,31 +1707,6 @@
   "docs/05-frontend/setup/prerequisites.md": {
     "mtime": 1779825716.3312182,
     "ast_hash": "64aa1c352ba485cc4ef6facd742db3f2",
-    "semantic_hash": ""
-  },
-  "docs/05-seguranca/SECURITY_BEST_PRACTICES.md": {
-    "mtime": 1782225876.5281613,
-    "ast_hash": "9ab9cd1e6025bcbbc4e8f5f59c68cf12",
-    "semantic_hash": ""
-  },
-  "docs/05-seguranca/SECURITY_INCIDENT_REPORT.md": {
-    "mtime": 1782225876.5281613,
-    "ast_hash": "48ea3c42480d30451553f1693c54e24b",
-    "semantic_hash": ""
-  },
-  "docs/07-desenvolvimento/guia-implementacao.md": {
-    "mtime": 1779825716.3317556,
-    "ast_hash": "e74fff231e63ff5434c7750ce67fb9fa",
-    "semantic_hash": ""
-  },
-  "docs/09-troubleshooting/docker-issues.md": {
-    "mtime": 1779825716.3327987,
-    "ast_hash": "a8f0b23d78e4aaf96dd29fd6770e1e79",
-    "semantic_hash": ""
-  },
-  "docs/09-troubleshooting/oauth-issues.md": {
-    "mtime": 1779825716.333908,
-    "ast_hash": "6c52475e869fcfc6643da232cee27b1c",
     "semantic_hash": ""
   },
   "docs/10-api-reference/README.md": {
@@ -1984,439 +1784,9 @@
     "ast_hash": "1c75dec69596d6f7dd8d26cbe856b832",
     "semantic_hash": ""
   },
-  "docs/12-changelog/CHANGELOG.md": {
-    "mtime": 1779830329.2952838,
-    "ast_hash": "7fe889d1e5079603dc76a6e1682ed683",
-    "semantic_hash": ""
-  },
-  "docs/12-changelog/README.md": {
-    "mtime": 1779825716.346231,
-    "ast_hash": "bdc30dd7bae314f4a9cb77058eb02aba",
-    "semantic_hash": ""
-  },
-  "docs/12-changelog/v1.0.0.md": {
-    "mtime": 1779825716.346231,
-    "ast_hash": "e112b77a5ae268523fa7bab031788c6f",
-    "semantic_hash": ""
-  },
-  "docs/INDEX.md": {
-    "mtime": 1782225876.5291622,
-    "ast_hash": "97062e97d4209b262bcbbbc786227b17",
-    "semantic_hash": ""
-  },
   "docs/README.md": {
-    "mtime": 1779825716.347229,
-    "ast_hash": "eac7be925b7fad39c13105eb9dd74534",
-    "semantic_hash": ""
-  },
-  "docs/_archive/README.md": {
-    "mtime": 1779825716.3482292,
-    "ast_hash": "157c30ae4a26b18a08a15898eb62419a",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/CONSOLIDACAO_POSTGRES.md": {
-    "mtime": 1782225876.5291622,
-    "ast_hash": "59b6c2cb7423b3ef9edaeed78d7f49d3",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/ERROR_HANDLING_GUIDE.md": {
-    "mtime": 1782225876.5301602,
-    "ast_hash": "7c83784c6b0bb45cfda21b0d50cd8bfb",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/MELHORIAS_BACKEND_PRIORITARIAS.md": {
-    "mtime": 1782225876.5301602,
-    "ast_hash": "35508669568acd37516358c844846dd4",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/OTIMIZACAO_RECURSOS.md": {
-    "mtime": 1782225876.5301602,
-    "ast_hash": "7d20c3d1b1ced1115c0ff5aecfad3994",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/README.md": {
-    "mtime": 1782225876.53116,
-    "ast_hash": "c6721f57d8b58c2b883aeb2610f4d58b",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/REGRA_SOFT_DELETE_REATIVACAO.md": {
-    "mtime": 1782225876.53116,
-    "ast_hash": "9dad2e70a9ed2400a06aff081afe1d10",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/SPRINT_2_CONCLUIDA.md": {
-    "mtime": 1782225876.53116,
-    "ast_hash": "f8fc109f562d0e795144455a62bd3776",
-    "semantic_hash": ""
-  },
-  "docs/_archive/docs-raiz/STATUS-ATUAL-MVP.md": {
-    "mtime": 1782225876.53116,
-    "ast_hash": "7171f1f9e4505cbeaa2ee9e17876e572",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/API-EXAMPLES.md": {
-    "mtime": 1779825716.4400008,
-    "ast_hash": "e1fe6019bec8d777ca4d0ae7438c6041",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/DEBUG-OAUTH-REDIRECT.md": {
-    "mtime": 1779825716.4400008,
-    "ast_hash": "4d55c077f1d2d1c5c4add77455858da6",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/DESIGN-SYSTEM.md": {
-    "mtime": 1779825716.4411817,
-    "ast_hash": "ec6b66afebbf1ccc142976b95b59a021",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/DESIGN.md": {
-    "mtime": 1779825716.442193,
-    "ast_hash": "6a4882dd3acdcaa0d892476ece0de28e",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/DOCKER-QUICK-START.md": {
-    "mtime": 1779825716.443189,
-    "ast_hash": "f89fbbf61421d7d1c2fbc5c3b661ed5d",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/DOCKER.md": {
-    "mtime": 1779825716.444189,
-    "ast_hash": "8c4b7e7d28dca20fd6c14bf8c7dc6dc0",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/IMPLEMENTATION-LOG.md": {
-    "mtime": 1779825716.444189,
-    "ast_hash": "9cfa0f01e070bc61199e1bad3d96e079",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/INDICE-TESTES.md": {
-    "mtime": 1779825716.4451873,
-    "ast_hash": "5c772f1d23fbee6bfc2cdfed2127defe",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/OAUTH-FIX-SUMMARY.md": {
-    "mtime": 1779825716.4451873,
-    "ast_hash": "7fffe8b2d93320b080d7e62121d7b8e5",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/OAUTH-SUMMARY.md": {
-    "mtime": 1779825716.4461887,
-    "ast_hash": "dae2cf4bde399182111cb779e16026d4",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/PREREQUISITES.md": {
-    "mtime": 1779825716.4471917,
-    "ast_hash": "64aa1c352ba485cc4ef6facd742db3f2",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/PRODUCTION-CHECKLIST.md": {
-    "mtime": 1779825716.448187,
-    "ast_hash": "b566b3f05880c6f8b699f2ee94bee4ea",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/QUICK-TEST-GUIDE.md": {
-    "mtime": 1779825716.448187,
-    "ast_hash": "f652dfb97d47e516bddef36b2a807737",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/README.md": {
-    "mtime": 1779825716.4491873,
-    "ast_hash": "5fb298a20090afb23672dd4861ffdb2b",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/RESUMO-FINAL.md": {
-    "mtime": 1779825716.4491873,
-    "ast_hash": "210e7b550ad9cf7ec7ed594bbd0b8974",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/STATUS.md": {
-    "mtime": 1779825716.4506948,
-    "ast_hash": "6435aa9cdec4059fbba40675687c8e72",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend-antigo/TASKS.md": {
-    "mtime": 1779825716.4517026,
-    "ast_hash": "792a6e65ded5ec70f36cfa402de8fd9b",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend/IMPLEMENTATION-LOG.md": {
-    "mtime": 1779825716.4527025,
-    "ast_hash": "9cfa0f01e070bc61199e1bad3d96e079",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend/RESUMO-FINAL.md": {
-    "mtime": 1779825716.4527025,
-    "ast_hash": "210e7b550ad9cf7ec7ed594bbd0b8974",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend/STATUS.md": {
-    "mtime": 1779825716.4537015,
-    "ast_hash": "6435aa9cdec4059fbba40675687c8e72",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend/TASKS.md": {
-    "mtime": 1779825716.4547062,
-    "ast_hash": "792a6e65ded5ec70f36cfa402de8fd9b",
-    "semantic_hash": ""
-  },
-  "docs/_archive/frontend/design-system-original.md": {
-    "mtime": 1779825716.455704,
-    "ast_hash": "ec6b66afebbf1ccc142976b95b59a021",
-    "semantic_hash": ""
-  },
-  "docs/_archive/historico/ARQUIVOS-CRIADOS.md": {
-    "mtime": 1779825716.456701,
-    "ast_hash": "ea685163ba516e523e0a1487b07beff0",
-    "semantic_hash": ""
-  },
-  "docs/_archive/historico/ARQUIVOS-FALTANTES.md": {
-    "mtime": 1779825716.456701,
-    "ast_hash": "29fe501edf71d2be9848c36143431f28",
-    "semantic_hash": ""
-  },
-  "docs/_archive/historico/ESTRUTURA-NOVA.md": {
-    "mtime": 1779825716.4582098,
-    "ast_hash": "b72bedb72b089b4ec84a5f6b4724a793",
-    "semantic_hash": ""
-  },
-  "docs/_archive/historico/INDICE-DOCUMENTACAO.md": {
-    "mtime": 1779825716.45922,
-    "ast_hash": "af954df5ddb9edecf0aa4f50c9d96b19",
-    "semantic_hash": ""
-  },
-  "docs/_archive/historico/INDICE.md": {
-    "mtime": 1779825716.4602168,
-    "ast_hash": "0a98b23457a704de42d1dec4ad21fde8",
-    "semantic_hash": ""
-  },
-  "docs/_archive/historico/ORGANIZACAO-DOCUMENTACAO.md": {
-    "mtime": 1779825716.4602168,
-    "ast_hash": "efc525962d1a3501c7e6907ad97dfde2",
-    "semantic_hash": ""
-  },
-  "docs/_archive/historico/arquitetura-original.md": {
-    "mtime": 1779825716.461289,
-    "ast_hash": "f8741f43ba224bbc0fc4a72c61da7e5a",
-    "semantic_hash": ""
-  },
-  "docs/_archive/mvp/CHECKLIST-VALIDACAO.md": {
-    "mtime": 1779825716.4622903,
-    "ast_hash": "604b3a33a76103c88d2e0b80f5ead9d7",
-    "semantic_hash": ""
-  },
-  "docs/_archive/mvp/CORRECOES-APLICADAS.md": {
-    "mtime": 1779825716.4632902,
-    "ast_hash": "414c31be06a839d2254d73b8b02db22e",
-    "semantic_hash": ""
-  },
-  "docs/_archive/mvp/RESUMO-EXECUTIVO.md": {
-    "mtime": 1779825716.4632902,
-    "ast_hash": "820fed2b131566bfbe477060e6e5a9d6",
-    "semantic_hash": ""
-  },
-  "docs/_archive/mvp/STATUS-FINAL.md": {
-    "mtime": 1779825716.4763138,
-    "ast_hash": "a9767e6f4a9a2c1e9b486fb4358e06c4",
-    "semantic_hash": ""
-  },
-  "docs/_archive/mvp/TESTE-MANUAL.md": {
-    "mtime": 1779825716.4763138,
-    "ast_hash": "53191d4a654553d0cd15bceee7f7e50c",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/ANALISE_CATALOGO_ESTOQUE.md": {
-    "mtime": 1782225876.5326648,
-    "ast_hash": "e0b2eb6ee69817231bdaffbcafdc0e79",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CARRINHO_CHECKOUT_COMPLETO.md": {
-    "mtime": 1782225876.5326648,
-    "ast_hash": "02184a15cf6c874d34acde50911fdde6",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CARRINHO_EMPRESA_SLUG_FIX.md": {
-    "mtime": 1782225876.5326648,
-    "ast_hash": "cfd7ba577526ebdff37eccca162f4f7a",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CARRINHO_LOJA.md": {
-    "mtime": 1782225876.5341854,
-    "ast_hash": "0aedf67285bd02967e71885fe9510466",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CATALOGO_FIX.md": {
-    "mtime": 1782225876.5341854,
-    "ast_hash": "88032a7ace3faa4da160d659a944a259",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CATALOGO_PUBLICO_FIX.md": {
-    "mtime": 1782225876.5341854,
-    "ast_hash": "9c0a7285f9b531702b293ba2a68499ea",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CHECKOUT_CRIAR_CONTA.md": {
-    "mtime": 1782225876.535191,
-    "ast_hash": "7befb2acca3f4e3f61cc3ce0f2252c21",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CLIENTES_FINAL.md": {
-    "mtime": 1782225876.535191,
-    "ast_hash": "09ab8b39883ee2575f2a295fd6969833",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_CLIENTES_MULTITENANCY.md": {
-    "mtime": 1782225876.535191,
-    "ast_hash": "952d6d530aab5dc6bc76dba000732ebc",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_DADOS_SEED_COMPLETO.md": {
-    "mtime": 1782225876.5361955,
-    "ast_hash": "67e25101a1d467daf46627dcc477765b",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_EMPRESAS_MULTITENANCY.md": {
-    "mtime": 1782225876.5361955,
-    "ast_hash": "41def4ffbb81710d4dd72254ee2f50f8",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_ESTOQUE_MULTITENANCY.md": {
-    "mtime": 1782225876.5361955,
-    "ast_hash": "4b16a026f1a6286622139a0dafcc20fb",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_LOJA_ONLINE.md": {
-    "mtime": 1782225876.537198,
-    "ast_hash": "c321eb41a35d990a746cb4fab984319e",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_LOJA_ONLINE_FASE4.md": {
-    "mtime": 1782225876.537198,
-    "ast_hash": "01112e77009d6bc558eab7bdcf3c64a2",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_LOJA_ONLINE_FASE5.md": {
-    "mtime": 1782225876.538197,
-    "ast_hash": "c8586ea42fba6f3c5a4453f509c82cd5",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_LOJA_ONLINE_FASE6.md": {
-    "mtime": 1782225876.538197,
-    "ast_hash": "1a9d88466ff94a9ec1af96eabc94b5e9",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_LOJA_ONLINE_FASE7.md": {
-    "mtime": 1782225876.5391958,
-    "ast_hash": "69e92dd6857c238cd81769688bf8e915",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_LOJA_ONLINE_UX_IMPROVEMENTS.md": {
-    "mtime": 1782225876.5391958,
-    "ast_hash": "aad1b366834a95c213dc967c6e3e3447",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_MENU_HIBRIDO.md": {
-    "mtime": 1782225876.5391958,
-    "ast_hash": "dd99327fdb261d19870103116e82047f",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_NOME_FANTASIA_FIX.md": {
-    "mtime": 1782225876.5401962,
-    "ast_hash": "6f8b0d30f18ecca7f1edea8495fb910a",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_PRODUTOS_MULTITENANCY.md": {
-    "mtime": 1782225876.5401962,
-    "ast_hash": "d6769420d6ded179ffba739d222f6089",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_PRODUTOS_MULTITENANCY_WIP.md": {
-    "mtime": 1782225876.5401962,
-    "ast_hash": "1bec45c684659270536bec03e4915767",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/CHANGELOG_PRODUTOS_SOFT_DELETE.md": {
-    "mtime": 1782225876.5411992,
-    "ast_hash": "56a8ac3715ce383e33ee4ef1aa13f134",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/HISTORICO_AUDITORIA.md": {
-    "mtime": 1782225876.5411992,
-    "ast_hash": "fb60b3d337c1d8ee3f508c7d782b1300",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/LOJA_ONLINE_MVP_COMPLETO.md": {
-    "mtime": 1782225876.5411992,
-    "ast_hash": "db74e156e24d23737344b5814de794a6",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/MELHORIAS_RESPONSIVIDADE.md": {
-    "mtime": 1782225876.5427067,
-    "ast_hash": "babdc5ae70e4cbda2b70bcab188388eb",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/MULTI_TENANCY_PROGRESS.md": {
-    "mtime": 1782225876.5427067,
-    "ast_hash": "cfc605d3eb432556f3c9f91eeaef3a6a",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/MVP_CHECKLIST.md": {
-    "mtime": 1782225876.5427067,
-    "ast_hash": "c5a03cb48eb8c17ff4841d7290d292c9",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/PLANO_MELHORIAS_FRONTEND.md": {
-    "mtime": 1782225876.5442333,
-    "ast_hash": "3f77f90c7c15c13ddcb96581be73a2e2",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/RECOMENDACOES_FLUXO_CHECKOUT.md": {
-    "mtime": 1782225876.5447383,
-    "ast_hash": "fb4a39cdf9d421d921f1bb3dca269d16",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/REFACTOR_CATALOGO_TO_LOJA_ONLINE.md": {
-    "mtime": 1782225876.5447383,
-    "ast_hash": "39835b4dc3fe21667ff67c6e2f81b6b9",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/RESUMO_CONFIGURACAO_ATUAL.md": {
-    "mtime": 1782225876.5447383,
-    "ast_hash": "e1f987db93d2a831bfadcb48ec6675b4",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/RESUMO_SESSAO_LOJA_ONLINE.md": {
-    "mtime": 1782225876.5462532,
-    "ast_hash": "0fee0d60c5f8989272e94bdda316b89f",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/SEED_CLIENTES_CPF_VALIDOS.md": {
-    "mtime": 1782225876.5462532,
-    "ast_hash": "9e1442b1dfc5d7baff2685538f628a6b",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/STATUS_PROJETO.md": {
-    "mtime": 1782225876.5472598,
-    "ast_hash": "f4446120463653b401ac02d013b0e71c",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/TESTE_CHECKOUT_MASCARAS.md": {
-    "mtime": 1782225876.5472598,
-    "ast_hash": "7c1a29c2893aabbe8a328de7d0c4ac7d",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/TESTE_CRIAR_CONTA_CHECKOUT.md": {
-    "mtime": 1782225876.5472598,
-    "ast_hash": "58c2047e31e559253e704fc3fc9e3703",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/TESTE_RAPIDO_CATALOGO.md": {
-    "mtime": 1782225876.5482605,
-    "ast_hash": "2beb50ba3f82761b01ee024600c50bf8",
-    "semantic_hash": ""
-  },
-  "docs/arquivados/TODO_STEPPER_CHECKOUT.md": {
-    "mtime": 1782225876.5482605,
-    "ast_hash": "b1b0222ba8276e726ecc966fe9cab1a0",
+    "mtime": 1782495502.413772,
+    "ast_hash": "359b18196500cb44447cc6ef7906e80d",
     "semantic_hash": ""
   },
   "frontend/README.md": {
@@ -2479,11 +1849,6 @@
     "ast_hash": "253010a76fc2c540f2fbab4acb7ac1fc",
     "semantic_hash": ""
   },
-  "temp_api_docs.html": {
-    "mtime": 1782308495.7405028,
-    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": ""
-  },
   "tests/COVERAGE_ANALYSIS.md": {
     "mtime": 1782266370.813361,
     "ast_hash": "27c5566ac960994ae0e6fe6af5d6e61f",
@@ -2519,36 +1884,6 @@
     "ast_hash": "a353cbc3fc5c2fb3dbee4e561483eee3",
     "semantic_hash": ""
   },
-  "docs/_archive/documentacao-original/Documentacao-Original/Docs/Diagrama de Classes UML.pdf": {
-    "mtime": 1779825716.3497343,
-    "ast_hash": "01979cb9aed99ce2b2cabcf061a8c035",
-    "semantic_hash": ""
-  },
-  "docs/_archive/documentacao-original/Documentacao-Original/Docs/catalogo_vendas_2026.pdf": {
-    "mtime": 1779825716.4344785,
-    "ast_hash": "08103d99542bea4cea52d436661cac94",
-    "semantic_hash": ""
-  },
-  "docs/_archive/documentacao-original/Documentacao-Original/Docs/erp_prototipo_baixo_nivel.pdf": {
-    "mtime": 1779825716.4354877,
-    "ast_hash": "c40024513ced86f6d7351bc615a351ef",
-    "semantic_hash": ""
-  },
-  "docs/_archive/documentacao-original/Documentacao-Original/Imagens/Diagrama de Classes UML.png": {
-    "mtime": 1779825716.4374864,
-    "ast_hash": "342540a12b02061c5c80c9ece3af79d7",
-    "semantic_hash": ""
-  },
-  "docs/_archive/documentacao-original/Documentacao-Original/Imagens/MODELO ER.png": {
-    "mtime": 1779825716.4390047,
-    "ast_hash": "8ab91c0bbcb452fe92def8bb60680006",
-    "semantic_hash": ""
-  },
-  "docs/_archive/documentacao-original/Documentacao-Original/Imagens/logo.png": {
-    "mtime": 1779825716.4390047,
-    "ast_hash": "5cf1f669e314e20af3375704cab76d6a",
-    "semantic_hash": ""
-  },
   "scripts/setup-graphify-hook.ps1": {
     "mtime": 1782313234.2494986,
     "ast_hash": "49130c57b3bb2bd7a13857790dcd68d3",
@@ -2575,53 +1910,28 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/Auth/GoogleCallback.tsx": {
-    "mtime": 1782319247.2225397,
-    "ast_hash": "ef0d5dcc15714d916706f1851e036f57",
+    "mtime": 1782495535.3635452,
+    "ast_hash": "d25b63f3cdc35fea816f250081708849",
     "semantic_hash": ""
   },
   "frontend/src/pages/Auth/MicrosoftCallback.tsx": {
-    "mtime": 1782319269.5279665,
-    "ast_hash": "37fea8fee2637adb9664d90796a26fdb",
+    "mtime": 1782495535.3655453,
+    "ast_hash": "324d3a3deac90fbedaa2d378eed03efa",
     "semantic_hash": ""
   },
   "scripts/deploy-prod.ps1": {
-    "mtime": 1782321561.4248734,
-    "ast_hash": "180ac96cb53096f2ce72a93149553372",
-    "semantic_hash": ""
-  },
-  "CHECKOUT_AUTH_IMPLEMENTATION.md": {
-    "mtime": 1782321109.3742795,
-    "ast_hash": "c10235f5eca66a6ccd2536cb6e1344a5",
-    "semantic_hash": ""
-  },
-  "CHECKOUT_OAUTH_IMPLEMENTATION.md": {
-    "mtime": 1782319700.762915,
-    "ast_hash": "14c3b007961af5413d6f2f6299da448b",
-    "semantic_hash": ""
-  },
-  "QUAL_COMPOSE_USAR.md": {
-    "mtime": 1782334383.7687993,
-    "ast_hash": "5410800ff1311ce71929a4030469eea7",
-    "semantic_hash": ""
-  },
-  "README_DOCKER_COMPOSE.md": {
-    "mtime": 1782334608.1273575,
-    "ast_hash": "53959ee4208a2708a24a0495f3a36bca",
-    "semantic_hash": ""
-  },
-  "README_OAUTH.md": {
-    "mtime": 1782320898.7639148,
-    "ast_hash": "56ec75975ca9cd16cc0228d96da9fe08",
+    "mtime": 1782495535.3692038,
+    "ast_hash": "229f59e56e26c1b9900d8b7e498c30e7",
     "semantic_hash": ""
   },
   "cloudflared-config.yml": {
-    "mtime": 1782337361.3551836,
-    "ast_hash": "d552397373c7f0bca302c51f0b508d4d",
+    "mtime": 1782495535.3600304,
+    "ast_hash": "47d7c007d27947aa541c28ae51182d8e",
     "semantic_hash": ""
   },
   "docker-compose.cloudflare.yml": {
-    "mtime": 1782335533.57875,
-    "ast_hash": "61bd113c861d4e091ba7a48d69b637d5",
+    "mtime": 1782495535.3610322,
+    "ast_hash": "68cd5b8f8be94a00d63accac11734bf7",
     "semantic_hash": ""
   },
   "docker-compose.prod.yml": {
@@ -2629,44 +1939,99 @@
     "ast_hash": "a77bda6ac094434590c058ba0332fb3f",
     "semantic_hash": ""
   },
-  "docs/03-deploy/CLOUDFLARE_TUNNEL_SETUP.md": {
-    "mtime": 1782334193.8016734,
-    "ast_hash": "144b6c8d0107a6cd1b6e04bf4abe364b",
+  ".kiro/agents/documentation-agent.json": {
+    "mtime": 1782495535.353503,
+    "ast_hash": "420d842eb4547a7294543687c69f9fef",
     "semantic_hash": ""
   },
-  "docs/03-deploy/DOCKER_VOLUMES_WINDOWS.md": {
-    "mtime": 1782336798.0631487,
-    "ast_hash": "e7d53c53a70137cbed8d1add08ccee7f",
+  "frontend/src/pages/LojaOnlinePublico/__tests__/CheckoutPage.test.tsx": {
+    "mtime": 1782495502.4415972,
+    "ast_hash": "272bb2308ce33442b63c126c51ddfbcf",
     "semantic_hash": ""
   },
-  "docs/03-deployment/CLOUDFLARE_TUNNEL.md": {
-    "mtime": 1782321935.4639006,
-    "ast_hash": "0e98b2d588ad6adbdac5f916334136cc",
+  "frontend/src/test/setup.ts": {
+    "mtime": 1782495502.4457695,
+    "ast_hash": "bb04c8b4c90ae67cd096051f36c02b3c",
     "semantic_hash": ""
   },
-  "docs/03-deployment/CONFIGURACAO_DOMINIO.md": {
-    "mtime": 1782321372.335364,
-    "ast_hash": "4e7bcb02bf211290bfb1cca8476240db",
+  "frontend/src/utils/__tests__/errorLogger.test.ts": {
+    "mtime": 1782495502.446769,
+    "ast_hash": "d2d6fe5dc740ab121cb9fbd42a97ec22",
     "semantic_hash": ""
   },
-  "docs/03-deployment/DOMINIO_COM_NGROK.md": {
-    "mtime": 1782321966.0860903,
-    "ast_hash": "5dbe9668a52ac91d1463444a9b37ac07",
+  "frontend/src/utils/errorLogger.ts": {
+    "mtime": 1782495502.4477694,
+    "ast_hash": "d8695cbbd59fa2e5a27b68bb0fd700a9",
     "semantic_hash": ""
   },
-  "docs/03-deployment/MIGRACAO_LOCAL_PARA_VPS.md": {
-    "mtime": 1782337168.445625,
-    "ast_hash": "91b547017dab135f382133f850d98f44",
+  "frontend/vitest.config.ts": {
+    "mtime": 1782495502.450771,
+    "ast_hash": "4e811e63f6776ec9af360cca03fef0c4",
     "semantic_hash": ""
   },
-  "docs/03-deployment/QUICK_START_DOMINIO.md": {
-    "mtime": 1782321652.911625,
-    "ast_hash": "79a8fa6dbeb3c5ca84c7ec5f95ba422f",
+  "services/clientes/alembic/versions/20260624_215611_make_cpf_telefone_nullable_for_oauth.py": {
+    "mtime": 1782495502.4538276,
+    "ast_hash": "0ed623fb69369f5d49e053dbd1ecdc98",
     "semantic_hash": ""
   },
-  "docs/03-deployment/README.md": {
-    "mtime": 1782322010.130047,
-    "ast_hash": "42bc30dcfbf3138ad6093a70b819c0ca",
+  "services/vendas/alembic/versions/20260625_230655_add_sessao_carrinho_id_to_vendas.py": {
+    "mtime": 1782495502.4650135,
+    "ast_hash": "76b0ecce5bd0502a31a4ded4ba616e19",
+    "semantic_hash": ""
+  },
+  ".kiro/agents/README.md": {
+    "mtime": 1782495535.353503,
+    "ast_hash": "9ccb5f2fa767ef873ab29f9ea6237707",
+    "semantic_hash": ""
+  },
+  ".kiro/steering/database-migrations.md": {
+    "mtime": 1782495535.355009,
+    "ast_hash": "352e378c6fe90e93bdefaa0e867f6feb",
+    "semantic_hash": ""
+  },
+  ".kiro/steering/git-conventions.md": {
+    "mtime": 1782495535.3560152,
+    "ast_hash": "7e2b91753d39cedc4ad1d36c338d0293",
+    "semantic_hash": ""
+  },
+  ".kiro/steering/infrastructure-reference.md": {
+    "mtime": 1782495502.3869214,
+    "ast_hash": "cd4d4a1a6664a223dacc38f322af9898",
+    "semantic_hash": ""
+  },
+  "GUIA_PERFORMANCE.md": {
+    "mtime": 1782495502.3899233,
+    "ast_hash": "3562fef6f2b7c092abaeb283dd1b8ac0",
+    "semantic_hash": ""
+  },
+  "docs/.docs-policy.md": {
+    "mtime": 1782495502.4031966,
+    "ast_hash": "eadd5ec9d1c8e581b402f58fbd00d5ed",
+    "semantic_hash": ""
+  },
+  "docs/01-visao-geral/GRAPHIFY_WORKFLOW.md": {
+    "mtime": 1782338926.7597275,
+    "ast_hash": "77e98dddc61dac15fee75a860de15fe0",
+    "semantic_hash": ""
+  },
+  "docs/01-visao-geral/SECURITY_HOOKS.md": {
+    "mtime": 1782344754.5387425,
+    "ast_hash": "0d301e38ec7a3bf9e139de0f45a32811",
+    "semantic_hash": ""
+  },
+  "docs/02-desenvolvimento/OAUTH_FLUXO_COMPLETO.md": {
+    "mtime": 1782495502.4085166,
+    "ast_hash": "6dba2bc0dec9f8d6e66a3c3d956e2988",
+    "semantic_hash": ""
+  },
+  "docs/02-desenvolvimento/OAUTH_PROVIDERS_CONFIG.md": {
+    "mtime": 1782495502.4101024,
+    "ast_hash": "2381e13e29001e51e61c54c70dda2e71",
+    "semantic_hash": ""
+  },
+  "frontend/src/pages/LojaOnlinePublico/__tests__/README.md": {
+    "mtime": 1782495502.4425955,
+    "ast_hash": "63d1d40ccc9dd1f86a69dc1fdec3d3b6",
     "semantic_hash": ""
   }
 }
