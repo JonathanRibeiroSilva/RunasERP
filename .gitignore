@@ -108,6 +108,3 @@ dump.rdb
 # Dev Scripts (Windows batch files for local development)
 dev-scripts/
 *.bat
-
-# Graphify - regenerar localmente (ignore entire directory)
-graphify-out/
