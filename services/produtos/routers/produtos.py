@@ -15,6 +15,7 @@ from schemas.produtos import (
     ProdutoRead,
     ProdutoReadSimples,
     ProdutoLojaOnlineRead,
+    ProdutoCatalogoRead,
     ProdutoUpdate,
     VarianteCreate,
     VarianteRead,
@@ -510,6 +511,36 @@ async def listar_categorias_loja_online_publico(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar categorias: {str(e)}")
+
+
+# ======================== ROUTER CATÁLOGO PÚBLICO ========================
+
+router_catalogo_publico = APIRouter(prefix="/catalogo-publico", tags=["catalogo-publico"])
+
+
+@router_catalogo_publico.get("/produto/{produto_id}", response_model=ProdutoCatalogoRead)
+async def obter_produto_catalogo_publico(
+    produto_id: UUID,
+    empresaSlug: str = Query(..., description="Slug da empresa"),
+    session: AsyncSession = Depends(get_db),
+):
+    """Obtém detalhes de um produto no catálogo público."""
+    try:
+        empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
+        service = ProdutoService(session)
+        produto = await service.obter_produto(empresa_id, produto_id)
+        
+        if not produto.ativo:
+            raise HTTPException(status_code=404, detail="Produto não encontrado")
+        
+        return ProdutoCatalogoRead.model_validate(produto)
+    
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao obter produto: {str(e)}")
 
 
 @router_loja_online_publico.get("/produto/{produto_id}", response_model=ProdutoLojaOnlineRead)

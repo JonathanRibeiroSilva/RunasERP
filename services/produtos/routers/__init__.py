@@ -5,6 +5,7 @@ from routers.produtos import (
     router_variantes,
     router_loja_online,
     router_loja_online_publico,
+    router_catalogo_publico,
     router_fornecedores,
     router_fornecedor_produtos,
 )
@@ -15,6 +16,7 @@ __all__ = [
     "router_variantes",
     "router_loja_online",
     "router_loja_online_publico",
+    "router_catalogo_publico",
     "router_fornecedores",
     "router_fornecedor_produtos",
 ]

@@ -98,6 +98,16 @@ update_*.ps1
 atualizar_*.sql
 update_*.sql
 
-# Graphify (keep output, ignore cache)
-graphify-out/cache/
-.graphify_uncached.txt
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis
+dump.rdb
+
+# Dev Scripts (Windows batch files for local development)
+dev-scripts/
+*.bat
+
+# Graphify - regenerar localmente (ignore entire directory)
+graphify-out/

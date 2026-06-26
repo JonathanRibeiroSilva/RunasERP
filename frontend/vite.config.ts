@@ -65,9 +65,10 @@ export default defineConfig({
       ],
     },
     hmr: {
-      // HMR configuração otimizada para Docker
+      // HMR configuração otimizada
       // - Vite faz bind em 0.0.0.0:3000
-      // - Cloudflare Tunnel faz proxy reverso quando necessário
+      // - Browser conecta via wss://
+      // - Cloudflare Tunnel/Nginx faz proxy reverso quando necessário
       timeout: 60000,
       overlay: false,
     },
