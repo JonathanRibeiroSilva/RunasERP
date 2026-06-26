@@ -65,6 +65,10 @@ export const useCarrinho = (props?: UseCarrinhoProps): UseCarrinhoReturn => {
       setLoading(true);
       setErro(null);
       
+      // 🔍 DEBUG: Verificar cookies
+      console.log('🔍 DEBUG [useCarrinho]: Carregando carrinho');
+      console.log('🔍 DEBUG [useCarrinho]: Cookies:', document.cookie);
+      
       // Montar query params
       const params = new URLSearchParams();
       if (empresaSlug) {
@@ -72,9 +76,18 @@ export const useCarrinho = (props?: UseCarrinhoProps): UseCarrinhoReturn => {
       }
       
       const url = `/loja/carrinho${params.toString() ? `?${params.toString()}` : ''}`;
+      console.log('🔍 DEBUG [useCarrinho]: URL da requisição:', url);
+      
       const response = await apiPublica.get(url);
+      console.log('🔍 DEBUG [useCarrinho]: Carrinho carregado:', {
+        quantidade_itens: response.data.quantidade_itens,
+        subtotal: response.data.subtotal,
+        sessao_id: response.data.sessao_id
+      });
+      
       setCarrinho(response.data);
     } catch (error: any) {
+      console.error('🔍 DEBUG [useCarrinho]: Erro ao carregar carrinho:', error);
       if (error.response?.status === 404) {
         // Carrinho vazio
         setCarrinho({ 

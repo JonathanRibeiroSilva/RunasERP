@@ -40,9 +40,9 @@ O webhook é fundamental para receber notificações de pagamento em tempo real.
 
 3. **Configure a URL do webhook**:
    ```
-   https://pretty-dissuade-brunette.ngrok-free.dev/api/vendas/webhook/mercadopago
+   https://www.runaserp.com.br/api/vendas/webhook/mercadopago
    ```
-   ⚠️ **Importante**: Use sua URL do ngrok atual (a que está no `.env` em `FRONTEND_URL`)
+   ⚠️ **Importante**: Use o domínio Cloudflare configurado (`.env` → `FRONTEND_URL`)
 
 4. **Selecione os eventos a serem notificados**:
    - ✅ `payment` - Quando um pagamento é criado/atualizado

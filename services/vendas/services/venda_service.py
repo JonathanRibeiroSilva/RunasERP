@@ -66,6 +66,14 @@ class VendaService:
                 if response.status_code == 200:
                     produto = response.json()
                     
+                    # Log para debug: ver estrutura do produto
+                    log.info(
+                        "produto_buscado_sucesso",
+                        produto_id=str(produto_id),
+                        tem_nome=bool(produto.get('nome')),
+                        chaves_produto=list(produto.keys())[:10]  # Primeiras 10 chaves
+                    )
+                    
                     # Se tem variante, validar se ela existe no produto
                     if variante_id and produto.get('variantes'):
                         variantes = produto.get('variantes', [])

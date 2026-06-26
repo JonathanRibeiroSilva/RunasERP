@@ -64,7 +64,7 @@ class MercadoPagoService:
         empresa_id: int,
         empresa_slug: str,
         valor_credito_usado: Optional[Decimal] = None
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
         """
         Cria preferência de pagamento no Mercado Pago.
         
@@ -75,15 +75,16 @@ class MercadoPagoService:
             valor_credito_usado: Valor do crédito usado (pagamento misto)
         
         Returns:
-            tuple: (preference_id, init_point, erro)
+            tuple: (preference_id, init_point, sandbox_init_point, erro)
                 - preference_id: ID da preferência criada
-                - init_point: URL para redirecionar cliente
+                - init_point: URL de produção para redirecionar cliente
+                - sandbox_init_point: URL de teste (sandbox) para redirecionar cliente
                 - erro: mensagem de erro se falhou
         """
         # Obter credenciais
         config = await MercadoPagoService.obter_credenciais(db, empresa_id)
         if not config:
-            return (None, None, "Mercado Pago não configurado para esta empresa")
+            return (None, None, None, "Mercado Pago não configurado para esta empresa")
         
         # Calcular valor a pagar (total - crédito usado)
         valor_a_pagar = venda.valor_total
@@ -91,30 +92,65 @@ class MercadoPagoService:
             valor_a_pagar = venda.valor_total - valor_credito_usado
         
         if valor_a_pagar <= 0:
-            return (None, None, "Valor a pagar deve ser maior que zero")
+            return (None, None, None, "Valor a pagar deve ser maior que zero")
         
         # Montar itens da preferência
         items = []
         for item in venda.itens:
-            items.append({
+            item_mp = {
                 "title": item.descricao_produto,
                 "description": f"Código: {item.codigo_produto}" if item.codigo_produto else None,
                 "quantity": int(item.quantidade),
                 "unit_price": float(item.preco_unitario),
                 "currency_id": "BRL"
-            })
+            }
+            items.append(item_mp)
+            
+            # 🔍 Log detalhado de cada item
+            log.info(
+                "item_montado_para_mercadopago",
+                venda_id=str(venda.id),
+                produto_id=str(item.produto_id),
+                descricao_produto_original=item.descricao_produto,
+                title_enviado=item_mp["title"],
+                codigo=item.codigo_produto,
+                quantidade=item.quantidade,
+                preco=float(item.preco_unitario)
+            )
         
         # Webhook URL (por empresa)
         webhook_url = f"{settings.API_BASE_URL}/loja/{empresa_slug}/webhook/mercadopago"
+        
+        # Log das URLs configuradas
+        log.info(
+            "mercadopago_urls_configuradas",
+            venda_id=str(venda.id),
+            webhook_url=webhook_url,
+            frontend_url=settings.FRONTEND_URL,
+            api_base_url=settings.API_BASE_URL
+        )
+        
+        # Corrigir rotas de back_urls para /c/ (loja pública)
+        success_url = f"{settings.FRONTEND_URL}/c/{empresa_slug}/pedido/{venda.numero_venda}?status=success"
+        failure_url = f"{settings.FRONTEND_URL}/c/{empresa_slug}/pedido/{venda.numero_venda}?status=failure"
+        pending_url = f"{settings.FRONTEND_URL}/c/{empresa_slug}/pedido/{venda.numero_venda}?status=pending"
+        
+        log.info(
+            "mercadopago_back_urls_geradas",
+            venda_id=str(venda.id),
+            success_url=success_url,
+            failure_url=failure_url,
+            pending_url=pending_url
+        )
         
         # Montar payload da preferência
         preference_data = {
             "items": items,
             "payer": {},
             "back_urls": {
-                "success": f"{settings.FRONTEND_URL}/loja/{empresa_slug}/pedido/{venda.numero_venda}?status=success",
-                "failure": f"{settings.FRONTEND_URL}/loja/{empresa_slug}/pedido/{venda.numero_venda}?status=failure",
-                "pending": f"{settings.FRONTEND_URL}/loja/{empresa_slug}/pedido/{venda.numero_venda}?status=pending"
+                "success": success_url,
+                "failure": failure_url,
+                "pending": pending_url
             },
             "auto_return": "approved",
             "external_reference": str(venda.id),  # Vincular com venda
@@ -131,12 +167,12 @@ class MercadoPagoService:
                 "default_installments": 1,       # Padrão: à vista
                 "default_payment_method_id": None  # Não forçar método padrão
             },
-            # Configurações adicionais para garantir PIX
+            # Configurações adicionais
             "binary_mode": False,  # False permite pagamentos pendentes (necessário para PIX)
-            "purpose": "onboarding_credits"  # Propósito da transação
+            "purpose": "wallet_purchase"  # Propósito da transação (wallet_purchase para e-commerce)
         }
         
-        # Adicionar dados do cliente se disponível
+        # Adicionar dados do pagador se disponível
         if venda.cliente_id:
             # TODO: Buscar dados do cliente via HTTP
             pass
@@ -145,7 +181,31 @@ class MercadoPagoService:
             if venda.cliente_convidado_nome:
                 preference_data["payer"]["name"] = venda.cliente_convidado_nome
         
+        log.info(
+            "mercadopago_preferencia_montada",
+            venda_id=str(venda.id),
+            binary_mode=preference_data["binary_mode"],
+            auto_return=preference_data["auto_return"]
+        )
+        
+        # Log do payload COMPLETO que será enviado
+        log.info(
+            "mercadopago_payload_completo",
+            venda_id=str(venda.id),
+            payload=preference_data,  # Payload completo para debug
+            access_token_length=len(config.mercadopago_access_token),
+            access_token_inicio=config.mercadopago_access_token[:20]
+        )
+        
         try:
+            # Log ANTES de fazer a requisição
+            log.info(
+                "mercadopago_enviando_requisicao",
+                venda_id=str(venda.id),
+                url=f"{MercadoPagoService.MERCADOPAGO_API_BASE}/checkout/preferences",
+                timeout=10.0
+            )
+            
             # Criar preferência via API do Mercado Pago
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -158,31 +218,63 @@ class MercadoPagoService:
                     timeout=10.0
                 )
                 
+                log.info(
+                    "mercadopago_resposta_recebida",
+                    venda_id=str(venda.id),
+                    status_code=response.status_code,
+                    headers_count=len(response.headers)
+                )
+                
+                # Se não for 2xx, logar corpo da resposta de erro
+                if response.status_code >= 400:
+                    error_body = response.text
+                    log.error(
+                        "mercadopago_erro_resposta",
+                        venda_id=str(venda.id),
+                        status_code=response.status_code,
+                        error_body=error_body[:500]  # Primeiros 500 chars
+                    )
+                
                 response.raise_for_status()
                 data = response.json()
                 
                 preference_id = data.get("id")
                 init_point = data.get("init_point")
+                sandbox_init_point = data.get("sandbox_init_point")
+                
+                # Log detalhado da resposta
+                log.info(
+                    "mercadopago_resposta_completa",
+                    venda_id=str(venda.id),
+                    preference_id=preference_id,
+                    init_point=init_point,
+                    sandbox_init_point=sandbox_init_point,
+                    has_back_urls=bool(data.get("back_urls")),
+                    notification_url=data.get("notification_url"),
+                    back_urls_retornadas=data.get("back_urls")  # ✅ Ver se volta correto
+                )
                 
                 if not preference_id or not init_point:
                     log.error(
                         "mercadopago_resposta_invalida",
                         data=data
                     )
-                    return (None, None, "Resposta inválida do Mercado Pago")
+                    return (None, None, None, "Resposta inválida do Mercado Pago")
                 
                 # Salvar preference_id na venda (sem commit - será feito pelo caller)
                 venda.mercadopago_preference_id = preference_id
                 # NÃO fazer commit aqui - deixar para o fluxo principal fazer
                 
                 log.info(
-                    "mercadopago_preferencia_criada",
+                    "mercadopago_preferencia_criada_sucesso",
                     venda_id=str(venda.id),
                     preference_id=preference_id,
-                    valor=float(valor_a_pagar)
+                    valor=float(valor_a_pagar),
+                    init_point_comeca_com=init_point[:50] if init_point else None,
+                    sandbox_init_point_comeca_com=sandbox_init_point[:50] if sandbox_init_point else None
                 )
                 
-                return (preference_id, init_point, None)
+                return (preference_id, init_point, sandbox_init_point, None)
                 
         except httpx.HTTPStatusError as e:
             error_detail = e.response.text
@@ -192,7 +284,7 @@ class MercadoPagoService:
                 detail=error_detail,
                 venda_id=str(venda.id)
             )
-            return (None, None, f"Erro ao criar preferência: {error_detail}")
+            return (None, None, None, f"Erro ao criar preferência: {error_detail}")
         
         except Exception as e:
             log.error(
@@ -200,7 +292,7 @@ class MercadoPagoService:
                 error=str(e),
                 venda_id=str(venda.id)
             )
-            return (None, None, f"Erro ao criar preferência: {str(e)}")
+            return (None, None, None, f"Erro ao criar preferência: {str(e)}")
     
     @staticmethod
     async def webhook_ja_processado(
@@ -386,6 +478,27 @@ class MercadoPagoService:
             if tipo_evento == "payment.approved":
                 # Pagamento aprovado → CONFIRMAR venda
                 await VendaService.confirmar_venda(db, venda_id, empresa_id)
+                
+                # 🧹 Limpar carrinho após pagamento confirmado
+                if venda.sessao_carrinho_id:
+                    try:
+                        from services.carrinho_service import CarrinhoService
+                        await CarrinhoService.limpar_carrinho(
+                            venda.sessao_carrinho_id,
+                            empresa_id
+                        )
+                        log.info(
+                            "carrinho_limpo_apos_pagamento",
+                            venda_id=str(venda_id),
+                            sessao_id=venda.sessao_carrinho_id
+                        )
+                    except Exception as e:
+                        # Não falhar webhook se limpeza do carrinho falhar
+                        log.warning(
+                            "erro_limpar_carrinho_webhook",
+                            venda_id=str(venda_id),
+                            error=str(e)
+                        )
                 
                 log.info(
                     "webhook_payment_approved",

@@ -132,7 +132,7 @@ if (-not $SkipBackup) {
 Write-Info "Parando containers de desenvolvimento..."
 
 try {
-    docker-compose -f docker-compose.yml -f docker-compose.nginx.yml down
+    docker-compose -f docker-compose.dev.yml down
     Write-Success "Containers de desenvolvimento parados"
 } catch {
     Write-Warning "Não havia containers de desenvolvimento rodando"

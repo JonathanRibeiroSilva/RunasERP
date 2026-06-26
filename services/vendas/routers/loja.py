@@ -230,6 +230,16 @@ async def processar_checkout(
     import structlog
     log = structlog.get_logger()
     
+    # 🔍 DEBUG: Log do cookie recebido
+    log.info(
+        "🔍 DEBUG: Checkout - Cookie recebido no router",
+        sessao_id=sessao_id,
+        sessao_id_exists=bool(sessao_id),
+        sessao_id_length=len(sessao_id) if sessao_id else 0,
+        empresa_id=empresa_id,
+        cliente_nome=data.cliente_novo.nome if data.cliente_novo else None
+    )
+    
     log.info("checkout_recebido", 
              cliente_nome=data.cliente_novo.nome if data.cliente_novo else None,
              tem_endereco=bool(data.endereco_entrega))

@@ -44,10 +44,24 @@ async def webhook_mercadopago(
         # 1. Parsear body
         body = await request.json()
         
+        # Log COMPLETO do webhook recebido (incluindo timestamp)
+        from datetime import datetime, timezone
+        
         log.info(
-            "webhook_recebido",
+            "webhook_mercadopago_recebido_completo",
             empresa_slug=empresa_slug,
-            body=body
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            body=body,
+            headers={
+                "user_agent": request.headers.get("user-agent"),
+                "content_type": request.headers.get("content-type"),
+                "x_request_id": request.headers.get("x-request-id"),
+                "x_signature": request.headers.get("x-signature"),
+                "x_request_timestamp": request.headers.get("x-request-timestamp")
+            },
+            client_host=request.client.host if request.client else None,
+            method=request.method,
+            url=str(request.url)
         )
         
         # 2. Extrair dados do webhook

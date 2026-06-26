@@ -17,6 +17,8 @@ class ItemVendaBase(BaseModel):
     variante_id: Optional[UUID] = Field(None, description="ID da variante (opcional)")
     quantidade: Decimal = Field(..., gt=0, description="Quantidade vendida")
     preco_unitario: Optional[Decimal] = Field(None, ge=0, description="Preço unitário (opcional - busca do produto)")
+    codigo_produto: Optional[str] = Field(None, description="SKU/código de barras do produto")
+    descricao_produto: Optional[str] = Field(None, description="Nome/descrição do produto")
 
 
 class ItemVendaCreate(ItemVendaBase):

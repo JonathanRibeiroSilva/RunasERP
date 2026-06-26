@@ -89,15 +89,19 @@ docker-compose up -d
 - ⚡ [QUICK-START.md](./QUICK-START.md) - Setup em 5 minutos
 
 ### 💻 Para Desenvolver
+- ✅ [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) - Checklist completo
 - 🎨 [FRONTEND_IMPLEMENTACAO.md](./FRONTEND_IMPLEMENTACAO.md) - Guia de implementação frontend
-- ✅ [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) - Checklist de desenvolvimento
+- ⚡ [GUIA_PERFORMANCE.md](./GUIA_PERFORMANCE.md) - Otimização e performance
+- 📋 [docs/02-desenvolvimento/](./docs/02-desenvolvimento/) - Guias técnicos
+- 🔧 [.kiro/steering/git-conventions.md](./.kiro/steering/git-conventions.md) - Convenções
 
 ### 📁 Documentação Completa
 - 📂 [docs/01-principal/](./docs/01-principal/) - Documentação principal
-- 📂 [docs/02-desenvolvimento/](./docs/02-desenvolvimento/) - Guias técnicos
-- 📂 [docs/03-changelogs/](./docs/03-changelogs/) - Histórico de mudanças
-- 📂 [docs/04-configuracao/](./docs/04-configuracao/) - Configurações e integrações
-- 📂 [docs/05-seguranca/](./docs/05-seguranca/) - Segurança e compliance
+- 📂 [docs/03-arquitetura/](./docs/03-arquitetura/) - Arquitetura do sistema
+- 📂 [docs/04-backend/](./docs/04-backend/) - Backend e APIs
+- 📂 [docs/05-frontend/](./docs/05-frontend/) - Frontend React
+- 📂 [docs/10-api-reference/](./docs/10-api-reference/) - Referência completa de APIs
+- 📂 [docs/11-regras-negocio/](./docs/11-regras-negocio/) - Regras de negócio
 
 ---
 
@@ -126,19 +130,19 @@ docker-compose up -d
 
 ## 🎯 Próximas Implementações
 
-### Sprint 2 (1-2 semanas) - PDV 🔥
-- [ ] Lista de vendas
-- [ ] Interface PDV
-- [ ] Confirmação de vendas
-- [ ] Detalhes da venda
+Para um roadmap detalhado, consulte: [docs/01-visao-geral/roadmap.md](./docs/01-visao-geral/roadmap.md)
 
-### Sprint 3 (1-2 semanas) - Estoque 🔥
-- [ ] Lista de produtos em estoque
-- [ ] Movimentações (entrada/saída)
-- [ ] Ajustes de inventário
-- [ ] Histórico de movimentações
+### Alta Prioridade
+- **PDV (Vendas)** - Frontend para ponto de venda
+- **Estoque** - Frontend para gestão de estoque
+- **Relatórios** - Dashboards e relatórios
 
-📋 **Detalhes**: [FRONTEND_IMPLEMENTACAO.md](./FRONTEND_IMPLEMENTACAO.md)
+### Médio Prazo
+- **Financeiro** - Gestão financeira completa
+- **Notificações** - Sistema de notificações WhatsApp
+- **Analytics** - Métricas e análises avançadas
+
+📋 **Guia de desenvolvimento**: [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md)
 
 ---
 
@@ -146,10 +150,13 @@ docker-compose up -d
 
 ```bash
 # Desenvolvimento
-docker-compose up -d              # Subir todos os serviços
-docker-compose logs -f [serviço]  # Ver logs
-docker-compose restart [serviço]  # Reiniciar serviço
-docker-compose down               # Parar tudo
+docker-compose -f docker-compose.dev.yml up -d                # Subir todos os serviços
+docker-compose -f docker-compose.dev.yml logs -f [serviço]    # Ver logs
+docker-compose -f docker-compose.dev.yml restart [serviço]    # Reiniciar serviço
+docker-compose -f docker-compose.dev.yml down                 # Parar tudo
+
+# Cloudflare Tunnel (acesso externo)
+docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
 
 # Frontend
 cd frontend
@@ -160,6 +167,7 @@ npm run build                     # Build de produção
 cd services/[serviço]
 alembic upgrade head              # Rodar migrations
 python seed.py                    # Popular dados de teste
+pytest                            # Rodar testes
 ```
 
 ---
@@ -181,16 +189,16 @@ O sistema utiliza **OAuth2 com JWT** e **RBAC**:
 
 ```bash
 # 1. Crie uma branch
-git checkout -b feature/nova-feature
+git checkout -b feat/nova-feature
 
-# 2. Commit (seguindo Conventional Commits)
+# 2. Desenvolva e commit (seguindo Conventional Commits)
 git commit -m "feat(modulo): adiciona nova funcionalidade"
 
 # 3. Push e PR
-git push origin feature/nova-feature
+git push origin feat/nova-feature
 ```
 
-**Convenções**: Veja [.kiro/steering/git-conventions.md](./.kiro/steering/git-conventions.md)
+**Convenções**: Veja [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) e [.kiro/steering/git-conventions.md](./.kiro/steering/git-conventions.md)
 
 ---
 

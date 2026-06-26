@@ -65,18 +65,16 @@ export default defineConfig({
       ],
     },
     hmr: {
-      // HMR via nginx/ngrok:
-      // - Vite faz bind em 0.0.0.0:3000 (padrão quando host não é especificado)
-      // - Browser conecta em wss://ngrok:443/@vite/client
-      // - Nginx faz proxy reverso para ws://frontend:3000
-      // NÃO especificar host/port aqui — deixar o Vite usar defaults locais
+      // HMR configuração otimizada para Docker
+      // - Vite faz bind em 0.0.0.0:3000
+      // - Cloudflare Tunnel faz proxy reverso quando necessário
       timeout: 60000,
       overlay: false,
     },
     middlewareMode: false,
-    // Proxy condicional - apenas para desenvolvimento local (sem Nginx)
-    // Quando VITE_USE_PROXY=false (Docker + Nginx), o Nginx faz o proxy de /api
-    // Quando VITE_USE_PROXY=true (local sem Docker), o Vite faz o proxy de /api
+    // Proxy condicional - apenas para desenvolvimento local (sem Docker)
+    // Quando VITE_USE_PROXY=false (Docker + Cloudflare), o Cloudflare faz proxy de /api
+    // Quando VITE_USE_PROXY=true (local sem Docker), o Vite faz proxy de /api
     ...(process.env.VITE_USE_PROXY !== 'false' && {
       proxy: {
         '/api': {

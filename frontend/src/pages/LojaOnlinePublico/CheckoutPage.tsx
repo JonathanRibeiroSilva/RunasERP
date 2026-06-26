@@ -261,23 +261,22 @@ const CheckoutPage = () => {
       setModoCheckout('guest');
       setCurrentStep(1);
     } catch (error: any) {
-      logCheckoutError(error, {
-        component: 'CheckoutPage',
-        action: 'buscarDadosCliente',
-        metadata: { empresaSlug }
-      });
-      
+      // ✅ CORREÇÃO: 401 é esperado quando não está logado - não logar como erro
       if (error.response?.status === 401) {
-        // Cookies expirados ou inválidos
+        // Silenciosamente ignorar - usuário não está logado
         setClienteAutenticado(null);
-        setModoCheckout('selecao');
-        Toast.error('Sessão expirada. Por favor, faça login novamente.');
       } else if (error.response?.status === 404) {
+        // Cliente não encontrado
         setClienteAutenticado(null);
         setModoCheckout('selecao');
         Toast.error('Conta não encontrada. Por favor, faça login novamente.');
       } else {
-        // Não autenticado - comportamento normal
+        // Logar apenas erros reais (não 401/404)
+        logCheckoutError(error, {
+          component: 'CheckoutPage',
+          action: 'buscarDadosCliente',
+          metadata: { empresaSlug }
+        });
       }
     } finally {
       setCarregandoCliente(false);
@@ -680,6 +679,11 @@ const CheckoutPage = () => {
 
     // Toast de loading
     const toastId = Toast.loading('Processando pedido...');
+    
+    // 🔍 DEBUG: Verificar cookies antes do checkout
+    console.log('🔍 DEBUG: Cookies antes do checkout:', document.cookie);
+    const cartCookie = document.cookie.split('; ').find(row => row.startsWith('cart_session_id='));
+    console.log('🔍 DEBUG: Cookie cart_session_id:', cartCookie ? cartCookie.split('=')[1] : 'NÃO ENCONTRADO');
 
     try {
       // 1. Atualizar cadastro se necessário (para usuários autenticados)
@@ -721,15 +725,40 @@ const CheckoutPage = () => {
       const response = await apiPublica.post(`/loja/checkout?empresaSlug=${empresaSlug}`, payload);
       const { venda_id, numero_venda, mercadopago_init_point } = response.data;
 
+      // 🔍 DEBUG: Log da resposta do checkout
+      console.log('🔍 DEBUG: Resposta do checkout:', {
+        venda_id,
+        numero_venda,
+        tem_mercadopago_link: !!mercadopago_init_point,
+        mercadopago_link: mercadopago_init_point
+      });
+
       // Atualiza toast para sucesso
       Toast.update(toastId, 'success', 'Pedido realizado com sucesso!');
 
       // Se pagamento online (PIX/Cartão), redirecionar IMEDIATAMENTE para Mercado Pago
-      // O backend já limpou o carrinho, não precisamos fazer no frontend antes de sair
+      // O backend já limpará o carrinho após confirmação do webhook
+      // Mas limpamos também no frontend para evitar que o carrinho apareça se o usuário voltar
       if (mercadopago_init_point) {
-        // Redirecionar imediatamente sem limpar carrinho no frontend
-        // (evita mostrar carrinho vazio antes de redirecionar)
-        window.location.href = mercadopago_init_point;
+        // 🔍 DEBUG: Verificar cookie antes de redirecionar
+        console.log('🔍 DEBUG: Antes de redirecionar para Mercado Pago');
+        console.log('🔍 DEBUG: Cookies:', document.cookie);
+        console.log('🔍 DEBUG: URL do Mercado Pago:', mercadopago_init_point);
+        
+        // Limpar carrinho no frontend (não aguardar resposta - fire and forget)
+        limparCarrinho().catch(err => {
+          // Ignorar erro silenciosamente - webhook fará a limpeza de qualquer forma
+          console.warn('Erro ao limpar carrinho (será limpo pelo webhook):', err);
+        });
+        
+        console.log('🔍 DEBUG: Redirecionando em 2 segundos...');
+        
+        // Aguardar 2 segundos para dar tempo de ver os logs
+        setTimeout(() => {
+          console.log('🔍 DEBUG: Redirecionando AGORA para:', mercadopago_init_point);
+          window.location.href = mercadopago_init_point;
+        }, 2000);
+        
         return; // Importante: retornar para não executar código abaixo
       }
 

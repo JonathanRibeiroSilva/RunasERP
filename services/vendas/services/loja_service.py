@@ -72,10 +72,37 @@ class LojaService:
         12. Retorna dados da venda
         """
         try:
+            # 🔍 DEBUG: Log inicial do checkout
+            log.info(
+                "🔍 DEBUG: Iniciando checkout",
+                sessao_id=sessao_id,
+                empresa_id=empresa_id,
+                cliente_id=str(data.cliente_id) if data.cliente_id else None,
+                tem_cliente_novo=bool(data.cliente_novo),
+                tipo_entrega=data.tipo_entrega.value,
+                formas_pagamento=[p.forma_pagamento.value for p in data.pagamentos]
+            )
+            
             # 1. Obter carrinho
             carrinho = await CarrinhoService.obter_ou_criar_carrinho(sessao_id, empresa_id)
             
+            # 🔍 DEBUG: Log do carrinho obtido
+            log.info(
+                "🔍 DEBUG: Carrinho obtido do Redis",
+                sessao_id=sessao_id,
+                carrinho_vazio=not carrinho.itens,
+                quantidade_itens=len(carrinho.itens),
+                subtotal=float(carrinho.subtotal) if carrinho.itens else 0,
+                criado_em=str(carrinho.criado_em),
+                atualizado_em=str(carrinho.atualizado_em)
+            )
+            
             if not carrinho.itens:
+                log.error(
+                    "❌ DEBUG: Carrinho vazio no checkout",
+                    sessao_id=sessao_id,
+                    empresa_id=empresa_id
+                )
                 raise ValueError("Carrinho está vazio")
             
             # 2. Determinar e validar cliente
@@ -150,7 +177,8 @@ class LojaService:
                                 # 2. Criar autenticação no API Gateway
                                 from passlib.context import CryptContext
                                 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-                                senha_hash = pwd_context.hash(senha_temporaria)
+                                # Bcrypt limita senhas a 72 bytes - truncar se necessário
+                                senha_hash = pwd_context.hash(senha_temporaria[:72])
                                 
                                 auth_payload = {
                                     "email": cliente_info['email'],
@@ -322,7 +350,9 @@ class LojaService:
                     produto_id=item.produto_id,
                     variante_id=item.variante_id,
                     quantidade=item.quantidade,
-                    preco_unitario=item.preco_unitario
+                    preco_unitario=item.preco_unitario,
+                    codigo_produto=item.codigo_produto,  # 🔧 CORREÇÃO: Incluir código
+                    descricao_produto=item.descricao_produto  # 🔧 CORREÇÃO: Incluir descrição
                 )
                 for item in carrinho.itens
             ]
@@ -351,7 +381,8 @@ class LojaService:
             # 8.1 Atualizar campos adicionais da venda
             updates = {
                 'status': status_inicial.value,
-                'valor_frete': valor_frete
+                'valor_frete': valor_frete,
+                'sessao_carrinho_id': sessao_id  # 🔑 Salvar sessao_id para limpar carrinho depois
             }
             
             # Se cliente convidado, salvar dados
@@ -412,31 +443,152 @@ class LojaService:
                         com_relacionamentos=True
                     )
                     
-                    preferencia_id, init_point, erro = await MercadoPagoService.criar_preferencia(
+                    preferencia_id, init_point, sandbox_init_point, erro = await MercadoPagoService.criar_preferencia(
                         db=db,
                         venda=venda_completa,
                         empresa_id=empresa_id,
                         empresa_slug=empresa_slug
                     )
                     
+                    # Log IMEDIATAMENTE após receber resposta
+                    log.info(
+                        "mercadopago_retorno_recebido",
+                        venda_id=str(venda.id),
+                        tem_preferencia_id=bool(preferencia_id),
+                        tem_init_point=bool(init_point),
+                        tem_sandbox=bool(sandbox_init_point),
+                        tem_erro=bool(erro),
+                        erro_valor=erro if erro else "None",
+                        init_point_valor=init_point[:50] if init_point else "None",
+                        sandbox_valor=sandbox_init_point[:50] if sandbox_init_point else "None"
+                    )
+                    
                     if erro:
                         log.error("erro_mercadopago", erro=erro)
-                    elif init_point:
-                        mercadopago_init_point = init_point
+                    
+                    log.info("PASSOU_DO_IF_ERRO", venda_id=str(venda.id))
+                    
+                    log.info("ANTES_DO_TRY_URLS", venda_id=str(venda.id))
+                    
+                    # Processar URLs com try/except individual para capturar erro exato
+                    try:
+                        log.info("ENTROU_NO_TRY_URLS", venda_id=str(venda.id))
                         
-                        # Salvar preference_id na venda
-                        await VendaRepository.atualizar(
-                            db,
-                            empresa_id,
-                            venda.id,
-                            mercadopago_preference_id=preferencia_id
+                        # Debug: testar condição
+                        condicao_urls = init_point or sandbox_init_point
+                        log.info(
+                            "debug_condicao_urls",
+                            venda_id=str(venda.id),
+                            condicao_resultado=bool(condicao_urls),
+                            init_point_type=type(init_point).__name__,
+                            sandbox_type=type(sandbox_init_point).__name__
+                        )
+                        
+                        # Processar URLs independente de erro (se URLs existem, usar)
+                        if init_point or sandbox_init_point:
+                            log.info("ENTROU_NO_BLOCO_URLS", venda_id=str(venda.id))
+                            
+                            # Log dos valores recebidos
+                            log.info(
+                                "mercadopago_urls_recebidas",
+                                venda_id=str(venda.id),
+                                tem_init_point=bool(init_point),
+                                tem_sandbox=bool(sandbox_init_point)
+                            )
+                            
+                            # ✅ Detectar se estamos em modo de teste
+                            # Credenciais de teste começam com TEST ou contêm "test" no access_token
+                            config = await MercadoPagoService.obter_credenciais(db, empresa_id)
+                            
+                            if not config:
+                                log.error("config_nao_encontrada", empresa_id=empresa_id)
+                                mercadopago_init_point = init_point or sandbox_init_point
+                            else:
+                                # Log das credenciais (parcial, sem expor token completo)
+                                log.info(
+                                    "verificando_modo_teste",
+                                    access_token_inicio=config.mercadopago_access_token[:20] if config.mercadopago_access_token else None,
+                                    public_key_inicio=config.mercadopago_public_key[:20] if config.mercadopago_public_key else None,
+                                    access_token_length=len(config.mercadopago_access_token) if config.mercadopago_access_token else 0
+                                )
+                                
+                                is_test_mode = (
+                                    'TEST' in config.mercadopago_access_token.upper() or
+                                    config.mercadopago_public_key.startswith('TEST-') or
+                                    (config.mercadopago_public_key.startswith('APP_USR-') and len(config.mercadopago_access_token) < 100)
+                                )
+                                
+                                log.info(
+                                    "modo_detectado",
+                                    is_test_mode=is_test_mode,
+                                    venda_id=str(venda.id)
+                                )
+                                
+                                # Usar sandbox_init_point se em modo de teste, senão production
+                                if is_test_mode and sandbox_init_point:
+                                    mercadopago_init_point = sandbox_init_point
+                                    log.info(
+                                        "usando_sandbox_mercadopago",
+                                        venda_id=str(venda.id),
+                                        url=sandbox_init_point[:80]
+                                    )
+                                else:
+                                    mercadopago_init_point = init_point
+                                    log.info(
+                                        "usando_production_mercadopago",
+                                        venda_id=str(venda.id),
+                                        url=init_point[:80] if init_point else None
+                                    )
+                            
+                            # Salvar preference_id na venda
+                            await VendaRepository.atualizar(
+                                db,
+                                empresa_id,
+                                venda.id,
+                                mercadopago_preference_id=preferencia_id
+                            )
+                            
+                            log.info(
+                                "processamento_urls_finalizado",
+                                venda_id=str(venda.id),
+                                mercadopago_init_point_definido=bool(mercadopago_init_point)
+                            )
+                    
+                    except Exception as e_urls:
+                        log.error(
+                            "erro_processar_urls_mercadopago",
+                            venda_id=str(venda.id),
+                            error=str(e_urls),
+                            error_type=type(e_urls).__name__
+                        )
+                        import traceback
+                        log.error(
+                            "erro_urls_stacktrace",
+                            venda_id=str(venda.id),
+                            stacktrace=traceback.format_exc()
                         )
                     
                 except Exception as e:
                     log.error(
+                        "EXCEPT_EXTERNO_ACIONADO",
+                        venda_id=str(venda.id),
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        error_traceback=str(e.__traceback__)
+                    )
+                    log.error(
                         "erro_criar_preferencia_mercadopago",
                         venda_id=str(venda.id),
-                        error=str(e)
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        error_traceback=str(e.__traceback__)
+                    )
+                    # Log de stack trace completo
+                    import traceback
+                    log.error(
+                        "erro_criar_preferencia_stacktrace",
+                        venda_id=str(venda.id),
+                        stacktrace=traceback.format_exc()
                     )
                     # Não falhar o checkout por erro no Mercado Pago
                     # Cliente pode pagar depois manualmente
@@ -461,8 +613,51 @@ class LojaService:
                     error=str(e)
                 )
             
-            # 12. Limpar carrinho
-            await CarrinhoService.limpar_carrinho(sessao_id, empresa_id)
+            # 12. Limpar carrinho APENAS se pagamento offline
+            # Para pagamento online, carrinho só é limpo após confirmação do webhook
+            
+            # 🔍 DEBUG: Verificar estado do carrinho ANTES da decisão
+            log.info(
+                "🔍 DEBUG: Estado do carrinho antes da limpeza",
+                sessao_id=sessao_id,
+                venda_id=str(venda.id),
+                tem_pagamento_online=tem_pagamento_online,
+                quantidade_itens_carrinho=len(carrinho.itens),
+                subtotal_carrinho=float(carrinho.subtotal)
+            )
+            
+            if not tem_pagamento_online:
+                await CarrinhoService.limpar_carrinho(sessao_id, empresa_id)
+                log.info(
+                    "✅ Carrinho limpo - pagamento offline",
+                    sessao_id=sessao_id,
+                    venda_id=str(venda.id)
+                )
+            else:
+                log.info(
+                    "⏸️ Carrinho MANTIDO - aguardando pagamento online",
+                    sessao_id=sessao_id,
+                    venda_id=str(venda.id),
+                    sessao_carrinho_id_salvo=updates.get('sessao_carrinho_id'),
+                    mensagem="Carrinho será limpo após confirmação do pagamento via webhook"
+                )
+                
+                # 🔍 DEBUG: Verificar se carrinho ainda existe no Redis
+                try:
+                    carrinho_pos_checkout = await CarrinhoService.obter_ou_criar_carrinho(sessao_id, empresa_id)
+                    log.info(
+                        "🔍 DEBUG: Carrinho após checkout (deve estar intacto)",
+                        sessao_id=sessao_id,
+                        existe=True,
+                        quantidade_itens=len(carrinho_pos_checkout.itens),
+                        subtotal=float(carrinho_pos_checkout.subtotal)
+                    )
+                except Exception as e:
+                    log.error(
+                        "❌ DEBUG: Erro ao verificar carrinho após checkout",
+                        sessao_id=sessao_id,
+                        erro=str(e)
+                    )
             
             await db.commit()
             
@@ -472,7 +667,8 @@ class LojaService:
                 venda_id=str(venda.id),
                 numero_venda=venda.numero_venda,
                 valor_total=float(venda.valor_total),
-                status=status_inicial.value
+                status=status_inicial.value,
+                tem_pagamento_online=tem_pagamento_online
             )
             
             # 13. Retornar resposta

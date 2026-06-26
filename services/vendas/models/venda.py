@@ -96,6 +96,9 @@ class Venda(Base):
     mercadopago_preference_id = Column(String(100), nullable=True, index=True)
     mercadopago_payment_id = Column(String(100), nullable=True, index=True)
     
+    # Sessão do carrinho (para limpar após pagamento confirmado)
+    sessao_carrinho_id = Column(String(100), nullable=True, comment="ID da sessão do carrinho Redis")
+    
     # Valor do frete (taxa de entrega)
     valor_frete = Column(Numeric(10, 2), nullable=False, default=0.0)
     

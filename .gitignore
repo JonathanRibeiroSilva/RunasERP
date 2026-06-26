@@ -22,76 +22,82 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
-.venv
+env/
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Kiro (configurações locais do editor)
-.kiro/
-
-# Environment variables
-.env
-.env.local
-.env.ngrok
-.env.cloudflare
-.env.production
-*.env
-!.env.example
-!.env.production.example
-
-# Database
-*.db
-*.sqlite3
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
 logs/
 
-# Testing
-.pytest_cache/
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Keep example env files
+!.env.example
+!.env.*.example
+
+# Database
+*.db
+*.sqlite3
+
+# Test coverage
 .coverage
 htmlcov/
-.tox/
+.pytest_cache/
+
+# Node (Frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+dist-ssr/
 
 # Docker
-*.pid
+docker-compose.override.yml
 
-# OS
-.DS_Store
-Thumbs.db
+# Temporary files
+tmp/
+temp/
+*.tmp
 
-# Alembic
-alembic/versions/*.pyc
+# Documentation temporary files (NEW POLICY)
+*_TEMP.md
+*_WIP.md
+*_DRAFT.md
+CHANGELOG_*.md
+BUGFIX_*.md
+AUDITORIA_*.md
+RESUMO_*.md
+FINAL_*.md
+PRONTO_*.md
+TESTAR_*.md
+COMO_*.md
+MANUAL_*.md
+GUIA_TESTES_*.md
 
-# pgAdmin
-pgadmin/
-!pgadmin/servers.json
-!pgadmin/pgpass
+# Test scripts (keep only pytest)
+test_*.ps1
+monitor_*.ps1
+update_*.ps1
+*.sql.tmp
+atualizar_*.sql
+update_*.sql
 
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
-# Redis
-dump.rdb
-
-# Arquivos temporários de desenvolvimento local
-REORGANIZACAO-COMPLETA.md
-
-# Dev Scripts (Windows batch files for local development)
-dev-scripts/
-*.bat
-
-# Graphify - Versionar apenas arquivos essenciais
-# GitHub Actions atualiza automaticamente após cada push
-# HTMLs e cache são ignorados (podem ser regenerados localmente)
-graphify-out/**/*.html
+# Graphify (keep output, ignore cache)
 graphify-out/cache/
-
+.graphify_uncached.txt
