@@ -77,7 +77,7 @@ interface Cliente {
 const CheckoutPage = () => {
   const { empresaSlug } = useParams<{ empresaSlug: string }>();
   const navigate = useNavigate();
-  const { carrinho, limparCarrinho, carregarCarrinho } = useCarrinho({ empresaSlug });
+  const { carrinho, loading: carrinhoLoading, limparCarrinho, carregarCarrinho } = useCarrinho({ empresaSlug });
 
   // Modo de checkout
   const [modoCheckout, setModoCheckout] = useState<ModoCheckout>('selecao');
@@ -736,28 +736,15 @@ const CheckoutPage = () => {
       // Atualiza toast para sucesso
       Toast.update(toastId, 'success', 'Pedido realizado com sucesso!');
 
-      // Se pagamento online (PIX/Cartão), redirecionar IMEDIATAMENTE para Mercado Pago
-      // O backend já limpará o carrinho após confirmação do webhook
-      // Mas limpamos também no frontend para evitar que o carrinho apareça se o usuário voltar
+      // Se pagamento online (PIX/Cartão), redirecionar para Mercado Pago
+      // Backend manterá o carrinho até webhook confirmar pagamento
+      // Não precisamos fazer nada no frontend - backend gerencia tudo
       if (mercadopago_init_point) {
-        // 🔍 DEBUG: Verificar cookie antes de redirecionar
-        console.log('🔍 DEBUG: Antes de redirecionar para Mercado Pago');
-        console.log('🔍 DEBUG: Cookies:', document.cookie);
-        console.log('🔍 DEBUG: URL do Mercado Pago:', mercadopago_init_point);
+        console.log('🔍 DEBUG: Redirecionando para Mercado Pago');
+        console.log('🔍 DEBUG: Carrinho será limpo pelo webhook após confirmação');
         
-        // Limpar carrinho no frontend (não aguardar resposta - fire and forget)
-        limparCarrinho().catch(err => {
-          // Ignorar erro silenciosamente - webhook fará a limpeza de qualquer forma
-          console.warn('Erro ao limpar carrinho (será limpo pelo webhook):', err);
-        });
-        
-        console.log('🔍 DEBUG: Redirecionando em 2 segundos...');
-        
-        // Aguardar 2 segundos para dar tempo de ver os logs
-        setTimeout(() => {
-          console.log('🔍 DEBUG: Redirecionando AGORA para:', mercadopago_init_point);
-          window.location.href = mercadopago_init_point;
-        }, 2000);
+        // Redirecionar imediatamente
+        window.location.href = mercadopago_init_point;
         
         return; // Importante: retornar para não executar código abaixo
       }
@@ -833,7 +820,19 @@ const CheckoutPage = () => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorNum);
   };
 
-  // Early return se carrinho vazio
+  // Loading state - mostra enquanto carrega o carrinho
+  if (carrinhoLoading || (!carrinho && carregandoCliente)) {
+    return (
+      <div className="checkout-page">
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Carregando checkout...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Early return se carrinho vazio (mas NÃO se ainda está carregando)
   if (!carrinho || carrinho.itens.length === 0) {
     return (
       <div className="checkout-page">

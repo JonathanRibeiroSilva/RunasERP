@@ -508,17 +508,31 @@ class MercadoPagoService:
                 )
                 
             elif tipo_evento in ["payment.rejected", "payment.cancelled"]:
-                # Pagamento rejeitado/cancelado → CANCELAR venda
-                motivo = f"Pagamento {tipo_evento.split('.')[1]} pelo Mercado Pago"
-                await VendaService.cancelar_venda(
-                    db, venda_id, empresa_id, motivo=motivo
+                # ⚠️ Pagamento rejeitado/cancelado
+                # ESTRATÉGIA: NÃO cancelar venda imediatamente
+                # Permitir que cliente tente novo pagamento
+                
+                # Atualizar status para PENDENTE_PAGAMENTO (se estava em outro estado)
+                if venda.status != StatusVenda.PENDENTE_PAGAMENTO.value:
+                    venda.status = StatusVenda.PENDENTE_PAGAMENTO.value
+                    await db.flush()
+                
+                # Registrar histórico
+                await HistoricoStatusService.registrar_mudanca(
+                    db,
+                    venda.id,
+                    venda.status,
+                    StatusVenda.PENDENTE_PAGAMENTO.value,
+                    None,  # Sistema
+                    f"Pagamento {tipo_evento.split('.')[1]} - aguardando nova tentativa"
                 )
                 
                 log.warning(
                     "webhook_payment_rejected_cancelled",
                     venda_id=str(venda_id),
                     payment_id=payment_id,
-                    tipo=tipo_evento
+                    tipo=tipo_evento,
+                    mensagem="Venda mantida para nova tentativa de pagamento"
                 )
                 
             elif tipo_evento == "payment.refunded":

@@ -72,13 +72,13 @@ export default defineConfig({
       overlay: false,
     },
     middlewareMode: false,
-    // Proxy condicional - apenas para desenvolvimento local (sem Docker)
-    // Quando VITE_USE_PROXY=false (Docker + Cloudflare), o Cloudflare faz proxy de /api
-    // Quando VITE_USE_PROXY=true (local sem Docker), o Vite faz proxy de /api
+    // Proxy condicional - funciona tanto em Docker quanto local
+    // Quando VITE_USE_PROXY=false, não cria proxy (útil quando há proxy externo como nginx/cloudflare)
+    // Quando VITE_USE_PROXY=true (padrão Docker), o Vite faz proxy de /api para api-gateway:8000
     ...(process.env.VITE_USE_PROXY !== 'false' && {
       proxy: {
         '/api': {
-          target: 'http://localhost:8000',
+          target: process.env.VITE_API_GATEWAY_TARGET || 'http://api-gateway:8000',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },

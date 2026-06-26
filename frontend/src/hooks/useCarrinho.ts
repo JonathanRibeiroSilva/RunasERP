@@ -6,6 +6,7 @@ const apiPublica = axios.create({
   baseURL: '/api',
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,  // ✅ CRITICAL: Envia cookies HTTP-only em todas as requisições
 });
 
 // Tipos (alinhados com o backend)

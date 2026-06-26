@@ -112,6 +112,132 @@ All code written must follow software engineering best practices. These are non-
 - **Queries parametrizadas**: nunca concatenar strings SQL — usar SQLAlchemy ORM
 - **Princípio do menor privilégio**: cada serviço acessa apenas seu próprio schema
 
+### 🔒 Regras de Segurança Obrigatórias (NÃO NEGOCIÁVEIS)
+
+Estas regras **NUNCA** devem ser violadas. Se o agente sugerir qualquer uma das práticas proibidas abaixo, é um erro crítico que deve ser rejeitado.
+
+#### ❌ NUNCA Usar (Proibido)
+
+1. **localStorage / sessionStorage para tokens**
+   - ❌ `localStorage.setItem('token', jwt)`
+   - ❌ `sessionStorage.setItem('access_token', token)`
+   - **Por quê?**: Vulnerável a XSS (Cross-Site Scripting)
+
+2. **Tokens em query parameters**
+   - ❌ `https://api.com/dados?token=abc123`
+   - **Por quê?**: Exposto em logs, histórico do navegador, referrers
+
+3. **Senhas em plain text**
+   - ❌ Armazenar senhas sem hash
+   - ❌ Logar senhas (mesmo em dev)
+   - ❌ Enviar senhas em GET requests
+
+4. **CORS com wildcard em produção**
+   - ❌ `Access-Control-Allow-Origin: *`
+   - **Por quê?**: Permite qualquer origem acessar a API
+
+5. **Dados sensíveis no frontend**
+   - ❌ Lógica de negócio crítica em JavaScript
+   - ❌ Validação apenas no frontend
+   - ❌ Secrets/API keys em código frontend
+
+6. **SQL Injection vulnerabilities**
+   - ❌ `f"SELECT * FROM users WHERE id = {user_id}"`
+   - ❌ String concatenation em queries
+   - **Por quê?**: Permite execução de SQL arbitrário
+
+#### ✅ SEMPRE Usar (Obrigatório)
+
+1. **HttpOnly Cookies para tokens**
+   ```python
+   # Backend: FastAPI
+   response.set_cookie(
+       key="access_token",
+       value=token,
+       httponly=True,      # ← Não acessível via JavaScript
+       secure=True,        # ← Apenas HTTPS
+       samesite="lax",     # ← Proteção CSRF
+       max_age=1800        # ← 30 minutos
+   )
+   ```
+   ```typescript
+   // Frontend: NÃO precisa manipular o token
+   // O navegador envia automaticamente o cookie
+   fetch('https://api.com/dados', {
+     credentials: 'include'  // ← Envia cookies automaticamente
+   })
+   ```
+
+2. **Bcrypt/Argon2 para senhas**
+   ```python
+   from passlib.context import CryptContext
+   
+   pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+   hashed = pwd_context.hash(senha)  # ← Sempre hash
+   ```
+
+3. **CORS restritivo**
+   ```python
+   # Apenas origins específicas
+   origins = [
+       "https://www.runaserp.com.br",
+       "http://localhost:3000"  # Apenas em dev
+   ]
+   ```
+
+4. **Validação backend obrigatória**
+   ```python
+   # SEMPRE validar no backend, mesmo se validado no frontend
+   def criar_cliente(dados: ClienteCreate) -> Cliente:
+       if not validar_cpf(dados.cpf):
+           raise ValidationError("CPF inválido")
+       # ... resto da lógica
+   ```
+
+5. **Rate limiting**
+   ```python
+   # Proteger endpoints críticos
+   @limiter.limit("5 per minute")  # Login
+   @limiter.limit("10 per minute") # Cadastro
+   ```
+
+6. **Content Security Policy (CSP)**
+   ```python
+   # Headers de segurança
+   response.headers["Content-Security-Policy"] = "default-src 'self'"
+   response.headers["X-Content-Type-Options"] = "nosniff"
+   response.headers["X-Frame-Options"] = "DENY"
+   ```
+
+#### 🎯 Padrão de Autenticação do Projeto
+
+**Fluxo OAuth2 + HttpOnly Cookies**:
+
+1. **Login** → Backend gera JWT → Armazena em HttpOnly Cookie
+2. **Requests** → Frontend envia cookie automaticamente (credentials: 'include')
+3. **Refresh** → Backend valida refresh token → Gera novo access token → Atualiza cookie
+4. **Logout** → Backend invalida token + limpa cookie
+
+**Arquivos de referência**:
+- `api-gateway/auth/jwt.py` - Geração de tokens
+- `api-gateway/routers/auth.py` - Endpoints de autenticação
+- `frontend/src/contexts/AuthContext.tsx` - Client-side auth (sem manipular tokens)
+
+#### 🚨 Red Flags - Rejeitar Imediatamente
+
+Se o agente sugerir qualquer um destes padrões, **interrompa e corrija**:
+
+- "Vamos guardar o token no localStorage..."
+- "Adiciona o token na URL..."
+- "Envia a senha em base64..." (não é criptografia!)
+- "Valida o CPF só no frontend..."
+- "Usa CORS * para simplificar..."
+- "Deixa sem rate limit por enquanto..."
+
+**Resposta correta**: "Essa abordagem viola as regras de segurança. Vou usar [solução segura] em vez disso."
+
+---
+
 ## Code Structure (FastAPI + SQLAlchemy)
 
 ```
@@ -538,6 +664,178 @@ Graphify mantém um **grafo de conhecimento** do projeto em `graphify-out/`, map
 - **Componentes**: arquivos, classes, funções, rotas
 - **Relacionamentos**: imports, chamadas, dependências
 - **Comunidades**: clusters de código relacionado
+
+## 🎯 Uso Obrigatório do Graphify (ECONOMIZA TOKENS!)
+
+**REGRA**: Antes de ler arquivos ou fazer `grep_search` para entender o código, **SEMPRE consulte o Graphify primeiro**.
+
+### ❌ Fluxo ERRADO (desperdiça tokens):
+
+```
+User: "Como funciona o módulo de vendas?"
+
+AI:
+1. read_file('services/vendas/main.py')           # 500 linhas
+2. read_file('services/vendas/routers/venda.py')  # 300 linhas
+3. read_file('services/vendas/services/venda_service.py')  # 400 linhas
+4. grep_search('class Venda')                     # 50 matches
+5. read_file('services/vendas/models/venda.py')   # 200 linhas
+6. ... consome 10k+ tokens lendo arquivos
+```
+
+### ✅ Fluxo CORRETO (economiza 90% dos tokens):
+
+```
+User: "Como funciona o módulo de vendas?"
+
+AI:
+1. graphify query "módulo de vendas"
+   # Retorna: subgrafo focado com ~500 tokens
+   # - Classes principais: Venda, VendaService, VendaRepository
+   # - Relacionamentos: VendaService → VendaRepository → Venda
+   # - Dependências: depends on Produto, Cliente, Estoque
+   
+2. Se precisar de detalhes específicos, lê APENAS os arquivos relevantes identificados
+3. Responde ao usuário
+```
+
+**Economia**: ~9.500 tokens (95% de redução)
+
+## 📋 Comandos do Graphify
+
+### 1. `graphify query "<pergunta>"`
+**Uso**: Perguntas gerais sobre arquitetura, componentes, funcionalidades
+
+```bash
+# Exemplos de queries eficientes
+graphify query "como funciona a autenticação?"
+graphify query "quais serviços dependem do banco de dados?"
+graphify query "estrutura do módulo de vendas"
+graphify query "fluxo de criação de pedido"
+graphify query "onde é usado o CPF?"
+```
+
+**Retorno**: Subgrafo focado com nós e relacionamentos relevantes (~200-800 tokens)
+
+### 2. `graphify path "<Componente A>" "<Componente B>"`
+**Uso**: Entender como dois componentes se conectam
+
+```bash
+# Exemplos
+graphify path "VendaService" "EstoqueService"
+graphify path "AuthRouter" "Usuario"
+graphify path "ProdutoRepository" "database"
+```
+
+**Retorno**: Caminho(s) de dependência entre componentes (~100-300 tokens)
+
+### 3. `graphify explain "<conceito>"`
+**Uso**: Explicação detalhada de um componente específico
+
+```bash
+# Exemplos
+graphify explain "VendaService"
+graphify explain "oauth2_scheme"
+graphify explain "calculate_frete"
+```
+
+**Retorno**: Detalhes do componente (métodos, dependências, uso) (~200-500 tokens)
+
+## 🚦 Quando Usar Cada Abordagem
+
+### Situação 1: Pergunta Arquitetural
+```
+User: "Quais serviços temos no projeto?"
+User: "Como está organizado o backend?"
+User: "Qual a estrutura de microserviços?"
+
+✅ Ação: graphify query "<pergunta>"
+❌ NÃO: ler múltiplos arquivos aleatoriamente
+```
+
+### Situação 2: Entender Fluxo/Feature
+```
+User: "Como funciona o checkout?"
+User: "Explica o fluxo de autenticação"
+User: "Como é processado um pedido?"
+
+✅ Ação: 
+1. graphify query "fluxo de <feature>"
+2. Se necessário detalhes de implementação: read_code dos arquivos específicos
+❌ NÃO: ler todos os arquivos relacionados sem filtro
+```
+
+### Situação 3: Dependências entre Componentes
+```
+User: "O que depende do EstoqueService?"
+User: "Quais rotas usam autenticação?"
+User: "Onde o ValidadorCPF é usado?"
+
+✅ Ação: graphify query "dependências de <componente>"
+❌ NÃO: grep_search seguido de leitura de todos os matches
+```
+
+### Situação 4: Implementação Específica
+```
+User: "Muda a validação do campo email no ClienteService"
+User: "Corrige o bug na linha 45 do venda_service.py"
+User: "Adiciona log no método create_pedido"
+
+✅ Ação: read_code/read_file direto (você já sabe o arquivo exato)
+❌ NÃO: usar Graphify para mudanças pontuais em arquivo conhecido
+```
+
+### Situação 5: Primeira vez no Projeto
+```
+User: "Adiciona uma feature X no módulo Y que eu não conheço"
+
+✅ Ação:
+1. graphify query "módulo Y"  # Entende estrutura
+2. graphify explain "ComponentePrincipalY"  # Detalhes
+3. read_code apenas dos arquivos que você vai modificar
+❌ NÃO: ler toda a pasta do módulo Y
+```
+
+## 🎯 Decisão Rápida: Graphify ou Read?
+
+| Pergunta para si mesmo | Resposta | Ação |
+|------------------------|----------|------|
+| "Preciso entender a arquitetura/estrutura?" | Sim | `graphify query` |
+| "Preciso saber como componentes se conectam?" | Sim | `graphify path` |
+| "Preciso de visão geral de um componente?" | Sim | `graphify explain` |
+| "Já sei exatamente qual arquivo modificar?" | Sim | `read_code/read_file` |
+| "É uma mudança pontual (1-2 arquivos)?" | Sim | `read_code/read_file` |
+| "Preciso debugar código linha por linha?" | Sim | `read_file` com line ranges |
+
+## 📊 Métricas de Economia
+
+**Exemplo real do projeto RunasERP**:
+
+| Abordagem | Tokens Gastos | Tempo |
+|-----------|---------------|-------|
+| ❌ Ler 10 arquivos do módulo vendas | ~8.000 tokens | Alto |
+| ✅ `graphify query "módulo de vendas"` | ~500 tokens | Baixo |
+| **Economia** | **93.75%** | **10x mais rápido** |
+
+---
+
+| Abordagem | Tokens Gastos | Tempo |
+|-----------|---------------|-------|
+| ❌ `grep_search "VendaService"` + ler todos matches | ~5.000 tokens | Alto |
+| ✅ `graphify explain "VendaService"` | ~300 tokens | Baixo |
+| **Economia** | **94%** | **8x mais rápido** |
+
+## 🚨 Red Flags - Use Graphify!
+
+Se você estiver fazendo isso, **PARE e use Graphify**:
+
+- ❌ Lendo 5+ arquivos para "entender o contexto"
+- ❌ Fazendo `grep_search` seguido de múltiplos `read_file`
+- ❌ Lendo `main.py`, `__init__.py`, routers, services sequencialmente
+- ❌ "Explorando" uma pasta nova lendo arquivo por arquivo
+- ❌ Tentando mapear dependências manualmente
+
+**Resposta correta**: "Vou consultar o Graphify primeiro para economizar tokens."
 
 ## 🤖 Atualização Automática via GitHub Actions
 

@@ -20,13 +20,14 @@ services:
     environment:
       FRONTEND_URL: https://runaserp.com.br
 
-  # Cloudflare Tunnel
+  # Cloudflare Tunnel - conecta diretamente ao frontend e api-gateway
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: erp-cloudflared
     command: tunnel --config /etc/cloudflared/config.yml run
     depends_on:
-      - nginx
+      - frontend-dev
+      - api-gateway
     networks:
       - erp-network
     restart: unless-stopped

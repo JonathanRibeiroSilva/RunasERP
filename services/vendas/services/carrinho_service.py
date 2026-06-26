@@ -208,11 +208,29 @@ class CarrinhoService:
                     break
             
             if item_existente:
-                # Atualizar quantidade
+                # Atualizar quantidade E dados do produto (pode ter mudado)
+                log.info(
+                    "atualizando_item_existente_carrinho",
+                    produto_id=str(data.produto_id),
+                    codigo_antigo=item_existente.codigo_produto,
+                    codigo_novo=codigo,
+                    descricao_antiga=item_existente.descricao_produto,
+                    descricao_nova=descricao
+                )
                 item_existente.quantidade += data.quantidade
-                item_existente.subtotal = item_existente.quantidade * item_existente.preco_unitario
+                item_existente.preco_unitario = preco
+                item_existente.codigo_produto = codigo
+                item_existente.descricao_produto = descricao  # ✅ Atualizar descrição
+                item_existente.subtotal = item_existente.quantidade * preco
             else:
                 # Adicionar novo item
+                log.info(
+                    "adicionando_item_novo_carrinho",
+                    produto_id=str(data.produto_id),
+                    codigo=codigo,
+                    descricao=descricao,
+                    preco=float(preco)
+                )
                 novo_item = ItemCarrinhoResponse(
                     produto_id=data.produto_id,
                     variante_id=data.variante_id,
@@ -372,11 +390,37 @@ class CarrinhoService:
                 log.info(
                     "carrinho_limpo",
                     sessao_id=sessao_id,
-                    empresa_id=empresa_id
+                    empresa_id=empresa_id,
+                    redis_key=key,
+                    fonte="explicito"  # Marca que foi limpeza explícita (vs. expiração natural)
+                )
+            else:
+                log.warning(
+                    "carrinho_nao_encontrado_para_limpar",
+                    sessao_id=sessao_id,
+                    empresa_id=empresa_id,
+                    redis_key=key
                 )
             
             return deleted > 0
             
+        finally:
+            await r.aclose()
+    
+    @staticmethod
+    async def carrinho_existe(
+        sessao_id: str,
+        empresa_id: int
+    ) -> bool:
+        """
+        Verifica se carrinho existe no Redis.
+        """
+        r = await CarrinhoService._get_redis()
+        key = CarrinhoService._get_redis_key(sessao_id, empresa_id)
+        
+        try:
+            exists = await r.exists(key)
+            return exists > 0
         finally:
             await r.aclose()
     
