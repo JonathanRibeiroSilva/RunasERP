@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSearch, FiFilter, FiShare2, FiCopy, FiShoppingCart } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiShare2, FiCopy, FiShoppingCart, FiUser } from 'react-icons/fi';
 import axios from 'axios';
 import ProdutoCard from './components/ProdutoCard';
 import { useCarrinho } from '@/hooks/useCarrinho';
@@ -160,6 +160,14 @@ const LojaOnlinePublicoPage = () => {
             <p>{empresaInfo?.loja_online_descricao || 'Confira nossos produtos disponíveis'}</p>
           </div>
           <div className="header-actions">
+            <button
+              className="btn-entrar"
+              onClick={() => navigate(`/c/${empresaSlug}/login`)}
+              title="Entrar na sua conta"
+            >
+              <FiUser />
+              Entrar
+            </button>
             <button
               className="btn-carrinho"
               onClick={() => navigate(`/c/${empresaSlug}/carrinho`)}

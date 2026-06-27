@@ -79,8 +79,9 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { carrinho, loading: carrinhoLoading, limparCarrinho, carregarCarrinho } = useCarrinho({ empresaSlug });
 
-  // Modo de checkout
-  const [modoCheckout, setModoCheckout] = useState<ModoCheckout>('selecao');
+  // Modo de checkout - GUEST DESABILITADO TEMPORARIAMENTE
+  // TODO: Reabilitar guest checkout após implementar fluxo completo de recuperação
+  const [modoCheckout, setModoCheckout] = useState<ModoCheckout>('login');
   const [criarConta, setCriarConta] = useState(false);
 
   // Login
@@ -288,6 +289,18 @@ const CheckoutPage = () => {
     buscarDadosCliente();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empresaSlug]);
+
+  // 🔒 FORÇAR LOGIN: Redirecionar se não autenticado após tentar buscar cliente
+  useEffect(() => {
+    // Aguardar finalizar carregamento
+    if (carregandoCliente) return;
+    
+    // Se não está autenticado E não está na tela de login, forçar login
+    if (!clienteAutenticado && modoCheckout !== 'login') {
+      Toast.info('Por favor, faça login para continuar com a compra');
+      setModoCheckout('login');
+    }
+  }, [carregandoCliente, clienteAutenticado, modoCheckout]);
 
   /**
    * Detecta carrinho vazio após OAuth e redireciona para loja.
@@ -879,43 +892,9 @@ const CheckoutPage = () => {
       )}
 
       <div className="checkout-container">
-        {/* Seleção de Modo: Login ou Guest */}
-        {modoCheckout === 'selecao' && (
-          <div className="modo-checkout-selecao">
-            <div className="modo-card">
-              <div className="modo-header">
-                <FiLogIn size={32} />
-                <h2>Já sou cliente</h2>
-              </div>
-              <p>Faça login para checkout mais rápido com seus dados salvos</p>
-              <ul className="beneficios">
-                <li><FiCheck /> Endereços salvos</li>
-                <li><FiCheck /> Histórico de pedidos</li>
-                <li><FiCheck /> Recompra rápida</li>
-              </ul>
-              <button className="btn-primary" onClick={() => setModoCheckout('login')}>
-                Fazer Login
-              </button>
-            </div>
-
-            <div className="modo-card">
-              <div className="modo-header">
-                <FiUserPlus size={32} />
-                <h2>Continuar como convidado</h2>
-              </div>
-              <p>Compra rápida sem precisar criar uma conta</p>
-              <ul className="beneficios">
-                <li><FiCheck /> Checkout rápido</li>
-                <li><FiCheck /> Sem cadastro obrigatório</li>
-                <li><FiCheck /> Opção de criar conta depois</li>
-              </ul>
-              <button className="btn-secondary" onClick={() => setModoCheckout('guest')}>
-                Continuar
-              </button>
-            </div>
-          </div>
-        )}
-
+        {/* 🔒 GUEST CHECKOUT DESABILITADO - Apenas Login */}
+        {/* Tela de seleção removida temporariamente - forçando login obrigatório */}
+        
         {/* Tela de Login */}
         {modoCheckout === 'login' && !mostrarRegistro && (
           <div className="login-checkout">
@@ -1217,8 +1196,9 @@ const CheckoutPage = () => {
                 </div>
               )}
 
-              {/* Checkbox Criar Conta - só para convidados */}
-              {!clienteAutenticado && (
+              {/* Checkbox Criar Conta - DESABILITADO (apenas login obrigatório agora) */}
+              {/* TODO: Reabilitar quando guest checkout for implementado */}
+              {/* {!clienteAutenticado && (
                 <div className="criar-conta-checkbox">
                   <label className="checkbox-label">
                     <input
@@ -1235,7 +1215,7 @@ const CheckoutPage = () => {
                     </span>
                   </label>
                 </div>
-              )}
+              )} */}
 
               <button className="btn-proximo" onClick={proximoStep}>
                 Continuar <FiCheck />

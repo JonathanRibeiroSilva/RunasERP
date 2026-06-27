@@ -14,7 +14,7 @@ import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
 import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
 import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
-import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/LojaOnlinePublico';
+import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage, ClientePerfilPage, ClienteLoginPage } from '@/pages/LojaOnlinePublico';
 import { PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
 import { EstoquePage } from '@/pages/Estoque';
@@ -108,11 +108,15 @@ function App() {
 
         {/* Loja Online Pública (sem autenticação) */}
         <Route path="/c/:empresaSlug" element={<LojaOnlinePublicoPage />} />
+        <Route path="/c/:empresaSlug/login" element={<ClienteLoginPage />} />
         <Route path="/c/:empresaSlug/produto/:produtoId" element={<ProdutoDetalhePage />} />
         <Route path="/c/:empresaSlug/carrinho" element={<CarrinhoPage />} />
         <Route path="/c/:empresaSlug/checkout" element={<CheckoutPage />} />
         <Route path="/c/:empresaSlug/pedido/:numeroPedido" element={<RastreamentoPedidoPage />} />
+        
+        {/* Área do Cliente Autenticado */}
         <Route path="/c/:empresaSlug/minha-conta/pedidos" element={<MeusPedidosPage />} />
+        <Route path="/c/:empresaSlug/minha-conta/perfil" element={<ClientePerfilPage />} />
 
         {/* OAuth Callback Routes - Cliente */}
         <Route path="/auth/callback/google" element={<GoogleCallback />} />

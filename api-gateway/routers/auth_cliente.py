@@ -364,34 +364,53 @@ async def oauth_google_callback_cliente(
     cliente_auth = await repo.buscar_por_email(email)
     
     if not cliente_auth:
-        # Criar cliente no serviço de clientes via endpoint OAuth
+        # Criar cliente no serviço de clientes
         async with httpx.AsyncClient() as client:
             try:
-                cliente_response = await client.post(
-                    f"{settings.CLIENTES_URL}/clientes/oauth",
-                    json={
-                        "empresa_id": empresa_id,
-                        "nome": nome,
-                        "email": email
-                        # CPF e telefone não são enviados (opcionais para OAuth)
-                    },
+                # Tentar buscar cliente existente por email primeiro
+                busca_response = await client.get(
+                    f"{settings.CLIENTES_URL}/clientes",
+                    params={"email": email},
                     headers={"X-Empresa-Id": str(empresa_id)},
                     timeout=10.0
                 )
                 
-                if cliente_response.status_code in [200, 201]:
-                    # Cliente criado ou já existente
-                    cliente_data = cliente_response.json()
-                    cliente_id = UUID(cliente_data["id"])
-                    if cliente_response.status_code == 201:
-                        log.info("oauth.cliente.google.created", cliente_id=str(cliente_id))
-                    else:
+                if busca_response.status_code == 200:
+                    clientes = busca_response.json().get("itens", [])
+                    if clientes:
+                        # Cliente já existe
+                        cliente_data = clientes[0]
+                        cliente_id = UUID(cliente_data["id"])
                         log.info("oauth.cliente.google.existing", cliente_id=str(cliente_id))
+                    else:
+                        # Criar novo cliente
+                        cliente_response = await client.post(
+                            f"{settings.CLIENTES_URL}/clientes",
+                            json={
+                                "cpf": None,  # Opcional para OAuth
+                                "nome": nome,
+                                "telefone": None,  # Opcional para OAuth
+                                "email": email
+                            },
+                            headers={"X-Empresa-Id": str(empresa_id)},
+                            timeout=10.0
+                        )
+                        
+                        if cliente_response.status_code == 201:
+                            cliente_data = cliente_response.json()
+                            cliente_id = UUID(cliente_data["id"])
+                            log.info("oauth.cliente.google.created", cliente_id=str(cliente_id))
+                        else:
+                            log.error("oauth.cliente.google.create_error", status=cliente_response.status_code, response=cliente_response.text)
+                            raise HTTPException(
+                                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                detail="Erro ao criar cliente"
+                            )
                 else:
-                    log.error("oauth.cliente.google.create_error", status=cliente_response.status_code)
+                    log.error("oauth.cliente.google.search_error", status=busca_response.status_code)
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Erro ao criar cliente"
+                        detail="Erro ao buscar cliente"
                     )
                 
             except httpx.RequestError as e:

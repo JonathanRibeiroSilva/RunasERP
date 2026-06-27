@@ -107,3 +107,34 @@ async def get_empresa_id_from_slug(
             status_code=500,
             detail=f"Erro ao buscar empresa: {str(e)}"
         )
+
+
+def get_cliente_id(
+    x_cliente_id: Annotated[Optional[str], Header(alias="X-Cliente-Id")] = None
+) -> str:
+    """
+    Extrai cliente_id do header X-Cliente-Id (enviado pelo API Gateway quando cliente autenticado).
+    
+    Args:
+        x_cliente_id: UUID do cliente vindo do header
+    
+    Returns:
+        str: UUID do cliente validado
+    
+    Raises:
+        HTTPException: 401 se header não for fornecido (não autenticado)
+    """
+    if not x_cliente_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Autenticação necessária. Cliente não autenticado."
+        )
+    
+    # Validar formato UUID básico
+    if len(x_cliente_id) < 32:
+        raise HTTPException(
+            status_code=400,
+            detail="Header X-Cliente-Id inválido"
+        )
+    
+    return x_cliente_id

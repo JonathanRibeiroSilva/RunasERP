@@ -1,0 +1,37 @@
+@import '@/styles/variables';
+
+.loja-login-button {
+  .btn-entrar {
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+    padding: $spacer-2 $spacer-4;
+    background: transparent;
+    color: $primary;
+    border: 1px solid $primary;
+    border-radius: $border-radius;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: $transition-base;
+
+    svg {
+      font-size: 18px;
+    }
+
+    &:hover {
+      background: $primary-light;
+      border-color: $primary-hover;
+      color: $primary-hover;
+    }
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      padding: $spacer-2 $spacer-3;
+      font-size: $font-size-xs;
+
+      svg {
+        font-size: 16px;
+      }
+    }
+  }
+}

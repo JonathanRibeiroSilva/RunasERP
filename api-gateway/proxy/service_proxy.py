@@ -114,9 +114,13 @@ class ServiceProxy:
         elif current_user and hasattr(current_user, "empresa_id"):
             empresa_id = current_user.empresa_id
         
-        # Adicionar header se empresa_id foi resolvido
+        # Adicionar headers de contexto
         if empresa_id:
             headers["X-Empresa-Id"] = str(empresa_id)
+        
+        # 🔐 NOVO: Adicionar X-Cliente-Id se usuário é CLIENTE autenticado
+        if current_user and hasattr(current_user, "cliente_id") and current_user.cliente_id:
+            headers["X-Cliente-Id"] = str(current_user.cliente_id)
         
         # Ler body se existir
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None

@@ -134,6 +134,115 @@ async def proxy_cliente_me_update(
     return await ServiceProxy.proxy_request(request, full_path)
 
 
+@router.get(
+    "/loja/meus-pedidos",
+    tags=["Loja Online - Cliente"],
+    summary="Listar pedidos do cliente autenticado"
+)
+async def proxy_loja_meus_pedidos(
+    request: Request,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)],
+    empresaSlug: str | None = None
+):
+    """
+    Rota para cliente autenticado listar seus próprios pedidos.
+    
+    Usa o cliente_id do token JWT automaticamente via header X-Cliente-Id.
+    
+    Exemplo: GET /loja/meus-pedidos?empresaSlug=minha-loja
+    """
+    full_path = "/loja/meus-pedidos"
+    
+    # Criar um pseudo-user para passar cliente_id via proxy
+    # O ServiceProxy vai detectar current_user.cliente_id e adicionar header X-Cliente-Id
+    class ClienteProxy:
+        def __init__(self, cliente_auth: ClienteAuth):
+            self.cliente_id = cliente_auth.cliente_id
+            self.empresa_id = cliente_auth.empresa_id
+    
+    pseudo_user = ClienteProxy(current_cliente)
+    
+    return await ServiceProxy.proxy_request(
+        request, 
+        full_path, 
+        current_user=pseudo_user,  # type: ignore
+        empresa_slug=empresaSlug
+    )
+
+
+@router.post(
+    "/loja/pedidos/{numero_venda}/retry-payment",
+    tags=["Loja Online - Cliente"],
+    summary="Gerar novo link de pagamento"
+)
+async def proxy_loja_retry_payment(
+    request: Request,
+    numero_venda: str,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)],
+    empresaSlug: str | None = None
+):
+    """
+    Rota para cliente autenticado gerar novo link de pagamento para pedido pendente.
+    
+    Usa o cliente_id do token JWT automaticamente via header X-Cliente-Id.
+    
+    Exemplo: POST /loja/pedidos/V-2024-001/retry-payment?empresaSlug=minha-loja
+    """
+    full_path = f"/loja/pedidos/{numero_venda}/retry-payment"
+    
+    # Criar um pseudo-user para passar cliente_id via proxy
+    class ClienteProxy:
+        def __init__(self, cliente_auth: ClienteAuth):
+            self.cliente_id = cliente_auth.cliente_id
+            self.empresa_id = cliente_auth.empresa_id
+    
+    pseudo_user = ClienteProxy(current_cliente)
+    
+    return await ServiceProxy.proxy_request(
+        request,
+        full_path,
+        current_user=pseudo_user,  # type: ignore
+        empresa_slug=empresaSlug
+    )
+
+
+@router.post(
+    "/loja/pedidos/{numero_venda}/recuperar-carrinho",
+    tags=["Loja Online - Cliente"],
+    summary="Recuperar carrinho de pedido não pago"
+)
+async def proxy_loja_recuperar_carrinho(
+    request: Request,
+    numero_venda: str,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)],
+    empresaSlug: str | None = None
+):
+    """
+    Rota para cliente autenticado recuperar carrinho a partir de pedido pendente.
+    
+    Reconstrói carrinho com itens do pedido para permitir edição antes de pagar.
+    Usa o cliente_id do token JWT automaticamente via header X-Cliente-Id.
+    
+    Exemplo: POST /loja/pedidos/V-2024-001/recuperar-carrinho?empresaSlug=minha-loja
+    """
+    full_path = f"/loja/pedidos/{numero_venda}/recuperar-carrinho"
+    
+    # Criar um pseudo-user para passar cliente_id via proxy
+    class ClienteProxy:
+        def __init__(self, cliente_auth: ClienteAuth):
+            self.cliente_id = cliente_auth.cliente_id
+            self.empresa_id = cliente_auth.empresa_id
+    
+    pseudo_user = ClienteProxy(current_cliente)
+    
+    return await ServiceProxy.proxy_request(
+        request,
+        full_path,
+        current_user=pseudo_user,  # type: ignore
+        empresa_slug=empresaSlug
+    )
+
+
 # ============================================================
 # ROTAS DE CLIENTES (ADMIN)
 # ============================================================

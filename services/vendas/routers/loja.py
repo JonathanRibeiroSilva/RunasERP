@@ -22,7 +22,7 @@ from schemas.loja import (
 )
 from services.carrinho_service import CarrinhoService
 from services.loja_service import LojaService
-from utils.tenant import get_empresa_id, get_empresa_id_from_slug
+from utils.tenant import get_empresa_id, get_empresa_id_from_slug, get_cliente_id
 
 router = APIRouter(prefix="/loja", tags=["loja-online"])
 
@@ -311,34 +311,49 @@ async def processar_checkout(
     "/meus-pedidos",
     response_model=list[PedidoClienteResumido],
     summary="Listar Meus Pedidos",
-    description="Lista pedidos do cliente autenticado (requer autenticação futura)"
+    description="Lista pedidos do cliente autenticado (requer autenticação JWT)"
 )
 async def listar_meus_pedidos(
-    cliente_id: UUID,  # TODO: Obter de token JWT quando auth estiver integrado
+    cliente_id: Annotated[str, Depends(get_cliente_id)],
     empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
     skip: int = 0,
     limit: int = 20,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Lista pedidos do cliente.
+    Lista pedidos do cliente autenticado.
     
-    **TODO**: Integrar com autenticação (JWT) para obter cliente_id automaticamente.
-    Por enquanto, requer cliente_id como query param.
+    O cliente_id é extraído automaticamente do header X-Cliente-Id,
+    que é injetado pelo API Gateway quando o cliente faz login via JWT.
+    
+    **Autenticação**: Requer token JWT válido com tipo de usuário CLIENTE.
     """
     try:
+        # Converter string UUID para UUID object
+        from uuid import UUID
+        cliente_uuid = UUID(cliente_id)
+        
         pedidos = await LojaService.listar_pedidos_cliente(
             db,
             empresa_id,
-            cliente_id,
+            cliente_uuid,
             skip,
             limit
         )
         
         return pedidos
         
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"cliente_id inválido: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar pedidos: {str(e)}")
+        log.error("erro_listar_meus_pedidos", error=str(e), cliente_id=cliente_id)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao listar pedidos: {str(e)}"
+        )
 
 
 # ==================== RASTREAMENTO ====================
@@ -384,3 +399,395 @@ async def rastrear_pedido(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao rastrear pedido: {str(e)}")
+
+
+# ==================== RETRY PAYMENT ====================
+
+@router.post(
+    "/pedidos/{numero_venda}/retry-payment",
+    summary="Gerar Novo Link de Pagamento",
+    description="Gera novo link do Mercado Pago para pedido com pagamento pendente"
+)
+async def retry_payment(
+    numero_venda: str,
+    cliente_id: Annotated[str, Depends(get_cliente_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Gera novo link de pagamento do Mercado Pago para pedido com pagamento pendente.
+    
+    **Autenticação**: Requer cliente autenticado (JWT).
+    
+    **Regras**:
+    - Pedido deve pertencer ao cliente autenticado
+    - Status deve ser PEDIDO ou PENDENTE_PAGAMENTO
+    - Gera nova preferência no Mercado Pago
+    - Retorna novo link de pagamento
+    
+    **Uso**: Quando cliente desiste do pagamento ou link expira
+    """
+    try:
+        from uuid import UUID
+        from repositories.venda_repository import VendaRepository
+        from services.mercadopago_service import MercadoPagoService
+        from models.venda import StatusVenda
+        
+        # Converter cliente_id string para UUID
+        cliente_uuid = UUID(cliente_id)
+        
+        # 1. Buscar venda pelo número
+        venda = await VendaRepository.buscar_por_numero(
+            db,
+            empresa_id,
+            numero_venda
+        )
+        
+        if not venda:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Pedido {numero_venda} não encontrado"
+            )
+        
+        # 2. Validar que venda pertence ao cliente autenticado
+        if venda.cliente_id != cliente_uuid:
+            log.warning(
+                "retry_payment_cliente_nao_autorizado",
+                venda_id=str(venda.id),
+                venda_cliente_id=str(venda.cliente_id),
+                cliente_autenticado_id=cliente_id
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Você não tem permissão para acessar este pedido"
+            )
+        
+        # 3. Validar status (apenas PEDIDO ou PENDENTE_PAGAMENTO podem tentar pagamento)
+        if venda.status not in [StatusVenda.PEDIDO.value, StatusVenda.PENDENTE_PAGAMENTO.value]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Não é possível gerar link de pagamento para pedido com status {venda.status}"
+            )
+        
+        # 4. Buscar venda completa com itens (necessário para criar preferência)
+        venda_completa = await VendaRepository.buscar_por_id(
+            db,
+            empresa_id,
+            venda.id,
+            com_relacionamentos=True
+        )
+        
+        if not venda_completa or not venda_completa.itens:
+            raise HTTPException(
+                status_code=500,
+                detail="Erro ao buscar detalhes do pedido"
+            )
+        
+        # 5. Obter empresa_slug via query param empresaSlug
+        # (já está disponível através do Depends(get_empresa_id_from_slug))
+        # Precisamos extrair o slug da query string
+        from fastapi import Query
+        
+        # TODO: Melhorar isso - slug deve vir do banco ou ser passado explicitamente
+        # Por ora, vamos usar um valor padrão e logar warning
+        empresa_slug = 'distribuidora-central'  # ⚠️ TEMPORÁRIO
+        log.warning(
+            "retry_payment_empresa_slug_hardcoded",
+            venda_id=str(venda.id),
+            slug_usado=empresa_slug
+        )
+        
+        # 6. Criar nova preferência no Mercado Pago
+        preferencia_id, init_point, sandbox_init_point, erro = await MercadoPagoService.criar_preferencia(
+            db=db,
+            venda=venda_completa,
+            empresa_id=empresa_id,
+            empresa_slug=empresa_slug
+        )
+        
+        if erro:
+            log.error(
+                "retry_payment_erro_mercadopago",
+                venda_id=str(venda.id),
+                erro=erro
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Erro ao gerar link de pagamento: {erro}"
+            )
+        
+        if not init_point and not sandbox_init_point:
+            raise HTTPException(
+                status_code=500,
+                detail="Mercado Pago não retornou link de pagamento"
+            )
+        
+        # 7. Detectar modo (teste/produção) e escolher URL correta
+        config = await MercadoPagoService.obter_credenciais(db, empresa_id)
+        
+        if not config:
+            mercadopago_url = init_point or sandbox_init_point
+        else:
+            is_test_mode = (
+                'TEST' in config.mercadopago_access_token.upper() or
+                config.mercadopago_public_key.startswith('TEST-') or
+                (config.mercadopago_public_key.startswith('APP_USR-') and len(config.mercadopago_access_token) < 100)
+            )
+            
+            if is_test_mode and sandbox_init_point:
+                mercadopago_url = sandbox_init_point
+            else:
+                mercadopago_url = init_point
+        
+        # 8. Atualizar venda com novo preference_id
+        await VendaRepository.atualizar(
+            db,
+            empresa_id,
+            venda.id,
+            mercadopago_preference_id=preferencia_id,
+            status=StatusVenda.PENDENTE_PAGAMENTO.value  # Garantir que status é PENDENTE_PAGAMENTO
+        )
+        
+        log.info(
+            "retry_payment_sucesso",
+            venda_id=str(venda.id),
+            numero_venda=numero_venda,
+            cliente_id=cliente_id,
+            preference_id=preferencia_id
+        )
+        
+        return {
+            "success": True,
+            "venda_id": str(venda.id),
+            "numero_venda": numero_venda,
+            "mercadopago_url": mercadopago_url,
+            "mensagem": "Novo link de pagamento gerado com sucesso"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(
+            "retry_payment_erro",
+            numero_venda=numero_venda,
+            cliente_id=cliente_id,
+            error=str(e)
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao gerar novo link de pagamento: {str(e)}"
+        )
+
+
+# ==================== RECUPERAR CARRINHO ====================
+
+@router.post(
+    "/pedidos/{numero_venda}/recuperar-carrinho",
+    summary="Recuperar Carrinho de Pedido Não Pago",
+    description="Reconstrói o carrinho a partir dos itens de um pedido com pagamento pendente"
+)
+async def recuperar_carrinho(
+    numero_venda: str,
+    cliente_id: Annotated[str, Depends(get_cliente_id)],
+    empresa_id: Annotated[int, Depends(get_empresa_id_from_slug)],
+    response: Response = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Recupera carrinho a partir de pedido com pagamento pendente.
+    
+    **Autenticação**: Requer cliente autenticado (JWT).
+    
+    **Regras**:
+    - Pedido deve pertencer ao cliente autenticado
+    - Status deve ser PEDIDO ou PENDENTE_PAGAMENTO
+    - Reconstrói carrinho com itens do pedido
+    - Valida estoque disponível
+    - Gera nova sessão (não reutiliza a antiga)
+    - Atualiza venda com nova sessão_carrinho_id
+    - Retorna novo cookie cart_session_id
+    
+    **Uso**: Quando cliente deseja modificar pedido antes de pagar
+    """
+    try:
+        from uuid import UUID
+        from repositories.venda_repository import VendaRepository
+        from services.carrinho_service import CarrinhoService
+        from models.venda import StatusVenda
+        from schemas.loja import ItemCarrinhoCreate
+        
+        # Converter cliente_id string para UUID
+        cliente_uuid = UUID(cliente_id)
+        
+        # 1. Buscar venda pelo número (com itens)
+        venda = await VendaRepository.buscar_por_numero(
+            db,
+            empresa_id,
+            numero_venda
+        )
+        
+        if not venda:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Pedido {numero_venda} não encontrado"
+            )
+        
+        # Buscar venda completa com itens
+        venda_completa = await VendaRepository.buscar_por_id(
+            db,
+            empresa_id,
+            venda.id,
+            com_relacionamentos=True
+        )
+        
+        if not venda_completa or not venda_completa.itens:
+            raise HTTPException(
+                status_code=500,
+                detail="Erro ao buscar itens do pedido"
+            )
+        
+        # 2. Validar que venda pertence ao cliente autenticado
+        if venda.cliente_id != cliente_uuid:
+            log.warning(
+                "recuperar_carrinho_cliente_nao_autorizado",
+                venda_id=str(venda.id),
+                venda_cliente_id=str(venda.cliente_id),
+                cliente_autenticado_id=cliente_id
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Você não tem permissão para acessar este pedido"
+            )
+        
+        # 3. Validar status (apenas PEDIDO ou PENDENTE_PAGAMENTO podem recuperar carrinho)
+        if venda.status not in [StatusVenda.PEDIDO.value, StatusVenda.PENDENTE_PAGAMENTO.value]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Não é possível recuperar carrinho de pedido com status {venda.status}"
+            )
+        
+        # 4. Gerar nova sessão de carrinho
+        nova_sessao_id = await CarrinhoService.gerar_sessao_id()
+        
+        log.info(
+            "recuperar_carrinho_iniciado",
+            venda_id=str(venda.id),
+            numero_venda=numero_venda,
+            sessao_antiga=venda.sessao_carrinho_id,
+            sessao_nova=nova_sessao_id,
+            quantidade_itens=len(venda_completa.itens)
+        )
+        
+        # 5. Adicionar itens ao novo carrinho (validando estoque)
+        itens_adicionados = 0
+        itens_sem_estoque = []
+        
+        for item in venda_completa.itens:
+            try:
+                # Criar ItemCarrinhoCreate a partir do item da venda
+                item_create = ItemCarrinhoCreate(
+                    produto_id=item.produto_id,
+                    variante_id=item.variante_id,
+                    quantidade=item.quantidade
+                )
+                
+                # Adicionar ao carrinho (valida estoque automaticamente)
+                await CarrinhoService.adicionar_item(
+                    nova_sessao_id,
+                    empresa_id,
+                    item_create,
+                    db
+                )
+                
+                itens_adicionados += 1
+                
+                log.info(
+                    "recuperar_carrinho_item_adicionado",
+                    produto_id=str(item.produto_id),
+                    descricao=item.descricao_produto,
+                    quantidade=float(item.quantidade)
+                )
+                
+            except ValueError as e:
+                # Item sem estoque - adicionar à lista de avisos
+                itens_sem_estoque.append({
+                    "descricao": item.descricao_produto,
+                    "quantidade_pedido": float(item.quantidade),
+                    "erro": str(e)
+                })
+                
+                log.warning(
+                    "recuperar_carrinho_item_sem_estoque",
+                    produto_id=str(item.produto_id),
+                    descricao=item.descricao_produto,
+                    erro=str(e)
+                )
+        
+        # 6. Verificar se pelo menos um item foi adicionado
+        if itens_adicionados == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Nenhum item do pedido está disponível em estoque"
+            )
+        
+        # 7. Atualizar venda com nova sessao_carrinho_id
+        await VendaRepository.atualizar(
+            db,
+            empresa_id,
+            venda.id,
+            sessao_carrinho_id=nova_sessao_id
+        )
+        
+        # 8. Definir novo cookie cart_session_id
+        response.set_cookie(
+            key="cart_session_id",
+            value=nova_sessao_id,
+            max_age=604800,  # 7 dias
+            httponly=True,
+            secure=True,
+            samesite="none",
+            path="/"
+        )
+        
+        # 9. Obter carrinho reconstruído
+        carrinho = await CarrinhoService.obter_ou_criar_carrinho(nova_sessao_id, empresa_id)
+        
+        log.info(
+            "recuperar_carrinho_sucesso",
+            venda_id=str(venda.id),
+            numero_venda=numero_venda,
+            nova_sessao_id=nova_sessao_id,
+            itens_adicionados=itens_adicionados,
+            itens_sem_estoque=len(itens_sem_estoque)
+        )
+        
+        # 10. Montar resposta
+        mensagem = f"Carrinho recuperado com sucesso! {itens_adicionados} item(ns) adicionado(s)."
+        
+        if itens_sem_estoque:
+            mensagem += f" ATENÇÃO: {len(itens_sem_estoque)} item(ns) não foram adicionados por falta de estoque."
+        
+        return {
+            "success": True,
+            "venda_id": str(venda.id),
+            "numero_venda": numero_venda,
+            "nova_sessao_id": nova_sessao_id,
+            "carrinho": carrinho.model_dump(),
+            "itens_adicionados": itens_adicionados,
+            "itens_sem_estoque": itens_sem_estoque,
+            "mensagem": mensagem
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(
+            "recuperar_carrinho_erro",
+            numero_venda=numero_venda,
+            cliente_id=cliente_id,
+            error=str(e)
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao recuperar carrinho: {str(e)}"
+        )

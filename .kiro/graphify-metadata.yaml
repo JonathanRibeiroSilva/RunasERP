@@ -1,0 +1,95 @@
+# Metadados para melhorar queries do Graphify
+# Tags, Aliases e Contexto de Negócio
+version: "1.0.0"
+last_updated: "2026-06-26"
+
+# Tags e keywords por componente
+component_tags:
+  MercadoPagoService:
+    tags: [mercadopago, mercado-pago, payment, pagamento, webhook, checkout-online, pix, cartao]
+    keywords: [criar_preferencia, processar_webhook_payment, payment.approved, payment.rejected]
+    layer: backend-service
+    business_domain: pagamentos
+    priority: high
+
+  CarrinhoService:
+    tags: [carrinho, cart, shopping-cart, checkout, ecommerce]
+    keywords: [adicionar_item, limpar_carrinho, atualizar_quantidade, remover_item]
+    layer: backend-service
+    business_domain: vendas-online
+    priority: high
+
+  LojaService:
+    tags: [loja, ecommerce, checkout, pedido, venda-online, loja-publica]
+    keywords: [processar_checkout, criar_pedido_loja, rastrear_pedido]
+    layer: backend-service
+    business_domain: vendas-online
+    priority: high
+
+  VendaService:
+    tags: [venda, pedido, order, sale, confirmacao]
+    keywords: [confirmar_venda, cancelar_venda, criar_venda]
+    layer: backend-service
+    business_domain: vendas
+    priority: high
+
+  webhook_mercadopago:
+    tags: [webhook, mercadopago, payment-notification, callback]
+    keywords: [payment.approved, payment.rejected, payment.cancelled, processar_webhook]
+    layer: backend-router
+    business_domain: pagamentos
+    priority: high
+
+# Fluxos de negócio mapeados
+business_flows:
+  FluxoPagamentoMercadoPago:
+    name: "Fluxo Completo de Pagamento Online (Mercado Pago)"
+    description: "Fluxo end-to-end desde checkout até confirmação de pagamento via webhook"
+    tags: [pagamento, mercadopago, webhook, checkout, critical-flow]
+    components:
+      - name: LojaService.processar_checkout
+        step: 1
+        description: Cliente finaliza checkout, cria venda com status PEDIDO
+      - name: MercadoPagoService.criar_preferencia
+        step: 2
+        description: Gera preferência de pagamento no Mercado Pago
+      - name: Frontend redireciona para init_point
+        step: 3
+        description: Cliente é redirecionado para checkout Mercado Pago
+      - name: webhook_mercadopago endpoint
+        step: 4
+        description: Mercado Pago envia notificação de mudança de status
+      - name: MercadoPagoService.processar_webhook_payment
+        step: 5
+        description: Processa webhook com idempotência
+      - name: VendaService.confirmar_venda
+        step: 6
+        description: Confirma venda e baixa estoque (se payment.approved)
+      - name: CarrinhoService.limpar_carrinho
+        step: 7
+        description: Limpa carrinho após pagamento confirmado
+    recovery_flows:
+      payment_rejected:
+        description: Carrinho é preservado, cliente pode tentar novamente
+        components: [CarrinhoService (mantém dados), Venda (status PENDENTE_PAGAMENTO)]
+
+# Prioridades por camada (para ranking de resultados)
+layer_priorities:
+  backend-service: 2.0
+  backend-router: 1.8
+  backend-model: 1.5
+  frontend-page: 1.2
+  frontend-hook: 1.2
+  frontend-component: 1.0
+  documentation: 0.5
+  glossary: 0.3
+  test: 0.8
+
+# Dicas de query (para usuários)
+query_hints:
+  webhook: "Procure por: webhook_mercadopago, MercadoPagoService.processar_webhook_payment"
+  mercado pago: "Procure por: MercadoPagoService, webhook_mercadopago, criar_preferencia"
+  carrinho: "Procure por: CarrinhoService, useCarrinho, CarrinhoPage"
+  checkout: "Procure por: LojaService.processar_checkout, CheckoutPage"
+  pagamento falhou: "Procure por: payment.rejected, CarrinhoService (preservação), PENDENTE_PAGAMENTO"
+  estoque: "Procure por: EstoqueService, ReservaTemporariaService, ReservaEstoqueVenda"
