@@ -192,19 +192,18 @@ class ClienteService:
         - Não pode desativar se tiver contas pendentes
         """
         try:
-            async with self.db.begin_nested():
-                cliente = await self.buscar_cliente(cliente_id, empresa_id)
-                
-                # TODO: Verificar pedidos em aberto (integração com serviço de vendas)
-                # TODO: Verificar contas pendentes (integração com serviço financeiro)
-                
-                sucesso = await self.cliente_repo.soft_delete(cliente_id, empresa_id)
-                if not sucesso:
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Erro ao desativar cliente"
-                    )
-            
+            cliente = await self.buscar_cliente(cliente_id, empresa_id)
+
+            # TODO: Verificar pedidos em aberto (integração com serviço de vendas)
+            # TODO: Verificar contas pendentes (integração com serviço financeiro)
+
+            sucesso = await self.cliente_repo.soft_delete(cliente_id, empresa_id)
+            if not sucesso:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Erro ao desativar cliente"
+                )
+
             await self.db.commit()
             log.info("cliente.desativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
             
@@ -231,25 +230,24 @@ class ClienteService:
         - credito_disponivel = limite_credito - saldo_devedor
         """
         try:
-            async with self.db.begin_nested():
-                cliente = await self.buscar_cliente(cliente_id, empresa_id)
-                
-                # TODO: Buscar saldo devedor do serviço financeiro
-                saldo_devedor = Decimal("0.00")  # Por enquanto
-                
-                cliente_atualizado = await self.cliente_repo.atualizar_credito(
-                    cliente_id,
-                    empresa_id,
-                    data.limite_credito,
-                    data.dia_vencimento
+            cliente = await self.buscar_cliente(cliente_id, empresa_id)
+
+            # TODO: Buscar saldo devedor do serviço financeiro
+            saldo_devedor = Decimal("0.00")  # Por enquanto
+
+            cliente_atualizado = await self.cliente_repo.atualizar_credito(
+                cliente_id,
+                empresa_id,
+                data.limite_credito,
+                data.dia_vencimento
+            )
+
+            if not cliente_atualizado:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Cliente não encontrado"
                 )
-                
-                if not cliente_atualizado:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Cliente não encontrado"
-                    )
-            
+
             await self.db.commit()
             log.info(
                 "cliente.credito_definido",
@@ -286,27 +284,26 @@ class ClienteService:
         - credito_disponivel nunca pode ser negativo
         """
         try:
-            async with self.db.begin_nested():
-                cliente = await self.buscar_cliente(cliente_id, empresa_id)
-                
-                try:
-                    cliente_atualizado = await self.cliente_repo.ajustar_credito_disponivel(
-                        cliente_id,
-                        empresa_id,
-                        delta
-                    )
-                except ValueError as e:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=str(e)
-                    )
-                
-                if not cliente_atualizado:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Cliente não encontrado"
-                    )
-            
+            cliente = await self.buscar_cliente(cliente_id, empresa_id)
+
+            try:
+                cliente_atualizado = await self.cliente_repo.ajustar_credito_disponivel(
+                    cliente_id,
+                    empresa_id,
+                    delta
+                )
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e)
+                )
+
+            if not cliente_atualizado:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Cliente não encontrado"
+                )
+
             await self.db.commit()
             log.info(
                 "cliente.credito_ajustado",
@@ -333,14 +330,13 @@ class ClienteService:
         - Cliente bloqueado não pode fazer compras fiadas
         """
         try:
-            async with self.db.begin_nested():
-                cliente = await self.cliente_repo.bloquear(cliente_id, empresa_id)
-                if not cliente:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Cliente não encontrado"
-                    )
-            
+            cliente = await self.cliente_repo.bloquear(cliente_id, empresa_id)
+            if not cliente:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Cliente não encontrado"
+                )
+
             await self.db.commit()
             log.warning("cliente.bloqueado_manual", cliente_id=str(cliente_id), empresa_id=empresa_id)
             return cliente
@@ -356,14 +352,13 @@ class ClienteService:
     async def desbloquear_cliente(self, cliente_id: UUID, empresa_id: int) -> Cliente:
         """Desbloqueia um cliente com transação atômica (filtrado por empresa)."""
         try:
-            async with self.db.begin_nested():
-                cliente = await self.cliente_repo.desbloquear(cliente_id, empresa_id)
-                if not cliente:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Cliente não encontrado"
-                    )
-            
+            cliente = await self.cliente_repo.desbloquear(cliente_id, empresa_id)
+            if not cliente:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Cliente não encontrado"
+                )
+
             await self.db.commit()
             log.info("cliente.desbloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
             return cliente

@@ -30,8 +30,6 @@ class ClienteRepository:
         )
         self.db.add(cliente)
         await self.db.flush()
-        await self.db.refresh(cliente)
-        await self.db.commit()
         log.info("cliente.criado", cliente_id=str(cliente.id), empresa_id=data.empresa_id)
         return cliente
     
@@ -67,8 +65,6 @@ class ClienteRepository:
         )
         self.db.add(cliente)
         await self.db.flush()
-        await self.db.refresh(cliente)
-        await self.db.commit()
         log.info("cliente.oauth.criado", cliente_id=str(cliente.id), empresa_id=data.empresa_id, email=data.email)
         return cliente
     
@@ -140,9 +136,8 @@ class ClienteRepository:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(cliente, field, value)
-        
-        await self.db.commit()
-        await self.db.refresh(cliente)
+
+        await self.db.flush()
         log.info("cliente.atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
@@ -153,7 +148,7 @@ class ClienteRepository:
             return False
         
         cliente.ativo = False
-        await self.db.commit()
+        await self.db.flush()
         log.info("cliente.desativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return True
     
@@ -173,9 +168,8 @@ class ClienteRepository:
         cliente.dia_vencimento = dia_vencimento
         # Recalcular crédito disponível (assumindo saldo_devedor = 0 por enquanto)
         cliente.credito_disponivel = limite_credito
-        
-        await self.db.commit()
-        await self.db.refresh(cliente)
+
+        await self.db.flush()
         log.info("cliente.credito_atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
@@ -196,8 +190,7 @@ class ClienteRepository:
             raise ValueError("Crédito disponível não pode ser negativo")
         
         cliente.credito_disponivel = novo_credito
-        await self.db.commit()
-        await self.db.refresh(cliente)
+        await self.db.flush()
         log.info("cliente.credito_ajustado", cliente_id=str(cliente_id), empresa_id=empresa_id, delta=str(delta))
         return cliente
     
@@ -208,8 +201,7 @@ class ClienteRepository:
             return None
         
         cliente.bloqueado = True
-        await self.db.commit()
-        await self.db.refresh(cliente)
+        await self.db.flush()
         log.info("cliente.bloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
@@ -220,8 +212,7 @@ class ClienteRepository:
             return None
         
         cliente.bloqueado = False
-        await self.db.commit()
-        await self.db.refresh(cliente)
+        await self.db.flush()
         log.info("cliente.desbloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
 
@@ -247,10 +238,9 @@ class EnderecoRepository:
             **data.model_dump()
         )
         self.db.add(endereco)
-        await self.db.commit()
-        await self.db.refresh(endereco)
+        await self.db.flush()
         return endereco
-    
+
     async def listar_por_cliente(self, cliente_id: UUID) -> list[Endereco]:
         """Lista endereços de um cliente."""
         result = await self.db.execute(
@@ -288,11 +278,10 @@ class EnderecoRepository:
         
         for field, value in update_data.items():
             setattr(endereco, field, value)
-        
-        await self.db.commit()
-        await self.db.refresh(endereco)
+
+        await self.db.flush()
         return endereco
-    
+
     async def deletar(self, endereco_id: UUID) -> bool:
         """Deleta um endereço."""
         endereco = await self.buscar_por_id(endereco_id)
@@ -300,5 +289,5 @@ class EnderecoRepository:
             return False
         
         await self.db.delete(endereco)
-        await self.db.commit()
+        await self.db.flush()
         return True
