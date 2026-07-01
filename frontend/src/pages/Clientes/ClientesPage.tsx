@@ -1,139 +1,49 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiMapPin } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiMapPin, FiDollarSign } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { getErrorMessage } from '@/services/api/axios';
+import { useClientes, useDesativarCliente } from '@/hooks/useClientes';
 import './ClientesPage.scss';
-
-interface Cliente {
-  id: string;
-  nome: string;
-  cpf: string;
-  email: string;
-  telefone: string;
-  limite_credito: number;
-  credito_disponivel: number;
-  bloqueado: boolean;
-  ativo: boolean;
-}
 
 const ClientesPage = () => {
   const navigate = useNavigate();
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filtroAtivo, setFiltroAtivo] = useState<boolean | null>(null);
   const [filtroBloqueado, setFiltroBloqueado] = useState<boolean | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   const itemsPerPage = 10;
 
+  // Debounce da busca (300ms) — evita refetch a cada tecla
   useEffect(() => {
-    let isMounted = true;
-    
-    const carregarClientesWrapper = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          skip: ((page - 1) * itemsPerPage).toString(),
-          limit: itemsPerPage.toString(),
-        });
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-        if (searchTerm) {
-          params.append('nome', searchTerm);
-        }
+  const { data, isLoading, isError } = useClientes({
+    skip: (page - 1) * itemsPerPage,
+    limit: itemsPerPage,
+    nome: debouncedSearch || undefined,
+    ativo: filtroAtivo ?? undefined,
+    bloqueado: filtroBloqueado ?? undefined,
+  });
+  const desativarCliente = useDesativarCliente();
 
-        if (filtroAtivo !== null) {
-          params.append('ativo', filtroAtivo.toString());
-        }
+  const clientes = data?.clientes ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
 
-        if (filtroBloqueado !== null) {
-          params.append('bloqueado', filtroBloqueado.toString());
-        }
-
-        const response = await api.get(`/clientes?${params}`);
-        
-        // Só atualizar estado se o componente ainda estiver montado
-        if (isMounted) {
-          const { clientes: clientesData, total } = response.data;
-          setClientes(clientesData || []);
-          setTotalPages(Math.ceil((total || 0) / itemsPerPage));
-        }
-      } catch (error: any) {
-        if (!isMounted) return;
-        
-        console.error('[ClientesPage] Erro ao carregar clientes:', error);
-        
-        if (error.response?.status >= 500) {
-          toast.error('Erro no servidor. Tente novamente mais tarde.');
-        } else if (error.response?.status === 404) {
-          toast.error('Serviço de clientes indisponível');
-        } else if (!error.response) {
-          toast.error('Erro de conexão com o servidor');
-        } else {
-          toast.error('Erro ao carregar clientes');
-        }
-        
-        setClientes([]);
-        setTotalPages(1);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-    
-    carregarClientesWrapper();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [page, searchTerm, filtroAtivo, filtroBloqueado]);
-
-  const carregarClientes = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        skip: ((page - 1) * itemsPerPage).toString(),
-        limit: itemsPerPage.toString(),
-      });
-
-      if (searchTerm) {
-        params.append('nome', searchTerm);
-      }
-
-      if (filtroAtivo !== null) {
-        params.append('ativo', filtroAtivo.toString());
-      }
-
-      if (filtroBloqueado !== null) {
-        params.append('bloqueado', filtroBloqueado.toString());
-      }
-
-      const response = await api.get(`/clientes?${params}`);
-      const { clientes: clientesData, total } = response.data;
-
-      setClientes(clientesData || []);
-      setTotalPages(Math.ceil((total || 0) / itemsPerPage));
-    } catch (error: any) {
-      
-      if (error.response?.status >= 500) {
-        toast.error('Erro no servidor. Tente novamente mais tarde.');
-      } else if (error.response?.status === 404) {
-        toast.error('Serviço de clientes indisponível');
-      } else if (!error.response) {
-        toast.error('Erro de conexão com o servidor');
-      } else {
-        toast.error('Erro ao carregar clientes');
-      }
-      
-      setClientes([]);
-      setTotalPages(1);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (isError) {
+      toast.error('Erro ao carregar clientes');
     }
-  };
+  }, [isError]);
 
   const handleNovoCliente = () => {
     navigate('/clientes/novo');
@@ -147,17 +57,14 @@ const ClientesPage = () => {
     navigate(`/clientes/${id}`);
   };
 
-  const handleDeletar = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja desativar este cliente?')) {
-      try {
-        await api.delete(`/clientes/${id}`);
-        toast.success('Cliente desativado com sucesso');
-        carregarClientes();
-      } catch (error) {
-        toast.error('Erro ao desativar cliente');
-        console.error(error);
-      }
+  const handleDeletar = (id: string) => {
+    if (!window.confirm('Tem certeza que deseja desativar este cliente?')) {
+      return;
     }
+    desativarCliente.mutate(id, {
+      onSuccess: () => toast.success('Cliente desativado com sucesso'),
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
   };
 
   const formatarCPF = (cpf: string) => {
@@ -190,10 +97,7 @@ const ClientesPage = () => {
             type="text"
             placeholder="Buscar por nome ou CPF..."
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
@@ -228,13 +132,13 @@ const ClientesPage = () => {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="loading">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Carregando...</span>
           </div>
         </div>
-      ) : clientes && clientes.length === 0 ? (
+      ) : clientes.length === 0 ? (
         <div className="empty-state">
           <p>Nenhum cliente encontrado</p>
         </div>
@@ -255,7 +159,7 @@ const ClientesPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {clientes && clientes.map((cliente) => (
+                {clientes.map((cliente) => (
                   <tr key={cliente.id} className={!cliente.ativo ? 'inactive' : ''}>
                     <td className="nome">{cliente.nome}</td>
                     <td>{formatarCPF(cliente.cpf)}</td>
@@ -297,6 +201,13 @@ const ClientesPage = () => {
                         title="Endereços"
                       >
                         <FiMapPin />
+                      </button>
+                      <button
+                        className="btn-icon btn-success"
+                        onClick={() => navigate(`/clientes/${cliente.id}/credito`)}
+                        title="Crédito"
+                      >
+                        <FiDollarSign />
                       </button>
                       <button
                         className="btn-icon btn-danger"

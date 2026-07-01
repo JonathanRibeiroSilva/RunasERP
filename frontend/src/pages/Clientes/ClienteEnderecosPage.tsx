@@ -5,7 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiSave, FiX } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { clientesApi } from '@/services/api/clientesApi';
+import { getErrorMessage } from '@/services/api/axios';
 import './ClienteEnderecosPage.scss';
 
 // Schema de validação
@@ -62,12 +63,12 @@ const ClienteEnderecosPage = () => {
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [clienteRes, enderecosRes] = await Promise.all([
-        api.get(`/clientes/${id}`),
-        api.get(`/clientes/${id}/enderecos`),
+      const [clienteData, enderecosData] = await Promise.all([
+        clientesApi.obter(id!),
+        clientesApi.listarEnderecos(id!),
       ]);
-      setCliente(clienteRes.data);
-      setEnderecos(enderecosRes.data);
+      setCliente(clienteData);
+      setEnderecos(enderecosData);
     } catch (error) {
       toast.error('Erro ao carregar dados');
       console.error(error);
@@ -106,11 +107,11 @@ const ClienteEnderecosPage = () => {
 
       if (editando) {
         // Editar
-        await api.patch(`/clientes/${id}/enderecos/${editando}`, data);
+        await clientesApi.atualizarEndereco(id!, editando, data);
         toast.success('Endereço atualizado com sucesso');
       } else {
         // Criar
-        await api.post(`/clientes/${id}/enderecos`, data);
+        await clientesApi.criarEndereco(id!, data);
         toast.success('Endereço criado com sucesso');
       }
 
@@ -118,8 +119,8 @@ const ClienteEnderecosPage = () => {
       setEditando(null);
       reset();
       carregarDados();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao salvar endereço';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao salvar endereço');
       toast.error(message);
       console.error(error);
     } finally {
@@ -136,7 +137,7 @@ const ClienteEnderecosPage = () => {
   const handleDeletar = async (enderecoId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este endereço?')) {
       try {
-        await api.delete(`/clientes/${id}/enderecos/${enderecoId}`);
+        await clientesApi.removerEndereco(id!, enderecoId);
         toast.success('Endereço excluído com sucesso');
         carregarDados();
       } catch (error) {

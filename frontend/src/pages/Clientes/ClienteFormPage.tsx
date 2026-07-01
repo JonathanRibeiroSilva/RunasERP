@@ -5,7 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FiArrowLeft, FiSave, FiMapPin } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { clientesApi } from '@/services/api/clientesApi';
+import { getErrorMessage } from '@/services/api/axios';
 import './ClienteFormPage.scss';
 
 // Schema de validação
@@ -62,20 +63,19 @@ const ClienteFormPage = () => {
   const carregarCliente = async () => {
     try {
       setLoading(true);
-      const [clienteRes, enderecosRes] = await Promise.all([
-        api.get(`/clientes/${id}`),
-        api.get(`/clientes/${id}/enderecos`),
+      const [clienteData, enderecos] = await Promise.all([
+        clientesApi.obter(id!),
+        clientesApi.listarEnderecos(id!),
       ]);
       
-      setCliente(clienteRes.data);
+      setCliente(clienteData);
       
       // Carregar endereço principal se existir
-      const enderecos = enderecosRes.data;
-      const enderecoPrincipal = enderecos.find((e: any) => e.principal);
+      const enderecoPrincipal = enderecos.find((e) => e.principal);
       
       if (enderecoPrincipal) {
         reset({
-          ...clienteRes.data,
+          ...clienteData,
           cep: enderecoPrincipal.cep,
           logradouro: enderecoPrincipal.logradouro,
           numero: enderecoPrincipal.numero,
@@ -85,7 +85,7 @@ const ClienteFormPage = () => {
           uf: enderecoPrincipal.uf,
         });
       } else {
-        reset(clienteRes.data);
+        reset(clienteData);
       }
     } catch (error) {
       toast.error('Erro ao carregar cliente');
@@ -130,12 +130,12 @@ const ClienteFormPage = () => {
 
       if (id) {
         // Editar cliente
-        await api.patch(`/clientes/${id}`, clienteData);
+        await clientesApi.atualizar(id, clienteData);
         toast.success('Cliente atualizado com sucesso');
       } else {
         // Criar cliente
-        const response = await api.post('/clientes', clienteData);
-        clienteId = response.data.id;
+        const novo = await clientesApi.criar(clienteData);
+        clienteId = novo.id;
         toast.success('Cliente criado com sucesso');
       }
 
@@ -154,16 +154,15 @@ const ClienteFormPage = () => {
 
         try {
           // Verificar se já existe endereço principal
-          const enderecosResponse = await api.get(`/clientes/${clienteId}/enderecos`);
-          const enderecos = enderecosResponse.data;
-          const enderecoPrincipal = enderecos.find((e: any) => e.principal);
+          const enderecos = await clientesApi.listarEnderecos(clienteId!);
+          const enderecoPrincipal = enderecos.find((e) => e.principal);
 
           if (enderecoPrincipal) {
             // Atualizar endereço principal existente
-            await api.patch(`/clientes/${clienteId}/enderecos/${enderecoPrincipal.id}`, enderecoData);
+            await clientesApi.atualizarEndereco(clienteId!, enderecoPrincipal.id, enderecoData);
           } else {
             // Criar novo endereço principal
-            await api.post(`/clientes/${clienteId}/enderecos`, enderecoData);
+            await clientesApi.criarEndereco(clienteId!, enderecoData);
           }
         } catch (error) {
           console.error('Erro ao salvar endereço:', error);
@@ -172,8 +171,8 @@ const ClienteFormPage = () => {
       }
 
       navigate('/clientes');
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao salvar cliente';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao salvar cliente');
       toast.error(message);
       console.error(error);
     } finally {
