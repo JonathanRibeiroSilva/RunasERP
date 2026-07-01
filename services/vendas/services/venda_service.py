@@ -34,8 +34,19 @@ from schemas.venda import (
 )
 from config import settings
 from utils.numero_venda import gerar_numero_venda
+from services.estoque_resultado import ResultadoBaixaEstoque, classificar_status_http
 
 log = structlog.get_logger()
+
+
+class EstoqueIndeterminadoError(Exception):
+    """
+    Resultado da baixa de estoque desconhecido (timeout/erro) para uma venda paga.
+
+    Sinaliza que a venda NÃO foi confirmada nem cancelada: foi marcada para reconciliação
+    assíncrona. O caller (webhook) deve responder erro para que o Mercado Pago reentregue,
+    e o job de reconciliação retenta a baixa idempotente.
+    """
 
 
 class VendaService:
@@ -197,12 +208,219 @@ class VendaService:
                     "motivo": "Venda",
                     "documento": documento
                 }
-                
+
                 response = await client.post(url, json=payload, headers=headers, timeout=5.0)
                 return response.status_code in [200, 201]
         except Exception as e:
             log.error("erro_baixar_estoque", error=str(e), produto_id=str(produto_id))
             return False
+
+    @staticmethod
+    async def baixar_estoque_venda(
+        empresa_id: int, venda
+    ) -> Tuple[ResultadoBaixaEstoque, Optional[str]]:
+        """
+        Baixa o estoque de TODOS os itens da venda de forma atômica e idempotente.
+
+        Usado no momento da confirmação do pagamento: é o gate real de estoque. O serviço de
+        estoque valida a disponibilidade física sob lock de linha (e é idempotente por
+        numero_venda — C1), respondendo 409 se faltar estoque para qualquer item.
+
+        Distingue (C4) três resultados, pois exigem tratamentos diferentes:
+            - SUCESSO       : estoque baixado (ou já baixado). Pode confirmar.
+            - SEM_ESTOQUE   : 409 definitivo, nada baixado. Cancelar a venda é seguro.
+            - INDETERMINADO : timeout/erro de rede/5xx. Resultado desconhecido — NUNCA
+                              cancelar uma venda paga; marcar para reconciliação.
+
+        Returns:
+            tuple: (ResultadoBaixaEstoque, mensagem)
+        """
+        itens = [
+            {
+                "produto_id": str(item.produto_id),
+                "variante_id": str(item.variante_id) if item.variante_id else None,
+                "quantidade": float(item.quantidade),
+            }
+            for item in venda.itens
+            if not item.estoque_baixado
+        ]
+        if not itens:
+            return (ResultadoBaixaEstoque.SUCESSO, None)  # Nada a baixar (já baixado)
+
+        url = f"{settings.ESTOQUE_URL}/estoque/baixar-venda"
+        headers = {"X-Empresa-Id": str(empresa_id)}
+        payload = {
+            "empresa_id": empresa_id,
+            "documento": venda.numero_venda,
+            "itens": itens,
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+        except httpx.TimeoutException as e:
+            # Timeout: a baixa pode ter ocorrido no estoque ou não. Resultado incerto.
+            log.error("baixar_estoque_venda_timeout", error=str(e), venda_id=str(venda.id))
+            return (ResultadoBaixaEstoque.INDETERMINADO, f"Timeout ao baixar estoque: {e}")
+        except httpx.RequestError as e:
+            # Falha de comunicação (conexão recusada, DNS, etc.): resultado incerto.
+            log.error("baixar_estoque_venda_falha_comunicacao", error=str(e), venda_id=str(venda.id))
+            return (ResultadoBaixaEstoque.INDETERMINADO, f"Falha de comunicação com estoque: {e}")
+
+        resultado = classificar_status_http(response.status_code)
+
+        if resultado is ResultadoBaixaEstoque.SUCESSO:
+            return (ResultadoBaixaEstoque.SUCESSO, None)
+
+        if resultado is ResultadoBaixaEstoque.SEM_ESTOQUE:
+            detalhe = "Estoque insuficiente"
+            try:
+                detalhe = response.json().get("detail", detalhe)
+            except Exception:
+                pass
+            return (ResultadoBaixaEstoque.SEM_ESTOQUE, detalhe)
+
+        # INDETERMINADO (5xx ou status inesperado): não se sabe se baixou.
+        log.error(
+            "baixar_estoque_venda_status_inesperado",
+            status=response.status_code,
+            body=response.text[:300],
+            venda_id=str(venda.id)
+        )
+        return (
+            ResultadoBaixaEstoque.INDETERMINADO,
+            f"Resposta inesperada do estoque (HTTP {response.status_code})",
+        )
+
+    @staticmethod
+    async def estornar_estoque_venda(
+        empresa_id: int, venda
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Devolve ao estoque os itens já baixados da venda (estorno por reembolso).
+
+        Idempotente por numero_venda no serviço de estoque (ledger de estorno — D2): chamadas
+        repetidas não devolvem estoque em duplicidade. Devolve (sucesso, mensagem):
+            - sucesso=True : estoque devolvido (ou já devolvido), ou nada a devolver.
+            - sucesso=False: timeout/erro de comunicação/5xx — resultado incerto. O caller NÃO
+                             deve marcar a venda como reembolsada; o webhook é reentregue.
+        """
+        itens = [
+            {
+                "produto_id": str(item.produto_id),
+                "variante_id": str(item.variante_id) if item.variante_id else None,
+                "quantidade": float(item.quantidade),
+            }
+            for item in venda.itens
+            if item.estoque_baixado
+        ]
+        if not itens:
+            return (True, None)  # nada foi baixado → nada a estornar
+
+        url = f"{settings.ESTOQUE_URL}/estoque/estornar-venda"
+        headers = {"X-Empresa-Id": str(empresa_id)}
+        payload = {
+            "empresa_id": empresa_id,
+            "documento": venda.numero_venda,
+            "itens": itens,
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+        except (httpx.TimeoutException, httpx.RequestError) as e:
+            log.error("estornar_estoque_venda_falha_comunicacao", error=str(e), venda_id=str(venda.id))
+            return (False, f"Falha de comunicação com estoque: {e}")
+
+        if response.status_code in (200, 201):
+            return (True, None)
+
+        log.error(
+            "estornar_estoque_venda_status_inesperado",
+            status=response.status_code,
+            body=response.text[:300],
+            venda_id=str(venda.id),
+        )
+        return (False, f"Resposta inesperada do estoque (HTTP {response.status_code})")
+
+    @staticmethod
+    async def reembolsar_venda(
+        db: AsyncSession,
+        empresa_id: int,
+        venda_id: UUID
+    ) -> VendaDetalhada:
+        """
+        Reembolsa uma venda: devolve o estoque baixado e marca a venda como REEMBOLSADA.
+
+        Idempotente e atômica:
+        - Trava a linha da venda (FOR UPDATE) para serializar webhooks de reembolso concorrentes.
+        - Se a venda já está REEMBOLSADA, retorna sem efeito.
+        - Devolve o estoque de forma idempotente (ledger de estorno por numero_venda — D2).
+        - Se o estorno for indeterminado (timeout/erro), NÃO marca reembolsada e sinaliza
+          reentrega do webhook (o estorno idempotente é reexecutado com segurança).
+        """
+        from services.historico_status_service import HistoricoStatusService
+
+        try:
+            venda = await VendaRepository.buscar_por_id(
+                db, empresa_id, venda_id, com_relacionamentos=True, com_lock=True
+            )
+            if not venda:
+                raise ValueError("Venda não encontrada")
+
+            # Idempotência: já reembolsada por outro webhook/requisição → não duplica nada.
+            if venda.status == StatusVenda.REEMBOLSADA.value:
+                status_atual = venda.status
+                await db.rollback()
+                log.info(
+                    "reembolsar_venda_idempotente_ignorada",
+                    venda_id=str(venda_id),
+                    status_atual=status_atual,
+                )
+                return await VendaService.buscar_venda(db, empresa_id, venda_id)
+
+            status_anterior = venda.status
+
+            # Devolver o estoque baixado (idempotente por numero_venda).
+            sucesso, erro = await VendaService.estornar_estoque_venda(empresa_id, venda)
+            if not sucesso:
+                await db.rollback()
+                log.critical(
+                    "reembolso_estorno_estoque_indeterminado_reentregar",
+                    venda_id=str(venda_id),
+                    empresa_id=empresa_id,
+                    motivo=erro,
+                )
+                raise EstoqueIndeterminadoError(erro or "Estorno de estoque indeterminado")
+
+            # Estoque devolvido → itens não estão mais baixados.
+            for item in venda.itens:
+                item.estoque_baixado = False
+
+            venda = await VendaRepository.atualizar(
+                db, empresa_id, venda_id, status=StatusVenda.REEMBOLSADA.value
+            )
+
+            await HistoricoStatusService.registrar_mudanca(
+                db,
+                venda.id,
+                status_anterior,
+                StatusVenda.REEMBOLSADA.value,
+                None,  # Sistema
+                "Pagamento reembolsado — estoque devolvido.",
+            )
+
+            await db.commit()
+
+            log.info("venda_reembolsada", venda_id=str(venda_id), empresa_id=empresa_id)
+
+            return await VendaService.buscar_venda(db, empresa_id, venda_id)
+
+        except (ValueError, EstoqueIndeterminadoError):
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_reembolsar_venda", error=str(e))
+            raise
 
     @staticmethod
     def calcular_totais(
@@ -472,80 +690,158 @@ class VendaService:
         data: ConfirmarVendaRequest
     ) -> VendaDetalhada:
         """
-        Confirma venda e registra pagamentos.
-        Status: PEDIDO → CONFIRMADA
+        Confirma venda, baixa o estoque real e registra pagamentos.
+        Status: PEDIDO/PENDENTE_PAGAMENTO → CONFIRMADA
+
+        Idempotente e atômica:
+        - Trava a linha da venda (FOR UPDATE) para serializar webhooks concorrentes
+          (payment + merchant_order do mesmo pedido). A confirmação roda uma única vez.
+        - Se a venda já está confirmada (ou em estágio posterior), retorna sem efeitos.
+        - Só confirma se houver estoque físico real para TODOS os itens no momento da
+          aprovação do pagamento (baixa atômica no serviço de estoque). Sem estoque, a
+          venda é cancelada e as reservas liberadas.
         """
         from services.historico_status_service import HistoricoStatusService
         from services.notificacao_service import NotificacaoService
-        
+
+        # Status a partir dos quais a venda já está confirmada (ou além): no-op idempotente.
+        STATUS_JA_CONFIRMADA = {
+            StatusVenda.CONFIRMADA.value,
+            StatusVenda.SEPARADA.value,
+            StatusVenda.EM_ENTREGA.value,
+            StatusVenda.ENTREGUE.value,
+            StatusVenda.FINALIZADA.value,
+        }
+
         try:
-            async with db.begin_nested():
-                venda = await VendaRepository.buscar_por_id(db, empresa_id, venda_id)
-                if not venda:
-                    raise ValueError("Venda não encontrada")
-                
-                status_anterior = venda.status
-                
-                if venda.status not in [StatusVenda.PEDIDO.value, StatusVenda.PENDENTE_PAGAMENTO.value]:
-                    raise ValueError(f"Venda não pode ser confirmada. Status atual: {venda.status}")
-                
-                # Validar soma dos pagamentos
-                total_pago = sum(Decimal(str(p.valor_pago)) for p in data.pagamentos)
-                if total_pago < venda.valor_total:
-                    raise ValueError(
-                        f"Valor pago (R$ {total_pago}) é menor que o total da venda (R$ {venda.valor_total})"
-                    )
-                
-                # Se tem FIADO, validar cliente
-                tem_fiado = any(p.forma_pagamento == FormaPagamento.FIADO for p in data.pagamentos)
-                if tem_fiado and not venda.cliente_id:
-                    raise ValueError("Venda fiada requer cliente identificado")
-                
-                # Criar pagamentos
-                for pag in data.pagamentos:
-                    pag_data = {
-                        'venda_id': venda.id,
-                        'forma_pagamento': pag.forma_pagamento.value,
-                        'valor_pago': pag.valor_pago,
-                        'comprovante': pag.comprovante,
-                        'gera_conta_receber': pag.forma_pagamento == FormaPagamento.FIADO
-                    }
-                    
-                    # Calcular troco se DINHEIRO
-                    if pag.forma_pagamento == FormaPagamento.DINHEIRO and pag.valor_recebido:
-                        pag_data['valor_recebido'] = pag.valor_recebido
-                        pag_data['valor_troco'] = pag.valor_recebido - pag.valor_pago
-                    
-                    await PagamentoVendaRepository.criar(db, **pag_data)
-                
-                # Atualizar status
-                venda = await VendaRepository.atualizar(
-                    db,
-                    empresa_id,
-                    venda_id,
-                    status=StatusVenda.CONFIRMADA.value,
-                    data_confirmacao=datetime.utcnow()
+            # Lock da venda + itens. A transação fica aberta até o commit, mantendo o lock.
+            venda = await VendaRepository.buscar_por_id(
+                db, empresa_id, venda_id, com_relacionamentos=True, com_lock=True
+            )
+            if not venda:
+                raise ValueError("Venda não encontrada")
+
+            # Idempotência: já confirmada por outro webhook/requisição → não duplica nada.
+            if venda.status in STATUS_JA_CONFIRMADA:
+                # Capturar o status ANTES do rollback: o rollback expira os atributos do
+                # ORM e acessá-los depois dispararia um lazy-load síncrono (MissingGreenlet).
+                status_atual = venda.status
+                await db.rollback()  # Libera o lock sem alterações
+                log.info(
+                    "confirmar_venda_idempotente_ignorada",
+                    venda_id=str(venda_id),
+                    status_atual=status_atual
                 )
-                
-                # Registrar histórico
-                await HistoricoStatusService.registrar_mudanca(
-                    db,
-                    venda.id,
-                    status_anterior,
-                    StatusVenda.CONFIRMADA.value,
-                    data.usuario_id if hasattr(data, 'usuario_id') else None,
-                    f"Pagamento confirmado. Total pago: R$ {total_pago}"
+                return await VendaService.buscar_venda(db, empresa_id, venda_id)
+
+            status_anterior = venda.status
+
+            if venda.status not in [StatusVenda.PEDIDO.value, StatusVenda.PENDENTE_PAGAMENTO.value]:
+                raise ValueError(f"Venda não pode ser confirmada. Status atual: {venda.status}")
+
+            # Validar soma dos pagamentos
+            total_pago = sum(Decimal(str(p.valor_pago)) for p in data.pagamentos)
+            if total_pago < venda.valor_total:
+                raise ValueError(
+                    f"Valor pago (R$ {total_pago}) é menor que o total da venda (R$ {venda.valor_total})"
                 )
-            
+
+            # Se tem FIADO, validar cliente
+            tem_fiado = any(p.forma_pagamento == FormaPagamento.FIADO for p in data.pagamentos)
+            if tem_fiado and not venda.cliente_id:
+                raise ValueError("Venda fiada requer cliente identificado")
+
+            # GATE DE ESTOQUE REAL (regra de negócio mandatória):
+            # baixa atômica e idempotente de todos os itens.
+            resultado_estoque, erro_estoque = await VendaService.baixar_estoque_venda(
+                empresa_id, venda
+            )
+
+            if resultado_estoque is ResultadoBaixaEstoque.SEM_ESTOQUE:
+                # Definitivo: estoque insuficiente, nada foi baixado → cancelar é seguro.
+                await VendaService._cancelar_por_falta_estoque(
+                    db, empresa_id, venda, status_anterior, erro_estoque
+                )
+                await db.commit()
+                log.error(
+                    "venda_cancelada_sem_estoque",
+                    venda_id=str(venda_id),
+                    empresa_id=empresa_id,
+                    motivo=erro_estoque,
+                    pago=float(total_pago)
+                )
+                raise ValueError(erro_estoque or "Estoque insuficiente para confirmar a venda")
+
+            if resultado_estoque is ResultadoBaixaEstoque.INDETERMINADO:
+                # Resultado desconhecido (timeout/erro). NUNCA cancelar uma venda paga aqui:
+                # marca para reconciliação assíncrona (retry idempotente) e aborta a confirmação.
+                await VendaService._marcar_reconciliacao_estoque(
+                    db, empresa_id, venda, status_anterior, erro_estoque
+                )
+                await db.commit()
+                log.critical(
+                    "venda_paga_estoque_indeterminado_reconciliar",
+                    venda_id=str(venda_id),
+                    empresa_id=empresa_id,
+                    payment_id=venda.mercadopago_payment_id,
+                    motivo=erro_estoque,
+                    pago=float(total_pago)
+                )
+                raise EstoqueIndeterminadoError(
+                    erro_estoque or "Resultado da baixa de estoque indeterminado"
+                )
+
+            # SUCESSO → marcar itens e limpar qualquer marca de reconciliação anterior.
+            for item in venda.itens:
+                item.estoque_baixado = True
+            venda.reconciliacao_estoque_pendente = False
+            venda.reconciliacao_motivo = None
+
+            # Criar pagamentos
+            for pag in data.pagamentos:
+                pag_data = {
+                    'venda_id': venda.id,
+                    'forma_pagamento': pag.forma_pagamento.value,
+                    'valor_pago': pag.valor_pago,
+                    'comprovante': pag.comprovante,
+                    'gera_conta_receber': pag.forma_pagamento == FormaPagamento.FIADO
+                }
+
+                # Calcular troco se DINHEIRO
+                if pag.forma_pagamento == FormaPagamento.DINHEIRO and pag.valor_recebido:
+                    pag_data['valor_recebido'] = pag.valor_recebido
+                    pag_data['valor_troco'] = pag.valor_recebido - pag.valor_pago
+
+                await PagamentoVendaRepository.criar(db, **pag_data)
+
+            # Atualizar status
+            venda = await VendaRepository.atualizar(
+                db,
+                empresa_id,
+                venda_id,
+                status=StatusVenda.CONFIRMADA.value,
+                data_confirmacao=datetime.utcnow()
+            )
+
+            # Registrar histórico (entrada única por confirmação)
+            await HistoricoStatusService.registrar_mudanca(
+                db,
+                venda.id,
+                status_anterior,
+                StatusVenda.CONFIRMADA.value,
+                data.usuario_id if hasattr(data, 'usuario_id') else None,
+                f"Pagamento confirmado. Total pago: R$ {total_pago}. Estoque baixado."
+            )
+
             await db.commit()
-            
+
             log.info(
                 "venda_confirmada",
                 venda_id=str(venda_id),
                 empresa_id=empresa_id,
                 total_pago=float(total_pago)
             )
-            
+
             # Enviar notificação WhatsApp
             try:
                 telefone = venda.cliente_convidado_telefone if venda.cliente_convidado_telefone else None
@@ -558,16 +854,114 @@ class VendaService:
                     )
             except Exception as e:
                 log.warning("erro_enviar_notificacao_pagamento", venda_id=str(venda_id), error=str(e))
-            
+
             return await VendaService.buscar_venda(db, empresa_id, venda_id)
-            
+
         except ValueError:
             await db.rollback()
+            raise
+        except EstoqueIndeterminadoError:
+            # Já comitado (reconciliação marcada) e logado — apenas propaga p/ o caller
+            # responder erro e disparar a reentrega do webhook / reconciliação.
             raise
         except Exception as e:
             await db.rollback()
             log.error("erro_confirmar_venda", error=str(e))
             raise
+
+    @staticmethod
+    async def _marcar_reconciliacao_estoque(
+        db: AsyncSession,
+        empresa_id: int,
+        venda,
+        status_anterior: str,
+        motivo: Optional[str]
+    ) -> None:
+        """
+        Marca uma venda paga com resultado de baixa de estoque indeterminado para
+        reconciliação assíncrona. Não cancela nem confirma — preserva o status atual e
+        sinaliza o retry idempotente. Não faz commit (o chamador controla a transação).
+        """
+        from services.historico_status_service import HistoricoStatusService
+
+        venda.reconciliacao_estoque_pendente = True
+        venda.reconciliacao_motivo = (motivo or "Baixa de estoque indeterminada")[:500]
+
+        await HistoricoStatusService.registrar_mudanca(
+            db,
+            venda.id,
+            status_anterior,
+            status_anterior,  # sem transição de status; entrada de auditoria
+            None,  # Sistema
+            f"Pagamento aprovado; baixa de estoque indeterminada — pendente de "
+            f"reconciliação. {motivo or ''}".strip()
+        )
+
+    @staticmethod
+    async def _cancelar_por_falta_estoque(
+        db: AsyncSession,
+        empresa_id: int,
+        venda,
+        status_anterior: str,
+        motivo: Optional[str]
+    ) -> None:
+        """
+        Cancela uma venda que não pôde ser confirmada por falta de estoque real e
+        libera as reservas. Não faz commit — o chamador controla a transação.
+
+        Para vendas online já pagas, registra evento crítico: requer reembolso manual.
+        """
+        from services.historico_status_service import HistoricoStatusService
+
+        # Liberar reservas de estoque (best-effort) no serviço de estoque
+        for item in venda.itens:
+            if item.estoque_reservado and not item.estoque_baixado:
+                await VendaService.liberar_reserva_estoque(
+                    empresa_id,
+                    item.produto_id,
+                    item.variante_id,
+                    item.quantidade,
+                    venda.numero_venda
+                )
+
+        # Atualizar reservas da venda → LIBERADA
+        reservas = await ReservaEstoqueVendaRepository.listar_por_venda(db, venda.id)
+        for reserva in reservas:
+            if reserva.status == StatusReserva.RESERVADA.value:
+                await ReservaEstoqueVendaRepository.atualizar(
+                    db,
+                    reserva.id,
+                    status=StatusReserva.LIBERADA.value,
+                    liberada_em=datetime.utcnow()
+                )
+
+        await VendaRepository.atualizar(
+            db,
+            empresa_id,
+            venda.id,
+            status=StatusVenda.CANCELADA.value,
+            data_cancelada=datetime.utcnow(),
+            motivo_cancelamento=f"Estoque insuficiente na aprovação do pagamento: {motivo}"
+        )
+
+        await HistoricoStatusService.registrar_mudanca(
+            db,
+            venda.id,
+            status_anterior,
+            StatusVenda.CANCELADA.value,
+            None,  # Sistema
+            f"Venda cancelada por falta de estoque na aprovação do pagamento. {motivo}"
+        )
+
+        # Pagamento online aprovado mas sem estoque → reembolso necessário.
+        if venda.mercadopago_payment_id:
+            log.critical(
+                "venda_paga_sem_estoque_reembolso_necessario",
+                venda_id=str(venda.id),
+                numero_venda=venda.numero_venda,
+                empresa_id=empresa_id,
+                payment_id=venda.mercadopago_payment_id
+            )
 
     @staticmethod
     async def separar_venda(
@@ -645,12 +1039,15 @@ class VendaService:
         usuario_id: Optional[UUID] = None
     ) -> VendaDetalhada:
         """
-        Marca venda como entregue e BAIXA ESTOQUE definitivamente.
+        Marca venda como entregue (logística apenas — NÃO movimenta estoque).
         Status: SEPARADA → ENTREGUE
+
+        O estoque já foi baixado de forma definitiva na confirmação do pagamento.
+        A entrega é puramente logística e não altera quantidades de estoque.
         """
         from services.historico_status_service import HistoricoStatusService
         from services.notificacao_service import NotificacaoService
-        
+
         try:
             async with db.begin_nested():
                 venda = await VendaRepository.buscar_por_id(
@@ -661,38 +1058,23 @@ class VendaService:
                 )
                 if not venda:
                     raise ValueError("Venda não encontrada")
-                
+
                 status_anterior = venda.status
-                
+
                 if venda.status != StatusVenda.SEPARADA.value:
                     raise ValueError(f"Venda deve estar SEPARADA. Status atual: {venda.status}")
-                
-                # BAIXAR ESTOQUE definitivamente
-                for item in venda.itens:
-                    if not item.estoque_baixado:
-                        sucesso = await VendaService.baixar_estoque(
-                            empresa_id,
-                            item.produto_id,
-                            item.variante_id,
-                            item.quantidade,
-                            venda.numero_venda
-                        )
-                        if not sucesso:
-                            raise ValueError(f"Erro ao baixar estoque do produto {item.descricao_produto}")
-                        
-                        # Marcar item como baixado
-                        await ItemVendaRepository.atualizar(db, item.id, estoque_baixado=True)
-                
-                # Liberar reservas (já foram baixadas)
+
+                # Marcar reservas como BAIXADA (o estoque já saiu na confirmação).
                 reservas = await ReservaEstoqueVendaRepository.listar_por_venda(db, venda_id)
                 for reserva in reservas:
-                    await ReservaEstoqueVendaRepository.atualizar(
-                        db,
-                        reserva.id,
-                        status=StatusReserva.BAIXADA.value,
-                        baixada_em=datetime.utcnow()
-                    )
-                
+                    if reserva.status == StatusReserva.RESERVADA.value:
+                        await ReservaEstoqueVendaRepository.atualizar(
+                            db,
+                            reserva.id,
+                            status=StatusReserva.BAIXADA.value,
+                            baixada_em=datetime.utcnow()
+                        )
+
                 # Atualizar status
                 venda = await VendaRepository.atualizar(
                     db,
@@ -701,7 +1083,7 @@ class VendaService:
                     status=StatusVenda.ENTREGUE.value,
                     data_entregue=datetime.utcnow()
                 )
-                
+
                 # Registrar histórico
                 tipo_entrega_texto = "entregue" if venda.tipo_entrega == "DELIVERY" else "retirado"
                 await HistoricoStatusService.registrar_mudanca(
@@ -710,7 +1092,7 @@ class VendaService:
                     status_anterior,
                     StatusVenda.ENTREGUE.value,
                     usuario_id,
-                    f"Pedido {tipo_entrega_texto}. Estoque baixado definitivamente."
+                    f"Pedido {tipo_entrega_texto} (logística — estoque já baixado na confirmação)."
                 )
             
             await db.commit()

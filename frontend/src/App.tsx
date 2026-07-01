@@ -17,7 +17,7 @@ import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPag
 import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage, ClientePerfilPage, ClienteLoginPage } from '@/pages/LojaOnlinePublico';
 import { PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
-import { EstoquePage } from '@/pages/Estoque';
+import { EstoquePage, EstoqueDetalhePage } from '@/pages/Estoque';
 import { VendasPage } from '@/pages/Vendas';
 import { FinanceiroPage } from '@/pages/Financeiro';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
@@ -171,14 +171,43 @@ function App() {
           <Route path="produtos/:id/variantes" element={<ProdutoVariantesPage />} />
           <Route path="categorias" element={<CategoriasPage />} />
           
-          {/* Rotas de Estoque */}
-          <Route path="estoque" element={<EstoquePage />} />
-          
-          {/* Rotas de Vendas */}
-          <Route path="vendas" element={<VendasPage />} />
-          
-          {/* Rotas de Financeiro */}
-          <Route path="financeiro" element={<FinanceiroPage />} />
+          {/* Rotas de Estoque - ADMIN e OPERADOR */}
+          <Route
+            path="estoque"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>
+                <EstoquePage />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="estoque/:id"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>
+                <EstoqueDetalhePage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* Rotas de Vendas - ADMIN e OPERADOR */}
+          <Route
+            path="vendas"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>
+                <VendasPage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* Rotas de Financeiro - Apenas ADMIN */}
+          <Route
+            path="financeiro"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <FinanceiroPage />
+              </RoleProtectedRoute>
+            }
+          />
           
           {/* Rotas de Configurações - Apenas ADMIN */}
           <Route 

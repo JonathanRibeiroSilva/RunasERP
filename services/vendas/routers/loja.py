@@ -10,6 +10,7 @@ import structlog
 
 log = structlog.get_logger()
 
+from config import settings
 from database import get_db
 from schemas.loja import (
     ItemCarrinhoCreate,
@@ -22,7 +23,7 @@ from schemas.loja import (
 )
 from services.carrinho_service import CarrinhoService
 from services.loja_service import LojaService
-from utils.tenant import get_empresa_id, get_empresa_id_from_slug, get_cliente_id
+from utils.tenant import get_empresa_id, get_empresa_id_from_slug, get_cliente_id, get_empresa_slug_by_id
 
 router = APIRouter(prefix="/loja", tags=["loja-online"])
 
@@ -483,19 +484,9 @@ async def retry_payment(
                 detail="Erro ao buscar detalhes do pedido"
             )
         
-        # 5. Obter empresa_slug via query param empresaSlug
-        # (já está disponível através do Depends(get_empresa_id_from_slug))
-        # Precisamos extrair o slug da query string
-        from fastapi import Query
-        
-        # TODO: Melhorar isso - slug deve vir do banco ou ser passado explicitamente
-        # Por ora, vamos usar um valor padrão e logar warning
-        empresa_slug = 'distribuidora-central'  # ⚠️ TEMPORÁRIO
-        log.warning(
-            "retry_payment_empresa_slug_hardcoded",
-            venda_id=str(venda.id),
-            slug_usado=empresa_slug
-        )
+        # 5. Resolver empresa_slug dinamicamente a partir do empresa_id (multi-tenant).
+        # Fallback para o slug padrão preserva o comportamento anterior se o serviço estiver indisponível.
+        empresa_slug = await get_empresa_slug_by_id(db, empresa_id) or 'distribuidora-central'
         
         # 6. Criar nova preferência no Mercado Pago
         preferencia_id, init_point, sandbox_init_point, erro = await MercadoPagoService.criar_preferencia(
@@ -516,28 +507,17 @@ async def retry_payment(
                 detail=f"Erro ao gerar link de pagamento: {erro}"
             )
         
-        if not init_point and not sandbox_init_point:
+        if not init_point:
             raise HTTPException(
                 status_code=500,
                 detail="Mercado Pago não retornou link de pagamento"
             )
-        
-        # 7. Detectar modo (teste/produção) e escolher URL correta
-        config = await MercadoPagoService.obter_credenciais(db, empresa_id)
-        
-        if not config:
-            mercadopago_url = init_point or sandbox_init_point
-        else:
-            is_test_mode = (
-                'TEST' in config.mercadopago_access_token.upper() or
-                config.mercadopago_public_key.startswith('TEST-') or
-                (config.mercadopago_public_key.startswith('APP_USR-') and len(config.mercadopago_access_token) < 100)
-            )
-            
-            if is_test_mode and sandbox_init_point:
-                mercadopago_url = sandbox_init_point
-            else:
-                mercadopago_url = init_point
+
+        # 7. Checkout Pro always uses init_point. With a Mercado Pago test user the
+        # preference is already a TEST transaction, so the regular checkout accepts
+        # test cards; the legacy sandbox_init_point is deprecated and never creates
+        # card payments. APP_USR uses the same init_point for sandbox and production.
+        mercadopago_url = init_point
         
         # 8. Atualizar venda com novo preference_id
         await VendaRepository.atualizar(

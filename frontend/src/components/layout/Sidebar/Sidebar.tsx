@@ -36,7 +36,7 @@ interface SubMenuItem {
   label: string;
   requiredRole?: UserRole[]; // Roles que podem ver este item
   external?: boolean; // Se é link externo
-  action?: () => void; // Ação customizada (ex: abrir nova aba)
+  openStore?: boolean; // Abre a loja online da empresa em nova aba
 }
 
 interface NavItem {
@@ -62,11 +62,11 @@ const navItems: NavItem[] = [
     icon: <FiGlobe />, 
     label: 'Loja Online',
     submenu: [
-      { 
-        icon: <FiExternalLink />, 
+      {
+        icon: <FiExternalLink />,
         label: 'Minha Loja',
         external: true,
-        action: () => window.open('/c/distribuidora-central', '_blank') // TODO: Usar empresa_slug dinâmico
+        openStore: true,
       },
       { path: '/loja/pedidos', icon: <FiShoppingBag />, label: 'Pedidos Online' },
       { path: '/loja/configuracoes', icon: <FiSettings />, label: 'Configurações da Loja' },
@@ -90,10 +90,11 @@ const navItems: NavItem[] = [
     icon: <FiShoppingCart />, 
     label: 'Vendas' 
   },
-  { 
-    path: '/financeiro', 
-    icon: <FiDollarSign />, 
-    label: 'Financeiro' 
+  {
+    path: '/financeiro',
+    icon: <FiDollarSign />,
+    label: 'Financeiro',
+    requiredRole: ['ADMIN'], // ← Apenas ADMIN vê
   },
   // CONFIGURAÇÕES - Apenas ADMIN
   { 
@@ -117,7 +118,13 @@ const navItems: NavItem[] = [
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) => {
   const location = useLocation();
   const { user } = useAuth(); // ← Pegar usuário atual
-  
+
+  const abrirMinhaLoja = () => {
+    if (user?.empresa_slug) {
+      window.open(`/c/${user.empresa_slug}`, '_blank', 'noopener');
+    }
+  };
+
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
     // Inicializar estado com submenus ativos na primeira renderização
     const initialExpanded: string[] = [];
@@ -203,12 +210,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) 
                   <div className={`nav-submenu ${isMenuExpanded(item.label, visibleSubmenu) ? 'expanded' : ''}`}>
                     {visibleSubmenu.map((subItem, index) => {
                       // Item externo (ex: Ver Minha Loja)
-                      if (subItem.external && subItem.action) {
+                      if (subItem.external && subItem.openStore) {
                         return (
                           <button
                             key={subItem.label}
                             onClick={() => {
-                              subItem.action?.();
+                              abrirMinhaLoja();
                               handleNavClick();
                             }}
                             className="nav-subitem nav-subitem-external"

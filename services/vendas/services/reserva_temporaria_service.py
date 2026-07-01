@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 from uuid import UUID
 from decimal import Decimal
+import httpx
 import redis.asyncio as redis
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,6 +46,42 @@ class ReservaTemporariaService:
         return f"lock:estoque:{produto_id}"
     
     @staticmethod
+    async def _obter_quantidade_fisica(
+        empresa_id: int,
+        produto_id: UUID,
+        variante_id: Optional[UUID] = None
+    ) -> Decimal:
+        """
+        Obtém a quantidade física real no serviço de estoque.
+
+        Em caso de falha de comunicação, retorna 0 (fail-closed): é preferível bloquear
+        uma reserva temporária do que permitir overselling com dado de estoque incerto.
+        """
+        url = f"{settings.ESTOQUE_URL}/estoque/disponibilidade"
+        headers = {"X-Empresa-Id": str(empresa_id)}
+        params = {"produto_id": str(produto_id)}
+        if variante_id:
+            params["variante_id"] = str(variante_id)
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, params=params, headers=headers, timeout=5.0)
+            if response.status_code == 200:
+                return Decimal(str(response.json().get("quantidade", 0)))
+            log.warning(
+                "estoque_disponibilidade_status_inesperado",
+                status=response.status_code,
+                produto_id=str(produto_id)
+            )
+            return Decimal('0.0')
+        except Exception as e:
+            log.error(
+                "erro_consultar_disponibilidade_estoque",
+                error=str(e),
+                produto_id=str(produto_id)
+            )
+            return Decimal('0.0')
+
+    @staticmethod
     async def calcular_disponivel(
         db: AsyncSession,
         empresa_id: int,
@@ -53,16 +90,20 @@ class ReservaTemporariaService:
     ) -> Decimal:
         """
         Calcula estoque disponível DINAMICAMENTE.
-        
-        Fórmula: disponível = física - reservas_não_expiradas
-        
+
+        Fórmula: disponível = física_real - reservas_temporárias_não_expiradas
+
+        A quantidade física vem do serviço de estoque (fonte de verdade). As reservas
+        temporárias (carrinho) são subtraídas para refletir o que ainda pode ser vendido.
+
         Returns:
             Decimal: Quantidade disponível (nunca negativo)
         """
-        # Buscar quantidade física do estoque (HTTP call para serviço Estoque)
-        # TODO: Implementar chamada HTTP
-        quantidade_fisica = Decimal('100.0')  # Mock por enquanto
-        
+        # Buscar quantidade física real do serviço de estoque
+        quantidade_fisica = await ReservaTemporariaService._obter_quantidade_fisica(
+            empresa_id, produto_id, variante_id
+        )
+
         # Somar reservas não expiradas
         stmt = select(func.coalesce(func.sum(ReservaTemporaria.quantidade), 0)).where(
             and_(

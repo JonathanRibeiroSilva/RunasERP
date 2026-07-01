@@ -41,7 +41,18 @@ class Settings(BaseSettings):
     
     # API Gateway URL
     API_GATEWAY_URL: str = "http://api-gateway:8000"
-    
+
+    # Mercado Pago environment switch.
+    # "sandbox" (default) forces the sandbox/test checkout flow; production is only
+    # used when MP_ENVIRONMENT is explicitly set to "production". This is the single
+    # source of truth — no token-format heuristics.
+    MP_ENVIRONMENT: str = "sandbox"
+
+    @property
+    def mercadopago_sandbox(self) -> bool:
+        """True unless MP_ENVIRONMENT is explicitly 'production'."""
+        return self.MP_ENVIRONMENT.strip().lower() != "production"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

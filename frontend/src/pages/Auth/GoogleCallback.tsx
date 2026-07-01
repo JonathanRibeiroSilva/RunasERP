@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
+import { getErrorMessage } from '@/services/api/axios';
 import { Toast } from '@/utils/toast';
 import './AuthCallback.scss';
-
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true  // ✅ CRITICAL: Permite receber e enviar cookies HTTP-only
-});
 
 const GoogleCallback = () => {
   const [searchParams] = useSearchParams();
@@ -52,10 +46,6 @@ const GoogleCallback = () => {
 
         const { cliente } = response.data;
 
-        // Debug: verificar se callback foi bem-sucedido
-        console.log('✅ OAuth callback bem-sucedido');
-        console.log('🍪 Cookies HTTP-only foram setados pelo backend');
-
         // ✅ Backend setou cookies HTTP-only automaticamente
         // ❌ NÃO usar localStorage (vulnerável a XSS)
 
@@ -74,8 +64,8 @@ const GoogleCallback = () => {
 
         // Redirecionar para onde o usuário estava (geralmente checkout com carrinho)
         navigate(returnUrl);
-      } catch (error: any) {
-        const mensagem = error.response?.data?.detail || 'Erro ao processar login';
+      } catch (error) {
+        const mensagem = getErrorMessage(error, 'Erro ao processar login');
         setErro(mensagem);
         Toast.error(mensagem);
         setProcessando(false);

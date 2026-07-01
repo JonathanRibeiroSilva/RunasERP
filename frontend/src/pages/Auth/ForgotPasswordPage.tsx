@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authService } from '@/services/auth/authService';
+import { getErrorMessage } from '@/services/api/axios';
 import { FiArrowLeft } from 'react-icons/fi';
 import './ForgotPasswordPage.scss';
 
@@ -39,8 +40,8 @@ const ForgotPasswordPage = () => {
     try {
       await authService.forgotPassword(email);
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erro ao solicitar reset de senha. Tente novamente.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Erro ao solicitar reset de senha. Tente novamente.'));
     } finally {
       setLoading(false);
     }

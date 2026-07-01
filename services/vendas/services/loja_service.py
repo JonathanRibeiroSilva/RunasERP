@@ -33,6 +33,7 @@ from services.notificacao_service import NotificacaoService
 from services.cache_service import CacheService
 from services.email_service import enviar_email_credenciais
 from repositories.venda_repository import VendaRepository
+from utils.tenant import get_empresa_slug_by_id
 from config import settings
 
 log = structlog.get_logger()
@@ -62,7 +63,7 @@ class LojaService:
         2. Valida cliente (existente ou convidado)
         3. Se cliente cadastrado com FIADO, verifica permite_fiado_online
         4. Calcula taxa de entrega (se DELIVERY)
-        5. Valida estoque com reserva de 5min (checkout)
+        5. Valida estoque com reserva temporária (15min - TTL padrão do carrinho)
         6. Cria venda com status apropriado (PEDIDO ou PENDENTE_PAGAMENTO)
         7. Se pagamento online, cria preferência Mercado Pago
         8. Registra histórico de status
@@ -296,8 +297,8 @@ class LojaService:
                     data.endereco_entrega.bairro
                 )
             
-            # 4. Validar estoque e criar reservas de checkout (5min)
-            # Liberar reservas temporárias do carrinho (15min) e criar reservas de checkout (5min)
+            # 4. Validar estoque e recriar reservas temporárias (15min - TTL padrão)
+            # Liberar reservas temporárias do carrinho (15min) e recriar reservas (15min)
             for item in carrinho.itens:
                 # Liberar reserva do carrinho
                 await ReservaTemporariaService.liberar_reserva(
@@ -432,8 +433,9 @@ class LojaService:
                 )
                 
                 try:
-                    # TODO: Obter slug da empresa dinamicamente
-                    empresa_slug = 'distribuidora-central'
+                    # Obter slug da empresa dinamicamente (multi-tenant).
+                    # Fallback para o slug padrão preserva o comportamento anterior se o serviço estiver indisponível.
+                    empresa_slug = await get_empresa_slug_by_id(db, empresa_id) or 'distribuidora-central'
                     
                     # Buscar venda completa com itens para criar preferência
                     venda_completa = await VendaRepository.buscar_por_id(
@@ -450,148 +452,42 @@ class LojaService:
                         empresa_slug=empresa_slug
                     )
                     
-                    # Log IMEDIATAMENTE após receber resposta
-                    log.info(
-                        "mercadopago_retorno_recebido",
-                        venda_id=str(venda.id),
-                        tem_preferencia_id=bool(preferencia_id),
-                        tem_init_point=bool(init_point),
-                        tem_sandbox=bool(sandbox_init_point),
-                        tem_erro=bool(erro),
-                        erro_valor=erro if erro else "None",
-                        init_point_valor=init_point[:50] if init_point else "None",
-                        sandbox_valor=sandbox_init_point[:50] if sandbox_init_point else "None"
-                    )
-                    
                     if erro:
-                        log.error("erro_mercadopago", erro=erro)
-                    
-                    log.info("PASSOU_DO_IF_ERRO", venda_id=str(venda.id))
-                    
-                    log.info("ANTES_DO_TRY_URLS", venda_id=str(venda.id))
-                    
-                    # Processar URLs com try/except individual para capturar erro exato
-                    try:
-                        log.info("ENTROU_NO_TRY_URLS", venda_id=str(venda.id))
-                        
-                        # Debug: testar condição
-                        condicao_urls = init_point or sandbox_init_point
+                        log.error("erro_mercadopago", venda_id=str(venda.id), erro=erro)
+
+                    if preferencia_id and init_point:
+                        # Checkout Pro always redirects to init_point. With a Mercado Pago
+                        # test user the preference is already a TEST transaction (the
+                        # account owns it), so the regular checkout accepts test cards.
+                        # The legacy sandbox_init_point (sandbox.mercadopago.com.br) is
+                        # deprecated: card payments are never created there, leaving the
+                        # merchant_order at payment_required with 0 payments. APP_USR
+                        # (test user or live) uses the same init_point for both environments.
+                        mercadopago_init_point = init_point
+
+                        await VendaRepository.atualizar(
+                            db,
+                            empresa_id,
+                            venda.id,
+                            mercadopago_preference_id=preferencia_id
+                        )
+
                         log.info(
-                            "debug_condicao_urls",
+                            "mercadopago_checkout_url_definida",
                             venda_id=str(venda.id),
-                            condicao_resultado=bool(condicao_urls),
-                            init_point_type=type(init_point).__name__,
-                            sandbox_type=type(sandbox_init_point).__name__
+                            checkout_url_tipo="init_point"
                         )
-                        
-                        # Processar URLs independente de erro (se URLs existem, usar)
-                        if init_point or sandbox_init_point:
-                            log.info("ENTROU_NO_BLOCO_URLS", venda_id=str(venda.id))
-                            
-                            # Log dos valores recebidos
-                            log.info(
-                                "mercadopago_urls_recebidas",
-                                venda_id=str(venda.id),
-                                tem_init_point=bool(init_point),
-                                tem_sandbox=bool(sandbox_init_point)
-                            )
-                            
-                            # ✅ Detectar se estamos em modo de teste
-                            # Credenciais de teste começam com TEST ou contêm "test" no access_token
-                            config = await MercadoPagoService.obter_credenciais(db, empresa_id)
-                            
-                            if not config:
-                                log.error("config_nao_encontrada", empresa_id=empresa_id)
-                                mercadopago_init_point = init_point or sandbox_init_point
-                            else:
-                                # Log das credenciais (parcial, sem expor token completo)
-                                log.info(
-                                    "verificando_modo_teste",
-                                    access_token_inicio=config.mercadopago_access_token[:20] if config.mercadopago_access_token else None,
-                                    public_key_inicio=config.mercadopago_public_key[:20] if config.mercadopago_public_key else None,
-                                    access_token_length=len(config.mercadopago_access_token) if config.mercadopago_access_token else 0
-                                )
-                                
-                                is_test_mode = (
-                                    'TEST' in config.mercadopago_access_token.upper() or
-                                    config.mercadopago_public_key.startswith('TEST-') or
-                                    (config.mercadopago_public_key.startswith('APP_USR-') and len(config.mercadopago_access_token) < 100)
-                                )
-                                
-                                log.info(
-                                    "modo_detectado",
-                                    is_test_mode=is_test_mode,
-                                    venda_id=str(venda.id)
-                                )
-                                
-                                # Usar sandbox_init_point se em modo de teste, senão production
-                                if is_test_mode and sandbox_init_point:
-                                    mercadopago_init_point = sandbox_init_point
-                                    log.info(
-                                        "usando_sandbox_mercadopago",
-                                        venda_id=str(venda.id),
-                                        url=sandbox_init_point[:80]
-                                    )
-                                else:
-                                    mercadopago_init_point = init_point
-                                    log.info(
-                                        "usando_production_mercadopago",
-                                        venda_id=str(venda.id),
-                                        url=init_point[:80] if init_point else None
-                                    )
-                            
-                            # Salvar preference_id na venda
-                            await VendaRepository.atualizar(
-                                db,
-                                empresa_id,
-                                venda.id,
-                                mercadopago_preference_id=preferencia_id
-                            )
-                            
-                            log.info(
-                                "processamento_urls_finalizado",
-                                venda_id=str(venda.id),
-                                mercadopago_init_point_definido=bool(mercadopago_init_point)
-                            )
-                    
-                    except Exception as e_urls:
-                        log.error(
-                            "erro_processar_urls_mercadopago",
-                            venda_id=str(venda.id),
-                            error=str(e_urls),
-                            error_type=type(e_urls).__name__
-                        )
-                        import traceback
-                        log.error(
-                            "erro_urls_stacktrace",
-                            venda_id=str(venda.id),
-                            stacktrace=traceback.format_exc()
-                        )
-                    
+
                 except Exception as e:
-                    log.error(
-                        "EXCEPT_EXTERNO_ACIONADO",
-                        venda_id=str(venda.id),
-                        error=str(e),
-                        error_type=type(e).__name__,
-                        error_traceback=str(e.__traceback__)
-                    )
+                    # Não falhar o checkout por erro no Mercado Pago: a venda fica
+                    # PENDENTE_PAGAMENTO e o job de timeout a cancela se não for paga.
                     log.error(
                         "erro_criar_preferencia_mercadopago",
                         venda_id=str(venda.id),
                         error=str(e),
                         error_type=type(e).__name__,
-                        error_traceback=str(e.__traceback__)
+                        exc_info=True
                     )
-                    # Log de stack trace completo
-                    import traceback
-                    log.error(
-                        "erro_criar_preferencia_stacktrace",
-                        venda_id=str(venda.id),
-                        stacktrace=traceback.format_exc()
-                    )
-                    # Não falhar o checkout por erro no Mercado Pago
-                    # Cliente pode pagar depois manualmente
             
             # 11. Enviar notificação WhatsApp (não bloquear checkout se falhar)
             try:
@@ -772,7 +668,7 @@ class LojaService:
         for h in historico_db:
             historico.append({
                 "etapa": h.status_novo,
-                "descricao": h.observacao or self._get_descricao_status(h.status_novo),
+                "descricao": h.observacao or LojaService._get_descricao_status(h.status_novo),
                 "data": h.alterado_em.isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema" if not h.alterado_por else "usuario"
@@ -780,7 +676,7 @@ class LojaService:
         
         # Se não tem histórico, usar dados das datas da venda (backward compatibility)
         if not historico:
-            historico = self._montar_historico_legado(venda)
+            historico = LojaService._montar_historico_legado(venda)
         
         # Determinar próxima etapa
         proxima_etapa = None
