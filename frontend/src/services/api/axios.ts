@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { env } from '@/config/env';
 import { tokenService } from '@/services/auth/tokenService';
-import type { ApiError } from '@/types/auth';
+import type { ApiError } from '@/types/common';
 
 // Criar instância do Axios
 export const api = axios.create({
@@ -9,8 +9,6 @@ export const api = axios.create({
   timeout: env.apiTimeout,
   headers: {
     'Content-Type': 'application/json',
-    // Necessário para bypassar o aviso de browser do ngrok em ambiente de dev
-    'ngrok-skip-browser-warning': 'true',
   },
   withCredentials: true, // Importante: envia cookies em requisições cross-origin
 });
@@ -67,14 +65,19 @@ api.interceptors.response.use(
   }
 );
 
-// Helper para extrair mensagem de erro
-export const getErrorMessage = (error: unknown): string => {
+// Helper para extrair mensagem de erro (com fallback amigável opcional)
+export const getErrorMessage = (error: unknown, fallback = 'Erro desconhecido'): string => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiError>;
-    return axiosError.response?.data?.detail || axiosError.message || 'Erro desconhecido';
+    return axiosError.response?.data?.detail || axiosError.message || fallback;
   }
   if (error instanceof Error) {
     return error.message;
   }
-  return 'Erro desconhecido';
+  return fallback;
+};
+
+// Helper para extrair o status HTTP de um erro (quando disponível)
+export const getErrorStatus = (error: unknown): number | undefined => {
+  return axios.isAxiosError(error) ? error.response?.status : undefined;
 };
