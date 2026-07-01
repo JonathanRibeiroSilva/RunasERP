@@ -48,9 +48,13 @@ class EstoqueResponse(EstoqueBase):
 
 
 class EstoqueComAlerta(EstoqueResponse):
-    """Schema de estoque com alertas."""
-    alerta_estoque_baixo: bool = Field(..., description="True se estoque está abaixo do mínimo")
-    alerta_estoque_zerado: bool = Field(..., description="True se estoque está zerado")
+    """Schema de estoque com alertas.
+
+    Os alertas são calculados pelo service após o model_validate (não existem no ORM),
+    então têm default — caso contrário a validação falha antes de o service preenchê-los.
+    """
+    alerta_estoque_baixo: bool = Field(False, description="True se estoque está abaixo do mínimo")
+    alerta_estoque_zerado: bool = Field(False, description="True se estoque está zerado")
 
 
 # ==================== MOVIMENTAÇÃO ====================
@@ -230,6 +234,49 @@ class SaidaEstoqueRequest(BaseModel):
     observacao: Optional[str] = None
     documento: Optional[str] = Field(None, max_length=100)
     lote_id: Optional[UUID] = Field(None, description="ID do lote específico")
+
+
+class BaixaVendaItem(BaseModel):
+    """Item de uma baixa de venda (produto/variante + quantidade)."""
+    produto_id: UUID = Field(..., description="ID do produto")
+    variante_id: Optional[UUID] = Field(None, description="ID da variante")
+    quantidade: float = Field(..., gt=0, description="Quantidade a baixar")
+
+
+class BaixaVendaRequest(BaseModel):
+    """
+    Schema para baixa de estoque de uma venda confirmada (lote atômico).
+
+    Todos os itens são validados e baixados em uma única transação:
+    ou todos baixam, ou nenhum (rollback). Garante que uma venda paga nunca
+    deduza estoque parcialmente.
+    """
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
+    documento: Optional[str] = Field(None, max_length=100, description="Número da venda")
+    itens: List[BaixaVendaItem] = Field(..., min_length=1, description="Itens a baixar")
+
+
+class EstornoVendaRequest(BaseModel):
+    """
+    Schema para estorno (devolução) de estoque de uma venda reembolsada (lote atômico).
+
+    Reverte a baixa de uma venda: devolve a quantidade física ao estoque de cada item
+    numa única transação. Idempotente por (empresa_id, documento) — reembolsos
+    reentregues pelo Mercado Pago não devolvem estoque em duplicidade.
+    """
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
+    documento: Optional[str] = Field(None, max_length=100, description="Número da venda")
+    itens: List[BaixaVendaItem] = Field(..., min_length=1, description="Itens a estornar")
+
+
+class DisponibilidadeResponse(BaseModel):
+    """Disponibilidade real de um produto/variante."""
+    produto_id: UUID
+    variante_id: Optional[UUID]
+    quantidade: float = Field(..., description="Quantidade física em estoque")
+    quantidade_reservada: float
+    quantidade_disponivel: float
+    existe: bool = Field(..., description="False se não há registro de estoque")
 
 
 class AjusteEstoqueRequest(BaseModel):

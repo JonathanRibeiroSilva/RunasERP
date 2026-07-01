@@ -2,14 +2,31 @@
 Service de Estoque.
 Contém a lógica de negócio para gestão de estoque.
 """
+import asyncio
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Tuple
 from uuid import UUID
+from sqlalchemy import select
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 import structlog
 
-from models.estoque import TipoMovimentacao, StatusLote
+from models.estoque import (
+    TipoMovimentacao,
+    StatusLote,
+    Movimentacao,
+    Estoque,
+    BaixaVendaProcessada,
+    EstornoVendaProcessado,
+)
+from utils.concorrencia import (
+    MAX_TENTATIVAS_DEADLOCK,
+    backoff_segundos,
+    chave_ordenacao_item,
+    eh_erro_transitorio,
+    extrair_sqlstate,
+)
 from repositories.estoque_repository import (
     EstoqueRepository,
     MovimentacaoRepository,
@@ -28,6 +45,9 @@ from schemas.estoque import (
     AjusteEstoqueRequest,
     ReservaEstoqueRequest,
     LiberarReservaRequest,
+    BaixaVendaRequest,
+    EstornoVendaRequest,
+    DisponibilidadeResponse,
     RelatorioEstoque,
     RelatorioMovimentacoes,
 )
@@ -40,17 +60,38 @@ class EstoqueService:
     """Service para operações de estoque."""
 
     @staticmethod
-    async def verificar_produto_existe(produto_id: UUID, variante_id: Optional[UUID] = None) -> bool:
-        """Verifica se produto/variante existe no serviço de produtos."""
+    async def verificar_produto_existe(
+        empresa_id: int,
+        produto_id: UUID,
+        variante_id: Optional[UUID] = None
+    ) -> bool:
+        """
+        Valida que o produto (e a variante, se houver) existem no serviço de produtos,
+        dentro da empresa informada.
+
+        O X-Empresa-Id é obrigatório: o serviço de produtos exige esse header e responde
+        400 sem ele — sem o header, NENHUM produto seria considerado válido (e a criação de
+        estoque para produtos válidos ficaria impossível). Enviar o header também garante
+        isolamento de tenant: um produto de outra empresa retorna 404 e é rejeitado.
+        """
+        headers = {"X-Empresa-Id": str(empresa_id)}
         try:
             async with httpx.AsyncClient() as client:
-                if variante_id:
-                    url = f"{settings.PRODUTOS_URL}/produtos/{produto_id}/variantes/{variante_id}"
-                else:
-                    url = f"{settings.PRODUTOS_URL}/produtos/{produto_id}"
-                
-                response = await client.get(url, timeout=5.0)
-                return response.status_code == 200
+                produto = await client.get(
+                    f"{settings.PRODUTOS_URL}/produtos/{produto_id}",
+                    headers=headers, timeout=5.0
+                )
+                if produto.status_code != 200:
+                    return False
+
+                if variante_id is None:
+                    return True
+
+                variante = await client.get(
+                    f"{settings.PRODUTOS_URL}/variantes/{variante_id}",
+                    headers=headers, timeout=5.0
+                )
+                return variante.status_code == 200
         except Exception as e:
             log.error("erro_verificar_produto", error=str(e), produto_id=str(produto_id))
             return False
@@ -58,8 +99,8 @@ class EstoqueService:
     @staticmethod
     async def criar_estoque(db: AsyncSession, empresa_id: int, data: EstoqueCreate) -> EstoqueResponse:
         """Cria um novo registro de estoque."""
-        # Verificar se produto existe
-        if not await EstoqueService.verificar_produto_existe(data.produto_id, data.variante_id):
+        # Verificar se produto existe (no tenant correto)
+        if not await EstoqueService.verificar_produto_existe(empresa_id, data.produto_id, data.variante_id):
             raise ValueError("Produto ou variante não encontrado")
         
         try:
@@ -162,8 +203,8 @@ class EstoqueService:
                 estoque = await EstoqueRepository.buscar_por_produto(db, empresa_id, data.produto_id, data.variante_id)
                 
                 if not estoque:
-                    # Verificar se produto existe
-                    if not await EstoqueService.verificar_produto_existe(data.produto_id, data.variante_id):
+                    # Verificar se produto existe (no tenant correto)
+                    if not await EstoqueService.verificar_produto_existe(empresa_id, data.produto_id, data.variante_id):
                         raise ValueError("Produto ou variante não encontrado")
                     
                     # Criar estoque
@@ -435,6 +476,363 @@ class EstoqueService:
             await db.rollback()
             log.error("erro_liberar_reserva", error=str(e))
             raise
+
+    @staticmethod
+    async def consultar_disponibilidade(
+        db: AsyncSession,
+        empresa_id: int,
+        produto_id: UUID,
+        variante_id: Optional[UUID] = None
+    ) -> DisponibilidadeResponse:
+        """Consulta a disponibilidade real (física e reservada) de um produto/variante."""
+        estoque = await EstoqueRepository.buscar_por_produto(db, empresa_id, produto_id, variante_id)
+        if not estoque:
+            return DisponibilidadeResponse(
+                produto_id=produto_id,
+                variante_id=variante_id,
+                quantidade=0.0,
+                quantidade_reservada=0.0,
+                quantidade_disponivel=0.0,
+                existe=False
+            )
+
+        return DisponibilidadeResponse(
+            produto_id=produto_id,
+            variante_id=variante_id,
+            quantidade=estoque.quantidade,
+            quantidade_reservada=estoque.quantidade_reservada,
+            quantidade_disponivel=estoque.quantidade_disponivel,
+            existe=True
+        )
+
+    @staticmethod
+    async def baixar_venda(
+        db: AsyncSession,
+        empresa_id: int,
+        data: BaixaVendaRequest
+    ) -> List[EstoqueResponse]:
+        """
+        Baixa o estoque de todos os itens de uma venda de forma atômica e idempotente.
+
+        Garantias:
+        - Idempotência (C1): a baixa de uma venda (numero_venda == documento) executa
+          EXATAMENTE UMA VEZ. Webhooks duplicados, retries e múltiplas instâncias da API
+          colidem no ledger BaixaVendaProcessada (unique empresa_id+documento) e não
+          duplicam movimentações. Chamadas repetidas retornam o estado atual sem efeito.
+        - Atomicidade: tudo ou nada. Uma venda só é baixada se houver estoque físico real
+          para TODOS os itens; se qualquer item faltar, a transação inteira é revertida.
+        - Anti-deadlock: as linhas de estoque são travadas (FOR UPDATE) em ordem global
+          determinística (produto_id, variante_id). Deadlocks/serialization failures do
+          PostgreSQL (40P01/40001) ainda possíveis são reexecutados com backoff limitado.
+
+        Raises:
+            ValueError: se algum item não tiver estoque suficiente ou não existir, ou se
+                o documento (numero_venda) não for informado.
+        """
+        if not data.documento:
+            raise ValueError(
+                "documento (numero_venda) é obrigatório para baixa idempotente de estoque"
+            )
+
+        ultimo_erro: Optional[BaseException] = None
+        for tentativa in range(MAX_TENTATIVAS_DEADLOCK):
+            try:
+                return await EstoqueService._baixar_venda_once(db, empresa_id, data)
+            except DBAPIError as exc:
+                await db.rollback()
+                if not eh_erro_transitorio(exc):
+                    raise
+                ultimo_erro = exc
+                log.warning(
+                    "baixa_venda_deadlock_retry",
+                    documento=data.documento,
+                    tentativa=tentativa + 1,
+                    sqlstate=extrair_sqlstate(exc),
+                )
+                await asyncio.sleep(backoff_segundos(tentativa))
+
+        log.error("baixa_venda_deadlock_esgotado", documento=data.documento)
+        raise ultimo_erro  # type: ignore[misc]
+
+    @staticmethod
+    async def _baixar_venda_once(
+        db: AsyncSession,
+        empresa_id: int,
+        data: BaixaVendaRequest
+    ) -> List[EstoqueResponse]:
+        """Uma tentativa da baixa de venda (chamada pelo wrapper de retry de deadlock)."""
+        # Fast path: já baixado → idempotente, retorna o estado atual sem novo efeito.
+        if await EstoqueService._baixa_ja_registrada(db, empresa_id, data.documento):
+            log.info(
+                "baixa_venda_idempotente_ignorada",
+                empresa_id=empresa_id,
+                documento=data.documento,
+            )
+            return await EstoqueService._snapshot_itens(db, empresa_id, data.itens)
+
+        try:
+            # Reserva o slot de idempotência ANTES de baixar: a unique constraint serializa
+            # baixas concorrentes do mesmo documento. O flush força a checagem do índice.
+            db.add(BaixaVendaProcessada(empresa_id=empresa_id, documento=data.documento))
+            try:
+                await db.flush()
+            except IntegrityError:
+                # Outra transação registrou/está registrando a mesma baixa → idempotente.
+                await db.rollback()
+                log.info(
+                    "baixa_venda_idempotente_corrida",
+                    empresa_id=empresa_id,
+                    documento=data.documento,
+                )
+                return await EstoqueService._snapshot_itens(db, empresa_id, data.itens)
+
+            # Trava as linhas em ordem determinística (anti-deadlock) e baixa.
+            itens_ordenados = sorted(
+                data.itens,
+                key=lambda i: chave_ordenacao_item(i.produto_id, i.variante_id),
+            )
+            resultados: List[Estoque] = []
+            for item in itens_ordenados:
+                estoque = await EstoqueRepository.buscar_por_produto(
+                    db, empresa_id, item.produto_id, item.variante_id, for_update=True
+                )
+                if not estoque:
+                    raise ValueError(
+                        f"Estoque não encontrado para o produto {item.produto_id}"
+                    )
+
+                if estoque.quantidade < item.quantidade:
+                    raise ValueError(
+                        f"Estoque insuficiente para o produto {item.produto_id}. "
+                        f"Disponível: {estoque.quantidade}, Solicitado: {item.quantidade}"
+                    )
+
+                quantidade_anterior = estoque.quantidade
+                quantidade_posterior = quantidade_anterior - item.quantidade
+
+                db.add(Movimentacao(
+                    estoque_id=estoque.id,
+                    tipo=TipoMovimentacao.SAIDA.value,
+                    quantidade=item.quantidade,
+                    quantidade_anterior=quantidade_anterior,
+                    quantidade_posterior=quantidade_posterior,
+                    motivo="Venda confirmada",
+                    documento=data.documento
+                ))
+
+                estoque.quantidade = quantidade_posterior
+                # Converte a reserva do checkout em saída (não deixa reserva órfã).
+                estoque.quantidade_reservada = max(
+                    0.0, estoque.quantidade_reservada - item.quantidade
+                )
+                estoque.quantidade_disponivel = (
+                    estoque.quantidade - estoque.quantidade_reservada
+                )
+                estoque.updated_at = datetime.utcnow()
+                resultados.append(estoque)
+
+            await db.commit()
+
+            log.info(
+                "baixa_venda_concluida",
+                empresa_id=empresa_id,
+                documento=data.documento,
+                itens=len(data.itens)
+            )
+
+            return [EstoqueResponse.model_validate(e) for e in resultados]
+        except ValueError:
+            await db.rollback()
+            raise
+        except DBAPIError:
+            # Deadlock/serialization failure → propaga para o wrapper de retry decidir.
+            # (não faz rollback aqui; o wrapper faz, preservando a exceção)
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_baixar_venda", error=str(e), documento=data.documento)
+            raise
+
+    @staticmethod
+    async def _baixa_ja_registrada(
+        db: AsyncSession,
+        empresa_id: int,
+        documento: str
+    ) -> bool:
+        """True se a baixa desta venda (documento) já foi registrada no ledger."""
+        result = await db.execute(
+            select(BaixaVendaProcessada.id).where(
+                BaixaVendaProcessada.empresa_id == empresa_id,
+                BaixaVendaProcessada.documento == documento,
+            )
+        )
+        return result.first() is not None
+
+    @staticmethod
+    async def _snapshot_itens(
+        db: AsyncSession,
+        empresa_id: int,
+        itens
+    ) -> List[EstoqueResponse]:
+        """Estado atual do estoque dos itens (resposta idempotente, sem efeito colateral)."""
+        snapshot: List[EstoqueResponse] = []
+        for item in itens:
+            estoque = await EstoqueRepository.buscar_por_produto(
+                db, empresa_id, item.produto_id, item.variante_id
+            )
+            if estoque:
+                snapshot.append(EstoqueResponse.model_validate(estoque))
+        return snapshot
+
+    @staticmethod
+    async def estornar_venda(
+        db: AsyncSession,
+        empresa_id: int,
+        data: EstornoVendaRequest
+    ) -> List[EstoqueResponse]:
+        """
+        Estorna (devolve) o estoque de todos os itens de uma venda reembolsada, de forma
+        atômica e idempotente. Espelha baixar_venda, mas no sentido inverso.
+
+        Garantias:
+        - Idempotência (D2): o estorno de uma venda (numero_venda == documento) executa
+          EXATAMENTE UMA VEZ. Reembolsos reentregues, retries e múltiplas instâncias colidem
+          no ledger EstornoVendaProcessado (unique empresa_id+documento) e não devolvem
+          estoque em duplicidade. Chamadas repetidas retornam o estado atual sem efeito.
+        - Atomicidade: tudo ou nada — devolve para TODOS os itens ou nenhum.
+        - Anti-deadlock: linhas travadas (FOR UPDATE) em ordem global determinística; falhas
+          transitórias do PostgreSQL (40P01/40001) são reexecutadas com backoff limitado.
+
+        Raises:
+            ValueError: se o documento (numero_venda) não for informado.
+        """
+        if not data.documento:
+            raise ValueError(
+                "documento (numero_venda) é obrigatório para estorno idempotente de estoque"
+            )
+
+        ultimo_erro: Optional[BaseException] = None
+        for tentativa in range(MAX_TENTATIVAS_DEADLOCK):
+            try:
+                return await EstoqueService._estornar_venda_once(db, empresa_id, data)
+            except DBAPIError as exc:
+                await db.rollback()
+                if not eh_erro_transitorio(exc):
+                    raise
+                ultimo_erro = exc
+                log.warning(
+                    "estorno_venda_deadlock_retry",
+                    documento=data.documento,
+                    tentativa=tentativa + 1,
+                    sqlstate=extrair_sqlstate(exc),
+                )
+                await asyncio.sleep(backoff_segundos(tentativa))
+
+        log.error("estorno_venda_deadlock_esgotado", documento=data.documento)
+        raise ultimo_erro  # type: ignore[misc]
+
+    @staticmethod
+    async def _estornar_venda_once(
+        db: AsyncSession,
+        empresa_id: int,
+        data: EstornoVendaRequest
+    ) -> List[EstoqueResponse]:
+        """Uma tentativa do estorno de venda (chamada pelo wrapper de retry de deadlock)."""
+        # Fast path: já estornado → idempotente, retorna o estado atual sem novo efeito.
+        if await EstoqueService._estorno_ja_registrado(db, empresa_id, data.documento):
+            log.info(
+                "estorno_venda_idempotente_ignorado",
+                empresa_id=empresa_id,
+                documento=data.documento,
+            )
+            return await EstoqueService._snapshot_itens(db, empresa_id, data.itens)
+
+        try:
+            # Reserva o slot de idempotência ANTES de devolver: a unique constraint serializa
+            # estornos concorrentes do mesmo documento. O flush força a checagem do índice.
+            db.add(EstornoVendaProcessado(empresa_id=empresa_id, documento=data.documento))
+            try:
+                await db.flush()
+            except IntegrityError:
+                # Outra transação registrou/está registrando o mesmo estorno → idempotente.
+                await db.rollback()
+                log.info(
+                    "estorno_venda_idempotente_corrida",
+                    empresa_id=empresa_id,
+                    documento=data.documento,
+                )
+                return await EstoqueService._snapshot_itens(db, empresa_id, data.itens)
+
+            # Trava as linhas em ordem determinística (anti-deadlock) e devolve o estoque.
+            itens_ordenados = sorted(
+                data.itens,
+                key=lambda i: chave_ordenacao_item(i.produto_id, i.variante_id),
+            )
+            resultados: List[Estoque] = []
+            for item in itens_ordenados:
+                estoque = await EstoqueRepository.buscar_por_produto(
+                    db, empresa_id, item.produto_id, item.variante_id, for_update=True
+                )
+                if not estoque:
+                    raise ValueError(
+                        f"Estoque não encontrado para o produto {item.produto_id}"
+                    )
+
+                quantidade_anterior = estoque.quantidade
+                quantidade_posterior = quantidade_anterior + item.quantidade
+
+                db.add(Movimentacao(
+                    estoque_id=estoque.id,
+                    tipo=TipoMovimentacao.DEVOLUCAO.value,
+                    quantidade=item.quantidade,
+                    quantidade_anterior=quantidade_anterior,
+                    quantidade_posterior=quantidade_posterior,
+                    motivo="Venda reembolsada",
+                    documento=data.documento
+                ))
+
+                estoque.quantidade = quantidade_posterior
+                estoque.quantidade_disponivel = (
+                    estoque.quantidade - estoque.quantidade_reservada
+                )
+                estoque.updated_at = datetime.utcnow()
+                resultados.append(estoque)
+
+            await db.commit()
+
+            log.info(
+                "estorno_venda_concluido",
+                empresa_id=empresa_id,
+                documento=data.documento,
+                itens=len(data.itens)
+            )
+
+            return [EstoqueResponse.model_validate(e) for e in resultados]
+        except ValueError:
+            await db.rollback()
+            raise
+        except DBAPIError:
+            # Deadlock/serialization failure → propaga para o wrapper de retry decidir.
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_estornar_venda", error=str(e), documento=data.documento)
+            raise
+
+    @staticmethod
+    async def _estorno_ja_registrado(
+        db: AsyncSession,
+        empresa_id: int,
+        documento: str
+    ) -> bool:
+        """True se o estorno desta venda (documento) já foi registrado no ledger."""
+        result = await db.execute(
+            select(EstornoVendaProcessado.id).where(
+                EstornoVendaProcessado.empresa_id == empresa_id,
+                EstornoVendaProcessado.documento == documento,
+            )
+        )
+        return result.first() is not None
 
     @staticmethod
     async def gerar_relatorio(db: AsyncSession, empresa_id: int) -> RelatorioEstoque:

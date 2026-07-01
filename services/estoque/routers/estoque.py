@@ -22,6 +22,9 @@ from schemas.estoque import (
     AjusteEstoqueRequest,
     ReservaEstoqueRequest,
     LiberarReservaRequest,
+    BaixaVendaRequest,
+    EstornoVendaRequest,
+    DisponibilidadeResponse,
     RelatorioEstoque,
     RelatorioMovimentacoes,
 )
@@ -94,6 +97,17 @@ async def listar_estoque_zerado(
     return await EstoqueService.listar_estoques(db, empresa_id=empresa_id, skip=skip, limit=limit, apenas_zerado=True)
 
 
+@router.get("/disponibilidade", response_model=DisponibilidadeResponse)
+async def consultar_disponibilidade(
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    produto_id: UUID = Query(..., description="ID do produto"),
+    variante_id: Optional[UUID] = Query(None, description="ID da variante"),
+    db: AsyncSession = Depends(get_db)
+):
+    """Consulta a disponibilidade real (física e reservada) de um produto/variante."""
+    return await EstoqueService.consultar_disponibilidade(db, empresa_id, produto_id, variante_id)
+
+
 @router.get("/{estoque_id}", response_model=EstoqueComAlerta)
 async def buscar_estoque(
     estoque_id: UUID,
@@ -154,6 +168,48 @@ async def saida_estoque(
     
     try:
         return await EstoqueService.saida_estoque(db, empresa_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/baixar-venda", response_model=List[EstoqueResponse])
+async def baixar_venda(
+    data: BaixaVendaRequest,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Baixa o estoque de uma venda confirmada de forma atômica (todos os itens ou nenhum).
+
+    Valida estoque físico real de cada item sob lock de linha. Retorna 409 se qualquer
+    item estiver sem estoque suficiente — a venda não deve ser confirmada nesse caso.
+    """
+    if data.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+
+    try:
+        return await EstoqueService.baixar_venda(db, empresa_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.post("/estornar-venda", response_model=List[EstoqueResponse])
+async def estornar_venda(
+    data: EstornoVendaRequest,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Estorna (devolve) o estoque de uma venda reembolsada de forma atômica e idempotente.
+
+    Devolve a quantidade física de cada item ao estoque sob lock de linha. Idempotente por
+    numero_venda — reembolsos reentregues não devolvem estoque em duplicidade.
+    """
+    if data.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+
+    try:
+        return await EstoqueService.estornar_venda(db, empresa_id, data)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

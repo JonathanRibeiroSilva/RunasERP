@@ -150,6 +150,65 @@ class Lote(Base):
     movimentacoes = relationship("Movimentacao", back_populates="lote")
 
 
+class BaixaVendaProcessada(Base):
+    """
+    Ledger de idempotência da baixa de estoque por venda.
+
+    Garante que a dedução de estoque de uma venda execute EXATAMENTE UMA VEZ. A unique
+    constraint (empresa_id, documento) é o gate de idempotência sob concorrência: webhooks
+    duplicados/reentregues do Mercado Pago, retries e múltiplas instâncias da API tentando
+    baixar a mesma venda colidem no índice único e não duplicam a movimentação.
+
+    documento == numero_venda (chave de idempotência fornecida pelo serviço de vendas).
+    """
+    __tablename__ = "baixas_venda_processadas"
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'documento', name='uq_baixa_venda_empresa_documento'),
+        Index('ix_baixa_venda_empresa_documento', 'empresa_id', 'documento'),
+        {"schema": "estoque"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+
+    # Multi-tenancy
+    empresa_id = Column(Integer, nullable=False, index=True)
+
+    # Número da venda (chave de idempotência)
+    documento = Column(String(100), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class EstornoVendaProcessado(Base):
+    """
+    Ledger de idempotência do estorno (devolução) de estoque por venda reembolsada.
+
+    Garante que a devolução de estoque de uma venda execute EXATAMENTE UMA VEZ. A unique
+    constraint (empresa_id, documento) serializa estornos concorrentes do mesmo documento:
+    webhooks de reembolso duplicados/reentregues do Mercado Pago e retries colidem no índice
+    único e não devolvem estoque em duplicidade.
+
+    Independente de BaixaVendaProcessada (baixa e estorno são eventos distintos da venda).
+    documento == numero_venda.
+    """
+    __tablename__ = "estornos_venda_processados"
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'documento', name='uq_estorno_venda_empresa_documento'),
+        Index('ix_estorno_venda_empresa_documento', 'empresa_id', 'documento'),
+        {"schema": "estoque"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+
+    # Multi-tenancy
+    empresa_id = Column(Integer, nullable=False, index=True)
+
+    # Número da venda (chave de idempotência)
+    documento = Column(String(100), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class Inventario(Base):
     """
     Modelo de Inventário.
