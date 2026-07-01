@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiDollarSign } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { api, getErrorMessage } from '@/services/api/axios';
 import './ProdutoVariantesPage.scss';
 
 interface Variante {
@@ -98,8 +98,8 @@ const ProdutoVariantesPage = () => {
       setEditingVariante(null);
       setFormData({ sku: '', preco_custo: '', markup_pct: '' });
       carregarVariantes();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao salvar variante';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao salvar variante');
       toast.error(message);
       console.error(error);
     }
@@ -124,8 +124,8 @@ const ProdutoVariantesPage = () => {
       await api.delete(`/variantes/${varianteId}`);
       toast.success('Variante excluída com sucesso');
       carregarVariantes();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao excluir variante';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao excluir variante');
       toast.error(message);
       console.error(error);
     }

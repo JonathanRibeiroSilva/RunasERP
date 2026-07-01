@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiEdit2, FiTrash2, FiPackage } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { api, getErrorMessage } from '@/services/api/axios';
 import './ProdutoDetalhesPage.scss';
 
 interface Categoria {
@@ -58,8 +58,8 @@ const ProdutoDetalhesPage = () => {
       await api.delete(`/produtos/${id}`);
       toast.success('Produto desativado com sucesso');
       navigate('/produtos');
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao desativar produto';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao desativar produto');
       toast.error(message);
       console.error(error);
     }

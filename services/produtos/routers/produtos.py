@@ -180,20 +180,26 @@ async def listar_produtos(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     apenas_deletados: bool = Query(False),
+    busca: str | None = Query(None, min_length=1, description="Filtra por nome (parcial)"),
+    categoria_id: UUID | None = Query(None, description="Filtra por categoria"),
     session: AsyncSession = Depends(get_db),
 ):
     """
     Lista produtos.
-    
+
     Args:
         apenas_deletados: False = todos não deletados, True = apenas deletados
+        busca: filtra por nome (parcial, case-insensitive)
+        categoria_id: filtra por categoria
     """
     service = ProdutoService(session)
     produtos, total = await service.listar_produtos(
         empresa_id=empresa_id,
-        skip=skip, 
-        limit=limit, 
-        apenas_deletados=apenas_deletados
+        skip=skip,
+        limit=limit,
+        apenas_deletados=apenas_deletados,
+        busca=busca,
+        categoria_id=categoria_id
     )
     # Converter modelos SQLAlchemy para schemas Pydantic (usando schema simplificado)
     produtos_response = [ProdutoReadSimples.model_validate(prod) for prod in produtos]

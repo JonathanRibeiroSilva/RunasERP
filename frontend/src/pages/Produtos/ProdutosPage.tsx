@@ -2,107 +2,66 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiEdit2, FiEye, FiTrash2, FiShare2, FiCopy } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { getErrorMessage } from '@/services/api/axios';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  useProdutos,
+  useCategorias,
+  useExcluirProduto,
+  useRestaurarProduto,
+} from '@/hooks/useProdutos';
 import './ProdutosPage.scss';
-
-interface Categoria {
-  id: string;
-  nome: string;
-}
-
-interface Produto {
-  id: string;
-  nome: string;
-  descricao?: string;
-  categoria_id: string;
-  categoria?: Categoria;
-  ativo: boolean;
-  criado_em: string;
-  atualizado_em?: string;
-}
-
-interface ProdutosResponse {
-  items: Produto[];
-  total: number;
-  skip: number;
-  limit: number;
-}
 
 const ProdutosPage = () => {
   const navigate = useNavigate();
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoriaFilter, setCategoriaFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'todos' | 'excluidos'>('todos');
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [linkCopiado, setLinkCopiado] = useState(false);
+  const { user } = useAuth();
 
-  // Paginação
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [categoriaFilter, setCategoriaFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'todos' | 'excluidos'>('todos');
+  const [linkCopiado, setLinkCopiado] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const limit = 10;
 
-  const catalogoUrl = `${window.location.origin}/c/default`;
+  const catalogoUrl = user?.empresa_slug
+    ? `${window.location.origin}/c/${user.empresa_slug}`
+    : '';
+
+  // Debounce da busca (300ms) — evita refetch a cada tecla
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data: produtosData, isLoading, isError } = useProdutos({
+    skip: (currentPage - 1) * limit,
+    limit,
+    apenas_deletados: statusFilter === 'excluidos',
+    busca: debouncedSearch || undefined,
+    categoria_id: categoriaFilter || undefined,
+  });
+  const { data: categoriasData } = useCategorias();
+  const excluirProduto = useExcluirProduto();
+  const restaurarProduto = useRestaurarProduto();
+
+  const produtos = produtosData?.items ?? [];
+  const total = produtosData?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const categorias = categoriasData?.items ?? [];
 
   useEffect(() => {
-    carregarCategorias();
-  }, []);
-
-  useEffect(() => {
-    carregarProdutos();
-  }, [currentPage, searchTerm, categoriaFilter, statusFilter]);
-
-  const carregarCategorias = async () => {
-    try {
-      const response = await api.get('/categorias?limit=100');
-      setCategorias(response.data.items || []);
-    } catch (error) {
-      console.error('Erro ao carregar categorias:', error);
-    }
-  };
-
-  const carregarProdutos = async () => {
-    try {
-      setLoading(true);
-      
-      const params: Record<string, string | number | boolean> = {
-        skip: (currentPage - 1) * limit,
-        limit,
-        apenas_deletados: statusFilter === 'excluidos',
-      };
-
-      const response = await api.get<ProdutosResponse>('/produtos', { params });
-      
-      const items = response.data.items || [];
-      const totalItems = response.data.total || 0;
-
-      // Filtro por categoria e busca feitos no cliente (backend não suporta ainda)
-      let filtered = items;
-      if (searchTerm) {
-        filtered = filtered.filter((p) =>
-          p.nome.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-      if (categoriaFilter) {
-        filtered = filtered.filter((p) => p.categoria_id === categoriaFilter);
-      }
-
-      setProdutos(filtered);
-      setTotal(totalItems);
-      setTotalPages(Math.ceil(totalItems / limit) || 1);
-    } catch (error) {
+    if (isError) {
       toast.error('Erro ao carregar produtos');
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isError]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
+    // Reset de página tratado no debounce de busca
   };
 
   const handleCategoriaFilter = (categoriaId: string) => {
@@ -115,39 +74,31 @@ const ProdutosPage = () => {
     setCurrentPage(1);
   };
 
-  const handleDelete = async (id: string, nome: string) => {
+  const handleDelete = (id: string, nome: string) => {
     if (!confirm(`Tem certeza que deseja excluir o produto "${nome}"?`)) {
       return;
     }
-
-    try {
-      await api.delete(`/produtos/${id}`);
-      toast.success('Produto excluído com sucesso');
-      carregarProdutos();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao excluir produto';
-      toast.error(message);
-      console.error(error);
-    }
+    excluirProduto.mutate(id, {
+      onSuccess: () => toast.success('Produto excluído com sucesso'),
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
   };
 
-  const handleRestore = async (id: string, nome: string) => {
+  const handleRestore = (id: string, nome: string) => {
     if (!confirm(`Tem certeza que deseja restaurar o produto "${nome}"?`)) {
       return;
     }
-
-    try {
-      await api.patch(`/produtos/${id}/restaurar`);
-      toast.success('Produto restaurado com sucesso');
-      carregarProdutos();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao restaurar produto';
-      toast.error(message);
-      console.error(error);
-    }
+    restaurarProduto.mutate(id, {
+      onSuccess: () => toast.success('Produto restaurado com sucesso'),
+      onError: (error) => toast.error(getErrorMessage(error)),
+    });
   };
 
   const handleCopiarLink = () => {
+    if (!catalogoUrl) {
+      toast.error('Loja online não configurada para esta empresa');
+      return;
+    }
     navigator.clipboard.writeText(catalogoUrl).then(() => {
       setLinkCopiado(true);
       toast.success('Link do catálogo copiado!');
@@ -217,7 +168,7 @@ const ProdutosPage = () => {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="loading">
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Carregando...</span>

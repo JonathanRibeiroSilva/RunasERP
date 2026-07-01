@@ -107,29 +107,35 @@ class ProdutoService:
         return produto
 
     async def listar_produtos(
-        self, 
+        self,
         empresa_id: int,
-        skip: int = 0, 
-        limit: int = 10, 
+        skip: int = 0,
+        limit: int = 10,
         apenas_deletados: bool = False,
-        apenas_ativos: bool | None = None
+        apenas_ativos: bool | None = None,
+        busca: str | None = None,
+        categoria_id: UUID | None = None
     ):
         """
         Lista produtos.
-        
+
         Args:
             empresa_id: ID da empresa (multi-tenancy)
             skip: Offset para paginação
             limit: Limite de resultados
             apenas_deletados: True = só deletados, False = todos não deletados
             apenas_ativos: True = só ativos, False = só inativos, None = todos
+            busca: Filtra por nome (parcial, case-insensitive)
+            categoria_id: Filtra por categoria
         """
         return await self.produto_repo.listar_todos(
             empresa_id=empresa_id,
-            skip=skip, 
-            limit=limit, 
+            skip=skip,
+            limit=limit,
             apenas_ativos=apenas_ativos,
-            apenas_deletados=apenas_deletados
+            apenas_deletados=apenas_deletados,
+            busca=busca,
+            categoria_id=categoria_id
         )
 
     async def listar_por_categoria(self, empresa_id: int, categoria_id: UUID, skip: int = 0, limit: int = 10):

@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FiArrowLeft, FiSave } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { api, getErrorMessage } from '@/services/api/axios';
 import './ProdutoFormPage.scss';
 
 // Schema de validação
@@ -92,8 +92,8 @@ const ProdutoFormPage = () => {
       }
 
       navigate('/produtos');
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao salvar produto';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao salvar produto');
       toast.error(message);
       console.error(error);
     } finally {

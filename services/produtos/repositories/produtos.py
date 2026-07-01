@@ -152,22 +152,26 @@ class ProdutoRepository:
         return result.scalars().all(), total
 
     async def listar_todos(
-        self, 
+        self,
         empresa_id: int,
-        skip: int = 0, 
-        limit: int = 10, 
+        skip: int = 0,
+        limit: int = 10,
         apenas_ativos: bool | None = None,
-        apenas_deletados: bool = False
+        apenas_deletados: bool = False,
+        busca: str | None = None,
+        categoria_id: UUID | None = None
     ) -> tuple[list[Produto], int]:
         """
         Lista todos os produtos com filtros opcionais.
-        
+
         Args:
             empresa_id: ID da empresa (multi-tenancy)
             skip: Offset para paginação
             limit: Limite de resultados
             apenas_ativos: True = só ativos, False = só inativos, None = todos (ativos e inativos)
             apenas_deletados: True = só deletados, False = não deletados
+            busca: Filtra por nome (ilike parcial, case-insensitive)
+            categoria_id: Filtra por categoria
         """
         query = select(Produto).where(Produto.empresa_id == empresa_id)
         count_query = select(func.count(Produto.id)).where(Produto.empresa_id == empresa_id)
@@ -184,6 +188,16 @@ class ProdutoRepository:
         if not apenas_deletados and apenas_ativos is not None:
             query = query.where(Produto.ativo.is_(apenas_ativos))
             count_query = count_query.where(Produto.ativo.is_(apenas_ativos))
+
+        # Filtro de busca por nome (case-insensitive, parcial)
+        if busca:
+            query = query.where(Produto.nome.ilike(f"%{busca}%"))
+            count_query = count_query.where(Produto.nome.ilike(f"%{busca}%"))
+
+        # Filtro por categoria
+        if categoria_id is not None:
+            query = query.where(Produto.categoria_id == categoria_id)
+            count_query = count_query.where(Produto.categoria_id == categoria_id)
 
         # Contar total com os mesmos filtros
         count_result = await self.session.execute(count_query)

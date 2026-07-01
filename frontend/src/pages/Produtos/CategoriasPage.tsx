@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiFolder } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { api, getErrorMessage } from '@/services/api/axios';
 import './CategoriasPage.scss';
 
 interface Categoria {
@@ -57,8 +57,8 @@ const CategoriasPage = () => {
       setEditingCategoria(null);
       setFormData({ nome: '', descricao: '' });
       carregarCategorias();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao salvar categoria';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao salvar categoria');
       toast.error(message);
       console.error(error);
     }
@@ -82,8 +82,8 @@ const CategoriasPage = () => {
       await api.delete(`/categorias/${id}`);
       toast.success('Categoria excluída com sucesso');
       carregarCategorias();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao excluir categoria';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao excluir categoria');
       toast.error(message);
       console.error(error);
     }
