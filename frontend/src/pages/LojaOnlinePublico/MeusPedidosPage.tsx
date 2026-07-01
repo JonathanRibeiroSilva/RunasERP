@@ -1,17 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiPackage, FiSearch, FiCreditCard, FiShoppingCart, FiFilter } from 'react-icons/fi';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
+import { getErrorMessage, getErrorStatus } from '@/services/api/axios';
 import { toast } from 'react-toastify';
 import ClienteLayout from './components/ClienteLayout';
 import './MeusPedidosPage.scss';
-
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true, // ✅ Enviar cookies automaticamente
-});
 
 // Types
 interface Pedido {
@@ -64,16 +58,16 @@ const MeusPedidosPage = () => {
 
       const response = await apiPublica.get(`/loja/meus-pedidos?${params}`);
       setPedidos(response.data || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
       
-      if (error.response?.status === 401) {
+      if (getErrorStatus(error) === 401) {
         setErro('Você precisa estar logado para ver seus pedidos. Redirecionando...');
         setTimeout(() => {
           navigate(`/c/${empresaSlug}/login`, { state: { from: window.location.pathname } });
         }, 2000);
       } else {
-        setErro(error.response?.data?.detail || 'Erro ao carregar pedidos');
+        setErro(getErrorMessage(error, 'Erro ao carregar pedidos'));
       }
     } finally {
       setLoading(false);
@@ -98,9 +92,9 @@ const MeusPedidosPage = () => {
       } else {
         toast.error('Erro ao gerar link de pagamento');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao tentar pagamento:', error);
-      toast.error(error.response?.data?.detail || 'Erro ao gerar link de pagamento');
+      toast.error(getErrorMessage(error, 'Erro ao gerar link de pagamento'));
     } finally {
       setProcessando(null);
     }
@@ -133,9 +127,9 @@ const MeusPedidosPage = () => {
         // Redirecionar para carrinho
         navigate(`/c/${empresaSlug}/carrinho`);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao recuperar carrinho:', error);
-      toast.error(error.response?.data?.detail || 'Erro ao recuperar carrinho');
+      toast.error(getErrorMessage(error, 'Erro ao recuperar carrinho'));
     } finally {
       setProcessando(null);
     }

@@ -2,16 +2,10 @@ import { useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { FiMail, FiLock, FiArrowLeft, FiUser, FiPhone, FiFileText } from 'react-icons/fi';
 import { FaGoogle, FaMicrosoft } from 'react-icons/fa';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
+import { getErrorMessage } from '@/services/api/axios';
 import { toast } from 'react-toastify';
 import './ClienteLoginPage.scss';
-
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
-});
 
 const ClienteLoginPage = () => {
   const navigate = useNavigate();
@@ -60,9 +54,9 @@ const ClienteLoginPage = () => {
       
       // Redirecionar para página de origem ou área do cliente
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro no login:', error);
-      toast.error(error.response?.data?.detail || 'E-mail ou senha incorretos');
+      toast.error(getErrorMessage(error, 'E-mail ou senha incorretos'));
     } finally {
       setLoading(false);
     }
@@ -107,9 +101,9 @@ const ClienteLoginPage = () => {
       
       // Redirecionar para página de origem ou área do cliente
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro no cadastro:', error);
-      toast.error(error.response?.data?.detail || 'Erro ao criar conta');
+      toast.error(getErrorMessage(error, 'Erro ao criar conta'));
     } finally {
       setLoading(false);
     }
@@ -135,7 +129,7 @@ const ClienteLoginPage = () => {
       
       // Redirecionar para Google
       window.location.href = response.data.auth_url;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro OAuth Google:', error);
       toast.error('Erro ao iniciar login com Google');
       setLoading(false);
@@ -162,7 +156,7 @@ const ClienteLoginPage = () => {
       
       // Redirecionar para Microsoft
       window.location.href = response.data.auth_url;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro OAuth Microsoft:', error);
       toast.error('Erro ao iniciar login com Microsoft');
       setLoading(false);

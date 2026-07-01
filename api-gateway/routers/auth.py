@@ -20,6 +20,7 @@ from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioRe
 from models.usuario import Usuario, RoleEnum
 from config import settings
 from services.email_service import send_reset_password_email
+from proxy.service_proxy import ServiceProxy
 
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -113,6 +114,14 @@ async def register(
     return usuario
 
 
+async def _usuario_response_com_slug(usuario: Usuario) -> UsuarioResponse:
+    """Serializa o usuário incluindo o slug da empresa (multi-tenancy)."""
+    empresa_slug = await ServiceProxy.get_empresa_slug_from_id(usuario.empresa_id)
+    return UsuarioResponse.model_validate(usuario).model_copy(
+        update={"empresa_slug": empresa_slug}
+    )
+
+
 @router.get("/me", response_model=UsuarioResponse)
 async def get_current_user_info(
     current_user: Annotated[Usuario, Depends(get_current_user)]
@@ -120,7 +129,7 @@ async def get_current_user_info(
     """
     Retorna informações do usuário logado.
     """
-    return current_user
+    return await _usuario_response_com_slug(current_user)
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -171,11 +180,11 @@ async def login(
     set_auth_cookies(response, access_token, refresh_token)
     
     log.info("login.success", user_id=str(usuario.id), role=usuario.role.value)
-    
+
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        user=usuario
+        user=await _usuario_response_com_slug(usuario)
     )
 
 

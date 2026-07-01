@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiSearch, FiFilter, FiShare2, FiCopy, FiShoppingCart, FiUser } from 'react-icons/fi';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
 import ProdutoCard from './components/ProdutoCard';
 import { useCarrinho } from '@/hooks/useCarrinho';
 import './LojaOnlinePublicoPage.scss';
-
-// Instância axios pública (sem autenticação, sem interceptors de redirect)
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
 
 interface Produto {
   id: string;

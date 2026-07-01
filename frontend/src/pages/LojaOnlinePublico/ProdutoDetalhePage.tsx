@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiPackage, FiTag, FiShare2, FiCopy, FiShoppingCart, FiCheck } from 'react-icons/fi';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
+import { getErrorMessage } from '@/services/api/axios';
 import { useCarrinho } from '@/hooks/useCarrinho';
 import './ProdutoDetalhePage.scss';
-
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
 
 interface Variante {
   id: string;
@@ -60,8 +55,8 @@ const ProdutoDetalhePage = () => {
       // Selecionar primeira variante ativa por padrão
       const primeiraAtiva = data.variantes?.find((v: Variante) => v.ativo);
       if (primeiraAtiva) setVarianteSelecionada(primeiraAtiva);
-    } catch (error: any) {
-      setErro(error.response?.data?.detail || 'Produto não encontrado');
+    } catch (error) {
+      setErro(getErrorMessage(error, 'Produto não encontrado'));
     } finally {
       setLoading(false);
     }
@@ -95,8 +90,8 @@ const ProdutoDetalhePage = () => {
       
       setItemAdicionado(true);
       setTimeout(() => setItemAdicionado(false), 2000);
-    } catch (error: any) {
-      alert(error.message || 'Erro ao adicionar ao carrinho');
+    } catch (error) {
+      alert(getErrorMessage(error, 'Erro ao adicionar ao carrinho'));
     } finally {
       setAdicionandoCarrinho(false);
     }

@@ -9,17 +9,10 @@ import {
   FiHome,
   FiShoppingCart
 } from 'react-icons/fi';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
 import { toast } from 'react-toastify';
 import { useCarrinho } from '@/hooks/useCarrinho';
 import './ClienteLayout.scss';
-
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
-});
 
 interface ClienteInfo {
   id: string;
@@ -56,7 +49,7 @@ const ClienteLayout = ({ children, title }: ClienteLayoutProps) => {
     try {
       const response = await apiPublica.get('/clientes/me');
       setCliente(response.data);
-    } catch (error: any) {
+    } catch {
       // Não autenticado - redirecionar para login
       toast.error('Você precisa estar logado para acessar esta página');
       navigate(`/c/${empresaSlug}/login`, { 

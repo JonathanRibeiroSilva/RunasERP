@@ -1,52 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { FiArrowLeft, FiPackage, FiCheck, FiClock, FiTruck, FiMapPin, FiCheckCircle, FiXCircle, FiAlertCircle } from 'react-icons/fi';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
 import { Toast } from '@/utils/toast';
 import './RastreamentoPedidoPage.scss';
 
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
-
-// Types
-interface ItemVenda {
-  id: string;
-  produto_nome: string;
-  variante_sku: string;
-  quantidade: number;
-  preco_unitario: number;
-  subtotal: number;
-}
-
-interface HistoricoStatus {
-  status_anterior: string | null;
-  status_novo: string;
-  alterado_em: string;
-  observacao: string | null;
-}
-
-interface Venda {
-  id: string;
-  numero_venda: string;
-  status: string;
-  valor_total: number;
-  tipo_entrega: string;
-  data_pedido: string;
-  observacao?: string;
+// Types — alinhados ao contrato real de GET /loja/rastrear/{numero} (RastreamentoPedido).
+// A API retorna um objeto PLANO (status_atual, valor_total, historico[...]), não { venda, itens }.
+interface HistoricoItem {
+  etapa: string;
+  descricao: string | null;
+  data: string;
+  concluido: boolean;
+  alterado_por: string | null;
 }
 
 interface RastreamentoDados {
-  venda: Venda;
-  itens: ItemVenda[];
-  historico: HistoricoStatus[];
+  numero_venda: string;
+  status_atual: string;
+  data_pedido: string;
+  data_confirmacao: string | null;
+  data_separacao: string | null;
+  data_entregue: string | null;
+  data_finalizada: string | null;
+  data_cancelada: string | null;
+  tipo_entrega: string;
+  valor_total: number | string; // Decimal serializado como string (ex.: "18.90")
+  historico: HistoricoItem[];
+  proxima_etapa: string | null;
+  previsao_entrega: string | null;
 }
 
 const STATUS_INFO: Record<string, { label: string; color: string; icon: any }> = {
   PEDIDO: { label: 'Pedido Recebido', color: '#6c757d', icon: FiPackage },
-  PENDENTE: { label: 'Aguardando Pagamento', color: '#ffc107', icon: FiClock },
+  PENDENTE_PAGAMENTO: { label: 'Aguardando Pagamento', color: '#ffc107', icon: FiClock },
   CONFIRMADA: { label: 'Pagamento Confirmado', color: '#17a2b8', icon: FiCheck },
   SEPARADA: { label: 'Em Separação', color: '#fd7e14', icon: FiPackage },
   EM_ENTREGA: { label: 'Em Entrega', color: '#0dcaf0', icon: FiTruck },
@@ -56,7 +43,7 @@ const STATUS_INFO: Record<string, { label: string; color: string; icon: any }> =
   REEMBOLSADA: { label: 'Reembolsada', color: '#6f42c1', icon: FiArrowLeft },
 };
 
-const STATUS_ORDER = ['PEDIDO', 'PENDENTE', 'CONFIRMADA', 'SEPARADA', 'EM_ENTREGA', 'ENTREGUE', 'FINALIZADA'];
+const STATUS_ORDER = ['PEDIDO', 'PENDENTE_PAGAMENTO', 'CONFIRMADA', 'SEPARADA', 'EM_ENTREGA', 'ENTREGUE', 'FINALIZADA'];
 
 const RastreamentoPedidoPage = () => {
   const { empresaSlug, numeroPedido } = useParams<{ empresaSlug: string; numeroPedido: string }>();
@@ -72,11 +59,11 @@ const RastreamentoPedidoPage = () => {
   // Detectar retorno do Mercado Pago e mostrar mensagem
   useEffect(() => {
     const status = searchParams.get('status') as 'success' | 'failure' | 'pending' | null;
-    
+
     if (status) {
       setStatusPagamento(status);
       setMostrarAlertaPagamento(true);
-      
+
       // Mostrar toast baseado no status
       if (status === 'success') {
         Toast.success('Pagamento aprovado! Seu pedido foi confirmado.');
@@ -85,7 +72,7 @@ const RastreamentoPedidoPage = () => {
       } else if (status === 'pending') {
         Toast.info('Pagamento pendente. Você receberá uma notificação quando for confirmado.');
       }
-      
+
       // Limpar parâmetro da URL após 5 segundos
       setTimeout(() => {
         setMostrarAlertaPagamento(false);
@@ -102,10 +89,12 @@ const RastreamentoPedidoPage = () => {
   const carregarRastreamento = async () => {
     try {
       setLoading(true);
+      setErro('');
       const response = await apiPublica.get(`/loja/rastrear/${numeroPedido}?empresaSlug=${empresaSlug}`);
-      setDados(response.data);
+      setDados(response.data ?? null);
     } catch (error: any) {
-      const mensagemErro = error.response?.data?.detail || 'Pedido não encontrado';
+      setDados(null);
+      const mensagemErro = error?.response?.data?.detail || 'Pedido não encontrado';
       // Se detail for um array, pegar a primeira mensagem
       if (Array.isArray(mensagemErro)) {
         setErro(mensagemErro[0]?.msg || 'Pedido não encontrado');
@@ -119,11 +108,16 @@ const RastreamentoPedidoPage = () => {
     }
   };
 
-  const formatarPreco = (valor: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+  const formatarPreco = (valor: number | string | null | undefined) => {
+    const numero = Number(valor);
+    if (!Number.isFinite(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+  };
 
-  const formatarData = (dataStr: string) => {
+  const formatarData = (dataStr: string | null | undefined) => {
+    if (!dataStr) return '';
     const data = new Date(dataStr);
+    if (Number.isNaN(data.getTime())) return '';
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -137,6 +131,7 @@ const RastreamentoPedidoPage = () => {
     return STATUS_ORDER.indexOf(status);
   };
 
+  // 1. Estado de carregamento (dados ainda não disponíveis ou requisição pendente)
   if (loading) {
     return (
       <div className="rastreamento-page">
@@ -148,13 +143,14 @@ const RastreamentoPedidoPage = () => {
     );
   }
 
+  // 2. Estado de erro / pedido não encontrado (requisição concluída sem dados válidos)
   if (erro || !dados) {
     return (
       <div className="rastreamento-page">
         <div className="erro-state">
           <span className="erro-icon">😕</span>
           <h2>Pedido não encontrado</h2>
-          <p>{erro}</p>
+          {erro && <p>{erro}</p>}
           <button onClick={() => navigate(`/c/${empresaSlug}`)}>
             <FiArrowLeft /> Voltar ao catálogo
           </button>
@@ -163,17 +159,16 @@ const RastreamentoPedidoPage = () => {
     );
   }
 
-  // Verificação de segurança: se dados ainda é null, não renderizar
-  if (!dados) {
-    return null;
-  }
-
-  const { venda, itens, historico } = dados;
-  const statusInfo = STATUS_INFO[venda.status] || STATUS_INFO.PEDIDO;
-  const statusAtualIndex = getStatusIndex(venda.status);
+  // 3. Render seguro — a partir daqui `dados` é garantidamente não-nulo.
+  //    Todo acesso usa fallback defensivo para sobreviver a respostas parciais.
+  const statusAtual = dados.status_atual ?? 'PEDIDO';
+  const historico: HistoricoItem[] = Array.isArray(dados.historico) ? dados.historico : [];
+  const ultimoHistorico = historico.length > 0 ? historico[historico.length - 1] : null;
+  const statusInfo = STATUS_INFO[statusAtual] || STATUS_INFO.PEDIDO;
+  const statusAtualIndex = getStatusIndex(statusAtual);
   const Icon = statusInfo.icon;
 
-  const isCancelada = venda.status === 'CANCELADA' || venda.status === 'REEMBOLSADA';
+  const isCancelada = statusAtual === 'CANCELADA' || statusAtual === 'REEMBOLSADA';
 
   return (
     <div className="rastreamento-page">
@@ -183,7 +178,7 @@ const RastreamentoPedidoPage = () => {
           <FiArrowLeft /> Voltar ao catálogo
         </button>
         <div className="header-info">
-          <h1>Pedido {venda.numero_venda}</h1>
+          <h1>Pedido {dados.numero_venda}</h1>
           <span className="badge-status" style={{ backgroundColor: statusInfo.color }}>
             <Icon /> {statusInfo.label}
           </span>
@@ -231,9 +226,9 @@ const RastreamentoPedidoPage = () => {
           {!isCancelada ? (
             <div className="timeline">
               {STATUS_ORDER.slice(0, -1).map((status, index) => {
-                const info = STATUS_INFO[status];
+                const info = STATUS_INFO[status] || STATUS_INFO.PEDIDO;
                 const StepIcon = info.icon;
-                const isCompleted = index <= statusAtualIndex;
+                const isCompleted = statusAtualIndex >= 0 && index <= statusAtualIndex;
                 const isActive = index === statusAtualIndex;
 
                 return (
@@ -243,8 +238,8 @@ const RastreamentoPedidoPage = () => {
                     </div>
                     <div className="timeline-content">
                       <h4>{info.label}</h4>
-                      {isActive && historico.length > 0 && (
-                        <p className="timeline-date">{formatarData(historico[historico.length - 1].alterado_em)}</p>
+                      {isActive && ultimoHistorico && (
+                        <p className="timeline-date">{formatarData(ultimoHistorico.data)}</p>
                       )}
                     </div>
                     {index < STATUS_ORDER.length - 2 && (
@@ -258,8 +253,8 @@ const RastreamentoPedidoPage = () => {
             <div className="status-cancelado">
               <Icon size={48} color={statusInfo.color} />
               <h3>{statusInfo.label}</h3>
-              {historico.length > 0 && historico[historico.length - 1].observacao && (
-                <p>{historico[historico.length - 1].observacao}</p>
+              {(ultimoHistorico?.descricao || dados.proxima_etapa) && (
+                <p>{ultimoHistorico?.descricao || dados.proxima_etapa}</p>
               )}
             </div>
           )}
@@ -273,43 +268,26 @@ const RastreamentoPedidoPage = () => {
           <div className="info-card">
             <div className="info-row">
               <span className="info-label">Data do pedido:</span>
-              <span className="info-value">{formatarData(venda.data_pedido)}</span>
+              <span className="info-value">{formatarData(dados.data_pedido)}</span>
             </div>
             <div className="info-row">
               <span className="info-label">Tipo de entrega:</span>
               <span className="info-value">
-                {venda.tipo_entrega === 'DELIVERY' ? 'Entrega em domicílio' : 'Retirada no local'}
+                {dados.tipo_entrega === 'DELIVERY' ? 'Entrega em domicílio' : 'Retirada no local'}
               </span>
             </div>
-            {venda.observacao && (
+            {dados.previsao_entrega && (
               <div className="info-row">
-                <span className="info-label">Observação:</span>
-                <span className="info-value">{venda.observacao}</span>
+                <span className="info-label">Previsão de entrega:</span>
+                <span className="info-value">{dados.previsao_entrega}</span>
               </div>
             )}
-          </div>
-
-          {/* Itens */}
-          <h4>Itens do pedido</h4>
-          <div className="itens-lista">
-            {itens.map((item) => (
-              <div key={item.id} className="item-pedido">
-                <div className="item-info">
-                  <span className="item-quantidade">{item.quantidade}x</span>
-                  <div className="item-detalhes">
-                    <strong>{item.produto_nome}</strong>
-                    <small>SKU: {item.variante_sku}</small>
-                  </div>
-                </div>
-                <span className="item-preco">{formatarPreco(item.subtotal)}</span>
-              </div>
-            ))}
           </div>
 
           {/* Total */}
           <div className="total-pedido">
             <span>Total do pedido</span>
-            <strong>{formatarPreco(venda.valor_total)}</strong>
+            <strong>{formatarPreco(dados.valor_total)}</strong>
           </div>
 
           {/* Histórico */}
@@ -319,15 +297,11 @@ const RastreamentoPedidoPage = () => {
               <div className="historico-lista">
                 {historico.slice().reverse().map((item, index) => (
                   <div key={index} className="historico-item">
-                    <span className="historico-data">{formatarData(item.alterado_em)}</span>
+                    <span className="historico-data">{formatarData(item.data)}</span>
                     <div className="historico-mudanca">
-                      {item.status_anterior && (
-                        <span className="status-anterior">{STATUS_INFO[item.status_anterior]?.label}</span>
-                      )}
-                      {item.status_anterior && <span className="arrow">→</span>}
-                      <span className="status-novo">{STATUS_INFO[item.status_novo]?.label}</span>
+                      <span className="status-novo">{STATUS_INFO[item.etapa]?.label || item.etapa}</span>
                     </div>
-                    {item.observacao && <p className="historico-obs">{item.observacao}</p>}
+                    {item.descricao && <p className="historico-obs">{item.descricao}</p>}
                   </div>
                 ))}
               </div>

@@ -23,12 +23,10 @@ class ServiceProxy:
         "/categorias": settings.PRODUTOS_URL,
         "/variantes": settings.PRODUTOS_URL,
         "/fornecedores": settings.PRODUTOS_URL,
-        "/catalogo": settings.PRODUTOS_URL,
         "/loja-online": settings.PRODUTOS_URL,
         "/estoque": settings.ESTOQUE_URL,
         "/loja": settings.VENDAS_URL,
         "/carrinho": settings.VENDAS_URL,
-        "/pedidos": settings.VENDAS_URL,
         "/pagamentos": settings.VENDAS_URL,
         "/contas": settings.FINANCEIRO_URL,
         "/notificacoes": settings.NOTIFICACOES_URL,
@@ -57,7 +55,67 @@ class ServiceProxy:
         except Exception as e:
             log.error("erro ao resolver empresa_id", slug=slug, error=str(e))
             return None
-    
+
+    @classmethod
+    async def get_empresa_slug_from_id(cls, empresa_id: int) -> str | None:
+        """
+        Resolve o slug da empresa a partir do empresa_id.
+
+        Args:
+            empresa_id: ID da empresa
+
+        Returns:
+            str: Slug da empresa ou None se não encontrado
+        """
+        try:
+            async for db in get_db():
+                result = await db.execute(
+                    text("SELECT slug FROM empresas.empresas WHERE id = :empresa_id"),
+                    {"empresa_id": empresa_id}
+                )
+                row = result.first()
+                return row[0] if row else None
+        except Exception as e:
+            log.error("erro ao resolver slug da empresa", empresa_id=empresa_id, error=str(e))
+            return None
+
+    @classmethod
+    async def _inject_context_headers(
+        cls,
+        headers: dict,
+        current_user: Optional[Usuario],
+        empresa_slug: Optional[str]
+    ) -> int | None:
+        """
+        Pipeline único de injeção de contexto multi-tenancy.
+
+        Resolve o empresa_id (slug público → usuário/cliente autenticado) e injeta os
+        headers X-Empresa-Id e X-Cliente-Id. Toda rota proxied passa por aqui — sem
+        injeção manual por rota. Retorna o empresa_id resolvido (para logging).
+        """
+        empresa_id = None
+
+        # 1. Rotas públicas de loja: resolver empresa_id pelo slug
+        if empresa_slug:
+            empresa_id = await cls.get_empresa_id_from_slug(empresa_slug)
+            if not empresa_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Empresa com slug '{empresa_slug}' não encontrada"
+                )
+        # 2. Usuário/cliente autenticado
+        elif current_user and hasattr(current_user, "empresa_id"):
+            empresa_id = current_user.empresa_id
+
+        if empresa_id:
+            headers["X-Empresa-Id"] = str(empresa_id)
+
+        # X-Cliente-Id quando o portador é um cliente autenticado
+        if current_user and getattr(current_user, "cliente_id", None):
+            headers["X-Cliente-Id"] = str(current_user.cliente_id)
+
+        return empresa_id
+
     @classmethod
     async def proxy_request(
         cls,
@@ -98,30 +156,9 @@ class ServiceProxy:
         headers = dict(request.headers)
         headers.pop("host", None)
         
-        # Adicionar header X-Empresa-Id
-        empresa_id = None
-        
-        # 1. Tentar obter de empresa_slug (rotas públicas de loja)
-        if empresa_slug:
-            empresa_id = await cls.get_empresa_id_from_slug(empresa_slug)
-            if not empresa_id:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Empresa com slug '{empresa_slug}' não encontrada"
-                )
-        
-        # 2. Se usuário autenticado e empresa_id não foi definido ainda
-        elif current_user and hasattr(current_user, "empresa_id"):
-            empresa_id = current_user.empresa_id
-        
-        # Adicionar headers de contexto
-        if empresa_id:
-            headers["X-Empresa-Id"] = str(empresa_id)
-        
-        # 🔐 NOVO: Adicionar X-Cliente-Id se usuário é CLIENTE autenticado
-        if current_user and hasattr(current_user, "cliente_id") and current_user.cliente_id:
-            headers["X-Cliente-Id"] = str(current_user.cliente_id)
-        
+        # Injeção centralizada de contexto multi-tenancy (empresa_id / cliente_id)
+        empresa_id = await cls._inject_context_headers(headers, current_user, empresa_slug)
+
         # Ler body se existir
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
         

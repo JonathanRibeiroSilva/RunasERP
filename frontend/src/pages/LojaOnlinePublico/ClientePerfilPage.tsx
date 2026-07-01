@@ -1,16 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FiUser, FiMail, FiPhone, FiFileText } from 'react-icons/fi';
-import axios from 'axios';
+import { apiPublica } from '@/services/api/apiPublica';
 import { toast } from 'react-toastify';
 import ClienteLayout from './components/ClienteLayout';
 import './ClientePerfilPage.scss';
-
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
-});
 
 interface ClienteInfo {
   id: string;
@@ -34,7 +27,7 @@ const ClientePerfilPage = () => {
       setLoading(true);
       const response = await apiPublica.get('/clientes/me');
       setCliente(response.data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao carregar perfil:', error);
       toast.error('Erro ao carregar perfil');
     } finally {

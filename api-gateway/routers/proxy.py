@@ -4,8 +4,9 @@ Router de proxy para microsserviços.
 from typing import Annotated
 from fastapi import APIRouter, Request, Depends
 from auth.oauth2 import (
-    get_current_active_user, 
+    get_current_active_user,
     require_admin,
+    require_admin_or_operador,
     get_current_active_cliente
 )
 from models.usuario import Usuario
@@ -17,17 +18,6 @@ router = APIRouter()
 
 
 # Rotas públicas (sem autenticação)
-@router.api_route(
-    "/catalogo/{path:path}",
-    methods=["GET"],
-    tags=["Catálogo Público"]
-)
-async def proxy_catalogo_publico(request: Request, path: str):
-    """Proxy para catálogo público (sem autenticação)."""
-    full_path = f"/catalogo/{path}" if path else "/catalogo"
-    return await ServiceProxy.proxy_request(request, full_path)
-
-
 @router.api_route(
     "/empresas/publico/{path:path}",
     methods=["GET"],
@@ -109,7 +99,9 @@ async def proxy_cliente_me(
     """
     cliente_id = str(current_cliente.cliente_id)
     full_path = f"/clientes/{cliente_id}"
-    return await ServiceProxy.proxy_request(request, full_path)
+    # Encaminha o cliente autenticado para que o proxy injete X-Empresa-Id
+    # (e X-Cliente-Id) — sem isso o serviço de clientes rejeita com 400.
+    return await ServiceProxy.proxy_request(request, full_path, current_cliente)  # type: ignore[arg-type]
 
 
 @router.patch(
@@ -131,7 +123,9 @@ async def proxy_cliente_me_update(
     """
     cliente_id = str(current_cliente.cliente_id)
     full_path = f"/clientes/{cliente_id}"
-    return await ServiceProxy.proxy_request(request, full_path)
+    # Encaminha o cliente autenticado para que o proxy injete X-Empresa-Id
+    # (e X-Cliente-Id) — sem isso o serviço de clientes rejeita com 400.
+    return await ServiceProxy.proxy_request(request, full_path, current_cliente)  # type: ignore[arg-type]
 
 
 @router.get(
@@ -152,20 +146,13 @@ async def proxy_loja_meus_pedidos(
     Exemplo: GET /loja/meus-pedidos?empresaSlug=minha-loja
     """
     full_path = "/loja/meus-pedidos"
-    
-    # Criar um pseudo-user para passar cliente_id via proxy
-    # O ServiceProxy vai detectar current_user.cliente_id e adicionar header X-Cliente-Id
-    class ClienteProxy:
-        def __init__(self, cliente_auth: ClienteAuth):
-            self.cliente_id = cliente_auth.cliente_id
-            self.empresa_id = cliente_auth.empresa_id
-    
-    pseudo_user = ClienteProxy(current_cliente)
-    
+
+    # current_cliente (ClienteAuth) já expõe empresa_id/cliente_id; o ServiceProxy
+    # injeta X-Empresa-Id/X-Cliente-Id a partir dele.
     return await ServiceProxy.proxy_request(
-        request, 
-        full_path, 
-        current_user=pseudo_user,  # type: ignore
+        request,
+        full_path,
+        current_user=current_cliente,  # type: ignore[arg-type]
         empresa_slug=empresaSlug
     )
 
@@ -190,18 +177,12 @@ async def proxy_loja_retry_payment(
     """
     full_path = f"/loja/pedidos/{numero_venda}/retry-payment"
     
-    # Criar um pseudo-user para passar cliente_id via proxy
-    class ClienteProxy:
-        def __init__(self, cliente_auth: ClienteAuth):
-            self.cliente_id = cliente_auth.cliente_id
-            self.empresa_id = cliente_auth.empresa_id
-    
-    pseudo_user = ClienteProxy(current_cliente)
-    
+    # current_cliente (ClienteAuth) já expõe empresa_id/cliente_id; o ServiceProxy
+    # injeta X-Empresa-Id/X-Cliente-Id a partir dele.
     return await ServiceProxy.proxy_request(
         request,
         full_path,
-        current_user=pseudo_user,  # type: ignore
+        current_user=current_cliente,  # type: ignore[arg-type]
         empresa_slug=empresaSlug
     )
 
@@ -227,18 +208,12 @@ async def proxy_loja_recuperar_carrinho(
     """
     full_path = f"/loja/pedidos/{numero_venda}/recuperar-carrinho"
     
-    # Criar um pseudo-user para passar cliente_id via proxy
-    class ClienteProxy:
-        def __init__(self, cliente_auth: ClienteAuth):
-            self.cliente_id = cliente_auth.cliente_id
-            self.empresa_id = cliente_auth.empresa_id
-    
-    pseudo_user = ClienteProxy(current_cliente)
-    
+    # current_cliente (ClienteAuth) já expõe empresa_id/cliente_id; o ServiceProxy
+    # injeta X-Empresa-Id/X-Cliente-Id a partir dele.
     return await ServiceProxy.proxy_request(
         request,
         full_path,
-        current_user=pseudo_user,  # type: ignore
+        current_user=current_cliente,  # type: ignore[arg-type]
         empresa_slug=empresaSlug
     )
 
@@ -267,22 +242,24 @@ async def proxy_clientes_root(
     return await ServiceProxy.proxy_request(request, "/clientes", current_user)
 
 
-# Rota para operações administrativas com clientes (path genérico - ADMIN)
+# Rota para operações com cliente específico (path genérico - ADMIN)
+# Registrada após /clientes/me e /clientes para que aquelas rotas tenham precedência.
 @router.api_route(
-    "/clientes/admin/{path:path}",
+    "/clientes/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     tags=["Clientes"],
     summary="Operações administrativas com clientes"
 )
-async def proxy_clientes_admin_path(
+async def proxy_clientes_path(
     request: Request,
     path: str,
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
     """
     Proxy para serviço de clientes - operações admin (autenticado).
-    
-    Movido para /clientes/admin/{path} para evitar conflito com rota pública.
+
+    Mesma convenção de /produtos/{path}, /categorias/{path}, etc.
+    A rota pública /clientes/me é declarada antes e mantém precedência.
     """
     full_path = f"/clientes/{path}"
     return await ServiceProxy.proxy_request(request, full_path, current_user)
@@ -414,11 +391,11 @@ async def proxy_fornecedores_path(
 )
 async def proxy_estoque_root(
     request: Request,
-    current_user: Annotated[Usuario, Depends(require_admin)]
+    current_user: Annotated[Usuario, Depends(require_admin_or_operador)]
 ):
     """
-    Proxy para serviço de estoque (apenas admin).
-    
+    Proxy para serviço de estoque (ADMIN ou OPERADOR).
+
     - GET: Lista registros de estoque
     - POST: Cria novo registro de estoque
     """
@@ -435,11 +412,11 @@ async def proxy_estoque_root(
 async def proxy_estoque_path(
     request: Request,
     path: str,
-    current_user: Annotated[Usuario, Depends(require_admin)]
+    current_user: Annotated[Usuario, Depends(require_admin_or_operador)]
 ):
     """
-    Proxy para serviço de estoque (apenas admin).
-    
+    Proxy para serviço de estoque (ADMIN ou OPERADOR).
+
     - GET /estoque/{id}: Busca estoque por ID
     - POST /estoque/entrada: Entrada de mercadoria
     - POST /estoque/saida: Saída de mercadoria
@@ -448,21 +425,6 @@ async def proxy_estoque_path(
     - POST /estoque/liberar-reserva: Liberar reserva
     """
     full_path = f"/estoque/{path}"
-    return await ServiceProxy.proxy_request(request, full_path, current_user)
-
-
-@router.api_route(
-    "/pedidos/{path:path}",
-    methods=["GET", "POST", "PATCH", "DELETE"],
-    tags=["Pedidos"]
-)
-async def proxy_pedidos(
-    request: Request,
-    path: str,
-    current_user: Annotated[Usuario, Depends(get_current_active_user)]
-):
-    """Proxy para serviço de vendas - pedidos (autenticado)."""
-    full_path = f"/pedidos/{path}" if path else "/pedidos"
     return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 

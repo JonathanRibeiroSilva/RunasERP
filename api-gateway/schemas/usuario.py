@@ -61,8 +61,9 @@ class UsuarioResponse(UsuarioBase):
     role: RoleEnum
     ativo: bool
     empresa_id: int
+    empresa_slug: str | None = None
     criado_em: datetime
-    
+
     model_config = {"from_attributes": True}
 
 
