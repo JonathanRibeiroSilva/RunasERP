@@ -109,5 +109,5 @@ dump.rdb
 dev-scripts/
 *.bat
 
-# Graphify (knowledge graph - regenerate locally)
-graphify-out/
+# Graphify (per-file AST cache is regenerable and bloats the repo; graph outputs are tracked)
+graphify-out/cache/
