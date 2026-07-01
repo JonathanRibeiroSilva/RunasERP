@@ -487,10 +487,5 @@ services:
     tty: true
     restart: unless-stopped
 
-  # ============================================
-  # PROXY REVERSO
-  # ============================================
-  # NOTA: Nginx foi removido - usando Cloudflare Tunnel
-  # Para ativar o túnel, use:
-  # docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
+  
 
