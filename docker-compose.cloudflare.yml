@@ -12,12 +12,19 @@ services:
   frontend-dev:
     environment:
       VITE_API_URL: /api
-      VITE_OAUTH_REDIRECT_URI: https://runaserp.com.br/auth/callback
+      # Deve bater com as redirect URIs registradas nos consoles Google/Azure (com www)
+      VITE_OAUTH_REDIRECT_URI: https://www.runaserp.com.br/auth/callback
       FRONTEND_URL: https://runaserp.com.br
 
   # Override api-gateway para reconhecer domínio real
   api-gateway:
     environment:
+      FRONTEND_URL: https://runaserp.com.br
+
+  # Override vendas para URLs públicas (Mercado Pago webhooks/back_urls)
+  vendas:
+    environment:
+      API_BASE_URL: https://runaserp.com.br/api
       FRONTEND_URL: https://runaserp.com.br
 
   # Cloudflare Tunnel - conecta diretamente ao frontend e api-gateway

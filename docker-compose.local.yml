@@ -1,0 +1,32 @@
+# ============================================
+# LOCAL - Overlay para rodar 100% local na porta 3000
+# ============================================
+# Uso: docker compose -f docker-compose.dev.yml -f docker-compose.local.yml up -d
+#
+# Espelho local do docker-compose.cloudflare.yml: fixa as URLs locais nos
+# serviços, independente do que estiver no .env (que pode apontar para a VPS).
+# Frontend: http://localhost:3000 (Vite proxy encaminha /api -> api-gateway:8000)
+# ============================================
+
+services:
+  frontend-dev:
+    environment:
+      VITE_API_URL: /api
+      VITE_OAUTH_REDIRECT_URI: http://localhost:3000/auth/callback
+      VITE_USE_PROXY: "true"
+
+  # FRONTEND_URL http:// => cookies sem Secure, samesite=lax (dev local)
+  api-gateway:
+    environment:
+      FRONTEND_URL: http://localhost:3000
+
+  vendas:
+    environment:
+      API_BASE_URL: http://localhost:8000
+      FRONTEND_URL: http://localhost:3000
+
+  # Imagem atendai/evolution-api saiu do Docker Hub — fora do "up" padrão.
+  # WhatsApp não é usado no fluxo da loja; reative com --profile whatsapp se voltar.
+  evolution-api:
+    profiles:
+      - whatsapp

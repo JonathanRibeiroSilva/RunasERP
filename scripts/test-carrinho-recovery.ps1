@@ -1,6 +1,8 @@
 # Script de Teste: Recuperação de Carrinho
+# Uso: .\test-carrinho-recovery.ps1 [-Domain https://www.runaserp.com.br]
+param([string]$Domain = "http://localhost:3000")
 
-$domain = "https://www.runaserp.com.br"
+$domain = $Domain
 $empresaSlug = "empresa-teste"  # Ajustar conforme necessário
 
 Write-Host "========================================" -ForegroundColor Cyan
