@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from database import init_db
+from exceptions import ValidationError, NotFoundError, ConflictError
 from routers import empresas_router
 
 
@@ -57,6 +58,33 @@ app.include_router(empresas_router)
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "empresas"}
+
+
+@app.exception_handler(ValidationError)
+async def validation_error_handler(request: Request, exc: ValidationError):
+    """Erros de validação de negócio → 400."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": exc.message, "details": exc.details}
+    )
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_error_handler(request: Request, exc: NotFoundError):
+    """Recurso não encontrado → 404."""
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": exc.message, "details": exc.details}
+    )
+
+
+@app.exception_handler(ConflictError)
+async def conflict_error_handler(request: Request, exc: ConflictError):
+    """Conflito de dados (slug/CNPJ duplicado) → 409."""
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.message, "details": exc.details}
+    )
 
 
 @app.exception_handler(Exception)
