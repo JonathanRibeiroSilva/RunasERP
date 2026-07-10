@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 import structlog
 import httpx
 import secrets
+from urllib.parse import urlencode
 from pydantic import BaseModel
 
 from database import get_db
@@ -342,16 +343,15 @@ async def oauth_google_init_cliente(
     
     log.info("oauth.cliente.google.init", state=state, empresa_id=request.empresa_id)
     
-    auth_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth"
-        f"?client_id={settings.GOOGLE_CLIENT_ID}"
-        f"&redirect_uri={request.redirect_uri}"
-        f"&response_type=code"
-        f"&scope=openid email profile"
-        f"&state={state}"
-        f"&access_type=offline"
-        f"&prompt=consent"
-    )
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": request.redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "offline",
+        "prompt": "consent",
+    })
     
     return {"auth_url": auth_url, "state": state}
 
@@ -458,13 +458,15 @@ async def oauth_microsoft_init_cliente(
     tenant = settings.MICROSOFT_TENANT_ID or "common"
     
     auth_url = (
-        f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize"
-        f"?client_id={settings.MICROSOFT_CLIENT_ID}"
-        f"&redirect_uri={request.redirect_uri}"
-        f"&response_type=code"
-        f"&scope=openid email profile User.Read"
-        f"&state={state}"
-        f"&prompt=consent"
+        f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?"
+        + urlencode({
+            "client_id": settings.MICROSOFT_CLIENT_ID,
+            "redirect_uri": request.redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile User.Read",
+            "state": state,
+            "prompt": "consent",
+        })
     )
     
     return {"auth_url": auth_url, "state": state}

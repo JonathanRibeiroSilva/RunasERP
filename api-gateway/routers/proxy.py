@@ -45,21 +45,6 @@ async def proxy_loja_online_publico(
 
 
 @router.api_route(
-    "/loja/{path:path}",
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    tags=["Loja Online"]
-)
-async def proxy_loja_publico(
-    request: Request,
-    path: str,
-    empresaSlug: str | None = None
-):
-    """Proxy para loja online - carrinho e checkout (sem autenticação)."""
-    full_path = f"/loja/{path}" if path else "/loja"
-    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
-
-
-@router.api_route(
     "/carrinho/{path:path}",
     methods=["GET", "POST", "PATCH", "DELETE"],
     tags=["Carrinho Público"]
@@ -218,6 +203,24 @@ async def proxy_loja_recuperar_carrinho(
     )
 
 
+# Catch-all da loja (carrinho, checkout, rastreamento — sem autenticação).
+# Registrado DEPOIS das rotas /loja/* autenticadas acima: o Starlette casa rotas
+# na ordem de registro, e este {path:path} capturaria /loja/meus-pedidos etc.
+@router.api_route(
+    "/loja/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Loja Online"]
+)
+async def proxy_loja_publico(
+    request: Request,
+    path: str,
+    empresaSlug: str | None = None
+):
+    """Proxy para loja online - carrinho e checkout (sem autenticação)."""
+    full_path = f"/loja/{path}" if path else "/loja"
+    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
+
+
 # ============================================================
 # ROTAS DE CLIENTES (ADMIN)
 # ============================================================
@@ -292,6 +295,24 @@ async def proxy_produtos_path(
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
     full_path = f"/produtos/{path}"
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
+
+
+# Rotas de administração da loja online (config, fotos, status de publicação de produtos)
+# Nota: a rota pública "/loja-online/publico/{path:path}" é registrada antes desta
+# (sem autenticação) e tem precedência no roteamento do FastAPI.
+@router.api_route(
+    "/loja-online/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Loja Online"],
+    summary="Operações de administração da loja online"
+)
+async def proxy_loja_online_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/loja-online/{path}"
     return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 

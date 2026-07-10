@@ -100,62 +100,47 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 
+def validar_forca_senha(v: str) -> str:
+    """Valida força da senha (8-20 chars, maiúscula, minúscula, número, especial)."""
+    if len(v) < 8:
+        raise ValueError('Senha deve ter no mínimo 8 caracteres')
+    if len(v) > 20:
+        raise ValueError('Senha deve ter no máximo 20 caracteres')
+    if not any(c.isupper() for c in v):
+        raise ValueError('Senha deve conter ao menos uma letra maiúscula')
+    if not any(c.islower() for c in v):
+        raise ValueError('Senha deve conter ao menos uma letra minúscula')
+    if not any(c.isdigit() for c in v):
+        raise ValueError('Senha deve conter ao menos um número')
+
+    special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    if not any(c in special_chars for c in v):
+        raise ValueError('Senha deve conter ao menos um caractere especial (!@#$%^&*()_+-=[]{}|;:,.<>?)')
+
+    return v
+
+
 class ResetPasswordRequest(BaseModel):
     """Request para resetar senha com token."""
     token: str
     nova_senha: str = Field(..., min_length=8, max_length=20)
-    
+
     @field_validator('nova_senha')
     @classmethod
     def validate_nova_senha(cls, v: str) -> str:
         """Valida força da nova senha."""
-        if len(v) < 8:
-            raise ValueError('Senha deve ter no mínimo 8 caracteres')
-        if len(v) > 20:
-            raise ValueError('Senha deve ter no máximo 20 caracteres')
-        if not any(c.isupper() for c in v):
-            raise ValueError('Senha deve conter ao menos uma letra maiúscula')
-        if not any(c.islower() for c in v):
-            raise ValueError('Senha deve conter ao menos uma letra minúscula')
-        if not any(c.isdigit() for c in v):
-            raise ValueError('Senha deve conter ao menos um número')
-        
-        # Verificar caractere especial
-        special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
-        if not any(c in special_chars for c in v):
-            raise ValueError('Senha deve conter ao menos um caractere especial (!@#$%^&*()_+-=[]{}|;:,.<>?)')
-        
-        return v
+        return validar_forca_senha(v)
 
 
-class ForgotPasswordRequest(BaseModel):
-    """Request para esqueceu a senha."""
-    email: EmailStr
+class AlterarSenhaRequest(BaseModel):
+    """Request para alterar a própria senha (usuário autenticado)."""
+    senha_atual: str
+    nova_senha: str = Field(..., min_length=8, max_length=20)
 
-
-class ResetPasswordRequest(BaseModel):
-    """Request para resetar senha."""
-    token: str
-    new_password: str = Field(..., min_length=8, max_length=20)
-    
-    @field_validator('new_password')
+    @field_validator('nova_senha')
     @classmethod
-    def validate_senha(cls, v: str) -> str:
-        """Valida força da senha."""
-        if len(v) < 8:
-            raise ValueError('Senha deve ter no mínimo 8 caracteres')
-        if len(v) > 20:
-            raise ValueError('Senha deve ter no máximo 20 caracteres')
-        if not any(c.isupper() for c in v):
-            raise ValueError('Senha deve conter ao menos uma letra maiúscula')
-        if not any(c.islower() for c in v):
-            raise ValueError('Senha deve conter ao menos uma letra minúscula')
-        if not any(c.isdigit() for c in v):
-            raise ValueError('Senha deve conter ao menos um número')
-        
-        # Verificar caractere especial
-        special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
-        if not any(c in special_chars for c in v):
-            raise ValueError('Senha deve conter ao menos um caractere especial (!@#$%^&*()_+-=[]{}|;:,.<>?)')
-        
-        return v
+    def validate_nova_senha(cls, v: str) -> str:
+        """Valida força da nova senha."""
+        return validar_forca_senha(v)
+
+

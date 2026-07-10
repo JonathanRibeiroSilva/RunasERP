@@ -1,6 +1,7 @@
 """
 Configuração OAuth2 e dependências de autenticação.
 """
+import os
 from typing import Annotated, Optional
 from uuid import UUID
 from fastapi import Depends, HTTPException, status, Request
@@ -17,6 +18,22 @@ from auth.redis_client import get_redis
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+# Bypass temporário de autenticação para testes (NUNCA habilitar em produção).
+# Com AUTH_BYPASS=true, requisições sem token assumem o usuário AUTH_BYPASS_EMAIL.
+AUTH_BYPASS = os.getenv("AUTH_BYPASS", "false").lower() == "true"
+AUTH_BYPASS_EMAIL = os.getenv("AUTH_BYPASS_EMAIL", "admin@runas.com")
+
+
+async def _usuario_bypass(db: AsyncSession) -> Usuario:
+    """Retorna o usuário fixo do bypass de autenticação (modo teste)."""
+    usuario = await UsuarioRepository(db).buscar_por_email(AUTH_BYPASS_EMAIL)
+    if usuario is None or not usuario.ativo:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AUTH_BYPASS ativo mas usuário {AUTH_BYPASS_EMAIL} não existe ou está inativo",
+        )
+    return usuario
 
 
 async def get_token_from_cookie_or_header(
@@ -55,30 +72,38 @@ async def get_token_from_cookie_or_header(
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(get_token_from_cookie_or_header)],
+    request: Request,
+    token_from_header: Annotated[Optional[str], Depends(oauth2_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
     redis: Annotated[Redis, Depends(get_redis)]
 ) -> Usuario:
     """
-    Obtém o usuário atual a partir do token JWT.
-    
-    Args:
-        token: Token JWT
-        db: Sessão do banco de dados
-        redis: Cliente Redis
-        
-    Returns:
-        Usuário autenticado
-        
+    Obtém o usuário atual a partir do token JWT (cookie ou header).
+
+    Com AUTH_BYPASS habilitado, requisições sem token retornam o usuário
+    de bypass em vez de 401 (modo teste — nunca usar em produção).
+
     Raises:
         HTTPException: Se o token for inválido ou usuário não encontrado
     """
+    # Bypass ignora tokens por completo: qualquer requisição vira o usuário fixo
+    if AUTH_BYPASS:
+        return await _usuario_bypass(db)
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciais inválidas",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
+    token = request.cookies.get("access_token") or token_from_header
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token não fornecido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Verificar se token está na blacklist
     is_blacklisted = await redis.get(f"blacklist:{token}")
     if is_blacklisted:

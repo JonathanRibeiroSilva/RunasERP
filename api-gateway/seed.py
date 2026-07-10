@@ -22,10 +22,12 @@ async def seed_admin():
     - ADMIN_EMAIL (default: admin@runas.com)
     - ADMIN_PASSWORD (default: Admin@123)
     - ADMIN_NAME (default: Administrador)
+    - ADMIN_EMPRESA_ID (default: 1) — tenant ao qual os seeds pertencem
     """
     admin_email = os.getenv("ADMIN_EMAIL", "admin@runas.com")
     admin_password = os.getenv("ADMIN_PASSWORD", "Admin@123")[:72]  # Bcrypt limita a 72 bytes
     admin_name = os.getenv("ADMIN_NAME", "Administrador")
+    admin_empresa_id = int(os.getenv("ADMIN_EMPRESA_ID", "1"))
     
     async with AsyncSessionLocal() as db:
         try:
@@ -46,16 +48,16 @@ async def seed_admin():
                     senha_hash=senha_hash,
                     role=RoleEnum.ADMIN,
                     ativo=True,
-                    empresa_id=1  # Empresa padrão
+                    empresa_id=admin_empresa_id
                 )
                 db.add(admin)
                 await db.commit()
-                
+
                 log.info(
                     "seed.admin_created",
                     email=admin_email,
                     role="ADMIN",
-                    empresa_id=1
+                    empresa_id=admin_empresa_id
                 )
             
             # Criar operador de teste
@@ -73,16 +75,16 @@ async def seed_admin():
                     senha_hash=senha_hash,
                     role=RoleEnum.OPERADOR,
                     ativo=True,
-                    empresa_id=1
+                    empresa_id=admin_empresa_id
                 )
                 db.add(operador)
                 await db.commit()
-                
+
                 log.info(
                     "seed.operador_created",
                     email=operador_email,
                     role="OPERADOR",
-                    empresa_id=1
+                    empresa_id=admin_empresa_id
                 )
             else:
                 log.info("seed.operador_exists", email=operador_email)

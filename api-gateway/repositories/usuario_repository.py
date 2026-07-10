@@ -38,7 +38,8 @@ class UsuarioRepository:
             nome=data.nome,
             email=data.email,
             senha_hash=senha_hash,
-            role=data.role
+            role=data.role,
+            empresa_id=data.empresa_id
         )
         self.db.add(usuario)
         await self.db.commit()
