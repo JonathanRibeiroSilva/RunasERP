@@ -12,7 +12,11 @@ import './ClienteCreditoPage.scss';
 // Schema de validação
 const creditoSchema = z.object({
   limite_credito: z.number().min(0, 'Limite de crédito não pode ser negativo'),
-  dia_vencimento: z.number().min(1).max(28, 'Dia deve estar entre 1 e 28').optional(),
+  // Campo numérico vazio vira NaN (valueAsNumber) — tratar como "não informado"
+  dia_vencimento: z.preprocess(
+    (v) => (typeof v === 'number' && Number.isNaN(v) ? undefined : v),
+    z.number().min(1, 'Dia deve estar entre 1 e 28').max(28, 'Dia deve estar entre 1 e 28').optional()
+  ),
 });
 
 type CreditoFormData = z.infer<typeof creditoSchema>;
@@ -86,7 +90,10 @@ const ClienteCreditoPage = () => {
   const onSubmit = async (data: CreditoFormData) => {
     try {
       setSubmitting(true);
-      await clientesApi.atualizarCredito(id!, data);
+      await clientesApi.atualizarCredito(id!, {
+        limite_credito: data.limite_credito,
+        dia_vencimento: data.dia_vencimento ?? null,
+      });
       toast.success('Crédito atualizado com sucesso');
       carregarDados();
     } catch (error) {

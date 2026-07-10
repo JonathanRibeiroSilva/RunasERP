@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiPlus, FiEdit2, FiTrash2, FiDollarSign } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { api, getErrorMessage } from '@/services/api/axios';
+import { useAuth } from '@/hooks/useAuth';
 import './ProdutoVariantesPage.scss';
 
 interface Variante {
@@ -24,6 +25,7 @@ interface Produto {
 const ProdutoVariantesPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [produto, setProduto] = useState<Produto | null>(null);
   const [variantes, setVariantes] = useState<Variante[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +75,7 @@ const ProdutoVariantesPage = () => {
 
     const data = {
       produto_id: id,
-      empresa_id: 1, // Empresa padrão (virá do contexto de auth futuramente)
+      empresa_id: user!.empresa_id,
       sku: formData.sku,
       preco_custo: parseFloat(formData.preco_custo),
       markup_pct: parseFloat(formData.markup_pct),

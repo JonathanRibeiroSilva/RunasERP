@@ -27,6 +27,9 @@ type StatusFiltro = 'todos' | 'baixo' | 'zerado' | 'reservado';
 type SortKey = 'produto' | 'quantidade' | 'reservada' | 'disponivel';
 type SortDir = 'asc' | 'desc';
 
+/** Projeção Produto LEFT JOIN Estoque: produto sem linha de estoque aparece como "Nunca recebido". */
+type LinhaEstoque = { chave: string; produtoId: string; estoque: Estoque | null };
+
 const PAGE_SIZE = 10;
 
 const EstoquePage = () => {
@@ -38,13 +41,33 @@ const EstoquePage = () => {
   const [sortKey, setSortKey] = useState<SortKey>('produto');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);
-  const [modal, setModal] = useState<{ operacao: OperacaoEstoque; estoque: Estoque } | null>(null);
+  const [modal, setModal] = useState<{
+    operacao: OperacaoEstoque;
+    estoque: Estoque | null;
+    produtoId?: string;
+  } | null>(null);
 
   const { data: estoques = [], isLoading, isError } = useEstoques({ limit: 1000 });
   const { data: relatorio } = useRelatorioEstoque();
   const { mapa: produtoMap, nome: nomeProduto } = useProdutoResolver();
 
-  const nomeDe = (estoque: Estoque): string => nomeProduto(estoque.produto_id);
+  // Composição no cliente: linhas reais de estoque + linha sintética para cada
+  // produto cadastrado sem estoque. Linhas de estoque continuam sendo criadas
+  // exclusivamente pelo serviço de Estoque — aqui é só visualização.
+  const linhasProjetadas = useMemo<LinhaEstoque[]>(() => {
+    const rows: LinhaEstoque[] = estoques.map((estoque) => ({
+      chave: estoque.id,
+      produtoId: estoque.produto_id,
+      estoque,
+    }));
+    const produtosComEstoque = new Set(estoques.map((estoque) => estoque.produto_id));
+    for (const produto of produtoMap?.values() ?? []) {
+      if (!produtosComEstoque.has(produto.id)) {
+        rows.push({ chave: `sem-estoque-${produto.id}`, produtoId: produto.id, estoque: null });
+      }
+    }
+    return rows;
+  }, [estoques, produtoMap]);
 
   // Debounce da busca (300ms) — alinhado ao padrão de Produtos
   useEffect(() => {
@@ -61,28 +84,27 @@ const EstoquePage = () => {
   const filtrados = useMemo(() => {
     const termo = debouncedSearch.trim().toLowerCase();
 
-    const passaStatus = (estoque: Estoque): boolean => {
-      if (statusFilter === 'baixo') return estoque.alerta_estoque_baixo;
-      if (statusFilter === 'zerado') return estoque.alerta_estoque_zerado;
-      if (statusFilter === 'reservado') return estoque.quantidade_reservada > 0;
+    const passaStatus = (linha: LinhaEstoque): boolean => {
+      if (statusFilter === 'baixo') return linha.estoque?.alerta_estoque_baixo ?? false;
+      if (statusFilter === 'zerado') return linha.estoque ? linha.estoque.alerta_estoque_zerado : true;
+      if (statusFilter === 'reservado') return (linha.estoque?.quantidade_reservada ?? 0) > 0;
       return true;
     };
 
-    const passaBusca = (estoque: Estoque): boolean => {
+    const passaBusca = (linha: LinhaEstoque): boolean => {
       if (!termo) return true;
-      const alvo = `${nomeDe(estoque)} ${estoque.localizacao ?? ''}`.toLowerCase();
-      return alvo.includes(termo);
+      return nomeProduto(linha.produtoId).toLowerCase().includes(termo);
     };
 
-    const valorOrdenacao = (estoque: Estoque): string | number => {
-      if (sortKey === 'produto') return nomeDe(estoque).toLowerCase();
-      if (sortKey === 'quantidade') return estoque.quantidade;
-      if (sortKey === 'reservada') return estoque.quantidade_reservada;
-      return estoque.quantidade_disponivel;
+    const valorOrdenacao = (linha: LinhaEstoque): string | number => {
+      if (sortKey === 'produto') return nomeProduto(linha.produtoId).toLowerCase();
+      if (sortKey === 'quantidade') return linha.estoque?.quantidade ?? 0;
+      if (sortKey === 'reservada') return linha.estoque?.quantidade_reservada ?? 0;
+      return linha.estoque?.quantidade_disponivel ?? 0;
     };
 
-    return estoques
-      .filter((estoque) => passaStatus(estoque) && passaBusca(estoque))
+    return linhasProjetadas
+      .filter((linha) => passaStatus(linha) && passaBusca(linha))
       .sort((a, b) => {
         const va = valorOrdenacao(a);
         const vb = valorOrdenacao(b);
@@ -91,7 +113,7 @@ const EstoquePage = () => {
         return 0;
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [estoques, statusFilter, debouncedSearch, sortKey, sortDir, produtoMap]);
+  }, [linhasProjetadas, statusFilter, debouncedSearch, sortKey, sortDir, produtoMap]);
 
   const totalPages = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
   const paginaAtual = Math.min(page, totalPages);
@@ -112,7 +134,7 @@ const EstoquePage = () => {
   };
 
   const kpis = [
-    { chave: 'todos' as const, label: 'Total de itens', valor: relatorio?.total_produtos, icon: <FiPackage /> },
+    { chave: 'todos' as const, label: 'Total de itens', valor: linhasProjetadas.length, icon: <FiPackage /> },
     { chave: 'reservado' as const, label: 'Em estoque (un.)', valor: relatorio?.total_em_estoque, icon: <FiLayers />, somenteLeitura: true },
     { chave: 'baixo' as const, label: 'Estoque baixo', valor: relatorio?.produtos_estoque_baixo, icon: <FiAlertTriangle />, tom: 'warning' },
     { chave: 'zerado' as const, label: 'Sem estoque', valor: relatorio?.produtos_sem_estoque, icon: <FiXCircle />, tom: 'danger' },
@@ -154,7 +176,7 @@ const EstoquePage = () => {
           <FiSearch className="search-icon" />
           <input
             type="text"
-            placeholder="Buscar por produto ou localização..."
+            placeholder="Buscar por produto..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -195,7 +217,6 @@ const EstoquePage = () => {
                   <th className="sortable" onClick={() => toggleSort('produto')}>
                     Produto {indicadorSort('produto')}
                   </th>
-                  <th>Localização</th>
                   <th className="sortable num" onClick={() => toggleSort('quantidade')}>
                     Físico {indicadorSort('quantidade')}
                   </th>
@@ -211,46 +232,65 @@ const EstoquePage = () => {
                 </tr>
               </thead>
               <tbody>
-                {linhas.map((estoque) => (
-                  <tr key={estoque.id}>
-                    <td className="nome">{nomeDe(estoque)}</td>
-                    <td>{estoque.localizacao || '—'}</td>
-                    <td className="num">{formatarQuantidade(estoque.quantidade)}</td>
-                    <td className="num">{formatarQuantidade(estoque.quantidade_reservada)}</td>
-                    <td className="num strong">{formatarQuantidade(estoque.quantidade_disponivel)}</td>
-                    <td className="num muted">{formatarQuantidade(estoque.estoque_minimo)}</td>
+                {linhas.map((linha) => (
+                  <tr key={linha.chave}>
+                    <td className="nome">{nomeProduto(linha.produtoId)}</td>
+                    <td className="num">{formatarQuantidade(linha.estoque?.quantidade ?? 0)}</td>
+                    <td className="num">{formatarQuantidade(linha.estoque?.quantidade_reservada ?? 0)}</td>
+                    <td className="num strong">{formatarQuantidade(linha.estoque?.quantidade_disponivel ?? 0)}</td>
+                    <td className="num muted">
+                      {linha.estoque ? formatarQuantidade(linha.estoque.estoque_minimo) : '—'}
+                    </td>
                     <td>
-                      <EstoqueStatusBadge estoque={estoque} />
+                      {linha.estoque ? (
+                        <EstoqueStatusBadge estoque={linha.estoque} />
+                      ) : (
+                        <span className="estoque-badge estoque-badge--neutral">Nunca recebido</span>
+                      )}
                     </td>
                     <td className="acoes">
-                      <button
-                        className="btn-icon btn-info"
-                        onClick={() => navigate(`/estoque/${estoque.id}`)}
-                        title="Ver detalhes"
-                      >
-                        <FiEye />
-                      </button>
-                      <button
-                        className="btn-icon btn-success"
-                        onClick={() => setModal({ operacao: 'entrada', estoque })}
-                        title="Entrada"
-                      >
-                        <FiPlus />
-                      </button>
-                      <button
-                        className="btn-icon btn-danger"
-                        onClick={() => setModal({ operacao: 'saida', estoque })}
-                        title="Saída"
-                      >
-                        <FiMinus />
-                      </button>
-                      <button
-                        className="btn-icon btn-warning"
-                        onClick={() => setModal({ operacao: 'ajuste', estoque })}
-                        title="Ajuste"
-                      >
-                        <FiEdit2 />
-                      </button>
+                      {linha.estoque ? (
+                        <>
+                          <button
+                            className="btn-icon btn-info"
+                            onClick={() => navigate(`/estoque/${linha.estoque!.id}`)}
+                            title="Ver detalhes"
+                          >
+                            <FiEye />
+                          </button>
+                          <button
+                            className="btn-icon btn-success"
+                            onClick={() => setModal({ operacao: 'entrada', estoque: linha.estoque })}
+                            title="Entrada"
+                          >
+                            <FiPlus />
+                          </button>
+                          <button
+                            className="btn-icon btn-danger"
+                            onClick={() => setModal({ operacao: 'saida', estoque: linha.estoque })}
+                            title="Saída"
+                          >
+                            <FiMinus />
+                          </button>
+                          <button
+                            className="btn-icon btn-warning"
+                            onClick={() => setModal({ operacao: 'ajuste', estoque: linha.estoque })}
+                            title="Ajuste"
+                          >
+                            <FiEdit2 />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className="btn-icon btn-success"
+                          onClick={() =>
+                            setModal({ operacao: 'entrada', estoque: null, produtoId: linha.produtoId })
+                          }
+                          title="Primeira entrada"
+                        >
+                          <FiPlus />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -284,7 +324,8 @@ const EstoquePage = () => {
         <EstoqueOperacaoModal
           operacao={modal.operacao}
           estoque={modal.estoque}
-          produtoNome={nomeDe(modal.estoque)}
+          produtoNome={nomeProduto(modal.estoque ? modal.estoque.produto_id : modal.produtoId ?? '')}
+          produtoIdInicial={modal.produtoId}
           onClose={() => setModal(null)}
         />
       )}

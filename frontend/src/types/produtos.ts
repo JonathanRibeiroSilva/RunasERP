@@ -1,5 +1,26 @@
 // Tipos de domínio de Produtos (fonte única — antes redefinidos por página).
 
+/**
+ * Unidades de medida aceitas — espelha o Literal `UnidadeMedida` do backend
+ * (services/produtos/schemas/produtos.py). Backend rejeita valores fora da lista.
+ */
+export const UNIDADES_MEDIDA = [
+  { codigo: 'UN', label: 'Unidade' },
+  { codigo: 'KG', label: 'Quilograma' },
+  { codigo: 'G', label: 'Grama' },
+  { codigo: 'LT', label: 'Litro' },
+  { codigo: 'ML', label: 'Mililitro' },
+  { codigo: 'CX', label: 'Caixa' },
+  { codigo: 'PCT', label: 'Pacote' },
+  { codigo: 'FD', label: 'Fardo' },
+  { codigo: 'SC', label: 'Saco' },
+  { codigo: 'PAR', label: 'Par' },
+  { codigo: 'M', label: 'Metro' },
+  { codigo: 'CM', label: 'Centímetro' },
+] as const;
+
+export type UnidadeMedida = (typeof UNIDADES_MEDIDA)[number]['codigo'];
+
 export interface Categoria {
   id: string;
   nome: string;
@@ -29,6 +50,9 @@ export interface Produto {
   ativo: boolean;
   criado_em: string;
   atualizado_em?: string;
+  preco?: string | number;
+  custo?: string | number;
+  preco_promocional?: string | number | null;
   // Campos presentes apenas no payload completo (GET /produtos/{id}); ausentes na listagem simples.
   sku?: string | null;
   codigo_barras?: string | null;
@@ -42,4 +66,21 @@ export interface PaginatedResult<T> {
   total: number;
   skip: number;
   limit: number;
+}
+
+/** Status de publicação de um produto na loja online (admin) — GET /produtos/loja-online/produtos. */
+export interface LojaOnlineProdutoStatus {
+  id: string;
+  nome: string;
+  preco: string | number;
+  categoria_id: string;
+  ativo: boolean;
+  visivel: boolean;
+  destaque: boolean;
+  ordem_exibicao: number;
+}
+
+export interface LojaOnlinePublicarPayload {
+  visivel: boolean;
+  destaque?: boolean;
 }

@@ -42,6 +42,10 @@
     background: $danger-light;
     color: $danger;
   }
+  &--neutral {
+    background: rgba($text-secondary, 0.15);
+    color: $text-secondary;
+  }
 }
 
 // ==================== Badges de tipo de movimentação ====================

@@ -5,7 +5,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: $background;
+  background: transparent;
   overflow: hidden;
   position: relative;
 }
@@ -15,21 +15,34 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  // Subtle radial glow in the background center
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 70vw;
+    height: 70vh;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.015) 0%, transparent 60%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+  }
 }
 
-// Backdrop para mobile (overlay escuro)
+// Backdrop for mobile
 .sidebar-backdrop {
   position: fixed;
   top: 64px;
   left: 0;
   right: 0;
   bottom: 0;
-  background: $overlay-heavy;
+  background: rgba(8, 10, 15, 0.8);
+  backdrop-filter: blur(4px);
   z-index: $z-index-sticky;
-  animation: fadeIn 0.2s ease-in-out;
+  animation: fadeSlideUp 0.2s ease-out;
   cursor: pointer;
   
-  // Não mostrar no desktop
   @include media-md {
     display: none;
   }
@@ -40,33 +53,33 @@
   min-width: 0;
   overflow-y: auto;
   transition: margin-left $transition-base;
+  position: relative;
+  z-index: 1;
+  @include custom-scrollbar;
   
-  // Desktop: adiciona margem quando sidebar aberta
   @include media-md {
     &.sidebar-open {
-      margin-left: 260px;
+      margin-left: 220px;
     }
   }
   
-  // Mobile: sempre sem margem (sidebar overlay)
-  @media (max-width: #{$breakpoint-md - 1px}) {
+  @media (max-width: 767px) {
     margin-left: 0 !important;
   }
 }
 
 .content-wrapper {
   padding: $spacer-4;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   width: 100%;
+  animation: fadeSlideUp $transition-slow ease-out;
 
-  // Mobile: padding menor
-  @media (max-width: #{$breakpoint-sm - 1px}) {
-    padding: $spacer-3 $spacer-2;
+  @media (max-width: 575px) {
+    padding: $spacer-3;
   }
   
-  // Tablet: padding médio
-  @media (min-width: #{$breakpoint-sm}) and (max-width: #{$breakpoint-md - 1px}) {
-    padding: $spacer-3;
+  @media (min-width: 576px) and (max-width: 767px) {
+    padding: $spacer-4;
   }
 }

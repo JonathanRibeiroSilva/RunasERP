@@ -21,6 +21,7 @@ import {
   FiExternalLink,
 } from 'react-icons/fi';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmpresa } from '@/hooks/useLojaOnline';
 import type { UserRole } from '@/types/auth';
 import './Sidebar.scss';
 
@@ -118,10 +119,14 @@ const navItems: NavItem[] = [
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) => {
   const location = useLocation();
   const { user } = useAuth(); // ← Pegar usuário atual
+  // Slug via React Query: acompanha a renomeação da loja sem precisar relogar
+  // (useAtualizarEmpresa invalida ['empresa', id] ao salvar as configurações)
+  const { data: empresa } = useEmpresa(user?.empresa_id);
+  const lojaSlug = empresa?.slug ?? user?.empresa_slug;
 
   const abrirMinhaLoja = () => {
-    if (user?.empresa_slug) {
-      window.open(`/c/${user.empresa_slug}`, '_blank', 'noopener');
+    if (lojaSlug) {
+      window.open(`/c/${lojaSlug}`, '_blank', 'noopener');
     }
   };
 

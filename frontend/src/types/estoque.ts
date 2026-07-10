@@ -89,6 +89,17 @@ export interface RelatorioEstoque {
 
 // ==================== Payloads de operações ====================
 
+/** Criação explícita de registro de estoque (backend EstoqueCreate) — usado p/ estoque mínimo sem entrada. */
+export interface CriarEstoquePayload {
+  empresa_id: number;
+  produto_id: string;
+  variante_id?: string | null;
+  quantidade?: number;
+  estoque_minimo?: number;
+  estoque_maximo?: number | null;
+  localizacao?: string | null;
+}
+
 export interface EntradaEstoquePayload {
   empresa_id: number;
   produto_id: string;

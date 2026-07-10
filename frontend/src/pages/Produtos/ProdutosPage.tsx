@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiSearch, FiEdit2, FiEye, FiTrash2, FiShare2, FiCopy } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiEye, FiTrash2, FiPackage } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '@/services/api/axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +10,7 @@ import {
   useExcluirProduto,
   useRestaurarProduto,
 } from '@/hooks/useProdutos';
+import ProdutoFormPage from './ProdutoFormPage';
 import './ProdutosPage.scss';
 
 const ProdutosPage = () => {
@@ -20,13 +21,14 @@ const ProdutosPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'excluidos'>('todos');
-  const [linkCopiado, setLinkCopiado] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
 
-  const catalogoUrl = user?.empresa_slug
-    ? `${window.location.origin}/c/${user.empresa_slug}`
-    : '';
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProdutoId, setSelectedProdutoId] = useState<string | null>(null);
+
+
 
   // Debounce da busca (300ms) — evita refetch a cada tecla
   useEffect(() => {
@@ -94,35 +96,31 @@ const ProdutosPage = () => {
     });
   };
 
-  const handleCopiarLink = () => {
-    if (!catalogoUrl) {
-      toast.error('Loja online não configurada para esta empresa');
-      return;
-    }
-    navigator.clipboard.writeText(catalogoUrl).then(() => {
-      setLinkCopiado(true);
-      toast.success('Link do catálogo copiado!');
-      setTimeout(() => setLinkCopiado(false), 2000);
-    });
+  const handleNovoProduto = () => {
+    setSelectedProdutoId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditarProduto = (id: string) => {
+    setSelectedProdutoId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProdutoId(null);
   };
 
   return (
     <div className="produtos-page">
       <div className="page-header">
         <div className="header-content">
-          <h1>Produtos</h1>
+          <h1><FiPackage className="title-icon" /> Produtos</h1>
           <p>Gerencie o catálogo de produtos</p>
         </div>
         <div className="header-actions">
-          <button
-            className="btn btn-catalogo"
-            onClick={handleCopiarLink}
-            title={catalogoUrl}
-          >
-            {linkCopiado ? <FiCopy /> : <FiShare2 />}
-            {linkCopiado ? 'Link copiado!' : 'Compartilhar Catálogo'}
-          </button>
-          <button className="btn btn-primary" onClick={() => navigate('/produtos/novo')}>
+
+          <button className="btn btn-primary" onClick={handleNovoProduto}>
             <FiPlus /> Novo Produto
           </button>
         </div>
@@ -194,9 +192,9 @@ const ProdutosPage = () => {
               <tbody>
                 {produtos.map((produto) => (
                   <tr key={produto.id}>
-                    <td className="nome">{produto.nome}</td>
-                    <td>{produto.categoria?.nome || '-'}</td>
-                    <td className="descricao">
+                    <td data-label="Nome" className="nome">{produto.nome}</td>
+                    <td data-label="Categoria">{produto.categoria?.nome || categorias.find(c => c.id === produto.categoria_id)?.nome || '-'}</td>
+                    <td data-label="Descrição" className="descricao">
                       {produto.descricao ? (
                         <span title={produto.descricao}>
                           {produto.descricao.length > 50
@@ -207,7 +205,7 @@ const ProdutosPage = () => {
                         '-'
                       )}
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <div className="status-badges">
                         {statusFilter === 'excluidos' ? (
                           <span className="badge badge-danger">Excluído</span>
@@ -218,7 +216,7 @@ const ProdutosPage = () => {
                         )}
                       </div>
                     </td>
-                    <td className="acoes">
+                    <td data-label="Ações" className="acoes">
                       {statusFilter === 'excluidos' ? (
                         <button
                           className="btn-icon btn-success"
@@ -238,7 +236,7 @@ const ProdutosPage = () => {
                           </button>
                           <button
                             className="btn-icon btn-warning"
-                            onClick={() => navigate(`/produtos/${produto.id}/editar`)}
+                            onClick={() => handleEditarProduto(produto.id)}
                             title="Editar"
                           >
                             <FiEdit2 />
@@ -279,6 +277,14 @@ const ProdutosPage = () => {
             </button>
           </div>
         </>
+      )}
+      {/* MODAL PRODUTO FORM */}
+      {isModalOpen && (
+        <ProdutoFormPage
+          isModal={true}
+          produtoId={selectedProdutoId}
+          onClose={handleCloseModal}
+        />
       )}
     </div>
   );

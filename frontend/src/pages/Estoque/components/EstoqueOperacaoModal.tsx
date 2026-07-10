@@ -10,14 +10,18 @@ import {
   useReservarEstoque,
   useLiberarReserva,
 } from '@/hooks/useEstoque';
+import { useAuth } from '@/hooks/useAuth';
 import { formatarQuantidade } from '../estoqueFormat';
 
 export type OperacaoEstoque = 'entrada' | 'saida' | 'ajuste' | 'reservar' | 'liberar';
 
 interface Props {
   operacao: OperacaoEstoque;
-  estoque: Estoque;
-  produtoNome: string;
+  /** null = primeira entrada de um produto sem linha de estoque (exige produtoIdInicial). */
+  estoque: Estoque | null;
+  produtoNome?: string;
+  /** Produto da primeira entrada quando não há linha de estoque (linha "Nunca recebido"). */
+  produtoIdInicial?: string;
   onClose: () => void;
 }
 
@@ -47,7 +51,14 @@ const SUBMIT_LABEL: Record<OperacaoEstoque, string> = {
 
 const FORM_ID = 'estoque-operacao-form';
 
-const EstoqueOperacaoModal: React.FC<Props> = ({ operacao, estoque, produtoNome, onClose }) => {
+const EstoqueOperacaoModal: React.FC<Props> = ({
+  operacao,
+  estoque,
+  produtoNome,
+  produtoIdInicial,
+  onClose,
+}) => {
+  const { user } = useAuth();
   const [quantidade, setQuantidade] = useState('');
   const [motivo, setMotivo] = useState('');
   const [documento, setDocumento] = useState('');
@@ -82,9 +93,9 @@ const EstoqueOperacaoModal: React.FC<Props> = ({ operacao, estoque, produtoNome,
   };
 
   const base = {
-    empresa_id: estoque.empresa_id,
-    produto_id: estoque.produto_id,
-    variante_id: estoque.variante_id,
+    empresa_id: estoque?.empresa_id ?? user!.empresa_id,
+    produto_id: estoque?.produto_id ?? produtoIdInicial ?? '',
+    variante_id: estoque?.variante_id,
   };
 
   const acoes: Record<OperacaoEstoque, (qtd: number) => void> = {
@@ -114,7 +125,7 @@ const EstoqueOperacaoModal: React.FC<Props> = ({ operacao, estoque, produtoNome,
     ajuste: (qtd) =>
       ajuste.mutate(
         {
-          estoque_id: estoque.id,
+          estoque_id: estoque!.id,
           quantidade_nova: qtd,
           motivo: motivo.trim(),
           observacao: observacao || undefined,
@@ -129,6 +140,10 @@ const EstoqueOperacaoModal: React.FC<Props> = ({ operacao, estoque, produtoNome,
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!base.produto_id) {
+      toast.error('Produto não identificado para a operação');
+      return;
+    }
     const qtd = Number(quantidade);
     const quantidadeInvalida = Number.isNaN(qtd) || (operacao === 'ajuste' ? qtd < 0 : qtd <= 0);
     if (quantidadeInvalida) {
@@ -157,11 +172,13 @@ const EstoqueOperacaoModal: React.FC<Props> = ({ operacao, estoque, produtoNome,
     <Modal isOpen title={TITULOS[operacao]} onClose={onClose} footer={footer}>
       <p className="estoque-op-produto">{produtoNome}</p>
 
-      <div className="estoque-op-saldo">
-        <span>Físico: <strong>{formatarQuantidade(estoque.quantidade)}</strong></span>
-        <span>Reservado: <strong>{formatarQuantidade(estoque.quantidade_reservada)}</strong></span>
-        <span>Disponível: <strong>{formatarQuantidade(estoque.quantidade_disponivel)}</strong></span>
-      </div>
+      {estoque && (
+        <div className="estoque-op-saldo">
+          <span>Físico: <strong>{formatarQuantidade(estoque.quantidade)}</strong></span>
+          <span>Reservado: <strong>{formatarQuantidade(estoque.quantidade_reservada)}</strong></span>
+          <span>Disponível: <strong>{formatarQuantidade(estoque.quantidade_disponivel)}</strong></span>
+        </div>
+      )}
 
       <form id={FORM_ID} className="estoque-op-form" onSubmit={handleSubmit}>
         <div className="form-group">

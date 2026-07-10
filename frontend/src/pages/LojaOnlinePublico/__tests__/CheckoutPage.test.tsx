@@ -4,7 +4,7 @@
  * Testa funcionalidades principais e bugs corrigidos (regression tests).
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import CheckoutPage from '../CheckoutPage';
@@ -114,7 +114,7 @@ describe('CheckoutPage - Bug Regression Tests', () => {
     it('deve detectar flag reload_cart_after_oauth e recarregar carrinho', async () => {
       const mockCarregarCarrinho = vi.fn().mockResolvedValue(undefined);
       
-      (useCarrinhoModule.useCarrinho as vi.Mock).mockReturnValue({
+      (useCarrinhoModule.useCarrinho as Mock).mockReturnValue({
         carrinho: mockCarrinho,
         loading: false,
         erro: null,
@@ -150,7 +150,7 @@ describe('CheckoutPage - Bug Regression Tests', () => {
     it('deve redirecionar para loja se carrinho vazio após OAuth', async () => {
       const carrinhoVazio = { ...mockCarrinho, itens: [] };
       
-      (useCarrinhoModule.useCarrinho as vi.Mock).mockReturnValue({
+      (useCarrinhoModule.useCarrinho as Mock).mockReturnValue({
         carrinho: carrinhoVazio,
         loading: false,
         erro: null,
@@ -400,7 +400,7 @@ describe('CheckoutPage - Error Handling', () => {
 
 describe('CheckoutPage - Carrinho Vazio', () => {
   it('deve mostrar mensagem de carrinho vazio', () => {
-    (useCarrinhoModule.useCarrinho as vi.Mock).mockReturnValue({
+    (useCarrinhoModule.useCarrinho as Mock).mockReturnValue({
       carrinho: null,
       loading: false,
       erro: null,
@@ -418,7 +418,7 @@ describe('CheckoutPage - Carrinho Vazio', () => {
   });
   
   it('deve redirecionar para loja ao clicar em Ver produtos', () => {
-    (useCarrinhoModule.useCarrinho as vi.Mock).mockReturnValue({
+    (useCarrinhoModule.useCarrinho as Mock).mockReturnValue({
       carrinho: null,
       loading: false,
       erro: null,

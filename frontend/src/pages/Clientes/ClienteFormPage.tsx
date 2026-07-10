@@ -3,22 +3,30 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FiArrowLeft, FiSave, FiMapPin } from 'react-icons/fi';
+import { useQueryClient } from '@tanstack/react-query';
+import { FiX, FiSave, FiEdit2, FiUserPlus } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { clientesApi } from '@/services/api/clientesApi';
+import type { Cliente } from '@/types/clientes';
 import { getErrorMessage } from '@/services/api/axios';
+import { useAuth } from '@/hooks/useAuth';
 import './ClienteFormPage.scss';
 
-// Schema de validação
 const clienteSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-  cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
-  telefone: z.string().regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/, 'Telefone inválido'),
+  // CPF/telefone podem vir vazios em clientes criados via loja online/OAuth
+  cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos').or(z.literal('')),
+  telefone: z.string().regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/, 'Telefone inválido').or(z.literal('')),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   data_nasc: z.string().optional().or(z.literal('')),
   limite_credito: z.number().min(0, 'Limite de crédito não pode ser negativo'),
-  dia_vencimento: z.number().min(1).max(28, 'Dia deve estar entre 1 e 28').optional(),
-  // Endereço (opcional)
+  // Campo numérico vazio vira NaN (valueAsNumber) — tratar como "não informado"
+  dia_vencimento: z.preprocess(
+    (v) => (typeof v === 'number' && Number.isNaN(v) ? undefined : v),
+    z.number().min(1, 'Dia deve estar entre 1 e 28').max(28, 'Dia deve estar entre 1 e 28').optional()
+  ),
+  observacoes: z.string().optional().or(z.literal('')),
+  ativo: z.union([z.boolean(), z.string()]).default(true),
   cep: z.string().regex(/^\d{8}$/, 'CEP deve ter 8 dígitos').optional().or(z.literal('')),
   logradouro: z.string().min(3, 'Logradouro deve ter no mínimo 3 caracteres').optional().or(z.literal('')),
   numero: z.string().optional().or(z.literal('')),
@@ -30,19 +38,22 @@ const clienteSchema = z.object({
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
-interface Cliente extends ClienteFormData {
-  id: string;
-  ativo: boolean;
-  bloqueado: boolean;
-  credito_disponivel: number;
+interface ClienteFormPageProps {
+  // Modal mode
+  isModal?: boolean;
+  clienteId?: string | null;
+  onClose?: () => void;
 }
 
-const ClienteFormPage = () => {
+const ClienteFormPage: React.FC<ClienteFormPageProps> = ({ isModal, clienteId: modalClienteId, onClose }) => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const { id: routeId } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const id = isModal ? (modalClienteId ?? undefined) : routeId;
   const [loading, setLoading] = useState(!!id);
   const [submitting, setSubmitting] = useState(false);
-  const [cliente, setCliente] = useState<Cliente | null>(null);
 
   const {
     register,
@@ -52,12 +63,12 @@ const ClienteFormPage = () => {
     setValue,
   } = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
+    defaultValues: { limite_credito: 0, ativo: true },
   });
 
   useEffect(() => {
-    if (id) {
-      carregarCliente();
-    }
+    if (id) carregarCliente();
+    else { reset({ limite_credito: 0 }); setLoading(false); }
   }, [id]);
 
   const carregarCliente = async () => {
@@ -67,30 +78,21 @@ const ClienteFormPage = () => {
         clientesApi.obter(id!),
         clientesApi.listarEnderecos(id!),
       ]);
-      
-      setCliente(clienteData);
-      
-      // Carregar endereço principal se existir
       const enderecoPrincipal = enderecos.find((e) => e.principal);
-      
+      // Backend guarda telefone em E.164 (+5544...); exibir com a máscara nacional
+      const clienteForm = {
+        ...clienteData,
+        cpf: clienteData.cpf ?? '',
+        telefone: telefoneParaMascara(clienteData.telefone),
+      };
       if (enderecoPrincipal) {
-        reset({
-          ...clienteData,
-          cep: enderecoPrincipal.cep,
-          logradouro: enderecoPrincipal.logradouro,
-          numero: enderecoPrincipal.numero,
-          complemento: enderecoPrincipal.complemento || '',
-          bairro: enderecoPrincipal.bairro,
-          cidade: enderecoPrincipal.cidade,
-          uf: enderecoPrincipal.uf,
-        });
+        reset({ ...clienteForm, cep: enderecoPrincipal.cep, logradouro: enderecoPrincipal.logradouro, numero: enderecoPrincipal.numero, complemento: enderecoPrincipal.complemento || '', bairro: enderecoPrincipal.bairro, cidade: enderecoPrincipal.cidade, uf: enderecoPrincipal.uf });
       } else {
-        reset(clienteData);
+        reset(clienteForm);
       }
     } catch (error) {
       toast.error('Erro ao carregar cliente');
-      console.error(error);
-      navigate('/clientes');
+      handleClose();
     } finally {
       setLoading(false);
     }
@@ -98,384 +100,251 @@ const ClienteFormPage = () => {
 
   const buscarCEP = async (cep: string) => {
     if (cep.length !== 8) return;
-
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const data = await response.json();
-
-      if (data.erro) {
-        toast.error('CEP não encontrado');
-        return;
-      }
-
+      if (data.erro) { toast.error('CEP não encontrado'); return; }
       setValue('logradouro', data.logradouro);
       setValue('bairro', data.bairro);
       setValue('cidade', data.localidade);
       setValue('uf', data.uf);
       toast.success('CEP encontrado!');
-    } catch (error) {
-      toast.error('Erro ao buscar CEP');
-      console.error(error);
-    }
+    } catch { toast.error('Erro ao buscar CEP'); }
+  };
+
+  const handleClose = () => {
+    if (isModal && onClose) onClose();
+    else navigate('/clientes');
   };
 
   const onSubmit = async (data: ClienteFormData) => {
     try {
       setSubmitting(true);
+      const { cep, logradouro, numero, complemento, bairro, cidade, uf } = data;
 
-      // Separar dados do cliente e endereço
-      const { cep, logradouro, numero, complemento, bairro, cidade, uf, ...clienteData } = data;
+      if (!id && !data.cpf) { toast.error('CPF é obrigatório'); return; }
+      if (!id && !data.telefone) { toast.error('Telefone é obrigatório'); return; }
+
+      // PATCH /clientes aceita apenas dados pessoais; crédito tem endpoint próprio
+      const dadosPessoais: Partial<Cliente> = { nome: data.nome };
+      if (data.telefone) dadosPessoais.telefone = data.telefone;
+      if (data.email) dadosPessoais.email = data.email;
+      if (data.data_nasc) dadosPessoais.data_nasc = data.data_nasc;
 
       let clienteId = id;
-
       if (id) {
-        // Editar cliente
-        await clientesApi.atualizar(id, clienteData);
-        toast.success('Cliente atualizado com sucesso');
+        await clientesApi.atualizar(id, dadosPessoais);
       } else {
-        // Criar cliente
-        const novo = await clientesApi.criar(clienteData);
+        const novo = await clientesApi.criar({ ...dadosPessoais, cpf: data.cpf, empresa_id: user!.empresa_id });
         clienteId = novo.id;
-        toast.success('Cliente criado com sucesso');
       }
 
-      // Se tem endereço preenchido, criar/atualizar
+      await clientesApi.atualizarCredito(clienteId!, {
+        limite_credito: data.limite_credito,
+        dia_vencimento: data.dia_vencimento ?? null,
+      });
+      toast.success(id ? 'Cliente atualizado com sucesso' : 'Cliente criado com sucesso');
       if (cep && logradouro && numero && bairro && cidade && uf) {
-        const enderecoData = {
-          cep,
-          logradouro,
-          numero,
-          complemento: complemento || '',
-          bairro,
-          cidade,
-          uf,
-          principal: true,
-        };
-
+        const enderecoData = { cep, logradouro, numero, complemento: complemento || '', bairro, cidade, uf, principal: true };
         try {
-          // Verificar se já existe endereço principal
           const enderecos = await clientesApi.listarEnderecos(clienteId!);
           const enderecoPrincipal = enderecos.find((e) => e.principal);
-
-          if (enderecoPrincipal) {
-            // Atualizar endereço principal existente
-            await clientesApi.atualizarEndereco(clienteId!, enderecoPrincipal.id, enderecoData);
-          } else {
-            // Criar novo endereço principal
-            await clientesApi.criarEndereco(clienteId!, enderecoData);
-          }
-        } catch (error) {
-          console.error('Erro ao salvar endereço:', error);
-          toast.warning('Cliente salvo, mas houve erro ao salvar o endereço');
-        }
+          if (enderecoPrincipal) await clientesApi.atualizarEndereco(clienteId!, enderecoPrincipal.id, enderecoData);
+          else await clientesApi.criarEndereco(clienteId!, enderecoData);
+        } catch { toast.warning('Cliente salvo, mas houve erro ao salvar o endereço'); }
       }
-
-      navigate('/clientes');
+      await queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      handleClose();
     } catch (error) {
-      const message = getErrorMessage(error, 'Erro ao salvar cliente');
-      toast.error(message);
-      console.error(error);
+      toast.error(getErrorMessage(error, 'Erro ao salvar cliente'));
     } finally {
       setSubmitting(false);
     }
   };
 
   const formatarTelefone = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 2) return numbers;
-    if (numbers.length <= 6) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-    if (numbers.length <= 10)
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
-    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+    const n = value.replace(/\D/g, '');
+    if (n.length <= 2) return n;
+    if (n.length <= 6) return `(${n.slice(0,2)}) ${n.slice(2)}`;
+    if (n.length <= 10) return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`;
+    return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7,11)}`;
   };
 
-  const formatarCPF = (value: string) => {
-    return value.replace(/\D/g, '').slice(0, 11);
+  /** E.164 (+5544991479093) → máscara nacional ((44) 99147-9093); o +55 fica implícito. */
+  const telefoneParaMascara = (telefone: string | null | undefined) => {
+    if (!telefone) return '';
+    let n = telefone.replace(/\D/g, '');
+    if (n.length > 11 && n.startsWith('55')) n = n.slice(2);
+    return formatarTelefone(n);
   };
 
-  const formatarCEP = (value: string) => {
-    return value.replace(/\D/g, '').slice(0, 8);
-  };
+  const formatarCPF = (value: string) => value.replace(/\D/g, '').slice(0, 11);
+  const formatarCEP = (value: string) => value.replace(/\D/g, '').slice(0, 8);
 
-  if (loading) {
-    return (
-      <div className="cliente-form-page">
-        <div className="loading">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Carregando...</span>
-          </div>
+  // ── MODAL WRAPPER ──────────────────────────────────────────────────────────
+  const formContent = (
+    <div className={`cliente-form-modal${isModal ? ' is-modal' : ''}`}>
+      {/* Header */}
+      <div className="cfm-header">
+        <div className="cfm-title">
+          <span className="cfm-icon">{id ? <FiEdit2 /> : <FiUserPlus />}</span>
+          <h2>{id ? 'Editar Cliente' : 'Novo Cliente'}</h2>
         </div>
+        <button className="cfm-close" onClick={handleClose} type="button" title="Fechar">
+          <FiX />
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="cfm-loading">Carregando...</div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="cfm-form">
+
+          {/* ── SEÇÃO: Informações Pessoais ── */}
+          <div className="cfm-section">
+            <h3 className="cfm-section-title">Informações Pessoais</h3>
+
+            {/* Nome */}
+            <div className="cfm-group">
+              <label htmlFor="nome">Nome *</label>
+              <input id="nome" type="text" placeholder="Nome completo" {...register('nome')} className={errors.nome ? 'invalid' : ''} />
+              {errors.nome && <span className="cfm-error">{errors.nome.message}</span>}
+            </div>
+
+            {/* CPF + Telefone */}
+            <div className="cfm-row">
+              <div className="cfm-group">
+                <label htmlFor="cpf">CPF *</label>
+                <input id="cpf" type="text" placeholder="00000000000" readOnly={!!id} title={id ? 'CPF não pode ser alterado' : undefined} {...register('cpf', { onChange: (e: React.ChangeEvent<HTMLInputElement>) => { e.target.value = formatarCPF(e.target.value); } })} className={errors.cpf ? 'invalid' : ''} />
+                {errors.cpf && <span className="cfm-error">{errors.cpf.message}</span>}
+              </div>
+              <div className="cfm-group">
+                <label htmlFor="telefone">Telefone *</label>
+                <input id="telefone" type="text" placeholder="(00) 00000-0000" {...register('telefone', { onChange: (e: React.ChangeEvent<HTMLInputElement>) => { e.target.value = formatarTelefone(e.target.value); } })} className={errors.telefone ? 'invalid' : ''} />
+                {errors.telefone && <span className="cfm-error">{errors.telefone.message}</span>}
+              </div>
+            </div>
+
+            {/* Email + Data de Nascimento */}
+            <div className="cfm-row">
+              <div className="cfm-group">
+                <label htmlFor="email">Email</label>
+                <input id="email" type="email" placeholder="email@exemplo.com" {...register('email')} className={errors.email ? 'invalid' : ''} />
+                {errors.email && <span className="cfm-error">{errors.email.message}</span>}
+              </div>
+              <div className="cfm-group">
+                <label htmlFor="data_nasc">Data de Nascimento</label>
+                <input id="data_nasc" type="date" placeholder="dd/mm/aaaa" {...register('data_nasc')} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── SEÇÃO: Informações de Crédito ── */}
+          <div className="cfm-section">
+            <h3 className="cfm-section-title">Informações de Crédito</h3>
+
+            <div className="cfm-row">
+              <div className="cfm-group">
+                <label htmlFor="limite_credito">Limite de Crédito (R$) *</label>
+                <input id="limite_credito" type="number" step="0.01" placeholder="0.00" {...register('limite_credito', { valueAsNumber: true })} className={errors.limite_credito ? 'invalid' : ''} />
+                {errors.limite_credito && <span className="cfm-error">{errors.limite_credito.message}</span>}
+              </div>
+              <div className="cfm-group">
+                <label htmlFor="dia_vencimento">Dia de Vencimento</label>
+                <input id="dia_vencimento" type="number" min={1} max={28} placeholder="1-28" {...register('dia_vencimento', { valueAsNumber: true })} className={errors.dia_vencimento ? 'invalid' : ''} />
+                {errors.dia_vencimento && <span className="cfm-error">{errors.dia_vencimento.message}</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* ── SEÇÃO: Endereço Principal ── */}
+          <div className="cfm-section">
+            <h3 className="cfm-section-title">Endereço Principal (Opcional)</h3>
+            <p className="cfm-section-hint">
+              Você pode adicionar o endereço principal agora ou depois em "Gerenciar Endereços"
+            </p>
+
+            {/* CEP + UF */}
+            <div className="cfm-row">
+              <div className="cfm-group">
+                <label htmlFor="cep">CEP</label>
+                <input
+                  id="cep"
+                  type="text"
+                  placeholder="00000000"
+                  {...register('cep', {
+                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                      e.target.value = formatarCEP(e.target.value);
+                      if (e.target.value.length === 8) buscarCEP(e.target.value);
+                    },
+                  })}
+                  className={errors.cep ? 'invalid' : ''}
+                />
+                {errors.cep && <span className="cfm-error">{errors.cep.message}</span>}
+              </div>
+              <div className="cfm-group">
+                <label htmlFor="uf">UF</label>
+                <input id="uf" type="text" placeholder="SP" maxLength={2} {...register('uf')} className={errors.uf ? 'invalid' : ''} />
+                {errors.uf && <span className="cfm-error">{errors.uf.message}</span>}
+              </div>
+            </div>
+
+            {/* Logradouro */}
+            <div className="cfm-group">
+              <label htmlFor="logradouro">Logradouro</label>
+              <input id="logradouro" type="text" placeholder="Rua, Avenida, etc." {...register('logradouro')} className={errors.logradouro ? 'invalid' : ''} />
+              {errors.logradouro && <span className="cfm-error">{errors.logradouro.message}</span>}
+            </div>
+
+            {/* Número + Complemento */}
+            <div className="cfm-row">
+              <div className="cfm-group">
+                <label htmlFor="numero">Número</label>
+                <input id="numero" type="text" placeholder="123" {...register('numero')} />
+              </div>
+              <div className="cfm-group">
+                <label htmlFor="complemento">Complemento</label>
+                <input id="complemento" type="text" placeholder="Apto, Bloco, etc." {...register('complemento')} />
+              </div>
+            </div>
+
+            {/* Bairro + Cidade */}
+            <div className="cfm-row">
+              <div className="cfm-group">
+                <label htmlFor="bairro">Bairro</label>
+                <input id="bairro" type="text" placeholder="Bairro" {...register('bairro')} className={errors.bairro ? 'invalid' : ''} />
+                {errors.bairro && <span className="cfm-error">{errors.bairro.message}</span>}
+              </div>
+              <div className="cfm-group">
+                <label htmlFor="cidade">Cidade</label>
+                <input id="cidade" type="text" placeholder="Cidade" {...register('cidade')} className={errors.cidade ? 'invalid' : ''} />
+                {errors.cidade && <span className="cfm-error">{errors.cidade.message}</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="cfm-actions">
+            <button type="button" className="cfm-btn-cancel" onClick={handleClose}>Cancelar</button>
+            <button type="submit" className="cfm-btn-save" disabled={submitting}>
+              {submitting ? 'Salvando...' : 'Salvar Cliente'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+
+  if (isModal) {
+    return (
+      <div className="cfm-overlay">
+        {formContent}
       </div>
     );
   }
 
-  return (
-    <div className="cliente-form-page">
-      <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/clientes')}>
-          <FiArrowLeft /> Voltar
-        </button>
-        <h1>{id ? 'Editar Cliente' : 'Novo Cliente'}</h1>
-        {id && (
-          <Link to={`/clientes/${id}/enderecos`} className="btn-enderecos">
-            <FiMapPin /> Gerenciar Endereços
-          </Link>
-        )}
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="cliente-form">
-        <div className="form-section">
-          <h2>Informações Pessoais</h2>
-
-          <div className="form-group">
-            <label htmlFor="nome">Nome *</label>
-            <input
-              id="nome"
-              type="text"
-              placeholder="Nome completo"
-              {...register('nome')}
-              className={errors.nome ? 'is-invalid' : ''}
-            />
-            {errors.nome && <span className="error-message">{errors.nome.message}</span>}
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="cpf">CPF *</label>
-              <input
-                id="cpf"
-                type="text"
-                placeholder="00000000000"
-                {...register('cpf', {
-                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                    e.target.value = formatarCPF(e.target.value);
-                  },
-                })}
-                className={errors.cpf ? 'is-invalid' : ''}
-              />
-              {errors.cpf && <span className="error-message">{errors.cpf.message}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="telefone">Telefone *</label>
-              <input
-                id="telefone"
-                type="text"
-                placeholder="(00) 00000-0000"
-                {...register('telefone', {
-                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                    e.target.value = formatarTelefone(e.target.value);
-                  },
-                })}
-                className={errors.telefone ? 'is-invalid' : ''}
-              />
-              {errors.telefone && <span className="error-message">{errors.telefone.message}</span>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="email@exemplo.com"
-                {...register('email')}
-                className={errors.email ? 'is-invalid' : ''}
-              />
-              {errors.email && <span className="error-message">{errors.email.message}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="data_nasc">Data de Nascimento</label>
-              <input
-                id="data_nasc"
-                type="date"
-                {...register('data_nasc')}
-                className={errors.data_nasc ? 'is-invalid' : ''}
-              />
-              {errors.data_nasc && <span className="error-message">{errors.data_nasc.message}</span>}
-            </div>
-          </div>
-        </div>
-
-        <div className="form-section">
-          <h2>Informações de Crédito</h2>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="limite_credito">Limite de Crédito (R$) *</label>
-              <input
-                id="limite_credito"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                {...register('limite_credito', { valueAsNumber: true })}
-                className={errors.limite_credito ? 'is-invalid' : ''}
-              />
-              {errors.limite_credito && (
-                <span className="error-message">{errors.limite_credito.message}</span>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="dia_vencimento">Dia de Vencimento</label>
-              <input
-                id="dia_vencimento"
-                type="number"
-                min="1"
-                max="28"
-                placeholder="1-28"
-                {...register('dia_vencimento', { valueAsNumber: true })}
-                className={errors.dia_vencimento ? 'is-invalid' : ''}
-              />
-              {errors.dia_vencimento && (
-                <span className="error-message">{errors.dia_vencimento.message}</span>
-              )}
-            </div>
-          </div>
-
-          {cliente && (
-            <div className="info-box">
-              <div className="info-item">
-                <span className="label">Crédito Disponível:</span>
-                <span className="value">
-                  R$ {typeof cliente.credito_disponivel === 'number' 
-                    ? cliente.credito_disponivel.toFixed(2).replace('.', ',')
-                    : parseFloat(cliente.credito_disponivel || '0').toFixed(2).replace('.', ',')}
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="label">Status:</span>
-                <span className={`value ${cliente.bloqueado ? 'bloqueado' : 'ativo'}`}>
-                  {cliente.bloqueado ? 'Bloqueado' : 'Ativo'}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="form-section">
-          <h2>Endereço Principal (Opcional)</h2>
-          <p className="section-description">
-            Você pode adicionar o endereço principal agora ou depois em "Gerenciar Endereços"
-          </p>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="cep">CEP</label>
-              <input
-                id="cep"
-                type="text"
-                placeholder="00000000"
-                {...register('cep', {
-                  onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                    const cep = formatarCEP(e.target.value);
-                    e.target.value = cep;
-                    if (cep.length === 8) {
-                      buscarCEP(cep);
-                    }
-                  },
-                })}
-                className={errors.cep ? 'is-invalid' : ''}
-              />
-              {errors.cep && <span className="error-message">{errors.cep.message}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="uf">UF</label>
-              <input
-                id="uf"
-                type="text"
-                placeholder="SP"
-                maxLength={2}
-                {...register('uf')}
-                className={errors.uf ? 'is-invalid' : ''}
-              />
-              {errors.uf && <span className="error-message">{errors.uf.message}</span>}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="logradouro">Logradouro</label>
-            <input
-              id="logradouro"
-              type="text"
-              placeholder="Rua, Avenida, etc."
-              {...register('logradouro')}
-              className={errors.logradouro ? 'is-invalid' : ''}
-            />
-            {errors.logradouro && (
-              <span className="error-message">{errors.logradouro.message}</span>
-            )}
-          </div>
-
-          <div className="form-row">
-            <div className="form-group" style={{ flex: 1 }}>
-              <label htmlFor="numero">Número</label>
-              <input
-                id="numero"
-                type="text"
-                placeholder="123"
-                {...register('numero')}
-                className={errors.numero ? 'is-invalid' : ''}
-              />
-              {errors.numero && <span className="error-message">{errors.numero.message}</span>}
-            </div>
-
-            <div className="form-group" style={{ flex: 2 }}>
-              <label htmlFor="complemento">Complemento</label>
-              <input
-                id="complemento"
-                type="text"
-                placeholder="Apto, Bloco, etc."
-                {...register('complemento')}
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="bairro">Bairro</label>
-              <input
-                id="bairro"
-                type="text"
-                placeholder="Bairro"
-                {...register('bairro')}
-                className={errors.bairro ? 'is-invalid' : ''}
-              />
-              {errors.bairro && <span className="error-message">{errors.bairro.message}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="cidade">Cidade</label>
-              <input
-                id="cidade"
-                type="text"
-                placeholder="Cidade"
-                {...register('cidade')}
-                className={errors.cidade ? 'is-invalid' : ''}
-              />
-              {errors.cidade && <span className="error-message">{errors.cidade.message}</span>}
-            </div>
-          </div>
-        </div>
-
-        <div className="form-actions">
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            onClick={() => navigate('/clientes')}
-          >
-            Cancelar
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            <FiSave /> {submitting ? 'Salvando...' : 'Salvar'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+  // Standalone page fallback
+  return <div className="cliente-form-page">{formContent}</div>;
 };
 
 export default ClienteFormPage;

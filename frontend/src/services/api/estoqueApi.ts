@@ -13,6 +13,7 @@ import type {
   ReservaPayload,
   LiberarReservaPayload,
   AtualizarEstoquePayload,
+  CriarEstoquePayload,
 } from '@/types/estoque';
 
 export interface ListarEstoqueParams {
@@ -39,6 +40,10 @@ export const estoqueApi = {
 
   obter(id: string, config?: AxiosRequestConfig) {
     return api.get<Estoque>(`/estoque/${id}`, config).then((r) => r.data);
+  },
+
+  criar(data: CriarEstoquePayload) {
+    return api.post<Estoque>('/estoque', data).then((r) => r.data);
   },
 
   atualizar(id: string, data: AtualizarEstoquePayload) {

@@ -1,17 +1,18 @@
+import { FiBriefcase } from 'react-icons/fi';
 import './Configuracoes.scss';
 
 const EmpresaPage = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>🏢 Dados da Empresa</h1>
+        <h1><FiBriefcase className="title-icon" /> Dados da Empresa</h1>
         <p className="page-description">
           Configure os dados cadastrais, endereço e informações fiscais da empresa
         </p>
       </div>
 
       <div className="empty-state">
-        <div className="empty-state-icon">🏢</div>
+        <div className="empty-state-icon"><FiBriefcase /></div>
         <h3>Configurações da Empresa</h3>
         <p>Gerencie as informações da sua empresa:</p>
         <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>

@@ -217,3 +217,53 @@
     }
   }
 }
+
+/* ========================================
+   RESPONSIVE - MOBILE
+   ======================================== */
+@media (max-width: 768px) {
+  .produto-detalhes-page {
+    padding: 1rem;
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+
+      .header-actions {
+        width: 100%;
+        flex-direction: column;
+
+        .btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    }
+
+    .produto-header {
+      flex-direction: column;
+      text-align: center;
+      padding: 1.5rem;
+
+      .produto-info h1 {
+        font-size: 1.5rem;
+      }
+
+      .status-badges {
+        justify-content: center;
+      }
+    }
+
+    .produto-content {
+      .info-section {
+        padding: 1.25rem;
+
+        .info-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+      }
+    }
+  }
+}

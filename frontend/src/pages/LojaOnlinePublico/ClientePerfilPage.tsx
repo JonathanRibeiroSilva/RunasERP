@@ -49,10 +49,13 @@ const ClientePerfilPage = () => {
   };
 
   const formatarTelefone = (telefone: string) => {
-    if (telefone.length === 11) {
-      return telefone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    // Backend guarda em E.164 (+5544...): remover código do país antes da máscara
+    let n = telefone.replace(/\D/g, '');
+    if (n.length > 11 && n.startsWith('55')) n = n.slice(2);
+    if (n.length === 11) {
+      return n.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
     }
-    return telefone.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    return n.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
   };
 
   if (loading) {

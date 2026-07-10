@@ -1,19 +1,25 @@
 @import '@/styles/variables';
+@import '@/styles/mixins';
 
 .page-container {
-  padding: $spacer-4;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .page-header {
   margin-bottom: $spacer-6;
   
   h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: $font-size-2xl;
     font-weight: $font-weight-bold;
     color: $text-primary;
     margin-bottom: $spacer-2;
+
+    .title-icon {
+      color: $primary;
+    }
   }
   
   .page-description {
@@ -59,10 +65,10 @@
   ul {
     list-style: none;
     padding: 0;
-    
+
     li {
       padding: $spacer-2 0;
-      
+
       &:before {
         content: '✓ ';
         color: $success;
@@ -70,5 +76,330 @@
         margin-right: $spacer-2;
       }
     }
+  }
+}
+
+// ======================== CONFIGURAÇÕES DA LOJA ========================
+
+.configuracoes-loja-page {
+  max-width: 800px;
+
+  .form-section {
+    background-color: $surface;
+    border: 1px solid $border-default;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+
+    h2 {
+      margin: 0 0 $spacer-4 0;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+
+    .section-hint {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin-bottom: $spacer-4;
+    }
+  }
+
+  .loja-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacer-4;
+
+    .loja-status-info p {
+      color: $text-secondary;
+      font-size: 0.9rem;
+      margin: $spacer-1 0;
+    }
+
+    .loja-preview-link {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacer-1;
+      color: $primary;
+      font-size: $font-size-sm;
+      text-decoration: none;
+      margin-top: 0.5rem;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+
+    .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+      color: $text-primary;
+      font-size: 0.85rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1px solid $border-default;
+      border-radius: 0.5rem;
+      background-color: rgba(15, 23, 42, 0.4);
+      color: $text-primary;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+
+      &:focus {
+        outline: none;
+        border-color: rgba($primary, 0.5);
+        background-color: rgba(15, 23, 42, 0.6);
+        box-shadow: 0 0 0 1px rgba($primary, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.2);
+      }
+    }
+
+    input[type='color'] {
+      padding: 0.25rem;
+      height: 42px;
+      cursor: pointer;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: $spacer-4;
+    border-top: 1px solid rgba(255,255,255,0.05);
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background-color: $primary;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba($primary, 0.3);
+
+      &:hover {
+        background-color: $primary-hover;
+        box-shadow: 0 4px 16px rgba($primary, 0.4);
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+    }
+  }
+
+  .empty-state-small {
+    text-align: center;
+    padding: $spacer-4;
+    color: $text-secondary;
+    font-size: 0.9rem;
+  }
+
+  .produtos-loja-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .produto-loja-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid $border-default;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(255,255,255,0.04);
+    }
+
+    .produto-loja-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .nome {
+        font-weight: 500;
+        color: $text-primary;
+        font-size: 0.9rem;
+      }
+
+      .badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+
+        &.badge-success {
+          background-color: rgba($success, 0.15);
+          color: $success;
+        }
+
+        &.badge-secondary {
+          background-color: rgba($text-secondary, 0.15);
+          color: $text-secondary;
+        }
+      }
+    }
+  }
+
+  // Toggle switch — recipe padrão baseado em checkbox nativo
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+
+    input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+
+      &:checked + .slider {
+        background-color: $primary;
+      }
+
+      &:checked + .slider:before {
+        transform: translateX(22px);
+      }
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      transition: background-color 0.2s ease;
+
+      &:before {
+        position: absolute;
+        content: '';
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        border-radius: 50%;
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+    }
+
+    &.switch-small {
+      width: 40px;
+      height: 22px;
+
+      .slider:before {
+        height: 16px;
+        width: 16px;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(18px);
+      }
+    }
+  }
+}
+
+/* RESPONSIVE - MOBILE */
+@media (max-width: 768px) {
+  .configuracoes-loja-page {
+    .form-section {
+      padding: 1.25rem;
+
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+
+        .form-group {
+          margin-bottom: 1.25rem;
+        }
+      }
+    }
+
+    .loja-status {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+
+      .switch {
+        align-self: flex-start;
+      }
+    }
+
+    .produto-loja-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+
+      .switch {
+        align-self: flex-start;
+      }
+    }
+  }
+}
+
+// Endereço público da loja (/c/slug) — preview e aviso de mudança de slug
+.configuracoes-loja-page {
+  .slug-input-row {
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+
+    .slug-prefixo {
+      color: $text-secondary;
+      font-family: monospace;
+      font-size: $font-size-base;
+      white-space: nowrap;
+    }
+  }
+
+  .slug-aviso {
+    margin: $spacer-2 0 0;
+    color: $warning;
+    font-size: $font-size-sm;
   }
 }

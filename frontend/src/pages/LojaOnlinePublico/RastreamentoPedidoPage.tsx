@@ -45,6 +45,12 @@ const STATUS_INFO: Record<string, { label: string; color: string; icon: any }> =
 
 const STATUS_ORDER = ['PEDIDO', 'PENDENTE_PAGAMENTO', 'CONFIRMADA', 'SEPARADA', 'EM_ENTREGA', 'ENTREGUE', 'FINALIZADA'];
 
+// Enquanto o pedido está nesses status, o pagamento pode confirmar a qualquer momento via
+// webhook assíncrono do Mercado Pago (às vezes segundos após o redirect de volta pra cá).
+const STATUS_AGUARDANDO_PAGAMENTO = ['PEDIDO', 'PENDENTE_PAGAMENTO'];
+const POLLING_INTERVALO_MS = 4000;
+const POLLING_MAX_TENTATIVAS = 30; // ~2 minutos
+
 const RastreamentoPedidoPage = () => {
   const { empresaSlug, numeroPedido } = useParams<{ empresaSlug: string; numeroPedido: string }>();
   const navigate = useNavigate();
@@ -86,13 +92,34 @@ const RastreamentoPedidoPage = () => {
     if (numeroPedido) carregarRastreamento();
   }, [numeroPedido]);
 
-  const carregarRastreamento = async () => {
+  // Enquanto o pedido aguarda confirmação de pagamento, faz polling silencioso — o webhook do
+  // Mercado Pago pode confirmar segundos (ou minutos, no caso de cartão via 3DS) depois do
+  // cliente já ter sido redirecionado de volta pra essa tela.
+  useEffect(() => {
+    if (!numeroPedido || !dados) return;
+    if (!STATUS_AGUARDANDO_PAGAMENTO.includes(dados.status_atual)) return;
+
+    let tentativas = 0;
+    const intervalId = setInterval(async () => {
+      tentativas += 1;
+      if (tentativas > POLLING_MAX_TENTATIVAS) {
+        clearInterval(intervalId);
+        return;
+      }
+      await carregarRastreamento({ silencioso: true });
+    }, POLLING_INTERVALO_MS);
+
+    return () => clearInterval(intervalId);
+  }, [numeroPedido, dados?.status_atual]);
+
+  const carregarRastreamento = async ({ silencioso = false }: { silencioso?: boolean } = {}) => {
     try {
-      setLoading(true);
+      if (!silencioso) setLoading(true);
       setErro('');
       const response = await apiPublica.get(`/loja/rastrear/${numeroPedido}?empresaSlug=${empresaSlug}`);
       setDados(response.data ?? null);
     } catch (error: any) {
+      if (silencioso) return; // não substitui uma tela já carregada por um erro de poll em background
       setDados(null);
       const mensagemErro = error?.response?.data?.detail || 'Pedido não encontrado';
       // Se detail for um array, pegar a primeira mensagem
@@ -104,7 +131,7 @@ const RastreamentoPedidoPage = () => {
         setErro(mensagemErro);
       }
     } finally {
-      setLoading(false);
+      if (!silencioso) setLoading(false);
     }
   };
 

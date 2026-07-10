@@ -29,7 +29,7 @@ interface UseCarrinhoReturn {
   carrinho: Carrinho | null;
   loading: boolean;
   erro: string | null;
-  adicionarItem: (produtoId: string, varianteId: string, quantidade: number) => Promise<void>;
+  adicionarItem: (produtoId: string, varianteId: string | null, quantidade: number) => Promise<void>;
   removerItem: (produtoId: string, varianteId: string | null) => Promise<void>;
   atualizarQuantidade: (produtoId: string, varianteId: string | null, quantidade: number) => Promise<void>;
   limparCarrinho: () => Promise<void>;
@@ -46,11 +46,6 @@ export const useCarrinho = (props?: UseCarrinhoProps): UseCarrinhoReturn => {
   const [erro, setErro] = useState<string | null>(null);
 
   const empresaSlug = props?.empresaSlug;
-
-  // Carregar carrinho ao montar o hook
-  useEffect(() => {
-    carregarCarrinho();
-  }, [empresaSlug]);
 
   /**
    * Carrega o carrinho atual da sessão
@@ -90,12 +85,17 @@ export const useCarrinho = (props?: UseCarrinhoProps): UseCarrinhoReturn => {
     }
   }, [empresaSlug]);
 
+  // Carregar carrinho ao montar o hook
+  useEffect(() => {
+    carregarCarrinho();
+  }, [carregarCarrinho]);
+
   /**
    * Adiciona um item ao carrinho
    */
   const adicionarItem = async (
     produtoId: string,
-    varianteId: string,
+    varianteId: string | null,
     quantidade: number
   ): Promise<void> => {
     try {

@@ -7,7 +7,7 @@ const VendasPage = () => {
       <div className="page-header">
         <div>
           <h1>
-            <FiShoppingCart /> Vendas
+            <FiShoppingCart className="title-icon" /> Vendas
           </h1>
           <p className="text-muted">Ponto de venda e gestão de pedidos</p>
         </div>

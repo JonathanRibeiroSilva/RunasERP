@@ -8,8 +8,8 @@ import ErrorBoundary from '@/components/common/ErrorBoundary/ErrorBoundary';
 import App from './App';
 
 // Styles
-import '@/styles/global.scss'; // Importar ANTES do Bootstrap para permitir sobrescrita
 import 'bootstrap/dist/css/bootstrap.min.css';
+import '@/styles/global.scss'; // Importar DEPOIS do Bootstrap para permitir sobrescrita
 import 'react-toastify/dist/ReactToastify.css';
 
 // Configurar React Query

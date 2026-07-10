@@ -12,7 +12,7 @@ export interface ListarClientesParams {
 
 export interface CreditoPayload {
   limite_credito?: number;
-  dia_vencimento?: number;
+  dia_vencimento?: number | null;
 }
 
 /** Camada de serviço de Clientes — único lugar que conhece URLs/params dos endpoints. */
@@ -35,6 +35,10 @@ export const clientesApi = {
 
   desativar(id: string) {
     return api.delete(`/clientes/${id}`).then(() => undefined);
+  },
+
+  reativar(id: string) {
+    return api.post<Cliente>(`/clientes/${id}/ativar`).then((r) => r.data);
   },
 
   listarEnderecos(id: string) {

@@ -16,3 +16,11 @@ export const useDesativarCliente = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clientes'] }),
   });
 };
+
+export const useReativarCliente = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => clientesApi.reativar(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clientes'] }),
+  });
+};

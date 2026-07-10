@@ -2,10 +2,11 @@
 
 export interface Cliente {
   id: string;
+  empresa_id: number;
   nome: string;
-  cpf: string;
+  cpf: string | null; // Opcional para clientes OAuth/loja online
+  telefone: string | null; // Opcional para clientes OAuth/loja online
   email?: string;
-  telefone: string;
   data_nasc?: string;
   limite_credito: number;
   credito_disponivel: number;
