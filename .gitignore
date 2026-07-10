@@ -111,3 +111,7 @@ dev-scripts/
 
 # Graphify (per-file AST cache is regenerable and bloats the repo; graph outputs are tracked)
 graphify-out/cache/
+
+# Claude Code local settings and local audit notes
+.claude/
+ponytail-audit*.md
