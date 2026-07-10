@@ -370,7 +370,29 @@ class ClienteService:
             await self.db.rollback()
             log.error("erro_desbloquear_cliente", error=str(e))
             raise
-    
+
+    async def reativar_cliente(self, cliente_id: UUID, empresa_id: int) -> Cliente:
+        """Reativa um cliente desativado com transação atômica (filtrado por empresa)."""
+        try:
+            cliente = await self.cliente_repo.reativar(cliente_id, empresa_id)
+            if not cliente:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Cliente não encontrado"
+                )
+
+            await self.db.commit()
+            log.info("cliente.reativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
+            return cliente
+
+        except HTTPException:
+            await self.db.rollback()
+            raise
+        except Exception as e:
+            await self.db.rollback()
+            log.error("erro_reativar_cliente", error=str(e))
+            raise
+
     # Métodos de Endereço
     
     async def adicionar_endereco(

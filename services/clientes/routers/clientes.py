@@ -223,6 +223,20 @@ async def desativar_cliente(
     return None
 
 
+@router.post(
+    "/{cliente_id}/ativar",
+    response_model=ClienteResponse,
+    summary="Reativar cliente"
+)
+async def reativar_cliente(
+    cliente_id: UUID,
+    service: Annotated[ClienteService, Depends(get_cliente_service)],
+    empresa_id: Annotated[int, Depends(get_empresa_id)]
+):
+    """Reativa um cliente desativado (filtrado por empresa)."""
+    return await service.reativar_cliente(cliente_id, empresa_id)
+
+
 @router.put(
     "/{cliente_id}/credito",
     response_model=ClienteResponse,

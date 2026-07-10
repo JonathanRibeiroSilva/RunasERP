@@ -151,13 +151,24 @@ class ClienteRepository:
         await self.db.flush()
         log.info("cliente.desativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return True
-    
+
+    async def reativar(self, cliente_id: UUID, empresa_id: int) -> Cliente | None:
+        """Reativa um cliente desativado (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
+        if not cliente:
+            return None
+
+        cliente.ativo = True
+        await self.db.flush()
+        log.info("cliente.reativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
+        return cliente
+
     async def atualizar_credito(
         self,
         cliente_id: UUID,
         empresa_id: int,
         limite_credito: Decimal,
-        dia_vencimento: int
+        dia_vencimento: int | None
     ) -> Cliente | None:
         """Atualiza limite de crédito e dia de vencimento (filtrado por empresa)."""
         cliente = await self.buscar_por_id(cliente_id, empresa_id)

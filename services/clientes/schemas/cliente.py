@@ -114,7 +114,7 @@ class ClienteResponse(BaseModel):
 class CreditoUpdate(BaseModel):
     """Schema para atualização de crédito."""
     limite_credito: Decimal = Field(..., ge=0)
-    dia_vencimento: int = Field(..., ge=1, le=28)
+    dia_vencimento: int | None = Field(None, ge=1, le=28)
 
 
 class CreditoDelta(BaseModel):
