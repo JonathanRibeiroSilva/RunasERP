@@ -24,6 +24,7 @@ from schemas.produtos import (
     LojaOnlineConfigCreate,
     LojaOnlineConfigRead,
     LojaOnlineConfigUpdate,
+    LojaOnlinePublicarRequest,
     LojaOnlineFotoCreate,
     LojaOnlineFotoRead,
     LojaOnlineFotoUpdate,
@@ -398,11 +399,14 @@ async def get_empresa_id_from_slug(
     from sqlalchemy import text
     
     try:
-        # Query direto no schema empresas (cross-schema query)
+        # Query direto no schema empresas (cross-schema query).
+        # catalogo_ativo: loja desabilitada pelo lojista não expõe catálogo público
+        # (o branding continua acessível via /empresas/publico/{slug} para a página
+        # de manutenção).
         query = text("""
-            SELECT id 
-            FROM empresas.empresas 
-            WHERE slug = :slug AND status = 'ATIVA'
+            SELECT id
+            FROM empresas.empresas
+            WHERE slug = :slug AND status = 'ATIVA' AND catalogo_ativo = TRUE
             LIMIT 1
         """)
         
@@ -453,31 +457,21 @@ async def listar_produtos_loja_online_publico(
     try:
         # Resolver empresa_id a partir do slug
         empresa_id = await get_empresa_id_from_slug(empresaSlug, session)
-        
+
         service = ProdutoService(session)
-        
-        # TODO: Filtrar apenas produtos com loja_online_config.visivel = True
-        # Por enquanto, retorna todos os produtos ativos
-        produtos, total = await service.listar_produtos(
+
+        produtos, total = await service.listar_publicados_loja_online(
             empresa_id=empresa_id,
-            skip=skip, 
-            limit=limit, 
-            apenas_ativos=True
+            skip=skip,
+            limit=limit,
+            categoria_id=categoria_id,
+            busca=busca,
+            ordenar=ordenar,
         )
-        
-        # Filtrar por categoria se fornecido
-        if categoria_id:
-            produtos = [p for p in produtos if p.categoria_id == categoria_id]
-            total = len(produtos)
-        
-        # Buscar por nome se fornecido
-        if busca:
-            produtos = [p for p in produtos if busca.lower() in p.nome.lower()]
-            total = len(produtos)
-        
+
         # Converter para schema simplificado
         produtos_response = [ProdutoReadSimples.model_validate(prod) for prod in produtos]
-        
+
         return {
             "total": total,
             "skip": skip,
@@ -626,6 +620,44 @@ async def atualizar_config_loja_online(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao atualizar config de loja online")
+
+
+@router_loja_online.get("/produtos", response_model=dict)
+async def listar_status_produtos_loja_online(
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    session: AsyncSession = Depends(get_db)
+):
+    """Lista produtos ativos da empresa com seu status de publicação na loja online (admin)."""
+    try:
+        service = LojaOnlineService(session)
+        items, total = await service.listar_status_produtos(empresa_id, skip=skip, limit=limit)
+        return {
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "items": items
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Erro ao listar produtos da loja online")
+
+
+@router_loja_online.put("/produtos/{produto_id}/publicar", response_model=LojaOnlineConfigRead)
+async def publicar_produto_loja_online(
+    produto_id: UUID,
+    dados: LojaOnlinePublicarRequest,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    session: AsyncSession = Depends(get_db)
+):
+    """Publica ou despublica um produto na loja online (cria ou atualiza a config)."""
+    try:
+        service = LojaOnlineService(session)
+        return await service.publicar_produto(empresa_id, produto_id, dados)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Erro ao publicar produto na loja online")
 
 
 @router_loja_online.post("/fotos", response_model=LojaOnlineFotoRead, status_code=201)

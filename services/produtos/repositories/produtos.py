@@ -1,6 +1,7 @@
 """
 Repositories para acesso aos dados de Produtos.
 """
+from decimal import Decimal
 from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -93,9 +94,30 @@ class ProdutoRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def criar(self, empresa_id: int, categoria_id: UUID, nome: str, descricao: str | None = None) -> Produto:
+    async def criar(
+        self,
+        empresa_id: int,
+        categoria_id: UUID,
+        nome: str,
+        descricao: str | None = None,
+        ativo: bool = True,
+        preco: Decimal = Decimal("0.00"),
+        custo: Decimal = Decimal("0.00"),
+        preco_promocional: Decimal | None = None,
+        unidade_medida: str = "UN",
+    ) -> Produto:
         """Cria um novo produto."""
-        produto = Produto(empresa_id=empresa_id, categoria_id=categoria_id, nome=nome, descricao=descricao)
+        produto = Produto(
+            empresa_id=empresa_id,
+            categoria_id=categoria_id,
+            nome=nome,
+            descricao=descricao,
+            ativo=ativo,
+            preco=preco,
+            custo=custo,
+            preco_promocional=preco_promocional,
+            unidade_medida=unidade_medida,
+        )
         self.session.add(produto)
         await self.session.flush()
         return produto
@@ -213,6 +235,62 @@ class ProdutoRepository:
         )
         return result.scalars().all(), total
 
+    async def listar_publicados_loja_online(
+        self,
+        empresa_id: int,
+        skip: int = 0,
+        limit: int = 20,
+        categoria_id: UUID | None = None,
+        busca: str | None = None,
+        ordenar: str = "nome",
+    ) -> tuple[list[Produto], int]:
+        """
+        Lista produtos publicados na loja online (ativo=True e loja_online_config.visivel=True).
+
+        Modelo opt-in: um produto só aparece aqui se tiver uma LojaOnlineConfig
+        com visivel=True — a ausência de config equivale a não publicado.
+        """
+        base_filters = (
+            Produto.empresa_id == empresa_id,
+            Produto.deletado_em.is_(None),
+            Produto.ativo.is_(True),
+            LojaOnlineConfig.visivel.is_(True),
+        )
+
+        query = select(Produto).join(LojaOnlineConfig, LojaOnlineConfig.produto_id == Produto.id).where(*base_filters)
+        count_query = (
+            select(func.count(Produto.id))
+            .join(LojaOnlineConfig, LojaOnlineConfig.produto_id == Produto.id)
+            .where(*base_filters)
+        )
+
+        if categoria_id is not None:
+            query = query.where(Produto.categoria_id == categoria_id)
+            count_query = count_query.where(Produto.categoria_id == categoria_id)
+
+        if busca:
+            query = query.where(Produto.nome.ilike(f"%{busca}%"))
+            count_query = count_query.where(Produto.nome.ilike(f"%{busca}%"))
+
+        ordenacao = {
+            "nome": Produto.nome.asc(),
+            "preco_asc": Produto.preco.asc(),
+            "preco_desc": Produto.preco.desc(),
+            "recentes": Produto.criado_em.desc(),
+        }.get(ordenar, Produto.nome.asc())
+        query = query.order_by(ordenacao)
+
+        count_result = await self.session.execute(count_query)
+        total = count_result.scalar()
+
+        result = await self.session.execute(
+            query.offset(skip).limit(limit).options(
+                selectinload(Produto.categoria),
+                selectinload(Produto.loja_online_config)
+            )
+        )
+        return result.scalars().all(), total
+
     async def atualizar(
         self,
         empresa_id: int,
@@ -221,6 +299,10 @@ class ProdutoRepository:
         categoria_id: UUID | None = None,
         descricao: str | None = None,
         ativo: bool | None = None,
+        preco: Decimal | None = None,
+        custo: Decimal | None = None,
+        preco_promocional: Decimal | None = None,
+        unidade_medida: str | None = None,
     ) -> Produto | None:
         """Atualiza um produto."""
         produto = await self.obter_por_id(empresa_id, produto_id)
@@ -235,6 +317,14 @@ class ProdutoRepository:
             produto.descricao = descricao
         if ativo is not None:
             produto.ativo = ativo
+        if preco is not None:
+            produto.preco = preco
+        if custo is not None:
+            produto.custo = custo
+        if preco_promocional is not None:
+            produto.preco_promocional = preco_promocional
+        if unidade_medida is not None:
+            produto.unidade_medida = unidade_medida
 
         await self.session.flush()
         return produto
@@ -434,6 +524,39 @@ class LojaOnlineConfigRepository:
             select(LojaOnlineConfig).where(LojaOnlineConfig.produto_id == produto_id)
         )
         return result.scalars().first()
+
+    async def listar_status_produtos(
+        self, empresa_id: int, skip: int = 0, limit: int = 20
+    ) -> tuple[list[Produto], int]:
+        """
+        Lista produtos ativos da empresa com sua config de loja online (se existir).
+
+        Usa LEFT OUTER JOIN para incluir também produtos sem LojaOnlineConfig —
+        estes aparecem como não publicados (visivel=False por padrão, modelo opt-in).
+        """
+        base_filters = (
+            Produto.empresa_id == empresa_id,
+            Produto.deletado_em.is_(None),
+            Produto.ativo.is_(True),
+        )
+
+        count_result = await self.session.execute(
+            select(func.count(Produto.id)).where(*base_filters)
+        )
+        total = count_result.scalar()
+
+        result = await self.session.execute(
+            select(Produto)
+            .where(*base_filters)
+            .order_by(Produto.nome.asc())
+            .offset(skip)
+            .limit(limit)
+            .options(
+                selectinload(Produto.categoria),
+                selectinload(Produto.loja_online_config)
+            )
+        )
+        return result.scalars().all(), total
 
     async def atualizar(
         self,

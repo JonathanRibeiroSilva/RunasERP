@@ -3,8 +3,13 @@ Schemas Pydantic para Produtos.
 """
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
+
+# Unidades de medida aceitas — fonte única de validação no backend.
+# Espelhada no frontend em src/types/produtos.ts (UNIDADES_MEDIDA).
+UnidadeMedida = Literal["UN", "KG", "G", "LT", "ML", "CX", "PCT", "FD", "SC", "PAR", "M", "CM"]
 
 
 # ======================== CATEGORIA ========================
@@ -146,7 +151,27 @@ class LojaOnlineConfigRead(LojaOnlineConfigBase):
     id: UUID
     produto_id: UUID
     atualizado_em: datetime
-    
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LojaOnlinePublicarRequest(BaseModel):
+    """Schema para publicar/despublicar um produto na loja online (upsert de config)."""
+    visivel: bool
+    destaque: bool = False
+
+
+class ProdutoLojaOnlineStatusRead(BaseModel):
+    """Schema para listagem admin de produtos com seu status de publicação na loja online."""
+    id: UUID
+    nome: str
+    preco: Decimal = Field(default=Decimal("0.00"))
+    categoria_id: UUID
+    ativo: bool
+    visivel: bool = False
+    destaque: bool = False
+    ordem_exibicao: int = 0
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -240,6 +265,10 @@ class ProdutoBase(BaseModel):
 class ProdutoCreate(ProdutoBase):
     """Schema para criar Produto."""
     categoria_id: UUID
+    preco: Decimal = Field(default=Decimal("0.00"), ge=0, description="Preço de venda")
+    custo: Decimal = Field(default=Decimal("0.00"), ge=0, description="Custo de aquisição")
+    preco_promocional: Decimal | None = Field(default=None, gt=0, description="Preço promocional")
+    unidade_medida: UnidadeMedida = "UN"
 
 
 class ProdutoUpdate(BaseModel):
@@ -248,6 +277,10 @@ class ProdutoUpdate(BaseModel):
     categoria_id: UUID | None = None
     descricao: str | None = None
     ativo: bool | None = None
+    preco: Decimal | None = Field(default=None, ge=0)
+    custo: Decimal | None = Field(default=None, ge=0)
+    preco_promocional: Decimal | None = Field(default=None, gt=0)
+    unidade_medida: UnidadeMedida | None = None
 
 
 class ProdutoRead(ProdutoBase):
@@ -302,6 +335,8 @@ class ProdutoLojaOnlineRead(BaseModel):
     categoria_id: UUID
     categoria: CategoriaRead | None = None
     criado_em: datetime
+    preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda (produtos sem variantes)")
+    preco_promocional: Decimal | None = None
     variantes: list[VarianteLojaOnlineRead] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

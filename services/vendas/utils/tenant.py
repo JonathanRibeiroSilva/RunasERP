@@ -31,11 +31,14 @@ async def get_empresa_id_by_slug(
             
             if response.status_code == 404:
                 return None
-            
+
             response.raise_for_status()
             empresa = response.json()
+            # Loja desabilitada pelo lojista → storefront indisponível.
+            if not empresa.get('catalogo_ativo', False):
+                return None
             return empresa['id']
-            
+
     except httpx.HTTPError:
         return None
 
@@ -58,6 +61,7 @@ async def get_empresa_slug_by_id(
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"http://empresas:8007/empresas/{empresa_id}",
+                headers={"X-Empresa-Id": str(empresa_id)},
                 timeout=5.0
             )
 
@@ -132,8 +136,17 @@ async def get_empresa_id_from_slug(
             
             response.raise_for_status()
             empresa = response.json()
+
+            # Loja desabilitada pelo lojista: carrinho/checkout ficam indisponíveis,
+            # mas o branding segue público para a página de manutenção.
+            if not empresa.get('catalogo_ativo', False):
+                raise HTTPException(
+                    status_code=404,
+                    detail="Loja indisponível no momento"
+                )
+
             return empresa['id']
-            
+
     except httpx.HTTPError as e:
         raise HTTPException(
             status_code=500,

@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     FINANCEIRO_URL: str = "http://financeiro:8005"
     
     # URLs públicas (para Mercado Pago, webhooks, redirect)
-    # Estas URLs devem apontar para o domínio público (Cloudflare Tunnel)
-    API_BASE_URL: str = "https://runaserp.com.br/api"  # URL pública da API
-    FRONTEND_URL: str = "https://runaserp.com.br"  # URL pública do frontend
+    # Defaults locais; produção/tunnel definem via environment (docker-compose)
+    API_BASE_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # Evolution API (WhatsApp)
     EVOLUTION_API_URL: str = ""  # URL da Evolution API (opcional)

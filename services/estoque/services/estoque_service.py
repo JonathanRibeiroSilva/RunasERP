@@ -67,7 +67,11 @@ class EstoqueService:
     ) -> bool:
         """
         Valida que o produto (e a variante, se houver) existem no serviço de produtos,
-        dentro da empresa informada.
+        dentro da empresa informada, e que o produto está ativo.
+
+        Produtos inativos não podem iniciar estoque (criar registro / primeira entrada);
+        operações sobre registros de estoque já existentes não passam por aqui, então
+        correções e estornos de produtos com estoque continuam funcionando.
 
         O X-Empresa-Id é obrigatório: o serviço de produtos exige esse header e responde
         400 sem ele — sem o header, NENHUM produto seria considerado válido (e a criação de
@@ -82,6 +86,8 @@ class EstoqueService:
                     headers=headers, timeout=5.0
                 )
                 if produto.status_code != 200:
+                    return False
+                if not produto.json().get("ativo", False):
                     return False
 
                 if variante_id is None:

@@ -152,7 +152,6 @@ class MercadoPagoService:
                 "failure": failure_url,
                 "pending": pending_url
             },
-            "auto_return": "approved",
             "external_reference": str(venda.id),  # Vincular com venda
             "notification_url": webhook_url,
             "statement_descriptor": f"Pedido {venda.numero_venda}",
@@ -174,6 +173,12 @@ class MercadoPagoService:
             # o fluxo de cartão de crédito da loja (checkout guest). Sem o campo, o convidado
             # paga com cartão/PIX/boleto sem precisar de conta Mercado Pago.
         }
+
+        # auto_return exige back_urls públicas HTTPS — o MP rejeita localhost com
+        # "auto_return invalid". Em dev local o comprador volta pelo botão do checkout;
+        # a confirmação do pagamento é feita pelo job verificar_pagamentos_pendentes.
+        if success_url.startswith("https://"):
+            preference_data["auto_return"] = "approved"
         
         # Adicionar dados do pagador se disponível
         if venda.cliente_id:
@@ -188,7 +193,7 @@ class MercadoPagoService:
             "mercadopago_preferencia_montada",
             venda_id=str(venda.id),
             binary_mode=preference_data["binary_mode"],
-            auto_return=preference_data["auto_return"]
+            auto_return=preference_data.get("auto_return")
         )
         
         # Log do payload COMPLETO que será enviado

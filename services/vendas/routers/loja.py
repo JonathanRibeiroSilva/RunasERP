@@ -27,6 +27,22 @@ from utils.tenant import get_empresa_id, get_empresa_id_from_slug, get_cliente_i
 
 router = APIRouter(prefix="/loja", tags=["loja-online"])
 
+CART_COOKIE_MAX_AGE = 604800  # 7 dias
+
+
+def definir_cookie_carrinho(response: Response, sessao_id: str) -> None:
+    """Define o cookie cart_session_id; secure/samesite seguem o esquema do deploy (HTTPS vs HTTP local)."""
+    is_https = settings.FRONTEND_URL.startswith("https://")
+    response.set_cookie(
+        key="cart_session_id",
+        value=sessao_id,
+        max_age=CART_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=is_https,
+        samesite="none" if is_https else "lax",
+        path="/",
+    )
+
 
 # ==================== CARRINHO ====================
 
@@ -75,32 +91,13 @@ async def obter_carrinho(
                     )
                     
                     sessao_id = await CarrinhoService.gerar_sessao_id()
-                    
-                    # ✅ Definir novo cookie
-                    response.set_cookie(
-                        key="cart_session_id",
-                        value=sessao_id,
-                        max_age=604800,
-                        httponly=True,
-                        secure=True,
-                        samesite="none",
-                        path="/"
-                    )
+                    definir_cookie_carrinho(response, sessao_id)
         
         # Gerar sessao_id se não existir
         if not sessao_id:
             sessao_id = await CarrinhoService.gerar_sessao_id()
-            # Definir cookie (7 dias = 604800 segundos)
-            response.set_cookie(
-                key="cart_session_id",
-                value=sessao_id,
-                max_age=604800,
-                httponly=True,
-                secure=True,  # ✅ HTTPS only
-                samesite="none",  # ✅ Permite cross-site (necessário para Cloudflare)
-                path="/"  # ✅ Disponível em todo o site
-            )
-        
+            definir_cookie_carrinho(response, sessao_id)
+
         carrinho = await CarrinhoService.obter_ou_criar_carrinho(
             sessao_id,
             empresa_id
@@ -133,15 +130,7 @@ async def adicionar_item_carrinho(
         # Gerar sessao_id se não existir
         if not sessao_id:
             sessao_id = await CarrinhoService.gerar_sessao_id()
-            response.set_cookie(
-                key="cart_session_id",
-                value=sessao_id,
-                max_age=604800,
-                httponly=True,
-                secure=True,  # ✅ HTTPS only
-                samesite="none",  # ✅ Permite cross-site (necessário para Cloudflare)
-                path="/"  # ✅ Disponível em todo o site
-            )
+            definir_cookie_carrinho(response, sessao_id)
         
         carrinho = await CarrinhoService.adicionar_item(
             sessao_id,
@@ -485,8 +474,13 @@ async def retry_payment(
             )
         
         # 5. Resolver empresa_slug dinamicamente a partir do empresa_id (multi-tenant).
-        # Fallback para o slug padrão preserva o comportamento anterior se o serviço estiver indisponível.
-        empresa_slug = await get_empresa_slug_by_id(db, empresa_id) or 'distribuidora-central'
+        # Sem fallback fixo: um slug de outra loja geraria back_urls/webhook do tenant errado.
+        empresa_slug = await get_empresa_slug_by_id(db, empresa_id)
+        if not empresa_slug:
+            raise HTTPException(
+                status_code=502,
+                detail="Não foi possível resolver a loja para gerar o link de pagamento"
+            )
         
         # 6. Criar nova preferência no Mercado Pago
         preferencia_id, init_point, sandbox_init_point, erro = await MercadoPagoService.criar_preferencia(
@@ -719,15 +713,7 @@ async def recuperar_carrinho(
         )
         
         # 8. Definir novo cookie cart_session_id
-        response.set_cookie(
-            key="cart_session_id",
-            value=nova_sessao_id,
-            max_age=604800,  # 7 dias
-            httponly=True,
-            secure=True,
-            samesite="none",
-            path="/"
-        )
+        definir_cookie_carrinho(response, nova_sessao_id)
         
         # 9. Obter carrinho reconstruído
         carrinho = await CarrinhoService.obter_ou_criar_carrinho(nova_sessao_id, empresa_id)

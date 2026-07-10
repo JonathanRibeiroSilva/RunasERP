@@ -3,6 +3,7 @@ Service de Loja Online (E-commerce).
 Gerencia checkout e pedidos online.
 """
 from typing import Optional, List
+from datetime import datetime, timezone
 from uuid import UUID
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,6 +38,20 @@ from utils.tenant import get_empresa_slug_by_id
 from config import settings
 
 log = structlog.get_logger()
+
+
+def _utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """
+    Marca um datetime ingênuo (mas armazenado em UTC) como timezone-aware.
+
+    As colunas de data do banco usam `datetime.utcnow()` (naive). Sem o tzinfo, o
+    Pydantic serializa sem sufixo de fuso ("Z"/"+00:00") e o frontend (`new Date(...)`)
+    interpreta o valor como hora local do navegador — deslocando a exibição em até
+    3h para usuários no fuso do Brasil.
+    """
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=timezone.utc)
 
 
 def gerar_senha_temporaria(tamanho: int = 8) -> str:
@@ -109,7 +124,10 @@ class LojaService:
             # 2. Determinar e validar cliente
             cliente_id = data.cliente_id
             cliente_info = None
-            
+            senha_temporaria = None
+            access_token = None
+            conta_criada = False
+
             # 2.1 Cliente convidado (guest)
             if data.cliente_novo and not cliente_id:
                 # Validar dados do cliente convidado
@@ -137,10 +155,6 @@ class LojaService:
                 )
                 
                 # 2.1.1 Se marcou "criar conta", criar cliente e autenticação
-                senha_temporaria = None
-                access_token = None
-                conta_criada = False
-                
                 if data.criar_conta and cliente_info.get('email'):
                     try:
                         log.info("checkout_iniciando_criacao_conta", email=cliente_info['email'])
@@ -228,14 +242,17 @@ class LojaService:
                                             timeout=5.0
                                         )
                                         empresa_nome = "Loja Online"
+                                        empresa_slug = None
                                         if empresa_response.status_code == 200:
                                             empresa_data = empresa_response.json()
                                             empresa_nome = empresa_data.get('nome_fantasia') or empresa_data.get('razao_social', 'Loja Online')
-                                        
+                                            empresa_slug = empresa_data.get('slug')
+
                                         await enviar_email_credenciais(
                                             to_email=cliente_info['email'],
                                             senha_temporaria=senha_temporaria,
-                                            empresa_nome=empresa_nome
+                                            empresa_nome=empresa_nome,
+                                            empresa_slug=empresa_slug
                                         )
                                         log.info("checkout_email_credenciais_enviado", email=cliente_info['email'])
                                     except Exception as e:
@@ -434,8 +451,12 @@ class LojaService:
                 
                 try:
                     # Obter slug da empresa dinamicamente (multi-tenant).
-                    # Fallback para o slug padrão preserva o comportamento anterior se o serviço estiver indisponível.
-                    empresa_slug = await get_empresa_slug_by_id(db, empresa_id) or 'distribuidora-central'
+                    # Sem fallback fixo: um slug de outra loja geraria back_urls/webhook do
+                    # tenant errado. Falha aqui cai no except abaixo — a venda fica
+                    # PENDENTE_PAGAMENTO e o cliente usa o retry-payment.
+                    empresa_slug = await get_empresa_slug_by_id(db, empresa_id)
+                    if not empresa_slug:
+                        raise ValueError(f"Slug não encontrado para empresa_id={empresa_id}")
                     
                     # Buscar venda completa com itens para criar preferência
                     venda_completa = await VendaRepository.buscar_por_id(
@@ -626,7 +647,7 @@ class LojaService:
                 PedidoClienteResumido(
                     id=venda.id,
                     numero_venda=venda.numero_venda,
-                    data_pedido=venda.data_pedido,
+                    data_pedido=_utc(venda.data_pedido),
                     status=venda.status.value,
                     valor_total=venda.valor_total,
                     quantidade_itens=len(venda.itens)
@@ -669,7 +690,7 @@ class LojaService:
             historico.append({
                 "etapa": h.status_novo,
                 "descricao": h.observacao or LojaService._get_descricao_status(h.status_novo),
-                "data": h.alterado_em.isoformat(),
+                "data": _utc(h.alterado_em).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema" if not h.alterado_por else "usuario"
             })
@@ -708,12 +729,12 @@ class LojaService:
         return RastreamentoPedido(
             numero_venda=venda.numero_venda,
             status_atual=venda.status,
-            data_pedido=venda.data_pedido,
-            data_confirmacao=venda.data_confirmacao,
-            data_separacao=venda.data_separacao,
-            data_entregue=venda.data_entregue,
-            data_finalizada=venda.data_finalizada,
-            data_cancelada=venda.data_cancelada,
+            data_pedido=_utc(venda.data_pedido),
+            data_confirmacao=_utc(venda.data_confirmacao),
+            data_separacao=_utc(venda.data_separacao),
+            data_entregue=_utc(venda.data_entregue),
+            data_finalizada=_utc(venda.data_finalizada),
+            data_cancelada=_utc(venda.data_cancelada),
             tipo_entrega=venda.tipo_entrega,
             valor_total=venda.valor_total,
             historico=historico,
@@ -746,7 +767,7 @@ class LojaService:
             historico.append({
                 "etapa": "PEDIDO",
                 "descricao": "Pedido criado",
-                "data": venda.data_pedido.isoformat(),
+                "data": _utc(venda.data_pedido).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -755,7 +776,7 @@ class LojaService:
             historico.append({
                 "etapa": "CONFIRMADA",
                 "descricao": "Pagamento confirmado",
-                "data": venda.data_confirmacao.isoformat(),
+                "data": _utc(venda.data_confirmacao).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -764,7 +785,7 @@ class LojaService:
             historico.append({
                 "etapa": "SEPARADA",
                 "descricao": "Pedido separado",
-                "data": venda.data_separacao.isoformat(),
+                "data": _utc(venda.data_separacao).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -773,7 +794,7 @@ class LojaService:
             historico.append({
                 "etapa": "ENTREGUE",
                 "descricao": "Pedido entregue/retirado",
-                "data": venda.data_entregue.isoformat(),
+                "data": _utc(venda.data_entregue).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -782,7 +803,7 @@ class LojaService:
             historico.append({
                 "etapa": "FINALIZADA",
                 "descricao": "Pedido finalizado",
-                "data": venda.data_finalizada.isoformat(),
+                "data": _utc(venda.data_finalizada).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -795,7 +816,7 @@ class LojaService:
             historico.append({
                 "etapa": "CANCELADA",
                 "descricao": descricao,
-                "data": venda.data_cancelada.isoformat(),
+                "data": _utc(venda.data_cancelada).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
