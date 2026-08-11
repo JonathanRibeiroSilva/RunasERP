@@ -1,0 +1,12 @@
+# Artefatos de trabalho da ferramenta de design (não são fonte)
+.design/uploads/
+.design/screenshots/
+.thumbnail
+
+# Python
+__pycache__/
+*.pyc
+
+# Sistema
+Thumbs.db
+.DS_Store
