@@ -9,6 +9,20 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![Status](https://img.shields.io/badge/Status-Operacional-success)
+![Licença](https://img.shields.io/badge/Licen%C3%A7a-Propriet%C3%A1ria-red)
+
+---
+
+> ### ⚖️ Software proprietário — não é open source
+>
+> Copyright © 2026 **DenebCorp**. Todos os direitos reservados.
+>
+> Este repositório é **privado**. Quando o acesso de leitura é concedido — avaliação
+> técnica, processo seletivo, due diligence — ele autoriza **apenas ler o código**.
+> Nenhum direito de usar, executar, copiar, modificar ou distribuir é concedido.
+>
+> Detalhes em [LICENSE](./LICENSE). Vitrine pública do produto:
+> [landing-page/](./landing-page/) · [runaserp.com.br](https://www.runaserp.com.br)
 
 ---
 
@@ -66,19 +80,24 @@ docker-compose up -d
 
 ```
 ┌─────────────────┐
-│   API Gateway   │  ← JWT Auth + RBAC + Rate Limiting
-│   (porta 8000)  │
+│   API Gateway   │  ← JWT Auth + RBAC + Rate Limiting + multi-tenancy
+│   (porta 8000)  │     injeta X-Empresa-Id em todo request proxiado
 └────────┬────────┘
          │
-    ┌────┴────┬────────┬────────┬──────────┐
-    │         │        │        │          │
-┌───▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼───┐ ┌───▼────┐
-│Cliente│ │Produto│ │Estoque│ │Vendas│ │  Loja  │
-│ 8001  │ │ 8002  │ │ 8003  │ │ 8004 │ │  3000  │
-└───────┘ └───────┘ └───────┘ └──────┘ └────────┘
+    ┌────┴─────┬─────────┬────────┬────────────┬────────────┐
+    │          │         │        │            │            │
+┌───▼────┐ ┌──▼────┐ ┌──▼────┐ ┌─▼────┐ ┌─────▼─────┐ ┌────▼──────┐
+│Clientes│ │Produtos│ │Estoque│ │Vendas│ │Financeiro │ │Notificações│
+│  8001  │ │  8002  │ │ 8003  │ │ 8004 │ │   8005 🚧 │ │     🚧     │
+└────────┘ └────────┘ └───────┘ └──────┘ └───────────┘ └───────────┘
+                    + Empresas (tenancy, sem porta própria)
 ```
 
-**5 microsserviços independentes** | **Database per Service** | **Event-Driven** | **Redis Cache**
+**7 serviços + gateway** | **Schema per Service** (um Postgres, um schema por serviço)
+| **Event-Driven** (RabbitMQ) | **Redis Cache** | Frontend React na 3000
+
+> 🚧 = serviço criado, implementação pendente. Um serviço nunca consulta o schema
+> de outro, e nenhum aceita request direto na própria porta — só via gateway.
 
 ---
 
@@ -93,7 +112,7 @@ docker-compose up -d
 - 🎨 [FRONTEND_IMPLEMENTACAO.md](./FRONTEND_IMPLEMENTACAO.md) - Guia de implementação frontend
 - ⚡ [GUIA_PERFORMANCE.md](./GUIA_PERFORMANCE.md) - Otimização e performance
 - 📋 [docs/02-desenvolvimento/](./docs/02-desenvolvimento/) - Guias técnicos
-- 🔧 [.kiro/steering/git-conventions.md](./.kiro/steering/git-conventions.md) - Convenções
+- 🔧 [CLAUDE.md](./CLAUDE.md) - Convenções
 
 ### 📁 Documentação Completa
 - 📂 [docs/01-principal/](./docs/01-principal/) - Documentação principal
@@ -102,6 +121,7 @@ docker-compose up -d
 - 📂 [docs/05-frontend/](./docs/05-frontend/) - Frontend React
 - 📂 [docs/10-api-reference/](./docs/10-api-reference/) - Referência completa de APIs
 - 📂 [docs/11-regras-negocio/](./docs/11-regras-negocio/) - Regras de negócio
+- 🌐 [landing-page/](./landing-page/) - Site institucional do produto (HTML/CSS/JS estático)
 
 ---
 
@@ -198,17 +218,22 @@ git commit -m "feat(modulo): adiciona nova funcionalidade"
 git push origin feat/nova-feature
 ```
 
-**Convenções**: Veja [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) e [.kiro/steering/git-conventions.md](./.kiro/steering/git-conventions.md)
+**Convenções**: Veja [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) e [CLAUDE.md](./CLAUDE.md)
 
 ---
 
 ## 📄 Licença
 
-**Propriedade de Runas** - Todos os direitos reservados.
+**Copyright © 2026 DenebCorp — todos os direitos reservados.** Software proprietário.
 
-Este software é proprietário e confidencial.
+| Documento | Aplica-se a | O que concede |
+|-----------|-------------|---------------|
+| [LICENSE](./LICENSE) | quem tem acesso de leitura ao repositório | leitura e avaliação técnica apenas — **nenhum direito de uso** |
+| [EULA comercial](./docs/01-principal/EULA-comercial.md) | clientes sob contrato | uso do sistema nos termos do contrato |
 
-📖 [LICENSE.md](./docs/01-principal/LICENSE.md)
+Para licenciar ou pedir permissão: **legal@runas.com**
+
+Dependências de terceiros permanecem sob suas licenças originais.
 
 ---
 
