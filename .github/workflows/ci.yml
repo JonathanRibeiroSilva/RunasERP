@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, Developer]
+  push:
+    branches: [Developer]
+
+jobs:
+  # Catches the class of bug that shipped broken for months: a compose file
+  # referencing services that don't exist, or a Dockerfile COPYing a missing file.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose (resolves env vars and service refs)
+        run: |
+          cp .env.production.example .env
+          docker compose -f docker-compose.prod.yml config >/dev/null
+          docker compose -f docker-compose.dev.yml config >/dev/null
+
+      - name: Build all production images
+        run: docker compose -f docker-compose.prod.yml build
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: frontend}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+
+      # npm install, not ci: there is no package-lock.json committed yet.
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run test -- --run
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+
+      - run: pip install -r tests/requirements.txt
+
+      # Integration/e2e need the full stack up; excluded here.
+      # Exit 5 = "no tests collected", tolerated while tests/unit is still thin.
+      - name: Unit tests
+        run: pytest -c tests/pytest.ini -m "not integration and not e2e and not slow" || [ $? -eq 5 ]
