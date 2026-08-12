@@ -1,0 +1,73 @@
+name: Deploy
+
+# Production deploys happen only from main. Developer is the integration branch;
+# it reaches main through a pull request, which is where CI gates the change.
+#
+# Split of responsibility: this workflow only produces images. Coolify owns the
+# VPS and does the actual deploy — it is told to go once the images are up.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A second push waits for the first instead of racing it to the registry.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  FILES: -f docker-compose.prod.yml -f docker-compose.build.yml
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Compose refuses to parse without the ${VAR:?} entries, and the frontend
+      # bakes VITE_* into the bundle at build time — those values have to be
+      # correct HERE, not just in Coolify. Coolify stays the source of truth for
+      # everything read at runtime; this secret only has to cover the build.
+      - name: Write build env
+        run: |
+          cat > .env <<'PROD_ENV_EOF'
+          ${{ secrets.PROD_ENV }}
+          PROD_ENV_EOF
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The VPS is 1 vCPU / 4 GB — building nine images there would starve the
+      # running stack, so the runner builds and the VPS only ever pulls.
+      # ponytail: no layer cache, every run rebuilds from scratch (~10-15 min).
+      # Swap in docker/build-push-action with cache-from: type=gha per service
+      # when the wait actually hurts.
+      - name: Build and push images
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          docker compose $FILES build
+          docker compose $FILES push
+
+          # Coolify pulls :latest, so republish the same images under that tag.
+          # The SHA tags stay in ghcr and are what a rollback points back at.
+          docker compose $FILES config --images | grep '^ghcr\.io/' | while read -r img; do
+            docker tag "$img" "${img%:*}:latest"
+            docker push "${img%:*}:latest"
+          done
+
+      # Coolify pulls the new images and restarts the stack. It reads
+      # docker-compose.prod.yml from this repo, which has no build sections —
+      # so there is nothing it *can* build, only pull.
+      - name: Trigger Coolify deploy
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+            "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_UUID }}&force=false"
