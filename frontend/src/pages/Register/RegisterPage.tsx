@@ -20,7 +20,7 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, 'Senha deve conter ao menos uma letra maiúscula')
     .regex(/[a-z]/, 'Senha deve conter ao menos uma letra minúscula')
     .regex(/[0-9]/, 'Senha deve conter ao menos um número')
-    .regex(/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/, 'Senha deve conter ao menos um caractere especial'),
+    .regex(/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/, 'Senha deve conter ao menos um caractere especial'),
   confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Senhas não coincidem',
@@ -67,7 +67,7 @@ const RegisterPage = () => {
     uppercase: password && /[A-Z]/.test(password),
     lowercase: password && /[a-z]/.test(password),
     number: password && /[0-9]/.test(password),
-    special: password && /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password),
+    special: password && /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password),
   };
 
   return (

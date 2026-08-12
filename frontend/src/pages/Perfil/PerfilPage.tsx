@@ -16,7 +16,7 @@ const alterarSenhaSchema = z.object({
     .regex(/[A-Z]/, 'Deve conter ao menos uma letra maiúscula')
     .regex(/[a-z]/, 'Deve conter ao menos uma letra minúscula')
     .regex(/[0-9]/, 'Deve conter ao menos um número')
-    .regex(/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/, 'Deve conter ao menos um caractere especial'),
+    .regex(/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/, 'Deve conter ao menos um caractere especial'),
   confirmarSenha: z.string()
 }).refine((data) => data.novaSenha === data.confirmarSenha, {
   message: "As senhas não coincidem",

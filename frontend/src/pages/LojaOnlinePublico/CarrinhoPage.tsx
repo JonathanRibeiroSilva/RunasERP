@@ -33,7 +33,9 @@ const CarrinhoPage = () => {
       const key = `${produtoId}-${varianteId || 'null'}`;
       setProcessandoItem(key);
       await removerItem(produtoId, varianteId);
-    } catch (error) {
+    } catch {
+      // useCarrinho já publicou a mensagem em `erro`, renderizada acima. Só
+      // engolimos o rethrow para não virar unhandled rejection.
     } finally {
       setProcessandoItem(null);
     }
@@ -46,7 +48,8 @@ const CarrinhoPage = () => {
       const key = `${produtoId}-${varianteId || 'null'}`;
       setProcessandoItem(key);
       await atualizarQuantidade(produtoId, varianteId, novaQuantidade);
-    } catch (error) {
+    } catch {
+      // idem: a mensagem já está em `erro`.
     } finally {
       setProcessandoItem(null);
     }
@@ -57,7 +60,8 @@ const CarrinhoPage = () => {
     
     try {
       await limparCarrinho();
-    } catch (error) {
+    } catch {
+      // idem: a mensagem já está em `erro`.
     }
   };
 

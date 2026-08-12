@@ -456,7 +456,7 @@ const CheckoutPage = () => {
       Toast.error('Senha deve conter ao menos um número');
       return;
     }
-    if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(registroSenha)) {
+    if (!/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(registroSenha)) {
       Toast.error('Senha deve conter ao menos um caractere especial');
       return;
     }
