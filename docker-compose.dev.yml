@@ -2,6 +2,14 @@
 # Baseado no docker-compose.yml principal, adaptado para desenvolvimento
 # BuildKit habilitado para cache de pip (builds muito mais rápidos)
 
+# Teto por container. Limite não reserva memória: só impede que um serviço em
+# loop leve a máquina junto. db e frontend-dev sobrescrevem com valores maiores.
+x-dev-limits: &dev-limits
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+
 networks:
   erp-network:
     driver: bridge
@@ -30,6 +38,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -45,6 +54,7 @@ services:
       - redis_data:/data
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -68,6 +78,9 @@ services:
       - ./postgres/init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql:ro
     networks:
       - erp-network
+    deploy:
+      resources:
+        limits: {cpus: '1.0', memory: 1G}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U erp -d erp"]
       interval: 10s
@@ -151,6 +164,7 @@ services:
         condition: service_healthy
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
       interval: 30s
@@ -185,9 +199,6 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@runas.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
       ADMIN_NAME: ${ADMIN_NAME:-Administrador}
-      # Bypass temporário de login para testes — voltar para false ao reativar auth
-      AUTH_BYPASS: ${AUTH_BYPASS:-true}
-      AUTH_BYPASS_EMAIL: ${AUTH_BYPASS_EMAIL:-admin@runas.com}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
@@ -208,6 +219,7 @@ services:
       - ./api-gateway:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -238,6 +250,7 @@ services:
       - ./services/clientes:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
@@ -269,6 +282,7 @@ services:
       - ./services/produtos:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 30s
@@ -300,6 +314,7 @@ services:
       - ./services/estoque:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
       interval: 30s
@@ -343,6 +358,7 @@ services:
       - ./services/vendas:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
       interval: 30s
@@ -374,6 +390,7 @@ services:
       - ./services/financeiro:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
       interval: 30s
@@ -408,6 +425,7 @@ services:
       - ./services/notificacoes:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
       interval: 30s
@@ -439,6 +457,7 @@ services:
       - ./services/empresas:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
       interval: 30s
@@ -483,6 +502,10 @@ services:
       - api-gateway
     networks:
       - erp-network
+    # Vite + HMR: o container mais pesado da stack.
+    deploy:
+      resources:
+        limits: {cpus: '1.5', memory: 1536M}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s

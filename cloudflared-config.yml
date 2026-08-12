@@ -2,12 +2,10 @@
 credentials-file: /etc/cloudflared/2c06d803-6aeb-47da-afd0-c644e9ce3fba.json
 
 ingress:
-  # Frontend - Vite dev server
-  - hostname: runaserp.com.br
+  # App - Vite dev server. Apex e www ficam na landing (Cloudflare Pages).
+  - hostname: app.runaserp.com.br
     service: http://frontend-dev:3000
-  - hostname: www.runaserp.com.br
-    service: http://frontend-dev:3000
-  
+
   # API Gateway - Roteamento manual via frontend Vite proxy
   # Nota: O Vite proxy (vite.config.ts) encaminha /api/* para api-gateway:8000
   

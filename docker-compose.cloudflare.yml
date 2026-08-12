@@ -12,22 +12,29 @@ services:
   frontend-dev:
     environment:
       VITE_API_URL: /api
-      # Deve bater com as redirect URIs registradas nos consoles Google/Azure (com www)
-      VITE_OAUTH_REDIRECT_URI: https://www.runaserp.com.br/auth/callback
-      FRONTEND_URL: https://runaserp.com.br
+      # Deve bater com as redirect URIs registradas nos consoles Google/Azure
+      VITE_OAUTH_REDIRECT_URI: https://app.runaserp.com.br/auth/callback
+      FRONTEND_URL: https://app.runaserp.com.br
 
   # Override api-gateway para reconhecer domínio real
   api-gateway:
     environment:
-      FRONTEND_URL: https://runaserp.com.br
+      FRONTEND_URL: https://app.runaserp.com.br
 
   # Override vendas para URLs públicas (Mercado Pago webhooks/back_urls)
   vendas:
     environment:
-      API_BASE_URL: https://runaserp.com.br/api
-      FRONTEND_URL: https://runaserp.com.br
+      API_BASE_URL: https://app.runaserp.com.br/api
+      FRONTEND_URL: https://app.runaserp.com.br
 
-  # Cloudflare Tunnel - conecta diretamente ao frontend e api-gateway
+  # Imagem atendai/evolution-api saiu do Docker Hub — fora do "up" padrão.
+  # WhatsApp não é usado no fluxo da loja; reative com --profile whatsapp se voltar.
+  evolution-api:
+    profiles:
+      - whatsapp
+
+  # Cloudflare Tunnel - serve apenas app.runaserp.com.br.
+  # Apex + www sao servidos pelo Cloudflare Pages (landing-page/), fora do tunnel.
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: erp-cloudflared
