@@ -228,7 +228,7 @@ chore(docker): consolidate postgres containers
 
 ## Infrastructure
 
-**Domain:** `https://www.runaserp.com.br`
+**Domains:** app → `https://app.runaserp.com.br` (tunnel) · landing → `https://runaserp.com.br` + `www` (Cloudflare Pages, serves `landing-page/`, outside the tunnel)
 
 | File | Use |
 |------|-----|
@@ -238,7 +238,7 @@ chore(docker): consolidate postgres containers
 
 ```powershell
 # API testing — ALWAYS via Cloudflare tunnel (tests OAuth, CORS, HTTPS, webhooks)
-$domain = "https://www.runaserp.com.br"
+$domain = "https://app.runaserp.com.br"
 Invoke-WebRequest -Uri "$domain/api/health" -UseBasicParsing
 
 # NEVER use curl in PowerShell — the alias maps to Invoke-WebRequest differently and wastes tokens on error handling
@@ -255,12 +255,12 @@ docker logs erp-<service>-dev -f
 
 **OAuth2 redirect URIs** (Google Console / Azure):
 ```
-https://www.runaserp.com.br/auth/callback
-https://www.runaserp.com.br/auth/callback/google
-https://www.runaserp.com.br/auth/callback/microsoft
+https://app.runaserp.com.br/auth/callback
+https://app.runaserp.com.br/auth/callback/google
+https://app.runaserp.com.br/auth/callback/microsoft
 ```
 
-**Mercado Pago webhook:** `https://www.runaserp.com.br/api/vendas/webhook/mercadopago`
+**Mercado Pago webhook:** per-empresa, sent as `notification_url` on each preference — `{API_BASE_URL}/loja/{empresa_slug}/webhook/mercadopago`. Driven by `API_BASE_URL` in the compose file; nothing to configure in the MP dashboard.
 
 **DB access:** `localhost:5432` with credentials from `.env` (use DBeaver or any PostgreSQL client).
 
