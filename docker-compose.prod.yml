@@ -285,9 +285,25 @@ services:
     #   docker logs erp-cloudflared-prod | grep "Registered tunnel connection"
 
 volumes:
+  # Pinned names, not `<project>_db_data`. Coolify deploys under its own project
+  # name, and a volume that inherits the project prefix would be a different
+  # volume the day the project is renamed — Docker would helpfully create a new
+  # empty one and the stack would come up looking like a fresh install.
+  #
+  # `external: true` on db_data means Compose neither creates nor deletes it:
+  # `down -v` cannot reach it. Create it once, by hand:
+  #     docker volume create runaserp_db_data
   db_data:
+    name: runaserp_db_data
+    external: true
+
+  # Not external: redis is an LRU cache and rabbitmq's queues are rebuilt from
+  # the database. Losing either costs a reconnect, not data — so they keep the
+  # fixed name for predictability but stay under Compose's lifecycle.
   redis_data:
+    name: runaserp_redis_data
   rabbitmq_data:
+    name: runaserp_rabbitmq_data
 
 networks:
   erp-network:
