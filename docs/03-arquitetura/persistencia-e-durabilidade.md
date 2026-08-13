@@ -3,7 +3,8 @@
 > Decisão de arquitetura sobre onde o banco vive, como ele sobrevive a deploys
 > e o que ainda falta para o dado ser realmente durável.
 >
-> **Status:** planejado. Nada aqui está implementado ainda.
+> **Status:** ameaças 1 e 2 resolvidas (volumes com nome fixo, `db_data` external).
+> O resto é planejado.
 > **Contexto:** decidido enquanto a produção ainda roda só com dados de seed —
 > a janela mais barata para mudar isso.
 
@@ -141,8 +142,9 @@ O deploy automático vem primeiro; a infra de banco depois.
 
 | Fase | O quê |
 |------|-------|
+| ✅ | Volumes com nome fixo, `db_data` external — feito junto com o deploy, já que é o deploy que decide esses nomes |
 | — | **Deploy automático completo** (Coolify + GHCR) |
-| 1 | Split do `docker-compose.data.yml`, volumes `external` com nome fixo |
+| 1 | Split do `docker-compose.data.yml` |
 | 2 | Migrations iniciais de `financeiro`/`notificacoes`, depois remover `create_all` |
 | 3 | Backup automático para R2 |
 | 4 | **Ensaio de desastre**: backup → destruir tudo → restaurar → conferir |
