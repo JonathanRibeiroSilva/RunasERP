@@ -10,9 +10,15 @@
      680/720 listas de modulos e passos em 2 colunas
      768px   mock do dashboard ganha sidebar e 4 KPIs
      960px   Loja Online em 2 colunas; rodape em 4
-     1024px  navegacao completa no lugar do hamburguer
+     1024px  navegacao completa no lugar do hamburguer; retrato do dashboard
+             passa a 4 indicadores e paineis lado a lado
      1440px  container a 1320px
      1800px  container a 1480px
+
+   Duas excecoes que nao sao min-width. Cada uma fica logo DEPOIS das regras
+   que sobrescreve, senao perde no desempate por ordem:
+     landscape + max-height: 560px   telefone deitado — hero e mock encurtados
+     max-width: 359px                telefone estreito — Loja em 1 coluna
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -44,8 +50,6 @@
   --brand: #0ea5e9;
   --brand-2: #38bdf8;
   --indigo: #6366f1;
-  --indigo-2: #818cf8;
-  --amber: #f59e0b;
   --wa: #128c4b;
   --wa-2: #15a058;
   --ink: #04121a;
@@ -65,7 +69,6 @@
   --fs-h2-lg: clamp(1.9rem, 6vw, 3.25rem);
   --fs-h3: clamp(1.02rem, 2.4vw, 1.09rem);
   --fs-lead: clamp(1rem, 3.6vw, 1.19rem);
-  --fs-body: clamp(0.94rem, 3.1vw, 1.06rem);
 
   /* layout */
   --shell: 1180px;
@@ -117,11 +120,27 @@
   box-sizing: border-box;
 }
 
+/* scroll-padding-top compensa o header sticky ao pular para uma ancora, e o
+   header muda de altura por breakpoint (o logo vai de 44 a 62px). Era fixo em
+   84px: no celular sobrava um vao de ~24px acima do titulo da secao. Cada valor
+   e a altura real do header naquele breakpoint + ~7px de respiro. Importa mais
+   agora que o botao do hero e uma ancora para #precos. */
 html {
   scroll-behavior: smooth;
-  /* compensa o header sticky ao pular para uma ancora */
-  scroll-padding-top: 84px;
+  scroll-padding-top: 68px;
   -webkit-text-size-adjust: 100%;
+}
+
+@media (min-width: 640px) {
+  html {
+    scroll-padding-top: 76px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-top: 88px;
+  }
 }
 
 /* O runtime injeta `#dc-root,#dc-root>.sc-host{height:100%}`, o que trava o
@@ -189,12 +208,18 @@ input:focus-visible {
   border-radius: 6px;
 }
 
+/* -25% = a largura de UM dos quatro grupos identicos da faixa. Como os grupos
+   sao iguais, ao completar o ciclo a faixa volta a uma posicao visualmente
+   identica — sem emenda. Mudou a contagem de grupos no HTML, mude aqui:
+   a fracao e sempre -100%/n.
+   ponytail: cobre viewport ate ~3960px (3 grupos de folga); passou disso,
+   mais um grupo. */
 @keyframes runas-marquee {
   0% {
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-25%);
   }
 }
 
@@ -222,6 +247,42 @@ input:focus-visible {
 
 .section--alt {
   background: var(--bg-alt);
+}
+
+/* Painel translucido no lugar do bloco chapado do --alt: a superficie e um veu
+   claro sobre o fundo da pagina (mesma logica do header) e a luz vem de tras,
+   nao de uma cor solida. Sem backdrop-filter de proposito: aqui nao passa nada
+   por baixo — desfocar um fundo opaco custa GPU e nao muda um pixel. */
+/* Sem border-bottom: a secao seguinte ja e .section--line e as duas bordas
+   empilhadas viravam um filete de 2px. */
+.section--glass {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* A aura: brand no topo, indigo embaixo. Duas fontes de luz em vez de uma
+   fazem o painel ler como vidro iluminado, e nao como retangulo com degrade. */
+.section--glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      820px 300px at 50% -4%,
+      rgba(14, 165, 233, 0.2),
+      transparent 68%
+    ),
+    radial-gradient(
+      620px 260px at 50% 108%,
+      rgba(99, 102, 241, 0.13),
+      transparent 70%
+    );
+}
+
+/* sem isto o conteudo ficaria por baixo da aura */
+.section--glass > .shell {
+  position: relative;
 }
 
 .section-head {
@@ -752,22 +813,25 @@ h3 {
 /* --------------------------------------------------------------------------
    7. Mock do dashboard (hero)
    -------------------------------------------------------------------------- */
+/* Alturas escolhidas para o corte cair num lugar honesto: no desktop entram os
+   4 indicadores e os dois graficos inteiros, e a fileira de baixo (tabela e top
+   produtos) so aponta dentro do esmaecimento — como numa tela recortada. */
 .mock-viewport {
   position: relative;
-  height: 300px;
+  height: 400px;
   overflow: hidden;
   margin-top: 8px;
 }
 
 @media (min-width: 640px) {
   .mock-viewport {
-    height: 380px;
+    height: 500px;
   }
 }
 
 @media (min-width: 1024px) {
   .mock-viewport {
-    height: 470px;
+    height: 680px;
   }
 }
 
@@ -784,6 +848,29 @@ h3 {
 @media (min-width: 1024px) {
   .mock-fade {
     height: 150px;
+  }
+}
+
+/* Telefone deitado. Ele passa dos 640px de LARGURA e caia nas regras de tablet:
+   68px de topo + 380px de mock nao cabem em ~390px de altura, e o h1 saia da
+   tela antes de ser lido. Precisa vir depois dos blocos 640/1024 para vencer.
+   Vale tambem para desktop com a janela baixa. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .hero-inner {
+    padding-top: 24px;
+  }
+  .hero-note {
+    margin-bottom: 22px;
+  }
+  .mock-viewport {
+    height: 190px;
+  }
+  .mock-fade {
+    height: 90px;
+  }
+  /* a barra fixa comeria um quinto da tela util */
+  .cta-sticky {
+    display: none;
   }
 }
 
@@ -840,6 +927,136 @@ h3 {
   }
 }
 
+/* Daqui para baixo tudo espelha frontend/src — as medidas sao ~0,75x das do
+   app (quadro de 1020px contra a tela real de 1600px) e as cores sao as mesmas
+   de styles/variables.scss. As tres semanticas que a landing nao tinha vem como
+   token local em vez de valor solto repetido. */
+.mock {
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+}
+
+/* --- Navbar do app (Navbar.scss) --- */
+.app-nav {
+  padding-inline: 18px;
+}
+
+.app-nav-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding-inline: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-top: none;
+  border-radius: 0 0 9px 9px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.app-nav-side {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.app-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.app-nav-btn .ico {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+
+.app-nav-divider {
+  width: 1px;
+  height: 18px;
+  flex: none;
+  background: var(--line-2);
+  margin-inline: 6px;
+}
+
+.app-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 6px;
+}
+
+.app-nav-brand img {
+  height: 24px;
+  width: auto;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.5));
+}
+
+.app-nav-brand-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  color: var(--text-hi);
+}
+
+/* pilula azul do usuario — o unico bloco preenchido da barra, no app tambem */
+.app-user {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  margin-inline: 6px;
+  border-radius: 6px;
+  background: linear-gradient(
+    135deg,
+    rgba(14, 165, 233, 0.8),
+    rgba(56, 189, 248, 0.8)
+  );
+  border: 1px solid rgba(14, 165, 233, 0.5);
+  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.3);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.app-user .ico {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+/* O app esconde os rotulos da barra em telas estreitas; o retrato faz igual. */
+@media (max-width: 767px) {
+  .app-nav {
+    padding-inline: 12px;
+  }
+  .app-nav-capsule {
+    height: 42px;
+  }
+  .app-nav-btn-label,
+  .app-nav-brand-label,
+  .app-user-name {
+    display: none;
+  }
+  .app-user {
+    padding: 0 9px;
+  }
+}
+
+/* --- Corpo: sidebar + conteudo --- */
 .mock-body {
   display: grid;
   grid-template-columns: 1fr;
@@ -847,11 +1064,11 @@ h3 {
 
 @media (min-width: 768px) {
   .mock-body {
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 165px 1fr;
   }
 }
 
-/* a sidebar nao cabe em telefone — o painel e o que importa */
+/* a sidebar nao cabe em telefone — no app ela tambem vira gaveta */
 .mock-side {
   display: none;
 }
@@ -860,157 +1077,241 @@ h3 {
   .mock-side {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    padding: 20px 14px;
-    border-right: 1px solid var(--line);
+    gap: 6px;
+    padding: 12px 9px;
+    background: rgba(16, 20, 29, 0.6);
+    border-right: 1px solid var(--line-2);
   }
 }
 
-.mock-side-title {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin: 0 8px 8px;
-}
-
-.mock-side-item {
-  font-size: 13.5px;
-  color: var(--text-2);
-  padding: 10px 12px;
-}
-
-.mock-side-item.is-active {
-  font-weight: 600;
-  color: var(--text-hi);
-  background: rgba(14, 165, 233, 0.15);
+.side-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 33px;
+  padding: 8px 9px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.2);
+  border: 1px solid transparent;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.side-item .ico {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.side-item span {
+  flex: 1;
+  min-width: 0;
+}
+
+.side-caret {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  color: var(--text-3);
+}
+
+.side-item.is-active {
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.15), transparent);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 2px 0 0 var(--brand);
+  color: var(--brand);
+}
+
+.side-item.is-active .ico {
+  filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.6));
 }
 
 .mock-main {
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
+  min-width: 0;
 }
 
-@media (min-width: 640px) {
-  .mock-main {
-    padding: 22px;
-    gap: 16px;
-  }
-}
-
+/* --- Cartoes de indicador (mockStats + .stat-card) --- */
 .mock-kpis {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
-@media (min-width: 768px) {
+/* 4 colunas so a partir de 1024px, onde o quadro chega aos 1020px cheios. Antes
+   disso cada cartao ficaria com ~120px e "R$ 45.230,00" em mono nao cabe. */
+@media (min-width: 1024px) {
   .mock-kpis {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
   }
 }
 
 .kpi {
   background: var(--surface);
-  border-radius: var(--radius);
+  border: 1px solid var(--line-2);
   border-top: 2px solid var(--brand);
+  border-radius: 12px;
   padding: 12px;
   min-width: 0;
 }
 
-@media (min-width: 640px) {
+.kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  color: var(--brand);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+.kpi-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Abaixo de 1024px sao 2 colunas em vez de 4, e o cartao fica estreito: com
+   18px o "R$ 45.230,00" em mono quebrava em duas linhas e desalinhava a grade. */
+@media (min-width: 1024px) {
   .kpi {
     padding: 14px;
   }
+  .kpi-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 12px;
+  }
+  .kpi-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+  .kpi-title {
+    font-size: 9.5px;
+  }
+  .kpi-value {
+    font-size: 18px;
+  }
 }
 
-.kpi--indigo {
+.kpi--secondary {
   border-top-color: var(--indigo);
 }
-.kpi--sky {
-  border-top-color: var(--brand-2);
-}
-.kpi--amber {
-  border-top-color: var(--amber);
+.kpi--secondary .kpi-icon {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.2);
+  color: var(--indigo);
 }
 
-.kpi-label {
-  font-size: 10px;
+.kpi--success {
+  border-top-color: var(--ok);
+}
+.kpi--success .kpi-icon {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: var(--ok);
+}
+
+.kpi--warning {
+  border-top-color: var(--warn);
+}
+.kpi--warning .kpi-icon {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: var(--warn);
+}
+
+.kpi-title {
+  font-size: 9px;
+  font-weight: 500;
   color: var(--text-2);
-  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-@media (min-width: 640px) {
-  .kpi-label {
-    font-size: 10.5px;
-  }
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
 }
 
 .kpi-value {
   font-family: var(--mono);
+  font-size: 15px;
   font-weight: 700;
-  font-size: 17px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: var(--text-hi);
-  margin-top: 6px;
+  margin-bottom: 9px;
 }
 
-@media (min-width: 640px) {
-  .kpi-value {
-    font-size: 21px;
-  }
+/* a pilula verde/vermelha e o que da a leitura de "esta melhorando" num relance */
+.kpi-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.kpi-delta {
-  font-size: 10.5px;
-  color: var(--brand);
-  margin-top: 4px;
+.kpi-change svg {
+  width: 9px;
+  height: 9px;
+  flex: none;
 }
 
-@media (min-width: 640px) {
-  .kpi-delta {
-    font-size: 11px;
-  }
-}
-
-.kpi-delta--muted {
+.kpi-change i {
+  font-style: normal;
+  font-weight: 500;
   color: var(--text-3);
-}
-.kpi-delta--amber {
-  color: var(--amber);
+  margin-left: 3px;
 }
 
-.mock-charts {
+.kpi-change.is-up {
+  color: var(--ok);
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.kpi-change.is-down {
+  color: var(--bad);
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* --- Paineis (.dash-card) --- */
+.mock-charts,
+.mock-rows {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 15px;
 }
 
-@media (min-width: 768px) {
-  .mock-charts {
-    grid-template-columns: 1.5fr 1fr;
-    gap: 14px;
+@media (min-width: 1024px) {
+  .mock-charts,
+  .mock-rows {
+    grid-template-columns: 1.8fr 1fr;
+  }
+}
+
+/* Empilhada, esta fileira cai muito abaixo do recorte — renderizar uma tabela
+   de 5 colunas que ninguem ve so custa layout. */
+@media (max-width: 1023px) {
+  .mock-rows {
+    display: none;
   }
 }
 
 .panel {
   background: var(--surface);
-  border-radius: var(--radius);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
   padding: 14px;
   min-width: 0;
-}
-
-@media (min-width: 640px) {
-  .panel {
-    padding: 16px;
-  }
 }
 
 .panel-head {
@@ -1018,21 +1319,19 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-}
-
-.panel-title {
-  font-size: 12.5px;
-  color: var(--text);
-  font-weight: 600;
-}
-
-.panel-title--gap {
   margin-bottom: 14px;
 }
 
+.panel-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-hi);
+}
+
 .panel-legend {
-  font-size: 11px;
-  color: var(--brand);
+  font-size: 9.5px;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1040,25 +1339,63 @@ h3 {
 }
 
 .panel-legend .dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--brand);
 }
 
-.spark {
-  width: 100%;
-  height: 110px;
-  margin-top: 10px;
-  display: block;
+/* --- Grafico de linha (lineChartData: Seg..Dom, 1200..2800) ---
+   O viewBox comeca e termina EXATAMENTE nas linhas de grade dos extremos, o que
+   deixa os rotulos do eixo Y baterem com elas usando so space-between. As
+   margens negativas centram o primeiro e o ultimo rotulo na propria linha. */
+.chart-line {
+  display: flex;
+  gap: 6px;
+  height: 150px;
 }
 
-@media (min-width: 640px) {
-  .spark {
-    height: 130px;
+@media (min-width: 1024px) {
+  .chart-line {
+    height: 195px;
   }
 }
 
+.chart-y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: none;
+  margin-block: -0.55em 0.45em;
+  font-size: 8.5px;
+  line-height: 1.1;
+  color: var(--text-3);
+  text-align: right;
+}
+
+.chart-plot {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-plot svg {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: block;
+}
+
+.chart-x {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 9px;
+  color: var(--text-3);
+}
+
+/* --- Rosca (categoriasVendas, corte de 70%) --- */
 .donut-row {
   display: flex;
   align-items: center;
@@ -1067,50 +1404,58 @@ h3 {
 }
 
 .donut {
-  width: 88px;
-  height: 88px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
   flex: none;
   background: conic-gradient(
-    var(--brand) 0 43%,
-    var(--indigo) 43% 67%,
-    var(--brand-2) 67% 82%,
-    var(--indigo-2) 82% 93%,
-    #334155 93% 100%
+    #3b82f6 0 43%,
+    #10b981 43% 67%,
+    #f59e0b 67% 82%,
+    #8b5cf6 82% 93%,
+    #ef4444 93% 100%
   );
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-@media (min-width: 640px) {
-  .donut {
-    width: 96px;
-    height: 96px;
-  }
-}
-
 .donut-hole {
-  width: 56px;
-  height: 56px;
+  width: 77px;
+  height: 77px;
   border-radius: 50%;
   background: var(--surface);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text);
+  text-align: center;
+}
+
+.donut-label {
+  font-size: 8.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+
+/* Inter, nao mono: e o que o app usa aqui, e em mono os 12 caracteres encostam
+   no anel da rosca. */
+.donut-value {
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-hi);
+  white-space: nowrap;
 }
 
 .legend {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 11.5px;
+  gap: 8px;
+  font-size: 10.5px;
   color: var(--text-2);
-  flex: 1 1 140px;
+  flex: 1 1 105px;
   min-width: 0;
 }
 
@@ -1121,17 +1466,133 @@ h3 {
 }
 
 .legend-item i {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   flex: none;
   font-style: normal;
 }
 
 .legend-item b {
-  color: var(--text);
+  color: var(--text-hi);
   font-weight: 600;
   margin-left: auto;
+}
+
+/* --- Vendas recentes (.dash-table) --- */
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dash-table th {
+  padding: 5px 6px;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.dash-table td {
+  padding: 6px;
+  font-size: 10px;
+  color: var(--text);
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.dash-table .valor {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 8.5px;
+  font-weight: 600;
+}
+
+.tag--ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--ok);
+}
+.tag--wait {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warn);
+}
+.tag--sent {
+  background: rgba(14, 165, 233, 0.15);
+  color: var(--brand);
+}
+
+/* --- Top produtos --- */
+.top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.top-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.top-rank {
+  width: 24px;
+  height: 21px;
+  flex: none;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  font-weight: 800;
+}
+
+.top-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.top-info b {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-track {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.top-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.top-count {
+  flex: none;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
 }
 
 /* --------------------------------------------------------------------------
@@ -1537,8 +1998,8 @@ h3 {
     background-color: rgba(255, 255, 255, 0.02);
   }
   .feature:hover .feature-icon {
-    box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.4),
-      0 0 22px rgba(14, 165, 233, 0.55);
+    box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.55),
+      0 0 34px -2px rgba(14, 165, 233, 0.75);
   }
 }
 
@@ -1555,6 +2016,10 @@ h3 {
   font-family: var(--mono);
   font-size: 15px;
   font-weight: 700;
+  /* aura de base: o efeito era so no :hover, ou seja, nao existia no celular —
+     que e onde a maioria le esta secao */
+  box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.2),
+    0 0 20px -4px rgba(14, 165, 233, 0.4);
   transition: box-shadow 0.22s ease;
 }
 
@@ -2182,78 +2647,8 @@ h3 {
   }
 }
 
-/* --------------------------------------------------------------------------
-   13. CTA final
-   -------------------------------------------------------------------------- */
-.cta {
-  position: relative;
-  background: linear-gradient(150deg, #0c2536, var(--surface));
-  border: 1px solid rgba(14, 165, 233, 0.28);
-  border-radius: var(--radius-xl);
-  padding: 40px 22px;
-  text-align: center;
-  box-shadow: 0 24px 70px -34px rgba(14, 165, 233, 0.5);
-  overflow: hidden;
-}
-
-@media (min-width: 640px) {
-  .cta {
-    padding: 56px 40px;
-    border-radius: 22px;
-  }
-}
-
-/* Mesmo motivo do hero, fechando o arco: o titulo aqui pergunta "pronto pra
-   tirar o negocio da planilha?" e a grade recua das bordas para o centro,
-   deixando o miolo limpo. Substituiu um campo de particulas em canvas que nao
-   dizia nada sobre o assunto — e era a coisa mais cara da pagina. */
-.cta::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 88px 30px;
-  -webkit-mask-image: radial-gradient(110% 130% at 50% 50%, transparent 26%, #000 82%);
-  mask-image: radial-gradient(110% 130% at 50% 50%, transparent 26%, #000 82%);
-}
-
-@media (min-width: 1024px) {
-  .cta::before {
-    background-size: 112px 34px;
-  }
-}
-
-/* A vinheta que existia aqui escurecia as bordas para domar o brilho das
-   particulas. Sem elas, so apagava a grade — que vive justamente nas bordas. */
-
-.cta-inner {
-  position: relative;
-  z-index: 2;
-}
-
-.cta-title {
-  font-family: var(--display);
-  font-size: clamp(1.65rem, 5.6vw, 2.5rem);
-  line-height: 1.1;
-  letter-spacing: -0.022em;
-  font-weight: 800;
-  color: var(--text-hi);
-  margin: 0 auto 14px;
-  max-width: 600px;
-}
-
-.cta-text {
-  font-size: var(--fs-body);
-  line-height: 1.6;
-  color: var(--text-2);
-  margin: 0 auto 26px;
-  max-width: 500px;
-  text-wrap: pretty;
-}
+/* 13. CTA final — removido junto com a secao no HTML (era a quarta repeticao
+   do mesmo pedido). O motivo de grade dele vive no hero e no .cta-sticky. */
 
 /* --------------------------------------------------------------------------
    14. Rodape
@@ -2372,6 +2767,25 @@ h3 {
 .footer-legal {
   display: flex;
   gap: 22px;
+}
+
+/* --------------------------------------------------------------------------
+   14b. Telefone estreito (iPhone SE, Galaxy A0x — 320/360px)
+   Unico bloco max-width da folha, e por isso fica no fim: precisa vencer as
+   regras base que sobrescreve, todas de mesma especificidade.
+   -------------------------------------------------------------------------- */
+@media (max-width: 359px) {
+  :root {
+    --gutter: 14px;
+  }
+  /* duas colunas davam ~130px de card: a foto virava selo e o nome do produto
+     quebrava em tres linhas */
+  .store-grid {
+    grid-template-columns: 1fr;
+  }
+  .store-thumb {
+    height: 130px;
+  }
 }
 
 /* --------------------------------------------------------------------------
