@@ -27,12 +27,6 @@ services:
       API_BASE_URL: https://app.runaserp.com.br/api
       FRONTEND_URL: https://app.runaserp.com.br
 
-  # Imagem atendai/evolution-api saiu do Docker Hub — fora do "up" padrão.
-  # WhatsApp não é usado no fluxo da loja; reative com --profile whatsapp se voltar.
-  evolution-api:
-    profiles:
-      - whatsapp
-
   # Cloudflare Tunnel - serve apenas app.runaserp.com.br.
   # Apex + www sao servidos pelo Cloudflare Pages (landing-page/), fora do tunnel.
   cloudflared:

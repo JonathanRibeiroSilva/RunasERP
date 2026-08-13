@@ -130,9 +130,13 @@ services:
   # EVOLUTION API (WhatsApp)
   # ============================================
 
+  # Imagem atendai/evolution-api saiu do Docker Hub — fora do "up" padrão.
+  # WhatsApp não é usado no fluxo da loja; reative com --profile whatsapp se voltar.
   evolution-api:
     image: atendai/evolution-api:latest
     container_name: erp-evolution-api-dev
+    profiles:
+      - whatsapp
     environment:
       # Database
       DATABASE_PROVIDER: postgresql
@@ -209,7 +213,7 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Runas ERP}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       db:
         condition: service_healthy
@@ -342,7 +346,7 @@ services:
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
       MP_ENVIRONMENT: ${MP_ENVIRONMENT:-sandbox}
       API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
       PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
       ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
@@ -483,10 +487,11 @@ services:
       - ./frontend/vite.config.ts:/app/vite.config.ts:ro
       - /app/node_modules
     environment:
-      # ATENÇÃO: Estas variáveis são lidas do .env na raiz do projeto.
-      # Se mudar a URL do ngrok, atualize o .env e rode: docker compose up -d --force-recreate frontend-dev
+      # Defaults assume localhost — this file alone IS the local setup, no overlay
+      # needed. docker-compose.cloudflare.yml overrides these with public URLs.
+      # Após mexer no .env: docker compose up -d --force-recreate frontend-dev
       # NÃO use "docker restart" pois ele não relê o .env.
-      VITE_API_URL: ${VITE_API_URL:?VITE_API_URL nao definida no .env}
+      VITE_API_URL: ${VITE_API_URL:-/api}
       VITE_OAUTH_REDIRECT_URI: ${VITE_OAUTH_REDIRECT_URI:-http://localhost:3000/auth/callback}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
       VITE_MICROSOFT_CLIENT_ID: ${VITE_MICROSOFT_CLIENT_ID}
