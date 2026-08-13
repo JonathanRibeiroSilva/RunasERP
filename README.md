@@ -9,6 +9,20 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![Status](https://img.shields.io/badge/Status-Operacional-success)
+![Licença](https://img.shields.io/badge/Licen%C3%A7a-Propriet%C3%A1ria-red)
+
+---
+
+> ### ⚖️ Software proprietário — não é open source
+>
+> Copyright © 2026 **DenebCorp**. Todos os direitos reservados.
+>
+> Este repositório é **privado**. Quando o acesso de leitura é concedido — avaliação
+> técnica, processo seletivo, due diligence — ele autoriza **apenas ler o código**.
+> Nenhum direito de usar, executar, copiar, modificar ou distribuir é concedido.
+>
+> Detalhes em [LICENSE](./LICENSE). Vitrine pública do produto:
+> [landing-page/](./landing-page/) · [runaserp.com.br](https://www.runaserp.com.br)
 
 ---
 
@@ -66,19 +80,24 @@ docker-compose up -d
 
 ```
 ┌─────────────────┐
-│   API Gateway   │  ← JWT Auth + RBAC + Rate Limiting
-│   (porta 8000)  │
+│   API Gateway   │  ← JWT Auth + RBAC + Rate Limiting + multi-tenancy
+│   (porta 8000)  │     injeta X-Empresa-Id em todo request proxiado
 └────────┬────────┘
          │
-    ┌────┴────┬────────┬────────┬──────────┐
-    │         │        │        │          │
-┌───▼───┐ ┌──▼───┐ ┌──▼───┐ ┌──▼───┐ ┌───▼────┐
-│Cliente│ │Produto│ │Estoque│ │Vendas│ │  Loja  │
-│ 8001  │ │ 8002  │ │ 8003  │ │ 8004 │ │  3000  │
-└───────┘ └───────┘ └───────┘ └──────┘ └────────┘
+    ┌────┴─────┬─────────┬────────┬────────────┬────────────┐
+    │          │         │        │            │            │
+┌───▼────┐ ┌──▼────┐ ┌──▼────┐ ┌─▼────┐ ┌─────▼─────┐ ┌────▼──────┐
+│Clientes│ │Produtos│ │Estoque│ │Vendas│ │Financeiro │ │Notificações│
+│  8001  │ │  8002  │ │ 8003  │ │ 8004 │ │   8005 🚧 │ │     🚧     │
+└────────┘ └────────┘ └───────┘ └──────┘ └───────────┘ └───────────┘
+                    + Empresas (tenancy, sem porta própria)
 ```
 
-**5 microsserviços independentes** | **Database per Service** | **Event-Driven** | **Redis Cache**
+**7 serviços + gateway** | **Schema per Service** (um Postgres, um schema por serviço)
+| **Event-Driven** (RabbitMQ) | **Redis Cache** | Frontend React na 3000
+
+> 🚧 = serviço criado, implementação pendente. Um serviço nunca consulta o schema
+> de outro, e nenhum aceita request direto na própria porta — só via gateway.
 
 ---
 
@@ -89,15 +108,20 @@ docker-compose up -d
 - ⚡ [QUICK-START.md](./QUICK-START.md) - Setup em 5 minutos
 
 ### 💻 Para Desenvolver
+- ✅ [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) - Checklist completo
 - 🎨 [FRONTEND_IMPLEMENTACAO.md](./FRONTEND_IMPLEMENTACAO.md) - Guia de implementação frontend
-- ✅ [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) - Checklist de desenvolvimento
+- ⚡ [GUIA_PERFORMANCE.md](./GUIA_PERFORMANCE.md) - Otimização e performance
+- 📋 [docs/02-desenvolvimento/](./docs/02-desenvolvimento/) - Guias técnicos
+- 🔧 [CLAUDE.md](./CLAUDE.md) - Convenções
 
 ### 📁 Documentação Completa
 - 📂 [docs/01-principal/](./docs/01-principal/) - Documentação principal
-- 📂 [docs/02-desenvolvimento/](./docs/02-desenvolvimento/) - Guias técnicos
-- 📂 [docs/03-changelogs/](./docs/03-changelogs/) - Histórico de mudanças
-- 📂 [docs/04-configuracao/](./docs/04-configuracao/) - Configurações e integrações
-- 📂 [docs/05-seguranca/](./docs/05-seguranca/) - Segurança e compliance
+- 📂 [docs/03-arquitetura/](./docs/03-arquitetura/) - Arquitetura do sistema
+- 📂 [docs/04-backend/](./docs/04-backend/) - Backend e APIs
+- 📂 [docs/05-frontend/](./docs/05-frontend/) - Frontend React
+- 📂 [docs/10-api-reference/](./docs/10-api-reference/) - Referência completa de APIs
+- 📂 [docs/11-regras-negocio/](./docs/11-regras-negocio/) - Regras de negócio
+- 🌐 [landing-page/](./landing-page/) - Site institucional do produto (HTML/CSS/JS estático)
 
 ---
 
@@ -126,19 +150,19 @@ docker-compose up -d
 
 ## 🎯 Próximas Implementações
 
-### Sprint 2 (1-2 semanas) - PDV 🔥
-- [ ] Lista de vendas
-- [ ] Interface PDV
-- [ ] Confirmação de vendas
-- [ ] Detalhes da venda
+Para um roadmap detalhado, consulte: [docs/01-visao-geral/roadmap.md](./docs/01-visao-geral/roadmap.md)
 
-### Sprint 3 (1-2 semanas) - Estoque 🔥
-- [ ] Lista de produtos em estoque
-- [ ] Movimentações (entrada/saída)
-- [ ] Ajustes de inventário
-- [ ] Histórico de movimentações
+### Alta Prioridade
+- **PDV (Vendas)** - Frontend para ponto de venda
+- **Estoque** - Frontend para gestão de estoque
+- **Relatórios** - Dashboards e relatórios
 
-📋 **Detalhes**: [FRONTEND_IMPLEMENTACAO.md](./FRONTEND_IMPLEMENTACAO.md)
+### Médio Prazo
+- **Financeiro** - Gestão financeira completa
+- **Notificações** - Sistema de notificações WhatsApp
+- **Analytics** - Métricas e análises avançadas
+
+📋 **Guia de desenvolvimento**: [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md)
 
 ---
 
@@ -146,10 +170,13 @@ docker-compose up -d
 
 ```bash
 # Desenvolvimento
-docker-compose up -d              # Subir todos os serviços
-docker-compose logs -f [serviço]  # Ver logs
-docker-compose restart [serviço]  # Reiniciar serviço
-docker-compose down               # Parar tudo
+docker-compose -f docker-compose.dev.yml up -d                # Subir todos os serviços
+docker-compose -f docker-compose.dev.yml logs -f [serviço]    # Ver logs
+docker-compose -f docker-compose.dev.yml restart [serviço]    # Reiniciar serviço
+docker-compose -f docker-compose.dev.yml down                 # Parar tudo
+
+# Cloudflare Tunnel (acesso externo)
+docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
 
 # Frontend
 cd frontend
@@ -160,6 +187,7 @@ npm run build                     # Build de produção
 cd services/[serviço]
 alembic upgrade head              # Rodar migrations
 python seed.py                    # Popular dados de teste
+pytest                            # Rodar testes
 ```
 
 ---
@@ -181,26 +209,31 @@ O sistema utiliza **OAuth2 com JWT** e **RBAC**:
 
 ```bash
 # 1. Crie uma branch
-git checkout -b feature/nova-feature
+git checkout -b feat/nova-feature
 
-# 2. Commit (seguindo Conventional Commits)
+# 2. Desenvolva e commit (seguindo Conventional Commits)
 git commit -m "feat(modulo): adiciona nova funcionalidade"
 
 # 3. Push e PR
-git push origin feature/nova-feature
+git push origin feat/nova-feature
 ```
 
-**Convenções**: Veja [.kiro/steering/git-conventions.md](./.kiro/steering/git-conventions.md)
+**Convenções**: Veja [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md) e [CLAUDE.md](./CLAUDE.md)
 
 ---
 
 ## 📄 Licença
 
-**Propriedade de Runas** - Todos os direitos reservados.
+**Copyright © 2026 DenebCorp — todos os direitos reservados.** Software proprietário.
 
-Este software é proprietário e confidencial.
+| Documento | Aplica-se a | O que concede |
+|-----------|-------------|---------------|
+| [LICENSE](./LICENSE) | quem tem acesso de leitura ao repositório | leitura e avaliação técnica apenas — **nenhum direito de uso** |
+| [EULA comercial](./docs/01-principal/EULA-comercial.md) | clientes sob contrato | uso do sistema nos termos do contrato |
 
-📖 [LICENSE.md](./docs/01-principal/LICENSE.md)
+Para licenciar ou pedir permissão: **legal@runas.com**
+
+Dependências de terceiros permanecem sob suas licenças originais.
 
 ---
 

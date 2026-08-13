@@ -3,8 +3,14 @@ Router de proxy para microsserviços.
 """
 from typing import Annotated
 from fastapi import APIRouter, Request, Depends
-from auth.oauth2 import get_current_active_user, require_admin
+from auth.oauth2 import (
+    get_current_active_user,
+    require_admin,
+    require_admin_or_operador,
+    get_current_active_cliente
+)
 from models.usuario import Usuario
+from models.cliente_auth import ClienteAuth
 from proxy.service_proxy import ServiceProxy
 
 
@@ -12,17 +18,6 @@ router = APIRouter()
 
 
 # Rotas públicas (sem autenticação)
-@router.api_route(
-    "/catalogo/{path:path}",
-    methods=["GET"],
-    tags=["Catálogo Público"]
-)
-async def proxy_catalogo_publico(request: Request, path: str):
-    """Proxy para catálogo público (sem autenticação)."""
-    full_path = f"/catalogo/{path}" if path else "/catalogo"
-    return await ServiceProxy.proxy_request(request, full_path)
-
-
 @router.api_route(
     "/empresas/publico/{path:path}",
     methods=["GET"],
@@ -50,21 +45,6 @@ async def proxy_loja_online_publico(
 
 
 @router.api_route(
-    "/loja/{path:path}",
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    tags=["Loja Online"]
-)
-async def proxy_loja_publico(
-    request: Request,
-    path: str,
-    empresaSlug: str | None = None
-):
-    """Proxy para loja online - carrinho e checkout (sem autenticação)."""
-    full_path = f"/loja/{path}" if path else "/loja"
-    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
-
-
-@router.api_route(
     "/carrinho/{path:path}",
     methods=["GET", "POST", "PATCH", "DELETE"],
     tags=["Carrinho Público"]
@@ -81,7 +61,171 @@ async def proxy_carrinho_publico(
 
 # Rotas protegidas (requerem autenticação)
 
-# Rota específica para listar/criar clientes
+# ============================================================
+# ROTAS DE CLIENTES (PÚBLICO - CLIENTE AUTENTICADO)
+# ============================================================
+
+@router.get(
+    "/clientes/me",
+    tags=["Clientes Público"],
+    summary="Cliente busca seus próprios dados"
+)
+async def proxy_cliente_me(
+    request: Request,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)]
+):
+    """
+    Rota para cliente autenticado buscar seus próprios dados.
+    
+    Usa o cliente_id do token JWT automaticamente.
+    Não requer passar ID na URL (mais seguro e simples).
+    
+    Exemplo: GET /clientes/me
+    """
+    cliente_id = str(current_cliente.cliente_id)
+    full_path = f"/clientes/{cliente_id}"
+    # Encaminha o cliente autenticado para que o proxy injete X-Empresa-Id
+    # (e X-Cliente-Id) — sem isso o serviço de clientes rejeita com 400.
+    return await ServiceProxy.proxy_request(request, full_path, current_cliente)  # type: ignore[arg-type]
+
+
+@router.patch(
+    "/clientes/me",
+    tags=["Clientes Público"],
+    summary="Cliente atualiza seus próprios dados"
+)
+async def proxy_cliente_me_update(
+    request: Request,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)]
+):
+    """
+    Rota para cliente autenticado atualizar seus próprios dados.
+    
+    Usa o cliente_id do token JWT automaticamente.
+    Cliente só pode atualizar seus próprios dados.
+    
+    Exemplo: PATCH /clientes/me
+    """
+    cliente_id = str(current_cliente.cliente_id)
+    full_path = f"/clientes/{cliente_id}"
+    # Encaminha o cliente autenticado para que o proxy injete X-Empresa-Id
+    # (e X-Cliente-Id) — sem isso o serviço de clientes rejeita com 400.
+    return await ServiceProxy.proxy_request(request, full_path, current_cliente)  # type: ignore[arg-type]
+
+
+@router.get(
+    "/loja/meus-pedidos",
+    tags=["Loja Online - Cliente"],
+    summary="Listar pedidos do cliente autenticado"
+)
+async def proxy_loja_meus_pedidos(
+    request: Request,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)],
+    empresaSlug: str | None = None
+):
+    """
+    Rota para cliente autenticado listar seus próprios pedidos.
+    
+    Usa o cliente_id do token JWT automaticamente via header X-Cliente-Id.
+    
+    Exemplo: GET /loja/meus-pedidos?empresaSlug=minha-loja
+    """
+    full_path = "/loja/meus-pedidos"
+
+    # current_cliente (ClienteAuth) já expõe empresa_id/cliente_id; o ServiceProxy
+    # injeta X-Empresa-Id/X-Cliente-Id a partir dele.
+    return await ServiceProxy.proxy_request(
+        request,
+        full_path,
+        current_user=current_cliente,  # type: ignore[arg-type]
+        empresa_slug=empresaSlug
+    )
+
+
+@router.post(
+    "/loja/pedidos/{numero_venda}/retry-payment",
+    tags=["Loja Online - Cliente"],
+    summary="Gerar novo link de pagamento"
+)
+async def proxy_loja_retry_payment(
+    request: Request,
+    numero_venda: str,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)],
+    empresaSlug: str | None = None
+):
+    """
+    Rota para cliente autenticado gerar novo link de pagamento para pedido pendente.
+    
+    Usa o cliente_id do token JWT automaticamente via header X-Cliente-Id.
+    
+    Exemplo: POST /loja/pedidos/V-2024-001/retry-payment?empresaSlug=minha-loja
+    """
+    full_path = f"/loja/pedidos/{numero_venda}/retry-payment"
+    
+    # current_cliente (ClienteAuth) já expõe empresa_id/cliente_id; o ServiceProxy
+    # injeta X-Empresa-Id/X-Cliente-Id a partir dele.
+    return await ServiceProxy.proxy_request(
+        request,
+        full_path,
+        current_user=current_cliente,  # type: ignore[arg-type]
+        empresa_slug=empresaSlug
+    )
+
+
+@router.post(
+    "/loja/pedidos/{numero_venda}/recuperar-carrinho",
+    tags=["Loja Online - Cliente"],
+    summary="Recuperar carrinho de pedido não pago"
+)
+async def proxy_loja_recuperar_carrinho(
+    request: Request,
+    numero_venda: str,
+    current_cliente: Annotated[ClienteAuth, Depends(get_current_active_cliente)],
+    empresaSlug: str | None = None
+):
+    """
+    Rota para cliente autenticado recuperar carrinho a partir de pedido pendente.
+    
+    Reconstrói carrinho com itens do pedido para permitir edição antes de pagar.
+    Usa o cliente_id do token JWT automaticamente via header X-Cliente-Id.
+    
+    Exemplo: POST /loja/pedidos/V-2024-001/recuperar-carrinho?empresaSlug=minha-loja
+    """
+    full_path = f"/loja/pedidos/{numero_venda}/recuperar-carrinho"
+    
+    # current_cliente (ClienteAuth) já expõe empresa_id/cliente_id; o ServiceProxy
+    # injeta X-Empresa-Id/X-Cliente-Id a partir dele.
+    return await ServiceProxy.proxy_request(
+        request,
+        full_path,
+        current_user=current_cliente,  # type: ignore[arg-type]
+        empresa_slug=empresaSlug
+    )
+
+
+# Catch-all da loja (carrinho, checkout, rastreamento — sem autenticação).
+# Registrado DEPOIS das rotas /loja/* autenticadas acima: o Starlette casa rotas
+# na ordem de registro, e este {path:path} capturaria /loja/meus-pedidos etc.
+@router.api_route(
+    "/loja/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Loja Online"]
+)
+async def proxy_loja_publico(
+    request: Request,
+    path: str,
+    empresaSlug: str | None = None
+):
+    """Proxy para loja online - carrinho e checkout (sem autenticação)."""
+    full_path = f"/loja/{path}" if path else "/loja"
+    return await ServiceProxy.proxy_request(request, full_path, empresa_slug=empresaSlug)
+
+
+# ============================================================
+# ROTAS DE CLIENTES (ADMIN)
+# ============================================================
+
+# Rota específica para listar/criar clientes (ADMIN)
 @router.api_route(
     "/clientes",
     methods=["GET", "POST"],
@@ -93,7 +237,7 @@ async def proxy_clientes_root(
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
     """
-    Proxy para serviço de clientes (autenticado).
+    Proxy para serviço de clientes (autenticado admin).
     
     - GET: Lista clientes com filtros opcionais
     - POST: Cria novo cliente
@@ -101,12 +245,13 @@ async def proxy_clientes_root(
     return await ServiceProxy.proxy_request(request, "/clientes", current_user)
 
 
-# Rota para operações com ID específico
+# Rota para operações com cliente específico (path genérico - ADMIN)
+# Registrada após /clientes/me e /clientes para que aquelas rotas tenham precedência.
 @router.api_route(
     "/clientes/{path:path}",
     methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     tags=["Clientes"],
-    summary="Operações com cliente específico"
+    summary="Operações administrativas com clientes"
 )
 async def proxy_clientes_path(
     request: Request,
@@ -114,12 +259,10 @@ async def proxy_clientes_path(
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
     """
-    Proxy para serviço de clientes (autenticado).
-    
-    - GET /clientes/{id}: Busca cliente por ID
-    - PUT /clientes/{id}: Atualiza cliente
-    - DELETE /clientes/{id}: Desativa cliente
-    - POST /clientes/{id}/enderecos: Adiciona endereço
+    Proxy para serviço de clientes - operações admin (autenticado).
+
+    Mesma convenção de /produtos/{path}, /categorias/{path}, etc.
+    A rota pública /clientes/me é declarada antes e mantém precedência.
     """
     full_path = f"/clientes/{path}"
     return await ServiceProxy.proxy_request(request, full_path, current_user)
@@ -152,6 +295,24 @@ async def proxy_produtos_path(
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ):
     full_path = f"/produtos/{path}"
+    return await ServiceProxy.proxy_request(request, full_path, current_user)
+
+
+# Rotas de administração da loja online (config, fotos, status de publicação de produtos)
+# Nota: a rota pública "/loja-online/publico/{path:path}" é registrada antes desta
+# (sem autenticação) e tem precedência no roteamento do FastAPI.
+@router.api_route(
+    "/loja-online/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    tags=["Loja Online"],
+    summary="Operações de administração da loja online"
+)
+async def proxy_loja_online_path(
+    request: Request,
+    path: str,
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+):
+    full_path = f"/loja-online/{path}"
     return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 
@@ -251,11 +412,11 @@ async def proxy_fornecedores_path(
 )
 async def proxy_estoque_root(
     request: Request,
-    current_user: Annotated[Usuario, Depends(require_admin)]
+    current_user: Annotated[Usuario, Depends(require_admin_or_operador)]
 ):
     """
-    Proxy para serviço de estoque (apenas admin).
-    
+    Proxy para serviço de estoque (ADMIN ou OPERADOR).
+
     - GET: Lista registros de estoque
     - POST: Cria novo registro de estoque
     """
@@ -272,11 +433,11 @@ async def proxy_estoque_root(
 async def proxy_estoque_path(
     request: Request,
     path: str,
-    current_user: Annotated[Usuario, Depends(require_admin)]
+    current_user: Annotated[Usuario, Depends(require_admin_or_operador)]
 ):
     """
-    Proxy para serviço de estoque (apenas admin).
-    
+    Proxy para serviço de estoque (ADMIN ou OPERADOR).
+
     - GET /estoque/{id}: Busca estoque por ID
     - POST /estoque/entrada: Entrada de mercadoria
     - POST /estoque/saida: Saída de mercadoria
@@ -285,21 +446,6 @@ async def proxy_estoque_path(
     - POST /estoque/liberar-reserva: Liberar reserva
     """
     full_path = f"/estoque/{path}"
-    return await ServiceProxy.proxy_request(request, full_path, current_user)
-
-
-@router.api_route(
-    "/pedidos/{path:path}",
-    methods=["GET", "POST", "PATCH", "DELETE"],
-    tags=["Pedidos"]
-)
-async def proxy_pedidos(
-    request: Request,
-    path: str,
-    current_user: Annotated[Usuario, Depends(get_current_active_user)]
-):
-    """Proxy para serviço de vendas - pedidos (autenticado)."""
-    full_path = f"/pedidos/{path}" if path else "/pedidos"
     return await ServiceProxy.proxy_request(request, full_path, current_user)
 
 

@@ -38,7 +38,6 @@ export const authService = {
       await api.post('/auth/logout');
     } catch (error) {
       // Ignorar erros de logout
-      console.error('Erro ao fazer logout:', error);
     } finally {
       // Limpar localStorage legado
       tokenService.clearTokens();

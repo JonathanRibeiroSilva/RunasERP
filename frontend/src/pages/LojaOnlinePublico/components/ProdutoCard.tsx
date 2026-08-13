@@ -6,7 +6,12 @@ interface Produto {
   nome: string;
   descricao?: string;
   ativo: boolean;
+  preco?: string | number;
+  preco_promocional?: string | number | null;
 }
+
+const formatarPreco = (valor: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
 
 interface ProdutoCardProps {
   produto: Produto;
@@ -15,6 +20,10 @@ interface ProdutoCardProps {
 }
 
 const ProdutoCard: React.FC<ProdutoCardProps> = ({ produto, onClick, onAddToCart }) => {
+  const precoBase = Number(produto.preco) || 0;
+  const precoPromocional = Number(produto.preco_promocional) || 0;
+  const precoExibido = precoPromocional > 0 ? precoPromocional : precoBase;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); // Evita abrir detalhes ao clicar em adicionar
     if (onAddToCart) onAddToCart(e);
@@ -29,6 +38,14 @@ const ProdutoCard: React.FC<ProdutoCardProps> = ({ produto, onClick, onAddToCart
         <h3 className="produto-nome" onClick={onClick}>{produto.nome}</h3>
         {produto.descricao && (
           <p className="produto-descricao" onClick={onClick}>{produto.descricao}</p>
+        )}
+        {precoExibido > 0 && (
+          <div className="produto-preco" onClick={onClick}>
+            {precoPromocional > 0 && precoPromocional < precoBase && (
+              <span className="preco-antigo">{formatarPreco(precoBase)}</span>
+            )}
+            <span className="preco-atual">{formatarPreco(precoExibido)}</span>
+          </div>
         )}
         <div className="produto-footer">
           <button className="btn-ver-detalhes" onClick={onClick}>

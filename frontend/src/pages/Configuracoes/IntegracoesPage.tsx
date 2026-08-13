@@ -1,17 +1,18 @@
+import { FiZap } from 'react-icons/fi';
 import './Configuracoes.scss';
 
 const IntegracoesPage = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>🔌 Integrações</h1>
+        <h1><FiZap className="title-icon" /> Integrações</h1>
         <p className="page-description">
           Configure integrações com Mercado Pago, WhatsApp, e-mail e outros serviços
         </p>
       </div>
 
       <div className="empty-state">
-        <div className="empty-state-icon">🔌</div>
+        <div className="empty-state-icon"><FiZap /></div>
         <h3>Integrações Disponíveis</h3>
         <p>Conecte seu sistema com:</p>
         <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>

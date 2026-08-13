@@ -1,17 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiSearch, FiFilter, FiShare2, FiCopy, FiShoppingCart } from 'react-icons/fi';
-import axios from 'axios';
+import { FiSearch, FiFilter, FiShare2, FiCopy, FiShoppingCart, FiUser } from 'react-icons/fi';
+import { apiPublica } from '@/services/api/apiPublica';
+import { getErrorStatus } from '@/services/api/axios';
 import ProdutoCard from './components/ProdutoCard';
 import { useCarrinho } from '@/hooks/useCarrinho';
 import './LojaOnlinePublicoPage.scss';
-
-// Instância axios pública (sem autenticação, sem interceptors de redirect)
-const apiPublica = axios.create({
-  baseURL: '/api',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
 
 interface Produto {
   id: string;
@@ -20,6 +14,8 @@ interface Produto {
   categoria_id: string;
   ativo: boolean;
   criado_em: string;
+  preco?: string | number;
+  preco_promocional?: string | number | null;
 }
 
 interface Categoria {
@@ -27,10 +23,13 @@ interface Categoria {
   nome: string;
 }
 
+// Espelha EmpresaPublicInfo do backend (GET /empresas/publico/{slug})
 interface EmpresaInfo {
   nome_fantasia: string;
-  loja_online_titulo?: string;
-  loja_online_descricao?: string;
+  logo_url?: string | null;
+  catalogo_ativo?: boolean;
+  catalogo_titulo?: string | null;
+  catalogo_descricao?: string | null;
 }
 
 const LojaOnlinePublicoPage = () => {
@@ -41,6 +40,7 @@ const LojaOnlinePublicoPage = () => {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [empresaInfo, setEmpresaInfo] = useState<EmpresaInfo | null>(null);
+  const [lojaNaoEncontrada, setLojaNaoEncontrada] = useState(false);
   const [loading, setLoading] = useState(true);
   const [linkCopiado, setLinkCopiado] = useState(false);
 
@@ -52,13 +52,18 @@ const LojaOnlinePublicoPage = () => {
   const carregarDados = useCallback(async (buscaParam?: string) => {
     try {
       setLoading(true);
+      setLojaNaoEncontrada(false);
 
-      // Carregar dados da empresa primeiro (sempre funciona)
+      // Carregar dados da empresa primeiro — slug inexistente = loja não existe
       try {
         const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
         setEmpresaInfo(empresaRes.data);
       } catch (err) {
-        console.error('Erro ao carregar empresa:', err);
+        if (getErrorStatus(err) === 404) {
+          setLojaNaoEncontrada(true);
+          return;
+        }
+        // Outros erros (rede etc.): segue e tenta carregar o catálogo
       }
 
       // Carregar produtos e categorias (agora usando empresaSlug como query param)
@@ -71,24 +76,18 @@ const LojaOnlinePublicoPage = () => {
       if (buscaParam && buscaParam.length >= 2) params.append('busca', buscaParam);
 
       const [produtosRes, categoriasRes] = await Promise.all([
-        apiPublica.get(`/loja-online/publico/produtos?${params}`).catch((err) => {
-          console.error('❌ Erro ao carregar produtos:', err);
-          console.error('URL tentada:', `/loja-online/publico/produtos?${params}`);
+        apiPublica.get(`/loja-online/publico/produtos?${params}`).catch(() => {
           return { data: { items: [] } };
         }),
-        apiPublica.get(`/loja-online/publico/categorias?empresaSlug=${empresaSlug}`).catch((err) => {
-          console.error('❌ Erro ao carregar categorias:', err);
+        apiPublica.get(`/loja-online/publico/categorias?empresaSlug=${empresaSlug}`).catch(() => {
           return { data: { items: [] } };
         }),
       ]);
 
-      console.log('✅ Produtos carregados:', produtosRes.data.items?.length || 0);
-      console.log('✅ Categorias carregadas:', categoriasRes.data.items?.length || 0);
-
       setProdutos(produtosRes.data.items || []);
       setCategorias(categoriasRes.data.items || []);
     } catch (error) {
-      console.error('Erro ao carregar catálogo:', error);
+      // Erro ao carregar catálogo
     } finally {
       setLoading(false);
     }
@@ -119,34 +118,35 @@ const LojaOnlinePublicoPage = () => {
 
   const handleAdicionarAoCarrinho = async (produtoId: string) => {
     try {
-      // Buscar detalhes do produto para verificar variantes
+      // Buscar detalhes do produto para verificar variantes/preço
       const response = await apiPublica.get(`/loja-online/publico/produto/${produtoId}?empresaSlug=${empresaSlug}`);
       const produto = response.data;
 
-      // Se não tiver variantes ou produto inativo, redirecionar para detalhes
-      if (!produto.variantes || produto.variantes.length === 0 || !produto.ativo) {
+      if (!produto.ativo) {
         navigate(`/c/${empresaSlug}/produto/${produtoId}`);
         return;
       }
 
-      // Filtrar variantes ativas
-      const variantesAtivas = produto.variantes.filter((v: any) => v.ativo);
+      const variantesAtivas = (produto.variantes || []).filter(
+        (variante: { id: string; ativo: boolean }) => variante.ativo
+      );
 
-      if (variantesAtivas.length === 0) {
-        alert('Este produto não possui opções disponíveis no momento');
+      // Múltiplas variantes: precisa escolher na página de detalhes
+      if (variantesAtivas.length > 1) {
+        navigate(`/c/${empresaSlug}/produto/${produtoId}`);
         return;
       }
 
-      // Se tiver apenas 1 variante, adicionar diretamente
-      if (variantesAtivas.length === 1) {
-        await adicionarItem(produtoId, variantesAtivas[0].id, 1);
-        // Feedback visual será dado pelo badge do carrinho
-      } else {
-        // Se tiver múltiplas variantes, redirecionar para página de detalhes
+      // Sem variantes e sem preço: só resta o contato via detalhes
+      if (variantesAtivas.length === 0 && Number(produto.preco) <= 0) {
         navigate(`/c/${empresaSlug}/produto/${produtoId}`);
+        return;
       }
+
+      // 1 variante ou produto com preço próprio: adicionar e ir pro carrinho/checkout
+      await adicionarItem(produtoId, variantesAtivas[0]?.id ?? null, 1);
+      navigate(`/c/${empresaSlug}/carrinho`);
     } catch (error) {
-      console.error('Erro ao adicionar ao carrinho:', error);
       alert('Erro ao adicionar produto ao carrinho');
     }
   };
@@ -155,6 +155,33 @@ const LojaOnlinePublicoPage = () => {
     carregarDados(busca);
   };
 
+  // Slug não corresponde a nenhuma loja: não renderizar o shell do storefront
+  if (lojaNaoEncontrada) {
+    return (
+      <div className="loja-online-publico-page">
+        <div className="loja-manutencao">
+          <h1>😕 Loja não encontrada</h1>
+          <p>O endereço /c/{empresaSlug} não corresponde a nenhuma loja ativa.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loja desabilitada pelo lojista: branding continua público, storefront não.
+  if (empresaInfo && empresaInfo.catalogo_ativo === false) {
+    return (
+      <div className="loja-online-publico-page">
+        <div className="loja-manutencao">
+          {empresaInfo.logo_url && (
+            <img src={empresaInfo.logo_url} alt={empresaInfo.nome_fantasia} className="loja-manutencao__logo" />
+          )}
+          <h1>🏪 {empresaInfo.catalogo_titulo || empresaInfo.nome_fantasia}</h1>
+          <p>Esta loja não está disponível no momento. Volte em breve!</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="loja-online-publico-page">
       {/* Header */}
@@ -162,11 +189,19 @@ const LojaOnlinePublicoPage = () => {
         <div className="header-content">
           <div className="header-info">
             <h1>
-              🏪 {empresaInfo?.loja_online_titulo || empresaInfo?.nome_fantasia || 'Loja Online'}
+              🏪 {empresaInfo?.catalogo_titulo || empresaInfo?.nome_fantasia || 'Loja Online'}
             </h1>
-            <p>{empresaInfo?.loja_online_descricao || 'Confira nossos produtos disponíveis'}</p>
+            <p>{empresaInfo?.catalogo_descricao || 'Confira nossos produtos disponíveis'}</p>
           </div>
           <div className="header-actions">
+            <button
+              className="btn-entrar"
+              onClick={() => navigate(`/c/${empresaSlug}/login`)}
+              title="Entrar na sua conta"
+            >
+              <FiUser />
+              Entrar
+            </button>
             <button
               className="btn-carrinho"
               onClick={() => navigate(`/c/${empresaSlug}/carrinho`)}

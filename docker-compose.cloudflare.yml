@@ -1,0 +1,51 @@
+# ============================================
+# CLOUDFLARE TUNNEL - Extensão para MVP
+# ============================================
+# Uso: docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
+#
+# Este arquivo ADICIONA o Cloudflare Tunnel ao ambiente de desenvolvimento.
+# Não é standalone - precisa do docker-compose.dev.yml
+# ============================================
+
+services:
+  # Override frontend para usar URL do domínio real
+  frontend-dev:
+    environment:
+      VITE_API_URL: /api
+      # Deve bater com as redirect URIs registradas nos consoles Google/Azure
+      VITE_OAUTH_REDIRECT_URI: https://app.runaserp.com.br/auth/callback
+      FRONTEND_URL: https://app.runaserp.com.br
+
+  # Override api-gateway para reconhecer domínio real
+  api-gateway:
+    environment:
+      FRONTEND_URL: https://app.runaserp.com.br
+
+  # Override vendas para URLs públicas (Mercado Pago webhooks/back_urls)
+  vendas:
+    environment:
+      API_BASE_URL: https://app.runaserp.com.br/api
+      FRONTEND_URL: https://app.runaserp.com.br
+
+  # Cloudflare Tunnel - serve apenas app.runaserp.com.br.
+  # Apex + www sao servidos pelo Cloudflare Pages (landing-page/), fora do tunnel.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: erp-cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run
+    depends_on:
+      - frontend-dev
+      - api-gateway
+    networks:
+      - erp-network
+    restart: unless-stopped
+    volumes:
+      - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
+      - ~/.cloudflared:/etc/cloudflared:ro
+    environment:
+      TUNNEL_METRICS: 0.0.0.0:9126
+    # NOTA: Healthcheck removido porque cloudflared usa imagem distroless
+    # sem shell/wget/curl. Para monitorar, verifique os logs:
+    # docker logs erp-cloudflared | grep "Registered tunnel connection"
+    profiles:
+      - proxy

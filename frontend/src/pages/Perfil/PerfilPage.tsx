@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
+import { api, getErrorMessage } from '@/services/api/axios';
 import { FiUser, FiMail, FiShield, FiLock, FiEye, FiEyeOff, FiSave } from 'react-icons/fi';
 import './PerfilPage.scss';
 
@@ -15,7 +16,7 @@ const alterarSenhaSchema = z.object({
     .regex(/[A-Z]/, 'Deve conter ao menos uma letra maiúscula')
     .regex(/[a-z]/, 'Deve conter ao menos uma letra minúscula')
     .regex(/[0-9]/, 'Deve conter ao menos um número')
-    .regex(/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/, 'Deve conter ao menos um caractere especial'),
+    .regex(/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/, 'Deve conter ao menos um caractere especial'),
   confirmarSenha: z.string()
 }).refine((data) => data.novaSenha === data.confirmarSenha, {
   message: "As senhas não coincidem",
@@ -38,16 +39,14 @@ const PerfilPage = () => {
   const onSubmitSenha = async (data: AlterarSenhaFormData) => {
     setIsLoading(true);
     try {
-      // TODO: Implementar chamada à API para alterar senha
-      // await api.post('/auth/change-password', {
-      //   current_password: data.senhaAtual,
-      //   new_password: data.novaSenha
-      // });
-      
+      await api.post('/auth/alterar-senha', {
+        senha_atual: data.senhaAtual,
+        nova_senha: data.novaSenha,
+      });
       toast.success('Senha alterada com sucesso!');
       senhaForm.reset();
     } catch (error) {
-      toast.error('Erro ao alterar senha. Verifique sua senha atual.');
+      toast.error(getErrorMessage(error, 'Erro ao alterar senha. Verifique sua senha atual.'));
     } finally {
       setIsLoading(false);
     }

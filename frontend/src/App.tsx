@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/Login/LoginPage';
 import RegisterPage from '@/pages/Register/RegisterPage';
 import OAuthCallbackPage from '@/pages/Auth/OAuthCallbackPage';
+import GoogleCallback from '@/pages/Auth/GoogleCallback';
+import MicrosoftCallback from '@/pages/Auth/MicrosoftCallback';
 import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/Auth/ResetPasswordPage';
 import DashboardPage from '@/pages/Dashboard/DashboardPage';
@@ -12,10 +14,10 @@ import ClienteFormPage from '@/pages/Clientes/ClienteFormPage';
 import ClienteEnderecosPage from '@/pages/Clientes/ClienteEnderecosPage';
 import ClienteCreditoPage from '@/pages/Clientes/ClienteCreditoPage';
 import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPage, CategoriasPage } from '@/pages/Produtos';
-import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage } from '@/pages/LojaOnlinePublico';
-import { CatalogoRedirectPage, PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
+import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage, ClientePerfilPage, ClienteLoginPage } from '@/pages/LojaOnlinePublico';
+import { PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
-import { EstoquePage } from '@/pages/Estoque';
+import { EstoquePage, EstoqueDetalhePage } from '@/pages/Estoque';
 import { VendasPage } from '@/pages/Vendas';
 import { FinanceiroPage } from '@/pages/Financeiro';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
@@ -78,7 +80,12 @@ const PublicRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Public Routes */}
         <Route
@@ -101,11 +108,19 @@ function App() {
 
         {/* Loja Online Pública (sem autenticação) */}
         <Route path="/c/:empresaSlug" element={<LojaOnlinePublicoPage />} />
+        <Route path="/c/:empresaSlug/login" element={<ClienteLoginPage />} />
         <Route path="/c/:empresaSlug/produto/:produtoId" element={<ProdutoDetalhePage />} />
         <Route path="/c/:empresaSlug/carrinho" element={<CarrinhoPage />} />
         <Route path="/c/:empresaSlug/checkout" element={<CheckoutPage />} />
         <Route path="/c/:empresaSlug/pedido/:numeroPedido" element={<RastreamentoPedidoPage />} />
+        
+        {/* Área do Cliente Autenticado */}
         <Route path="/c/:empresaSlug/minha-conta/pedidos" element={<MeusPedidosPage />} />
+        <Route path="/c/:empresaSlug/minha-conta/perfil" element={<ClientePerfilPage />} />
+
+        {/* OAuth Callback Routes - Cliente */}
+        <Route path="/auth/callback/google" element={<GoogleCallback />} />
+        <Route path="/auth/callback/microsoft" element={<MicrosoftCallback />} />
 
         {/* OAuth Callback Route */}
         <Route path="/auth/callback" element={<OAuthCallbackPage />} />
@@ -156,14 +171,43 @@ function App() {
           <Route path="produtos/:id/variantes" element={<ProdutoVariantesPage />} />
           <Route path="categorias" element={<CategoriasPage />} />
           
-          {/* Rotas de Estoque */}
-          <Route path="estoque" element={<EstoquePage />} />
-          
-          {/* Rotas de Vendas */}
-          <Route path="vendas" element={<VendasPage />} />
-          
-          {/* Rotas de Financeiro */}
-          <Route path="financeiro" element={<FinanceiroPage />} />
+          {/* Rotas de Estoque - ADMIN e OPERADOR */}
+          <Route
+            path="estoque"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>
+                <EstoquePage />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="estoque/:id"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>
+                <EstoqueDetalhePage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* Rotas de Vendas - ADMIN e OPERADOR */}
+          <Route
+            path="vendas"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>
+                <VendasPage />
+              </RoleProtectedRoute>
+            }
+          />
+
+          {/* Rotas de Financeiro - Apenas ADMIN */}
+          <Route
+            path="financeiro"
+            element={
+              <RoleProtectedRoute requiredRole={['ADMIN']}>
+                <FinanceiroPage />
+              </RoleProtectedRoute>
+            }
+          />
           
           {/* Rotas de Configurações - Apenas ADMIN */}
           <Route 

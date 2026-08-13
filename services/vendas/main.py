@@ -1,6 +1,7 @@
 """
 Serviço Vendas - Runas
 """
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
@@ -13,6 +14,8 @@ from routers.loja import router as loja_router
 from routers.webhook import router as webhook_router
 from routers.admin_entrega import router as admin_entrega_router
 from routers.admin_pagamento import router as admin_pagamento_router
+from jobs.verificar_pagamentos_pendentes import verificar_pagamentos_pendentes
+from jobs.reconciliar_estoque_vendas import reconciliar_estoque_vendas
 
 
 structlog.configure(
@@ -25,15 +28,44 @@ structlog.configure(
 log = structlog.get_logger()
 
 
+PAGAMENTOS_PENDENTES_INTERVALO_SEGUNDOS = 60
+RECONCILIACAO_ESTOQUE_INTERVALO_SEGUNDOS = 120
+
+
+async def _loop_periodico(nome: str, tarefa, intervalo_segundos: int):
+    """Executa uma corotina periodicamente, sem deixar exceções derrubarem o loop."""
+    while True:
+        try:
+            await tarefa()
+        except Exception as e:
+            log.error("loop_periodico_erro", job=nome, error=str(e))
+        await asyncio.sleep(intervalo_segundos)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gerencia o ciclo de vida da aplicação."""
     log.info("vendas.starting")
     await init_db()
+
+    tarefas = [
+        asyncio.create_task(_loop_periodico(
+            "verificar_pagamentos_pendentes",
+            verificar_pagamentos_pendentes,
+            PAGAMENTOS_PENDENTES_INTERVALO_SEGUNDOS,
+        )),
+        asyncio.create_task(_loop_periodico(
+            "reconciliar_estoque_vendas",
+            reconciliar_estoque_vendas,
+            RECONCILIACAO_ESTOQUE_INTERVALO_SEGUNDOS,
+        )),
+    ]
     log.info("vendas.started")
-    
+
     yield
-    
+
+    for tarefa in tarefas:
+        tarefa.cancel()
     log.info("vendas.stopped")
 
 

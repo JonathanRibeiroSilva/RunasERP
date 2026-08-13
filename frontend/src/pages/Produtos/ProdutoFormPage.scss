@@ -1,227 +1,315 @@
 @import '@/styles/variables';
 @import '@/styles/mixins';
 
-.produto-form-page {
-  padding: 2rem;
-  min-height: calc(100vh - 64px);
-  background: $background;
+/* OVERLAY — semi-transparent like categorias */
+.pfm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 10, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: pfmFadeIn 0.2s ease;
+}
 
-  .page-header {
+@keyframes pfmFadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+/* MODAL CONTAINER */
+.produto-form-modal {
+  background: $surface;
+  border: 1px solid $border-default;
+  border-radius: $border-radius-lg;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  animation: pfmSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Scrollbar */
+  &::-webkit-scrollbar { width: 8px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+  &::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+}
+
+@keyframes pfmSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* HEADER */
+.pfm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.75rem 1rem;
+
+  .pfm-title {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    gap: 0.8rem;
 
-    .btn-back {
+    .pfm-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba($primary, 0.15);
+      color: $primary;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background-color: transparent;
-      color: $text-secondary;
-      border: 1px solid $border-default;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover {
-        color: $text-primary;
-        border-color: $primary;
-        background-color: rgba($primary, 0.05);
-      }
+      justify-content: center;
+      font-size: 1.1rem;
+      border: 1px solid rgba($primary, 0.2);
     }
 
-    h1 {
+    h2 {
       margin: 0;
-      font-size: 2rem;
+      font-size: 1.15rem;
       font-weight: 600;
       color: $text-primary;
     }
   }
 
-  .loading {
+  .pfm-close {
+    background: transparent;
+    border: none;
+    color: $text-tertiary;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 400px;
+    transition: all $transition-fast;
 
-    .spinner-border {
-      width: 3rem;
-      height: 3rem;
-      border: 0.25rem solid rgba($primary, 0.2);
-      border-right-color: $primary;
-      border-radius: 50%;
-      animation: spinner-border 0.75s linear infinite;
+    &:hover {
+      color: $error;
+      background: rgba($error, 0.1);
     }
+  }
+}
 
-    @keyframes spinner-border {
-      to {
-        transform: rotate(360deg);
-      }
+/* LOADING */
+.pfm-loading {
+  padding: 3rem;
+  text-align: center;
+  color: $text-secondary;
+}
+
+/* FORM BODY */
+.pfm-form {
+  padding: 0.5rem 1.75rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+
+  .pfm-row {
+    display: flex;
+    gap: 1rem;
+
+    .pfm-group {
+      flex: 1;
     }
   }
 
-  .produto-form {
-    max-width: 800px;
-    margin: 0 auto;
+  .pfm-row-3 {
+    .pfm-group {
+      flex: 1;
+    }
+  }
 
-    .form-section {
-      background-color: $surface;
-      border: 1px solid $border-default;
-      border-radius: 0.75rem;
-      padding: 2rem;
-      margin-bottom: 2rem;
+  .pfm-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 
-      h2 {
-        margin: 0 0 1.5rem 0;
-        font-size: 1.25rem;
-        font-weight: 600;
+    label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: $text-secondary;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: $text-primary;
+      padding: 0.7rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: all $transition-fast;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.2);
+      }
+
+      &:focus {
+        outline: none;
+        border-color: rgba($primary, 0.5);
+        background: rgba(15, 23, 42, 0.6);
+        box-shadow: 0 0 0 1px rgba($primary, 0.3), inset 0 2px 4px rgba(0,0,0,0.2);
+      }
+
+      &.invalid {
+        border-color: rgba($error, 0.5);
+        &:focus {
+          box-shadow: 0 0 0 1px rgba($error, 0.3);
+        }
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg stroke='%2364748b' fill='none' stroke-width='2' viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem center;
+      background-size: 1rem;
+      padding-right: 2.5rem;
+      cursor: pointer;
+
+      option {
+        background: $background;
         color: $text-primary;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid $border-default;
-      }
-
-      .form-group {
-        margin-bottom: 1.5rem;
-
-        label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 500;
-          color: $text-primary;
-          font-size: 0.95rem;
-        }
-
-        input,
-        select,
-        textarea {
-          width: 100%;
-          padding: 0.75rem 1rem;
-          border: 1px solid $border-default;
-          border-radius: 0.5rem;
-          background-color: $background;
-          color: $text-primary;
-          font-size: 0.95rem;
-          transition: all 0.2s ease;
-
-          &:focus {
-            outline: none;
-            border-color: $primary;
-            box-shadow: 0 0 0 3px rgba($primary, 0.1);
-          }
-
-          &::placeholder {
-            color: $text-secondary;
-          }
-
-          &.is-invalid {
-            border-color: $error;
-
-            &:focus {
-              box-shadow: 0 0 0 3px rgba($error, 0.1);
-            }
-          }
-        }
-
-        textarea {
-          resize: vertical;
-          min-height: 100px;
-        }
-
-        .error-message {
-          display: block;
-          margin-top: 0.5rem;
-          color: $error;
-          font-size: 0.875rem;
-        }
-      }
-
-      .form-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-      }
-
-      .info-box {
-        background-color: $background;
-        border: 1px solid $border-default;
-        border-radius: 0.5rem;
-        padding: 1rem;
-
-        .info-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 0.5rem 0;
-
-          &:not(:last-child) {
-            border-bottom: 1px solid $border-subtle;
-          }
-
-          .label {
-            color: $text-secondary;
-            font-weight: 500;
-          }
-
-          .value {
-            color: $text-primary;
-
-            &.ativo {
-              color: $success;
-              font-weight: 600;
-            }
-
-            &.inativo {
-              color: $text-secondary;
-            }
-          }
-        }
       }
     }
 
-    .form-actions {
+    .pfm-error {
+      color: $error;
+      font-size: 0.75rem;
+      margin-top: 0.1rem;
+    }
+  }
+
+  /* ACTIONS FOOTER */
+  .pfm-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.03);
+
+    button {
+      flex: 1;
+      padding: 0.7rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all $transition-fast;
+    }
+
+    .pfm-btn-cancel {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid $border-default;
+      color: $text-primary;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: $border-hover;
+      }
+    }
+
+    .pfm-btn-save {
+      background: $primary;
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 12px rgba($primary, 0.3);
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+        box-shadow: 0 4px 16px rgba($primary, 0.4);
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+/* Fallback para visualização fora do modal (standalone route) */
+.produto-form-page:not(:has(.is-modal)) {
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+/* ========================================
+   RESPONSIVE - MOBILE
+   ======================================== */
+@media (max-width: 768px) {
+  .pfm-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .produto-form-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 16px 16px 0 0;
+
+    &.is-modal {
+      height: 95vh;
       display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-      padding: 1.5rem 0;
-
-      .btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.5rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: none;
-
-        &.btn-outline-secondary {
-          background-color: transparent;
-          color: $text-secondary;
-          border: 1px solid $border-default;
-
-          &:hover {
-            color: $text-primary;
-            border-color: $primary;
-            background-color: rgba($primary, 0.05);
-          }
-        }
-
-        &.btn-primary {
-          background-color: $primary;
-          color: white;
-
-          &:hover:not(:disabled) {
-            background-color: $primary-hover;
-            box-shadow: 0 4px 12px rgba($primary, 0.3);
-          }
-
-          &:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-        }
-      }
+      flex-direction: column;
     }
+  }
+
+  .pfm-header {
+    padding: 1.25rem 1rem 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .pfm-form {
+    padding: 0.5rem 1rem 1rem;
+    overflow-y: auto;
+    flex: 1;
+
+    .pfm-row {
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+  }
+
+  .pfm-actions {
+    flex-direction: column-reverse;
+    flex-shrink: 0;
+
+    button {
+      width: 100%;
+      padding: 0.8rem;
+    }
+  }
+
+  .produto-form-page:not(:has(.is-modal)) {
+    padding: 1rem;
+  }
+}
+
+/* TABLET */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .produto-form-modal {
+    max-width: 540px;
   }
 }

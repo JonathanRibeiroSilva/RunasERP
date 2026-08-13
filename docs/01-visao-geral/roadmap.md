@@ -148,8 +148,8 @@ Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fa
 - ✅ Autenticação (Login, Register, OAuth)
 - ✅ Password Recovery
 - ✅ Interceptors HTTP
-- ✅ Configuração Nginx + Docker
-- ✅ Integração Ngrok para desenvolvimento
+- ✅ Configuração Docker
+- ✅ Cloudflare Tunnel para acesso externo
 - 🚧 Testes E2E
 
 #### Módulos

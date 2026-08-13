@@ -1,0 +1,161 @@
+@import '@/styles/variables';
+
+.cliente-perfil-page {
+  max-width: 800px;
+  margin: 0 auto;
+
+  .perfil-card {
+    background: $surface;
+    border: 1px solid $border-default;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
+
+    .perfil-header {
+      display: flex;
+      align-items: center;
+      gap: $spacer-4;
+      padding: $spacer-5;
+      background: linear-gradient(135deg, $primary-dark 0%, $primary 100%);
+      color: white;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        flex-direction: column;
+        text-align: center;
+        padding: $spacer-4 $spacer-3;
+      }
+
+      .avatar {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 3px solid white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        svg {
+          font-size: 40px;
+          color: white;
+        }
+      }
+
+      .header-info {
+        h2 {
+          margin: 0 0 $spacer-1 0;
+          font-size: $font-size-2xl;
+          font-weight: $font-weight-bold;
+        }
+
+        .membro-desde {
+          font-size: $font-size-sm;
+          opacity: 0.9;
+        }
+      }
+    }
+
+    .perfil-body {
+      padding: $spacer-5;
+
+      @media (max-width: #{$breakpoint-sm - 1px}) {
+        padding: $spacer-4 $spacer-3;
+      }
+
+      .info-section {
+        &:not(:last-child) {
+          margin-bottom: $spacer-5;
+          padding-bottom: $spacer-5;
+          border-bottom: 1px solid $border-default;
+        }
+
+        h3 {
+          margin: 0 0 $spacer-4 0;
+          font-size: $font-size-lg;
+          font-weight: $font-weight-semibold;
+          color: $text-primary;
+        }
+
+        .info-grid {
+          display: grid;
+          gap: $spacer-4;
+
+          @media (min-width: $breakpoint-md) {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        .info-item {
+          .info-label {
+            display: flex;
+            align-items: center;
+            gap: $spacer-2;
+            margin-bottom: $spacer-2;
+            color: $text-secondary;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-medium;
+
+            svg {
+              font-size: 16px;
+              color: $primary;
+            }
+          }
+
+          .info-value {
+            color: $text-primary;
+            font-size: $font-size-base;
+            font-weight: $font-weight-medium;
+            padding: $spacer-3;
+            background: $background;
+            border: 1px solid $border-default;
+            border-radius: $border-radius;
+          }
+        }
+
+        .configuracoes-info {
+          padding: $spacer-4;
+          background: $background;
+          border: 1px solid $border-default;
+          border-radius: $border-radius;
+          text-align: center;
+
+          p {
+            margin: 0;
+            color: $text-secondary;
+            font-size: $font-size-sm;
+          }
+        }
+      }
+    }
+  }
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacer-6;
+  gap: $spacer-3;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-default;
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

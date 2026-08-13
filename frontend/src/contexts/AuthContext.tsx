@@ -19,6 +19,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuthRef.current = true;
 
     const initAuth = async () => {
+      // Não tentar autenticar em rotas públicas da loja online
+      const isPublicStorePage = window.location.pathname.startsWith('/c/');
+      
+      if (isPublicStorePage) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const currentUser = await authService.getCurrentUser();
         setUser(currentUser);

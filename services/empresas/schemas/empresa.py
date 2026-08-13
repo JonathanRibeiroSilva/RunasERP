@@ -9,6 +9,18 @@ import re
 from models.empresa import TipoEmpresa, StatusEmpresa, RegimeTributario
 
 
+def validar_formato_slug(v: str) -> str:
+    """Slug é o endereço público da loja (/c/{slug}) — só kebab-case URL-safe."""
+    v = v.lower().strip()
+    if not re.match(r'^[a-z0-9-]+$', v):
+        raise ValueError("Slug deve conter apenas letras minúsculas, números e hífen")
+    if v.startswith('-') or v.endswith('-'):
+        raise ValueError("Slug não pode começar ou terminar com hífen")
+    if '--' in v:
+        raise ValueError("Slug não pode conter hífens consecutivos")
+    return v
+
+
 class EmpresaBase(BaseModel):
     """Schema base de Empresa."""
     slug: str = Field(..., min_length=3, max_length=100)
@@ -76,16 +88,11 @@ class EmpresaBase(BaseModel):
 
     @field_validator("slug")
     @classmethod
-    def validar_slug(cls, v: str) -> str:
+    def validar_slug(cls, v: Optional[str]) -> Optional[str]:
         """Valida slug (apenas letras minúsculas, números e hífen)."""
-        v = v.lower().strip()
-        if not re.match(r'^[a-z0-9-]+$', v):
-            raise ValueError("Slug deve conter apenas letras minúsculas, números e hífen")
-        if v.startswith('-') or v.endswith('-'):
-            raise ValueError("Slug não pode começar ou terminar com hífen")
-        if '--' in v:
-            raise ValueError("Slug não pode conter hífens consecutivos")
-        return v
+        if v is None:
+            return v
+        return validar_formato_slug(v)
 
     @field_validator("cor_primaria", "cor_secundaria")
     @classmethod
@@ -97,13 +104,13 @@ class EmpresaBase(BaseModel):
 
 
 class EmpresaCreate(EmpresaBase):
-    """Schema para criação de empresa."""
-    pass
+    """Schema para criação de empresa. Slug omitido é gerado a partir do nome fantasia."""
+    slug: Optional[str] = Field(None, min_length=3, max_length=100)
 
 
 class EmpresaUpdate(BaseModel):
     """Schema para atualização de empresa."""
-    slug: Optional[str] = None
+    slug: Optional[str] = Field(None, min_length=3, max_length=100)
     razao_social: Optional[str] = None
     nome_fantasia: Optional[str] = None
     tipo: Optional[TipoEmpresa] = None
@@ -136,6 +143,14 @@ class EmpresaUpdate(BaseModel):
     max_lojas: Optional[int] = None
     empresa_matriz_id: Optional[int] = None
     ativo: Optional[bool] = None
+
+    @field_validator("slug")
+    @classmethod
+    def validar_slug(cls, v: Optional[str]) -> Optional[str]:
+        """Valida formato URL-safe do slug."""
+        if v is None:
+            return v
+        return validar_formato_slug(v)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -179,6 +194,7 @@ class EmpresaPublicInfo(BaseModel):
     logo_url: Optional[str]
     cor_primaria: str
     cor_secundaria: str
+    catalogo_ativo: bool
     catalogo_titulo: Optional[str]
     catalogo_descricao: Optional[str]
     catalogo_whatsapp: Optional[str]

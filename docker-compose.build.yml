@@ -1,0 +1,49 @@
+# Build definitions — CI only. Never deployed.
+#
+# These live outside docker-compose.prod.yml on purpose: Coolify builds every
+# service it finds a `build:` section for, and the production VPS (1 vCPU / 4 GB)
+# cannot build nine images without starving the running stack. With the build
+# sections here, the file Coolify reads has nothing to build and can only pull.
+#
+# Image names are NOT repeated here — they come from the `image:` key in
+# docker-compose.prod.yml, so a build tags exactly what production will pull.
+#
+#   CI:    TAG=<sha> docker compose -f docker-compose.prod.yml -f docker-compose.build.yml build
+#   local: same command, then `up -d` with both files
+services:
+  api-gateway-prod:
+    build: {context: ./api-gateway, dockerfile: Dockerfile}
+
+  empresas-prod:
+    build: {context: ./services/empresas, dockerfile: Dockerfile}
+
+  clientes-prod:
+    build: {context: ./services/clientes, dockerfile: Dockerfile}
+
+  produtos-prod:
+    build: {context: ./services/produtos, dockerfile: Dockerfile}
+
+  estoque-prod:
+    build: {context: ./services/estoque, dockerfile: Dockerfile}
+
+  vendas-prod:
+    build: {context: ./services/vendas, dockerfile: Dockerfile}
+
+  financeiro-prod:
+    build: {context: ./services/financeiro, dockerfile: Dockerfile}
+
+  notificacoes-prod:
+    build: {context: ./services/notificacoes, dockerfile: Dockerfile}
+
+  # VITE_* are baked into the bundle at build time, so this image is
+  # environment-specific: CI must build it with the real production values.
+  frontend-prod:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api
+        - VITE_OAUTH_REDIRECT_URI=${FRONTEND_URL}/auth/callback
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+        - VITE_MICROSOFT_CLIENT_ID=${VITE_MICROSOFT_CLIENT_ID}
+        - VITE_MICROSOFT_TENANT_ID=${VITE_MICROSOFT_TENANT_ID:-common}

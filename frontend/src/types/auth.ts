@@ -6,6 +6,7 @@ export interface User {
   nome: string;
   role: UserRole;
   empresa_id: number;
+  empresa_slug?: string | null;
   ativo: boolean;
   criado_em: string;
 }
@@ -43,8 +44,4 @@ export interface AuthContextType {
   hasRole: (role: UserRole) => boolean;
 }
 
-export interface ApiError {
-  message: string;
-  status?: number;
-  detail?: string;
-}
+// ApiError centralizado em types/common.ts (fonte única).

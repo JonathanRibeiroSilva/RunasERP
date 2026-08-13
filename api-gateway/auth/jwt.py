@@ -9,7 +9,13 @@ from config import settings
 from models.usuario import RoleEnum
 
 
-def create_access_token(user_id: UUID, role: RoleEnum | str, user_type: str = "usuario", empresa_id: int | None = None) -> str:
+def create_access_token(
+    user_id: UUID, 
+    role: RoleEnum | str, 
+    user_type: str = "usuario", 
+    empresa_id: int | None = None,
+    cliente_id: UUID | None = None
+) -> str:
     """
     Cria um access token JWT.
     
@@ -18,6 +24,7 @@ def create_access_token(user_id: UUID, role: RoleEnum | str, user_type: str = "u
         role: Role do usuário (RoleEnum) ou "CLIENTE"
         user_type: Tipo de usuário ("usuario" ou "cliente")
         empresa_id: ID da empresa (opcional, usado para clientes)
+        cliente_id: ID do cliente (opcional, usado para clientes OAuth)
         
     Returns:
         Token JWT codificado
@@ -36,6 +43,10 @@ def create_access_token(user_id: UUID, role: RoleEnum | str, user_type: str = "u
     # Adicionar empresa_id para clientes
     if empresa_id is not None:
         payload["empresa_id"] = empresa_id
+    
+    # Adicionar cliente_id para clientes (necessário para buscar dados)
+    if cliente_id is not None:
+        payload["cliente_id"] = str(cliente_id)
     
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 

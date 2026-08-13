@@ -1,0 +1,321 @@
+@import '@/styles/variables';
+
+.cliente-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: $background;
+
+  &.loading {
+    justify-content: center;
+    align-items: center;
+    gap: $spacer-3;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid $border-default;
+      border-top-color: $primary;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    p {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+// Navbar
+.cliente-navbar {
+  background: $surface;
+  border-bottom: 1px solid $border-default;
+  position: sticky;
+  top: 0;
+  z-index: $z-index-sticky;
+
+  .navbar-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: $spacer-3 $spacer-4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacer-4;
+
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      padding: $spacer-3 $spacer-2;
+    }
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+    color: $text-primary;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: $transition-base;
+
+    svg {
+      font-size: 20px;
+      color: $primary;
+    }
+
+    &:hover {
+      color: $primary;
+    }
+
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      span {
+        display: none;
+      }
+    }
+  }
+
+  .menu-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    color: $text-primary;
+    font-size: 24px;
+    cursor: pointer;
+    padding: $spacer-2;
+
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      display: flex;
+    }
+  }
+
+  .navbar-menu {
+    display: flex;
+    align-items: center;
+    gap: $spacer-2;
+
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: $surface;
+      border-bottom: 1px solid $border-default;
+      flex-direction: column;
+      padding: $spacer-3;
+      gap: $spacer-2;
+      display: none;
+
+      &.aberto {
+        display: flex;
+      }
+    }
+
+    .navbar-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: $spacer-2;
+      padding: $spacer-2 $spacer-3;
+      background: transparent;
+      color: $text-primary;
+      border: none;
+      border-radius: $border-radius;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+      cursor: pointer;
+      transition: $transition-base;
+      white-space: nowrap;
+
+      svg {
+        font-size: 18px;
+      }
+
+      &:hover {
+        background: $surface-hover;
+        color: $primary;
+      }
+
+      .badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: $danger;
+        color: white;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-bold;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 18px;
+        text-align: center;
+      }
+
+      @media (max-width: #{$breakpoint-md - 1px}) {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+
+    .dropdown {
+      position: relative;
+
+      .dropdown-toggle {
+        display: flex;
+        align-items: center;
+        gap: $spacer-2;
+        padding: $spacer-2 $spacer-3;
+        background: $primary-light;
+        color: $primary;
+        border: 1px solid $primary;
+        border-radius: $border-radius;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
+        cursor: pointer;
+        transition: $transition-base;
+
+        svg {
+          font-size: 18px;
+        }
+
+        &:hover {
+          background: $primary;
+          color: white;
+        }
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 240px;
+        background: $surface;
+        border: 1px solid $border-default;
+        border-radius: $border-radius;
+        box-shadow: $box-shadow-lg;
+        padding: $spacer-2;
+        z-index: $z-index-dropdown;
+
+        @media (max-width: #{$breakpoint-md - 1px}) {
+          position: static;
+          width: 100%;
+          box-shadow: none;
+          border: none;
+          margin-top: $spacer-2;
+        }
+
+        .dropdown-header {
+          padding: $spacer-3;
+          border-bottom: 1px solid $border-default;
+          margin-bottom: $spacer-2;
+
+          strong {
+            display: block;
+            color: $text-primary;
+            font-size: $font-size-base;
+            margin-bottom: $spacer-1;
+          }
+
+          .email,
+          .telefone {
+            display: block;
+            color: $text-secondary;
+            font-size: $font-size-xs;
+            margin-bottom: $spacer-1;
+          }
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background: $border-default;
+          margin: $spacer-2 0;
+        }
+
+        .dropdown-item {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: $spacer-2;
+          padding: $spacer-2 $spacer-3;
+          background: transparent;
+          color: $text-primary;
+          border: none;
+          border-radius: $border-radius-sm;
+          font-size: $font-size-sm;
+          text-align: left;
+          cursor: pointer;
+          transition: $transition-base;
+
+          svg {
+            font-size: 16px;
+          }
+
+          &:hover {
+            background: $surface-hover;
+            color: $primary;
+          }
+
+          &.logout {
+            color: $danger;
+
+            &:hover {
+              background: $danger-light;
+              color: $danger-dark;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Conteúdo
+.cliente-content {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: $spacer-5;
+
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    padding: $spacer-4 $spacer-2;
+  }
+
+  .content-header {
+    margin-bottom: $spacer-5;
+
+    h1 {
+      font-size: $font-size-2xl;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+
+      @media (max-width: #{$breakpoint-md - 1px}) {
+        font-size: $font-size-xl;
+      }
+    }
+  }
+}
+
+// Footer
+.cliente-footer {
+  margin-top: auto;
+  padding: $spacer-4;
+  text-align: center;
+  border-top: 1px solid $border-default;
+  background: $surface;
+
+  p {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+
+    strong {
+      color: $primary;
+      font-weight: $font-weight-semibold;
+    }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

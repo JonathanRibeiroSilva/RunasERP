@@ -29,6 +29,9 @@ export interface SelectOption {
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 
+/** Valor monetário serializado como string (Decimal) pelo backend. Use parseFloat ao calcular. */
+export type Money = string;
+
 export interface BaseEntity {
   id: string;
   created_at: string;

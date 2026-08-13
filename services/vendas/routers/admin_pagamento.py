@@ -187,14 +187,14 @@ async def criar_configuracao_pagamento(
             )
         
         # Criar configuração
-        config = await ConfiguracaoPagamentoService.criar(
+        config = await ConfiguracaoPagamentoService.criar_ou_atualizar(
             db,
             empresa_id=empresa_id,
-            mercadopago_access_token=data.mercadopago_access_token,
-            mercadopago_public_key=data.mercadopago_public_key,
+            access_token=data.mercadopago_access_token,
+            public_key=data.mercadopago_public_key,
             ativo=data.ativo
         )
-        
+
         return config
         
     except HTTPException:
@@ -241,14 +241,14 @@ async def atualizar_configuracao_pagamento(
             )
         
         # Atualizar configuração
-        config = await ConfiguracaoPagamentoService.atualizar(
+        config = await ConfiguracaoPagamentoService.criar_ou_atualizar(
             db,
-            config_existente.id,
-            mercadopago_access_token=data.mercadopago_access_token,
-            mercadopago_public_key=data.mercadopago_public_key,
+            empresa_id=empresa_id,
+            access_token=data.mercadopago_access_token,
+            public_key=data.mercadopago_public_key,
             ativo=data.ativo
         )
-        
+
         return config
         
     except HTTPException:
@@ -286,14 +286,14 @@ async def ativar_configuracao_pagamento(
         
         if config.ativo:
             return config  # Já está ativa
-        
+
         # Ativar
-        config = await ConfiguracaoPagamentoService.atualizar(
+        config = await ConfiguracaoPagamentoService.ativar_desativar(
             db,
-            config.id,
-            ativo=True
+            empresa_id,
+            True
         )
-        
+
         return config
         
     except HTTPException:
@@ -336,14 +336,14 @@ async def desativar_configuracao_pagamento(
         
         if not config.ativo:
             return config  # Já está desativada
-        
+
         # Desativar
-        config = await ConfiguracaoPagamentoService.atualizar(
+        config = await ConfiguracaoPagamentoService.ativar_desativar(
             db,
-            config.id,
-            ativo=False
+            empresa_id,
+            False
         )
-        
+
         return config
         
     except HTTPException:
@@ -385,8 +385,8 @@ async def deletar_configuracao_pagamento(
             )
         
         # Deletar
-        await ConfiguracaoPagamentoService.deletar(db, config.id)
-        
+        await ConfiguracaoPagamentoService.remover(db, empresa_id)
+
         return {"message": "Configuração de pagamento deletada com sucesso"}
         
     except HTTPException:

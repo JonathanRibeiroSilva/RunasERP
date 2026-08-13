@@ -2,23 +2,38 @@
 
 > **Especificação completa de cada microsserviço:** modelos, endpoints e regras de negócio
 
+**Última atualização**: 26 de Junho de 2026  
+**Sistema atual**: 8 serviços (1 Gateway + 7 microsserviços)
+
 ---
 
 ## 1. API Gateway (`api-gateway/` — porta 8000)
 
 ### Responsabilidades
 - Receber todas as requisições externas
-- Validar JWT em todas as rotas protegidas
+- Autenticação JWT e OAuth2 (Google, Microsoft)
 - Rotear para o serviço correto via HTTP interno
-- Rate limiting por IP (100 req/min anônimo, 500 req/min autenticado)
+- Rate limiting por IP
 - Log estruturado de todas as requisições (JSON)
+- Gestão de usuários admin e clientes OAuth
 
 ### Endpoints de Autenticação
 
+**Admin**:
 ```
 POST /auth/login          → OAuth2 password flow → retorna access_token + refresh_token
 POST /auth/refresh        → renova access_token via refresh_token
 POST /auth/logout         → invalida refresh_token (Redis blacklist)
+POST /auth/register       → registro de novos usuários admin
+POST /auth/password-reset → recuperação de senha
+```
+
+**Cliente (OAuth)**:
+```
+GET  /auth/google         → inicia fluxo OAuth Google
+GET  /auth/microsoft      → inicia fluxo OAuth Microsoft  
+GET  /auth/callback       → callback OAuth providers
+POST /auth/cliente/logout → logout de cliente OAuth
 ```
 
 ### Regras de JWT
@@ -27,11 +42,7 @@ POST /auth/logout         → invalida refresh_token (Redis blacklist)
 - Payload do token deve conter: `sub` (user_id), `role` (ADMIN|OPERADOR), `exp`, `iat`
 - Algoritmo: HS256
 
-### Roles
-- `ADMIN` → acesso total a todos os endpoints
-- `OPERADOR` → acesso somente a leitura de produtos, criação de pedidos, consulta de clientes
-
-### Modelo de Usuário
+### Modelos de Usuário
 
 ```python
 class Usuario(Base):
@@ -39,23 +50,80 @@ class Usuario(Base):
     nome: str
     email: str          # unique
     senha_hash: str     # bcrypt via passlib
-    role: Enum(ADMIN, OPERADOR)
+    role: Enum(ADMIN, GERENTE, VENDEDOR, OPERADOR)
+    empresa_id: UUID    # FK para empresas
+    ativo: bool
+    criado_em: datetime
+
+class ClienteAuth(Base):
+    id: UUID
+    email: str          # unique
+    nome: str
+    provider: Enum(GOOGLE, MICROSOFT)
+    provider_user_id: str
     ativo: bool
     criado_em: datetime
 ```
 
 ---
 
-## 2. Serviço de Clientes (`services/clientes/` — porta 8001)
+## 2. Serviço de Empresas (`services/empresas/` — porta 8001)
+
+### Responsabilidades
+- **Multi-tenancy**: Gestão de empresas/tenants
+- CRUD de empresas
+- Isolamento de dados por empresa_id
+- Configurações por empresa
+- Slug único por empresa (usado em URLs públicas)
+
+### Modelo
+
+```python
+class Empresa(Base):
+    id: UUID (PK)
+    razao_social: str
+    nome_fantasia: str
+    cnpj: str (UK, validado)
+    slug: str (UK)              # ex: "loja-do-joao"
+    telefone: str
+    email: str
+    logo_url: Optional[str]
+    ativo: bool (default=True)
+    criado_em: datetime
+```
+
+### Endpoints
+
+```
+POST   /empresas                      → criar empresa (valida CNPJ único)
+GET    /empresas                      → listar empresas
+GET    /empresas/{id}                 → buscar por ID
+GET    /empresas/slug/{slug}          → buscar por slug (usado na loja online)
+PATCH  /empresas/{id}                 → atualizar dados
+DELETE /empresas/{id}                 → soft delete (ativo=False)
+```
+
+### Regras de Negócio
+
+1. CNPJ validado matematicamente (algoritmo dos dígitos verificadores)
+2. Slug deve ser único e lowercase, sem espaços (ex: "loja-do-joao")
+3. Ao criar empresa, criar automaticamente schemas PostgreSQL para cada serviço
+4. Empresas desativadas não podem ter usuários ativos
+5. Verificar dependências antes de desativar (usuários, clientes, produtos, etc)
+
+---
+
+## 3. Serviço de Clientes (`services/clientes/` — porta 8002)
 
 ### Modelos
 
 ```python
 class Cliente(Base):
     id: UUID (PK)
-    cpf: str (UK, NOT NULL, validado com algoritmo CPF)
+    empresa_id: UUID (NOT NULL)        # Multi-tenancy
+    cpf: str (NOT NULL, validado)
     nome: str
-    telefone: str (NOT NULL — usado para WhatsApp)
+    telefone: str (NOT NULL)
     email: Optional[str]
     data_nasc: Optional[date]
     limite_credito: Decimal (default=0.00)
@@ -64,6 +132,7 @@ class Cliente(Base):
     bloqueado: bool (default=False)
     ativo: bool (default=True)
     criado_em: datetime
+    UNIQUE(empresa_id, cpf)            # CPF único por empresa
 
 class Endereco(Base):
     id: UUID (PK)
@@ -111,7 +180,7 @@ GET    /clientes/{id}/historico-credito → extrato de movimentações de crédi
 
 ---
 
-## 3. Serviço de Produtos (`services/produtos/` — porta 8002)
+## 4. Serviço de Produtos (`services/produtos/` — porta 8003)
 
 ### Modelos
 
@@ -228,7 +297,7 @@ DELETE /fornecedores/{id}/produtos/{pid} → desvincular
 
 ---
 
-## 4. Serviço de Estoque (`services/estoque/` — porta 8003)
+## 5. Serviço de Estoque (`services/estoque/` — porta 8004)
 
 ### Modelos
 
@@ -283,7 +352,7 @@ GET    /estoque/alertas/minimo        → listar variantes abaixo do mínimo
 
 ---
 
-## 5. Serviço de Vendas (`services/vendas/` — porta 8004)
+## 6. Serviço de Vendas (`services/vendas/` — porta 8007)
 
 ### Modelos
 
@@ -428,7 +497,7 @@ PATCH  /pagamentos/{pedido_id}/confirmar → ADMIN: confirmar pagamento manual (
 
 ---
 
-## 6. Serviço Financeiro (`services/financeiro/` — porta 8005)
+## 7. Serviço Financeiro (`services/financeiro/` — porta 8005)
 
 ### Modelos
 
@@ -484,7 +553,7 @@ PATCH  /contas/{id}/marcar-vencida    → (chamado pelo job Celery Beat)
 
 ---
 
-## 7. Serviço de Notificações (`services/notificacoes/` — porta 8006)
+## 8. Serviço de Notificações (`services/notificacoes/` — porta 8006)
 
 ### Modelo
 
@@ -531,5 +600,6 @@ POST   /notificacoes/{id}/reenviar     → ADMIN: forçar reenvio de uma notific
 
 **Projeto:** Runas  
 **Equipe:** Equipe DenebCorp  
-**Data:** 26 de Maio de 2026  
-**Versão:** 1.0.0
+**Data:** 26 de Junho de 2026  
+**Versão:** 2.0.0  
+**Status**: 8 serviços operacionais (Gateway + Empresas + Clientes + Produtos + Estoque + Vendas + Financeiro + Notificações)

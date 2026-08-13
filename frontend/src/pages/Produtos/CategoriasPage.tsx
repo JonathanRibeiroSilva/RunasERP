@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiFolder } from 'react-icons/fi';
+import { useQueryClient } from '@tanstack/react-query';
+import { FiPlus, FiEdit2, FiTrash2, FiTag } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { api, getErrorMessage } from '@/services/api/axios';
+import { useAuth } from '@/hooks/useAuth';
 import './CategoriasPage.scss';
 
 interface Categoria {
   id: string;
   nome: string;
   descricao?: string;
+  cor?: string;
   ativo: boolean;
   criado_em: string;
 }
 
 const CategoriasPage = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -22,6 +27,7 @@ const CategoriasPage = () => {
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
+    cor: '#3B82F6',
   });
 
   useEffect(() => {
@@ -45,30 +51,46 @@ const CategoriasPage = () => {
     e.preventDefault();
 
     try {
+      const payloadDescricao = formData.cor 
+        ? `${formData.descricao}::color::${formData.cor}`
+        : formData.descricao;
+
+      const payload = { ...formData, descricao: payloadDescricao };
+      delete payload.cor;
+
       if (editingCategoria) {
-        await api.put(`/categorias/${editingCategoria.id}`, formData);
+        await api.put(`/categorias/${editingCategoria.id}`, payload);
         toast.success('Categoria atualizada com sucesso');
       } else {
-        await api.post('/categorias', formData);
+        await api.post('/categorias', { ...payload, empresa_id: user!.empresa_id });
         toast.success('Categoria criada com sucesso');
       }
 
       setShowForm(false);
       setEditingCategoria(null);
-      setFormData({ nome: '', descricao: '' });
+      setFormData({ nome: '', descricao: '', cor: '#3B82F6' });
+      await queryClient.invalidateQueries({ queryKey: ['categorias'] });
       carregarCategorias();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao salvar categoria';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao salvar categoria');
       toast.error(message);
       console.error(error);
     }
   };
 
   const handleEdit = (categoria: Categoria) => {
+    let desc = categoria.descricao || '';
+    let color = categoria.cor || '#3B82F6';
+    if (desc.includes('::color::')) {
+      const parts = desc.split('::color::');
+      desc = parts[0];
+      color = parts[1];
+    }
     setEditingCategoria(categoria);
     setFormData({
       nome: categoria.nome,
-      descricao: categoria.descricao || '',
+      descricao: desc,
+      cor: color,
     });
     setShowForm(true);
   };
@@ -81,9 +103,10 @@ const CategoriasPage = () => {
     try {
       await api.delete(`/categorias/${id}`);
       toast.success('Categoria excluída com sucesso');
+      await queryClient.invalidateQueries({ queryKey: ['categorias'] });
       carregarCategorias();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao excluir categoria';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao excluir categoria');
       toast.error(message);
       console.error(error);
     }
@@ -92,7 +115,7 @@ const CategoriasPage = () => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingCategoria(null);
-    setFormData({ nome: '', descricao: '' });
+    setFormData({ nome: '', descricao: '', cor: '#3B82F6' });
   };
 
   if (loading) {
@@ -111,8 +134,8 @@ const CategoriasPage = () => {
     <div className="categorias-page">
       <div className="page-header">
         <div className="header-content">
-          <h1>Categorias</h1>
-          <p>Gerencie as categorias de produtos</p>
+          <h1><FiTag className="title-icon" /> Categorias</h1>
+          <p>{categorias.length} {categorias.length === 1 ? 'categoria' : 'categorias'}</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowForm(true)}>
           <FiPlus /> Nova Categoria
@@ -120,41 +143,60 @@ const CategoriasPage = () => {
       </div>
 
       {showForm && (
-        <div className="form-section">
-          <h2>{editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="nome">Nome *</label>
-              <input
-                id="nome"
-                type="text"
-                placeholder="Nome da categoria"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                required
-              />
-            </div>
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>{editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="nome">Nome *</label>
+                <input
+                  id="nome"
+                  type="text"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  required
+                />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="descricao">Descrição</label>
-              <textarea
-                id="descricao"
-                placeholder="Descrição da categoria"
-                rows={3}
-                value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              />
-            </div>
+              <div className="form-group">
+                <label htmlFor="cor">Cor</label>
+                <div className="color-input-wrapper">
+                  <input
+                    id="cor-picker"
+                    type="color"
+                    value={formData.cor}
+                    onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                  />
+                  <input
+                    id="cor"
+                    type="text"
+                    value={formData.cor.toUpperCase()}
+                    onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                    maxLength={7}
+                  />
+                </div>
+              </div>
 
-            <div className="form-actions">
-              <button type="button" className="btn btn-outline-secondary" onClick={handleCancel}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary">
-                {editingCategoria ? 'Atualizar' : 'Criar'}
-              </button>
-            </div>
-          </form>
+              <div className="form-group">
+                <label htmlFor="descricao">Descrição</label>
+                <input
+                  id="descricao"
+                  type="text"
+                  value={formData.descricao}
+                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                />
+              </div>
+
+              <div className="form-actions">
+                <button type="button" className="btn-cancel" onClick={handleCancel}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-save">
+                  Salvar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -164,38 +206,46 @@ const CategoriasPage = () => {
         </div>
       ) : (
         <div className="categorias-grid">
-          {categorias.map((categoria) => (
-            <div key={categoria.id} className="categoria-card">
-              <div className="card-icon">
-                <FiFolder />
-              </div>
-              <div className="card-content">
-                <h3>{categoria.nome}</h3>
-                {categoria.descricao && <p>{categoria.descricao}</p>}
-                <div className="card-footer">
-                  <span className={`badge ${categoria.ativo ? 'badge-success' : 'badge-secondary'}`}>
-                    {categoria.ativo ? 'Ativo' : 'Inativo'}
-                  </span>
-                  <div className="card-actions">
-                    <button
-                      className="btn-icon btn-warning"
-                      onClick={() => handleEdit(categoria)}
-                      title="Editar"
-                    >
-                      <FiEdit2 />
-                    </button>
-                    <button
-                      className="btn-icon btn-danger"
-                      onClick={() => handleDelete(categoria.id, categoria.nome)}
-                      title="Excluir"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
+          {categorias.map((categoria) => {
+            let desc = categoria.descricao || '';
+            let color = categoria.cor || '#3B82F6';
+            if (desc.includes('::color::')) {
+              const parts = desc.split('::color::');
+              desc = parts[0];
+              color = parts[1];
+            }
+            
+            return (
+              <div key={categoria.id} className="categoria-card">
+                <div 
+                  className="card-avatar" 
+                  style={{ backgroundColor: color }}
+                >
+                  {categoria.nome.charAt(0).toUpperCase()}
+                </div>
+                <div className="card-content">
+                  <h3>{categoria.nome}</h3>
+                  <p>{desc || 'Sem descrição'}</p>
+                </div>
+                <div className="card-actions">
+                  <button
+                    className="btn-icon"
+                    onClick={() => handleEdit(categoria)}
+                    title="Editar"
+                  >
+                    <FiEdit2 />
+                  </button>
+                  <button
+                    className="btn-icon btn-danger"
+                    onClick={() => handleDelete(categoria.id, categoria.nome)}
+                    title="Excluir"
+                  >
+                    <FiTrash2 />
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

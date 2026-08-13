@@ -3,6 +3,8 @@ Configurações do API Gateway.
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Trigger: graphify update after gitignore fix
+
 
 class Settings(BaseSettings):
     """Configurações da aplicação."""

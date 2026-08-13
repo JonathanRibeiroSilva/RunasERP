@@ -1,17 +1,18 @@
+import { FiUsers } from 'react-icons/fi';
 import './Configuracoes.scss';
 
 const UsuariosPage = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>👥 Gerenciar Usuários</h1>
+        <h1><FiUsers className="title-icon" /> Gerenciar Usuários</h1>
         <p className="page-description">
           Adicione, edite e gerencie os usuários do sistema e suas permissões
         </p>
       </div>
 
       <div className="empty-state">
-        <div className="empty-state-icon">👥</div>
+        <div className="empty-state-icon"><FiUsers /></div>
         <h3>Gerenciamento de Usuários</h3>
         <p>Controle o acesso ao sistema:</p>
         <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>

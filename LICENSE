@@ -1,0 +1,47 @@
+Copyright (c) 2026 DenebCorp. Todos os direitos reservados.
+
+Este repositório contém software proprietário.
+NENHUMA LICENÇA DE USO É CONCEDIDA POR ESTE DOCUMENTO.
+
+O código-fonte pode ser disponibilizado a terceiros exclusivamente para
+leitura e avaliação técnica — portfólio, processos seletivos, auditoria ou
+due diligence. Conceder acesso de leitura não constitui licença, cessão,
+renúncia ou esgotamento de qualquer direito.
+
+Sem autorização prévia e por escrito da DenebCorp, é vedado:
+
+  - usar o software, no todo ou em parte, para qualquer finalidade;
+  - executar, hospedar ou implantar o software, inclusive internamente;
+  - copiar, modificar, traduzir ou criar obras derivadas;
+  - distribuir, publicar, sublicenciar, vender, alugar ou transferir;
+  - remover ou alterar avisos de autoria e titularidade;
+  - utilizar este código como dado de treinamento de modelos de
+    aprendizado de máquina.
+
+"Runas", "Runas ERP" e "DenebCorp" são marcas de seus respectivos titulares
+e não são licenciadas por este documento.
+
+Dependências de terceiros permanecem sob suas licenças originais. Este aviso
+alcança apenas o código autoral aqui contido.
+
+O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE
+QUALQUER NATUREZA, EXPRESSA OU IMPLÍCITA. OS TITULARES NÃO RESPONDEM POR
+QUAISQUER DANOS DECORRENTES DO SOFTWARE OU DE SEU USO.
+
+Clientes sob contrato: os termos comerciais de uso estão em
+docs/01-principal/EULA-comercial.md e prevalecem sobre este aviso dentro do
+escopo do respectivo contrato.
+
+Licenciamento e permissões: legal@runas.com
+
+--------------------------------------------------------------------------
+
+ENGLISH SUMMARY (courtesy translation; the Portuguese text above governs)
+
+Copyright (c) 2026 DenebCorp. All rights reserved. This is proprietary
+software and no license to use is granted. Source access, where given, is
+for reading and technical evaluation only. Any use, execution, deployment,
+copying, modification, distribution, or use as machine-learning training
+data requires prior written permission from DenebCorp. Third-party
+dependencies remain under their own licenses. Provided "AS IS", without
+warranty of any kind.

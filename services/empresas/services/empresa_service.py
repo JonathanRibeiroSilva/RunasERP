@@ -4,6 +4,7 @@ Contém toda a lógica de negócio relacionada a empresas (multi-tenancy).
 """
 from typing import Optional, List
 import re
+import unicodedata
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from exceptions import ValidationError, NotFoundError, ConflictError
@@ -82,13 +83,17 @@ class EmpresaService:
                     criado_por
                 )
         
-        # Verificar se slug já existe
-        slug_existente = await self.repository.buscar_por_slug(empresa_data.slug)
-        if slug_existente:
-            raise ConflictError(
-                "Já existe uma empresa com este slug",
-                {"campo": "slug", "empresa_id": slug_existente.id}
-            )
+        # Slug omitido: gerar automaticamente a partir do nome fantasia (URL pública da loja)
+        if not empresa_data.slug:
+            empresa_data.slug = await self._gerar_slug_unico(empresa_data.nome_fantasia)
+        else:
+            # Verificar se slug já existe
+            slug_existente = await self.repository.buscar_por_slug(empresa_data.slug)
+            if slug_existente:
+                raise ConflictError(
+                    "Já existe uma empresa com este slug",
+                    {"campo": "slug", "empresa_id": slug_existente.id}
+                )
         
         # Se for filial, validar que a matriz existe
         if empresa_data.tipo == TipoEmpresa.FILIAL:
@@ -128,6 +133,27 @@ class EmpresaService:
             await self.session.rollback()
             raise ValidationError(f"Erro ao criar empresa: {str(e)}")
     
+    async def _gerar_slug_unico(self, nome: str, excluir_empresa_id: Optional[int] = None) -> str:
+        """
+        Gera um slug único a partir de um nome (loja-2, loja-3... em caso de conflito).
+
+        excluir_empresa_id: em renomeações, o slug atual da própria empresa não conta
+        como conflito (renomear "Loja X" para "loja x" mantém o slug, sem sufixo).
+        """
+        base = unicodedata.normalize("NFKD", nome).encode("ascii", "ignore").decode()
+        base = re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")[:90]
+        if len(base) < 3:
+            base = "loja"
+
+        slug = base
+        sufixo = 2
+        while True:
+            existente = await self.repository.buscar_por_slug(slug)
+            if not existente or existente.id == excluir_empresa_id:
+                return slug
+            slug = f"{base}-{sufixo}"
+            sufixo += 1
+
     async def _reativar_empresa_existente(
         self,
         empresa_existente: Empresa,
@@ -339,7 +365,21 @@ class EmpresaService:
                     "Já existe uma empresa com este slug",
                     {"campo": "slug", "empresa_id": slug_existente.id}
                 )
-        
+
+        # Nome da loja alterado sem slug explícito: o endereço público (/c/{slug})
+        # acompanha o novo nome automaticamente. Links antigos deixam de funcionar —
+        # o frontend avisa o lojista antes de salvar.
+        if (
+            empresa_data.slug is None
+            and empresa_data.catalogo_titulo
+            and empresa_data.catalogo_titulo != empresa.catalogo_titulo
+        ):
+            novo_slug = await self._gerar_slug_unico(
+                empresa_data.catalogo_titulo, excluir_empresa_id=empresa_id
+            )
+            if novo_slug != empresa.slug:
+                empresa_data.slug = novo_slug
+
         # Atualizar
         try:
             empresa_atualizada = await self.repository.atualizar(

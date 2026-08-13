@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiEdit2, FiTrash2, FiPackage } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { api, getErrorMessage } from '@/services/api/axios';
 import './ProdutoDetalhesPage.scss';
 
 interface Categoria {
@@ -24,6 +25,7 @@ interface Produto {
 const ProdutoDetalhesPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const [produto, setProduto] = useState<Produto | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,9 +59,10 @@ const ProdutoDetalhesPage = () => {
     try {
       await api.delete(`/produtos/${id}`);
       toast.success('Produto desativado com sucesso');
+      await queryClient.invalidateQueries({ queryKey: ['produtos'] });
       navigate('/produtos');
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao desativar produto';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao desativar produto');
       toast.error(message);
       console.error(error);
     }

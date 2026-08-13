@@ -13,6 +13,8 @@ from schemas.produtos import (
     AtributoVarianteBase,
     LojaOnlineConfigCreate,
     LojaOnlineConfigUpdate,
+    LojaOnlinePublicarRequest,
+    ProdutoLojaOnlineStatusRead,
     LojaOnlineFotoCreate,
     LojaOnlineFotoUpdate,
     FornecedorCreate,
@@ -92,11 +94,19 @@ class ProdutoService:
         if not categoria:
             raise ValueError(f"Categoria com ID {dados.categoria_id} não encontrada")
 
+        if dados.preco < dados.custo:
+            raise ValueError("Preço de venda não pode ser menor que o custo")
+
         return await self.produto_repo.criar(
             empresa_id=empresa_id,
             categoria_id=dados.categoria_id,
             nome=dados.nome,
             descricao=dados.descricao,
+            ativo=dados.ativo,
+            preco=dados.preco,
+            custo=dados.custo,
+            preco_promocional=dados.preco_promocional,
+            unidade_medida=dados.unidade_medida,
         )
 
     async def obter_produto(self, empresa_id: int, produto_id: UUID):
@@ -107,29 +117,35 @@ class ProdutoService:
         return produto
 
     async def listar_produtos(
-        self, 
+        self,
         empresa_id: int,
-        skip: int = 0, 
-        limit: int = 10, 
+        skip: int = 0,
+        limit: int = 10,
         apenas_deletados: bool = False,
-        apenas_ativos: bool | None = None
+        apenas_ativos: bool | None = None,
+        busca: str | None = None,
+        categoria_id: UUID | None = None
     ):
         """
         Lista produtos.
-        
+
         Args:
             empresa_id: ID da empresa (multi-tenancy)
             skip: Offset para paginação
             limit: Limite de resultados
             apenas_deletados: True = só deletados, False = todos não deletados
             apenas_ativos: True = só ativos, False = só inativos, None = todos
+            busca: Filtra por nome (parcial, case-insensitive)
+            categoria_id: Filtra por categoria
         """
         return await self.produto_repo.listar_todos(
             empresa_id=empresa_id,
-            skip=skip, 
-            limit=limit, 
+            skip=skip,
+            limit=limit,
             apenas_ativos=apenas_ativos,
-            apenas_deletados=apenas_deletados
+            apenas_deletados=apenas_deletados,
+            busca=busca,
+            categoria_id=categoria_id
         )
 
     async def listar_por_categoria(self, empresa_id: int, categoria_id: UUID, skip: int = 0, limit: int = 10):
@@ -145,6 +161,25 @@ class ProdutoService:
             raise ValueError("Nome deve ter no mínimo 3 caracteres")
         return await self.produto_repo.obter_por_nome(empresa_id, nome)
 
+    async def listar_publicados_loja_online(
+        self,
+        empresa_id: int,
+        skip: int = 0,
+        limit: int = 20,
+        categoria_id: UUID | None = None,
+        busca: str | None = None,
+        ordenar: str = "nome",
+    ):
+        """Lista produtos publicados (ativo + visivel na loja online) para o catálogo público."""
+        return await self.produto_repo.listar_publicados_loja_online(
+            empresa_id=empresa_id,
+            skip=skip,
+            limit=limit,
+            categoria_id=categoria_id,
+            busca=busca,
+            ordenar=ordenar,
+        )
+
     async def atualizar_produto(self, empresa_id: int, produto_id: UUID, dados: ProdutoUpdate):
         """Atualiza um produto."""
         produto = await self.produto_repo.obter_por_id(empresa_id, produto_id)
@@ -156,6 +191,11 @@ class ProdutoService:
             if not categoria:
                 raise ValueError(f"Categoria com ID {dados.categoria_id} não encontrada")
 
+        preco_efetivo = dados.preco if dados.preco is not None else produto.preco
+        custo_efetivo = dados.custo if dados.custo is not None else produto.custo
+        if preco_efetivo < custo_efetivo:
+            raise ValueError("Preço de venda não pode ser menor que o custo")
+
         return await self.produto_repo.atualizar(
             empresa_id,
             produto_id,
@@ -163,6 +203,10 @@ class ProdutoService:
             categoria_id=dados.categoria_id,
             descricao=dados.descricao,
             ativo=dados.ativo,
+            preco=dados.preco,
+            custo=dados.custo,
+            preco_promocional=dados.preco_promocional,
+            unidade_medida=dados.unidade_medida,
         )
 
     async def deletar_produto(self, empresa_id: int, produto_id: UUID):
@@ -330,6 +374,47 @@ class LojaOnlineService:
         if not config:
             raise ValueError(f"Configuração com ID {loja_online_id} não encontrada")
         return config
+
+    async def listar_status_produtos(self, empresa_id: int, skip: int = 0, limit: int = 20):
+        """Lista produtos ativos da empresa com seu status de publicação na loja online."""
+        produtos, total = await self.loja_online_config_repo.listar_status_produtos(
+            empresa_id=empresa_id, skip=skip, limit=limit
+        )
+        items = [
+            ProdutoLojaOnlineStatusRead(
+                id=produto.id,
+                nome=produto.nome,
+                preco=produto.preco,
+                categoria_id=produto.categoria_id,
+                ativo=produto.ativo,
+                visivel=produto.loja_online_config.visivel if produto.loja_online_config else False,
+                destaque=produto.loja_online_config.destaque if produto.loja_online_config else False,
+                ordem_exibicao=produto.loja_online_config.ordem_exibicao if produto.loja_online_config else 0,
+            )
+            for produto in produtos
+        ]
+        return items, total
+
+    async def publicar_produto(self, empresa_id: int, produto_id: UUID, dados: LojaOnlinePublicarRequest):
+        """
+        Publica ou despublica um produto na loja online (upsert de LojaOnlineConfig).
+
+        Diferente de `criar_config`/`atualizar_config` (que exigem saber se a config
+        já existe), este método faz get-or-create — usado pelo toggle de publicação
+        da tela de administração da loja.
+        """
+        produto = await self.produto_repo.obter_por_id(empresa_id, produto_id)
+        if not produto:
+            raise ValueError(f"Produto com ID {produto_id} não encontrado")
+
+        config = await self.loja_online_config_repo.obter_por_produto(produto_id)
+        if config:
+            return await self.loja_online_config_repo.atualizar(
+                config.id, visivel=dados.visivel, destaque=dados.destaque
+            )
+        return await self.loja_online_config_repo.criar(
+            produto_id=produto_id, visivel=dados.visivel, destaque=dados.destaque
+        )
 
     async def adicionar_foto(self, empresa_id: int, dados: LojaOnlineFotoCreate):
         """Adiciona foto à loja online."""

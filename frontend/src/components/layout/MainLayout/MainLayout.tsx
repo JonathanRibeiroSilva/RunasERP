@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../Navbar/Navbar';
 import Sidebar from '../Sidebar/Sidebar';
+import ErrorBoundary from '@/components/common/ErrorBoundary/ErrorBoundary';
 import './MainLayout.scss';
 
 const MainLayout = () => {
+  const location = useLocation();
   // Detectar se é mobile (< 768px)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   // Sidebar aberta por padrão no desktop, fechada no mobile
@@ -77,7 +79,9 @@ const MainLayout = () => {
         />
         <main className={`main-content ${sidebarOpen && !isMobile ? 'sidebar-open' : ''}`}>
           <div className="content-wrapper">
-            <Outlet />
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>

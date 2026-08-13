@@ -8,6 +8,35 @@
   flex-direction: column;
   overflow: hidden; // Previne scroll duplo
 
+  // Página de manutenção (loja desabilitada pelo lojista)
+  .loja-manutencao {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+    text-align: center;
+
+    &__logo {
+      max-width: 120px;
+      max-height: 120px;
+      object-fit: contain;
+    }
+
+    h1 {
+      margin: 0;
+      color: $text-primary;
+    }
+
+    p {
+      margin: 0;
+      color: $text-secondary;
+      font-size: 1.05rem;
+    }
+  }
+
   // Header
   .loja-online-publico-header {
     background: linear-gradient(135deg, darken($primary, 10%), $primary);
@@ -45,6 +74,32 @@
         display: flex;
         gap: 0.5rem;
         flex-wrap: wrap;
+
+        .btn-entrar {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.6rem 1rem;
+          background: rgba(white, 0.95);
+          border: 1px solid white;
+          color: $primary;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: all 0.2s;
+
+          &:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          }
+
+          svg {
+            font-size: 1.1rem;
+          }
+        }
 
         .btn-carrinho {
           position: relative;
@@ -267,6 +322,54 @@
       }
 
       @keyframes spin { to { transform: rotate(360deg); } }
+    }
+
+    // Skeleton Loading
+    .skeleton-grid {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 1rem 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .skeleton-card {
+      background: $surface;
+      border: 1px solid $border-default;
+      border-radius: 0.75rem;
+      overflow: hidden;
+
+      .skeleton-image {
+        width: 100%;
+        aspect-ratio: 1;
+        background: linear-gradient(90deg, $background 25%, rgba($primary, 0.05) 50%, $background 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+      }
+
+      .skeleton-content {
+        padding: 1rem;
+
+        .skeleton-line {
+          height: 1rem;
+          background: linear-gradient(90deg, $background 25%, rgba($primary, 0.05) 50%, $background 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+          border-radius: 0.25rem;
+          margin-bottom: 0.75rem;
+
+          &.title { width: 80%; height: 1.25rem; }
+          &.subtitle { width: 60%; }
+          &.price { width: 40%; height: 1.5rem; margin-top: 1rem; }
+        }
+      }
+
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
     }
 
     // Empty

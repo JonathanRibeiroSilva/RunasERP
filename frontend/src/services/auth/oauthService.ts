@@ -29,7 +29,6 @@ export const oauthService = {
       // Redirecionar para o provider
       window.location.href = auth_url;
     } catch (error) {
-      console.error('[OAuth] Erro ao iniciar OAuth:', error);
       throw new Error(`Erro ao iniciar autenticação com ${provider}`);
     }
   },
@@ -48,28 +47,23 @@ export const oauthService = {
     sessionStorage.removeItem('oauth_state');
     sessionStorage.removeItem('oauth_provider');
 
-    try {
-      // Enviar code e state para o backend processar
-      // O backend vai validar o state no Redis e definir cookies HTTP-only
-      const response = await api.post<LoginResponse>(`/auth/oauth/${finalProvider}/callback`, {
-        code,
-        state,
-      });
+    // Enviar code e state para o backend processar
+    // O backend vai validar o state no Redis e definir cookies HTTP-only
+    const response = await api.post<LoginResponse>(`/auth/oauth/${finalProvider}/callback`, {
+      code,
+      state,
+    });
 
-      const { user } = response.data;
+    const { user } = response.data;
 
-      if (!user) {
-        throw new Error('Dados do usuário não retornados pelo servidor');
-      }
-
-      // Tokens agora são gerenciados via cookies HTTP-only pelo backend
-      // Não é necessário salvar manualmente no localStorage
-
-      return response.data;
-    } catch (error) {
-      console.error('[OAuth] Erro ao processar callback:', error);
-      throw error;
+    if (!user) {
+      throw new Error('Dados do usuário não retornados pelo servidor');
     }
+
+    // Tokens agora são gerenciados via cookies HTTP-only pelo backend
+    // Não é necessário salvar manualmente no localStorage
+
+    return response.data;
   },
 
   /**

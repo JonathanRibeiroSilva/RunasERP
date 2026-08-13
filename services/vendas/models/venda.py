@@ -96,6 +96,9 @@ class Venda(Base):
     mercadopago_preference_id = Column(String(100), nullable=True, index=True)
     mercadopago_payment_id = Column(String(100), nullable=True, index=True)
     
+    # Sessão do carrinho (para limpar após pagamento confirmado)
+    sessao_carrinho_id = Column(String(100), nullable=True, comment="ID da sessão do carrinho Redis")
+    
     # Valor do frete (taxa de entrega)
     valor_frete = Column(Numeric(10, 2), nullable=False, default=0.0)
     
@@ -125,6 +128,14 @@ class Venda(Base):
     # Cancelamento
     motivo_cancelamento = Column(Text, nullable=True)
     cancelada_por = Column(UUID(as_uuid=True), nullable=True)  # usuario_id
+
+    # Reconciliação cross-service (C4): pagamento aprovado mas resultado da baixa de
+    # estoque indeterminado (timeout/erro). A venda NÃO é cancelada; um job retenta a
+    # baixa idempotente e confirma (ou cancela se faltar estoque de fato).
+    reconciliacao_estoque_pendente = Column(
+        Boolean, default=False, nullable=False, server_default="false"
+    )
+    reconciliacao_motivo = Column(Text, nullable=True)
     
     # Observações
     observacao = Column(Text, nullable=True)

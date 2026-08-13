@@ -15,7 +15,7 @@ const passwordRules: PasswordRule[] = [
   { label: 'Uma letra maiúscula', test: (v) => /[A-Z]/.test(v) },
   { label: 'Uma letra minúscula', test: (v) => /[a-z]/.test(v) },
   { label: 'Um número', test: (v) => /\d/.test(v) },
-  { label: 'Um caractere especial (!@#$%...)', test: (v) => /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(v) },
+  { label: 'Um caractere especial (!@#$%...)', test: (v) => /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(v) },
 ];
 
 const RunasLogo = () => (

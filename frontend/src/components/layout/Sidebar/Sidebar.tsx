@@ -21,6 +21,7 @@ import {
   FiExternalLink,
 } from 'react-icons/fi';
 import { useAuth } from '@/hooks/useAuth';
+import { useEmpresa } from '@/hooks/useLojaOnline';
 import type { UserRole } from '@/types/auth';
 import './Sidebar.scss';
 
@@ -36,7 +37,7 @@ interface SubMenuItem {
   label: string;
   requiredRole?: UserRole[]; // Roles que podem ver este item
   external?: boolean; // Se é link externo
-  action?: () => void; // Ação customizada (ex: abrir nova aba)
+  openStore?: boolean; // Abre a loja online da empresa em nova aba
 }
 
 interface NavItem {
@@ -62,11 +63,11 @@ const navItems: NavItem[] = [
     icon: <FiGlobe />, 
     label: 'Loja Online',
     submenu: [
-      { 
-        icon: <FiExternalLink />, 
+      {
+        icon: <FiExternalLink />,
         label: 'Minha Loja',
         external: true,
-        action: () => window.open('/c/distribuidora-central', '_blank') // TODO: Usar empresa_slug dinâmico
+        openStore: true,
       },
       { path: '/loja/pedidos', icon: <FiShoppingBag />, label: 'Pedidos Online' },
       { path: '/loja/configuracoes', icon: <FiSettings />, label: 'Configurações da Loja' },
@@ -90,10 +91,11 @@ const navItems: NavItem[] = [
     icon: <FiShoppingCart />, 
     label: 'Vendas' 
   },
-  { 
-    path: '/financeiro', 
-    icon: <FiDollarSign />, 
-    label: 'Financeiro' 
+  {
+    path: '/financeiro',
+    icon: <FiDollarSign />,
+    label: 'Financeiro',
+    requiredRole: ['ADMIN'], // ← Apenas ADMIN vê
   },
   // CONFIGURAÇÕES - Apenas ADMIN
   { 
@@ -117,7 +119,17 @@ const navItems: NavItem[] = [
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) => {
   const location = useLocation();
   const { user } = useAuth(); // ← Pegar usuário atual
-  
+  // Slug via React Query: acompanha a renomeação da loja sem precisar relogar
+  // (useAtualizarEmpresa invalida ['empresa', id] ao salvar as configurações)
+  const { data: empresa } = useEmpresa(user?.empresa_id);
+  const lojaSlug = empresa?.slug ?? user?.empresa_slug;
+
+  const abrirMinhaLoja = () => {
+    if (lojaSlug) {
+      window.open(`/c/${lojaSlug}`, '_blank', 'noopener');
+    }
+  };
+
   const [expandedMenus, setExpandedMenus] = useState<string[]>(() => {
     // Inicializar estado com submenus ativos na primeira renderização
     const initialExpanded: string[] = [];
@@ -203,12 +215,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) 
                   <div className={`nav-submenu ${isMenuExpanded(item.label, visibleSubmenu) ? 'expanded' : ''}`}>
                     {visibleSubmenu.map((subItem, index) => {
                       // Item externo (ex: Ver Minha Loja)
-                      if (subItem.external && subItem.action) {
+                      if (subItem.external && subItem.openStore) {
                         return (
                           <button
                             key={subItem.label}
                             onClick={() => {
-                              subItem.action?.();
+                              abrirMinhaLoja();
                               handleNavClick();
                             }}
                             className="nav-subitem nav-subitem-external"

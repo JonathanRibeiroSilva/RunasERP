@@ -10,10 +10,17 @@
   margin-bottom: $spacer-6;
   
   h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: $font-size-2xl;
     font-weight: $font-weight-bold;
     color: $text-primary;
     margin-bottom: $spacer-2;
+
+    .title-icon {
+      color: $primary;
+    }
   }
   
   .page-description {

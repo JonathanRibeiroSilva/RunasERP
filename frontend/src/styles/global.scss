@@ -1,4 +1,6 @@
-// Runas Design System - Global Styles
+// Premium Enterprise SaaS Global Styles
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @import './variables';
 @import './mixins';
@@ -6,7 +8,6 @@
 // ========================================
 // RESET & BASE
 // ========================================
-
 * {
   margin: 0;
   padding: 0;
@@ -17,73 +18,76 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   height: 100%;
 }
 
 body {
   font-family: $font-family-base;
   font-size: $font-size-base;
-  font-weight: $font-weight-normal;
-  line-height: $line-height-base;
-  color: $text-primary !important;
-  background-color: $background !important;
+  font-weight: $font-weight-regular;
+  line-height: 1.6;
+  color: $text-primary;
+  background-color: $background;
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  
+  // Darker background with subtle gradients
+  background-image: 
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.02), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.02), transparent 40%),
+    linear-gradient(135deg, #080A0F 0%, #040508 100%);
+  background-attachment: fixed;
 }
 
-// Force dark background on root element
+.page-header {
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    .title-icon {
+      color: $primary;
+    }
+  }
+}
+
 #root {
   min-height: 100vh;
-  background-color: $background;
+  display: flex;
+  flex-direction: column;
 }
 
 // ========================================
 // TYPOGRAPHY
 // ========================================
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  margin-bottom: $spacer-3;
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-base;
   font-weight: $font-weight-semibold;
-  line-height: $line-height-sm;
   color: $text-primary;
+  letter-spacing: $letter-spacing-tight;
+  margin-bottom: $spacer-3;
+  line-height: 1.2;
 }
 
-h1 {
-  font-size: $h1-font-size;
-}
-h2 {
-  font-size: $h2-font-size;
-}
-h3 {
-  font-size: $h3-font-size;
-}
-h4 {
-  font-size: $h4-font-size;
-}
-h5 {
-  font-size: $h5-font-size;
-}
-h6 {
-  font-size: $h6-font-size;
-}
+h1 { font-size: $font-size-3xl; }
+h2 { font-size: $font-size-2xl; }
+h3 { font-size: $font-size-xl; }
+h4 { font-size: $font-size-lg; }
 
 p {
-  margin-bottom: $spacer-3;
+  color: $text-secondary;
+  margin-bottom: $spacer-4;
 }
 
 a {
   color: $primary;
   text-decoration: none;
-  transition: $transition-fast;
+  transition: color $transition-fast;
+  font-weight: $font-weight-medium;
 
   &:hover {
     color: $primary-hover;
-    text-decoration: underline;
   }
 
   &:focus-visible {
@@ -91,199 +95,94 @@ a {
   }
 }
 
-// ========================================
-// SCROLLBAR
-// ========================================
-
-* {
-  @include custom-scrollbar;
+// Mono font for data
+.font-mono {
+  font-family: $font-family-monospace !important;
 }
 
 // ========================================
-// FOCUS VISIBLE
+// SCROLLBAR (Premium Sleek)
 // ========================================
-
-*:focus-visible {
-  @include focus-ring;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-// ========================================
-// SELECTION
-// ========================================
-
-::selection {
-  background-color: $primary-light;
-  color: $text-primary;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-// ========================================
-// ACCESSIBILITY
-// ========================================
-
-// Respeitar preferência de movimento reduzido
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: $border-radius-full;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
 }
 
 // ========================================
-// UTILITY CLASSES
+// UTILITIES (Enhanced)
 // ========================================
-
-// Text Colors
-.text-primary {
-  color: $text-primary !important;
-}
-.text-secondary {
-  color: $text-secondary !important;
-}
-.text-tertiary {
-  color: $text-tertiary !important;
-}
-.text-disabled {
-  color: $text-disabled !important;
+.text-gradient {
+  @include text-gradient;
 }
 
-// Background Colors
-.bg-background {
-  background-color: $background !important;
-}
-.bg-surface {
-  background-color: $surface !important;
-}
-.bg-surface-hover {
-  background-color: $surface-hover !important;
+.text-overline {
+  @include text-overline;
 }
 
-// Spacing
-.mt-1 {
-  margin-top: $spacer-1 !important;
-}
-.mt-2 {
-  margin-top: $spacer-2 !important;
-}
-.mt-3 {
-  margin-top: $spacer-3 !important;
-}
-.mt-4 {
-  margin-top: $spacer-4 !important;
-}
-
-.mb-1 {
-  margin-bottom: $spacer-1 !important;
-}
-.mb-2 {
-  margin-bottom: $spacer-2 !important;
-}
-.mb-3 {
-  margin-bottom: $spacer-3 !important;
-}
-.mb-4 {
-  margin-bottom: $spacer-4 !important;
-}
-
-.pt-1 {
-  padding-top: $spacer-1 !important;
-}
-.pt-2 {
-  padding-top: $spacer-2 !important;
-}
-.pt-3 {
-  padding-top: $spacer-3 !important;
-}
-.pt-4 {
-  padding-top: $spacer-4 !important;
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  border-radius: $border-radius-full;
+  letter-spacing: $letter-spacing-wide;
+  
+  &-success {
+    background: $success-light;
+    color: $success;
+    border: 1px solid $success-border;
+  }
+  &-warning {
+    background: $warning-light;
+    color: $warning;
+    border: 1px solid $warning-border;
+  }
+  &-error {
+    background: $error-light;
+    color: $error;
+    border: 1px solid $error-border;
+  }
+  &-info {
+    background: $info-light;
+    color: $info;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
 }
 
-.pb-1 {
-  padding-bottom: $spacer-1 !important;
-}
-.pb-2 {
-  padding-bottom: $spacer-2 !important;
-}
-.pb-3 {
-  padding-bottom: $spacer-3 !important;
-}
-.pb-4 {
-  padding-bottom: $spacer-4 !important;
-}
+// Utility overrides that existed in old file
+.bg-background { background-color: $background !important; }
+.bg-surface { background-color: $surface !important; }
+.text-primary { color: $text-primary !important; }
+.text-secondary { color: $text-secondary !important; }
+.text-tertiary { color: $text-tertiary !important; }
 
-// Flex
-.d-flex {
-  display: flex !important;
-}
-.flex-column {
-  flex-direction: column !important;
-}
-.align-items-center {
-  align-items: center !important;
-}
-.justify-content-center {
-  justify-content: center !important;
-}
-.justify-content-between {
-  justify-content: space-between !important;
-}
-.gap-1 {
-  gap: $spacer-1 !important;
-}
-.gap-2 {
-  gap: $spacer-2 !important;
-}
-.gap-3 {
-  gap: $spacer-3 !important;
-}
-.gap-4 {
-  gap: $spacer-4 !important;
-}
+.d-flex { display: flex !important; }
+.flex-column { flex-direction: column !important; }
+.align-items-center { align-items: center !important; }
+.justify-content-between { justify-content: space-between !important; }
 
-// Text Utilities
-.text-center {
-  text-align: center !important;
-}
-.text-right {
-  text-align: right !important;
-}
-.text-left {
-  text-align: left !important;
-}
-
-.font-weight-normal {
-  font-weight: $font-weight-normal !important;
-}
-.font-weight-medium {
-  font-weight: $font-weight-medium !important;
-}
-.font-weight-semibold {
-  font-weight: $font-weight-semibold !important;
-}
-.font-weight-bold {
-  font-weight: $font-weight-bold !important;
-}
-
-// Truncate
-.truncate {
-  @include truncate;
-}
+.mb-3 { margin-bottom: $spacer-3 !important; }
+.mb-4 { margin-bottom: $spacer-4 !important; }
+.mt-3 { margin-top: $spacer-3 !important; }
 
 // ========================================
-// CONTAINER
+// FORM ELEMENTS GLOBAL
 // ========================================
-
-.container-fluid {
-  width: 100%;
-  padding-right: $spacer-3;
-  padding-left: $spacer-3;
-  margin-right: auto;
-  margin-left: auto;
-}
-
-.container {
-  @extend .container-fluid;
-  max-width: 1320px;
+option {
+  background-color: $surface;
+  color: $text-primary;
 }

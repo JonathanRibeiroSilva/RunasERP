@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlalchemy import select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.cliente import Cliente, Endereco
-from schemas.cliente import ClienteCreate, ClienteUpdate, EnderecoCreate, EnderecoUpdate
+from schemas.cliente import ClienteCreate, ClienteCreateOAuth, ClienteUpdate, EnderecoCreate, EnderecoUpdate
 import structlog
 
 log = structlog.get_logger()
@@ -30,8 +30,6 @@ class ClienteRepository:
         )
         self.db.add(cliente)
         await self.db.flush()
-        await self.db.refresh(cliente)
-        await self.db.commit()
         log.info("cliente.criado", cliente_id=str(cliente.id), empresa_id=data.empresa_id)
         return cliente
     
@@ -50,6 +48,31 @@ class ClienteRepository:
         result = await self.db.execute(
             select(Cliente).where(
                 Cliente.cpf == cpf,
+                Cliente.empresa_id == empresa_id
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def criar_oauth(self, data: ClienteCreateOAuth) -> Cliente:
+        """Cria um novo cliente via OAuth (CPF e telefone opcionais)."""
+        cliente = Cliente(
+            empresa_id=data.empresa_id,
+            cpf=data.cpf,  # Pode ser None
+            nome=data.nome,
+            telefone=data.telefone,  # Pode ser None
+            email=data.email,
+            data_nasc=data.data_nasc
+        )
+        self.db.add(cliente)
+        await self.db.flush()
+        log.info("cliente.oauth.criado", cliente_id=str(cliente.id), empresa_id=data.empresa_id, email=data.email)
+        return cliente
+    
+    async def buscar_por_email(self, email: str, empresa_id: int) -> Cliente | None:
+        """Busca cliente por email (filtrado por empresa)."""
+        result = await self.db.execute(
+            select(Cliente).where(
+                Cliente.email == email,
                 Cliente.empresa_id == empresa_id
             )
         )
@@ -113,9 +136,8 @@ class ClienteRepository:
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(cliente, field, value)
-        
-        await self.db.commit()
-        await self.db.refresh(cliente)
+
+        await self.db.flush()
         log.info("cliente.atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
@@ -126,16 +148,27 @@ class ClienteRepository:
             return False
         
         cliente.ativo = False
-        await self.db.commit()
+        await self.db.flush()
         log.info("cliente.desativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return True
-    
+
+    async def reativar(self, cliente_id: UUID, empresa_id: int) -> Cliente | None:
+        """Reativa um cliente desativado (filtrado por empresa)."""
+        cliente = await self.buscar_por_id(cliente_id, empresa_id)
+        if not cliente:
+            return None
+
+        cliente.ativo = True
+        await self.db.flush()
+        log.info("cliente.reativado", cliente_id=str(cliente_id), empresa_id=empresa_id)
+        return cliente
+
     async def atualizar_credito(
         self,
         cliente_id: UUID,
         empresa_id: int,
         limite_credito: Decimal,
-        dia_vencimento: int
+        dia_vencimento: int | None
     ) -> Cliente | None:
         """Atualiza limite de crédito e dia de vencimento (filtrado por empresa)."""
         cliente = await self.buscar_por_id(cliente_id, empresa_id)
@@ -146,9 +179,8 @@ class ClienteRepository:
         cliente.dia_vencimento = dia_vencimento
         # Recalcular crédito disponível (assumindo saldo_devedor = 0 por enquanto)
         cliente.credito_disponivel = limite_credito
-        
-        await self.db.commit()
-        await self.db.refresh(cliente)
+
+        await self.db.flush()
         log.info("cliente.credito_atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
@@ -169,8 +201,7 @@ class ClienteRepository:
             raise ValueError("Crédito disponível não pode ser negativo")
         
         cliente.credito_disponivel = novo_credito
-        await self.db.commit()
-        await self.db.refresh(cliente)
+        await self.db.flush()
         log.info("cliente.credito_ajustado", cliente_id=str(cliente_id), empresa_id=empresa_id, delta=str(delta))
         return cliente
     
@@ -181,8 +212,7 @@ class ClienteRepository:
             return None
         
         cliente.bloqueado = True
-        await self.db.commit()
-        await self.db.refresh(cliente)
+        await self.db.flush()
         log.info("cliente.bloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
     
@@ -193,8 +223,7 @@ class ClienteRepository:
             return None
         
         cliente.bloqueado = False
-        await self.db.commit()
-        await self.db.refresh(cliente)
+        await self.db.flush()
         log.info("cliente.desbloqueado", cliente_id=str(cliente_id), empresa_id=empresa_id)
         return cliente
 
@@ -220,10 +249,9 @@ class EnderecoRepository:
             **data.model_dump()
         )
         self.db.add(endereco)
-        await self.db.commit()
-        await self.db.refresh(endereco)
+        await self.db.flush()
         return endereco
-    
+
     async def listar_por_cliente(self, cliente_id: UUID) -> list[Endereco]:
         """Lista endereços de um cliente."""
         result = await self.db.execute(
@@ -261,11 +289,10 @@ class EnderecoRepository:
         
         for field, value in update_data.items():
             setattr(endereco, field, value)
-        
-        await self.db.commit()
-        await self.db.refresh(endereco)
+
+        await self.db.flush()
         return endereco
-    
+
     async def deletar(self, endereco_id: UUID) -> bool:
         """Deleta um endereço."""
         endereco = await self.buscar_por_id(endereco_id)
@@ -273,5 +300,5 @@ class EnderecoRepository:
             return False
         
         await self.db.delete(endereco)
-        await self.db.commit()
+        await self.db.flush()
         return True

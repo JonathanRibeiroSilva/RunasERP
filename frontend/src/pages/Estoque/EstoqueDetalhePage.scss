@@ -1,0 +1,253 @@
+@import '@/styles/variables';
+@import '@/styles/mixins';
+@import './estoque-shared';
+
+.estoque-detalhe-page {
+  padding: 2rem;
+  min-height: calc(100vh - 64px);
+  background: $background;
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+    padding: 0.45rem 0.85rem;
+    background: transparent;
+    border: 1px solid $border-default;
+    border-radius: $border-radius;
+    color: $text-secondary;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: $transition-fast;
+
+    &:hover {
+      border-color: $primary;
+      color: $text-primary;
+    }
+  }
+
+  .detalhe-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    h1 {
+      margin: 0;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .sub {
+      margin: 0.35rem 0 0;
+      color: $text-secondary;
+      font-size: 0.9rem;
+    }
+  }
+
+  // -------------------- Saldos --------------------
+  .saldo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .saldo-card {
+    padding: 1.1rem 1.25rem;
+    background: $surface;
+    border: 1px solid $border-default;
+    border-radius: $border-radius-lg;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .saldo-valor {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: $text-primary;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .saldo-label {
+      font-size: 0.82rem;
+      color: $text-secondary;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    &--success .saldo-valor {
+      color: $success;
+    }
+    &--info .saldo-valor {
+      color: $info;
+    }
+    &--muted .saldo-valor {
+      color: $text-secondary;
+    }
+  }
+
+  // -------------------- Barra de ações --------------------
+  .acoes-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 2rem;
+
+    .acao-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1rem;
+      border: 1px solid $border-default;
+      border-radius: $border-radius;
+      background: $surface;
+      color: $text-primary;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: $transition-fast;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &--success:hover {
+        border-color: $success;
+        color: $success;
+      }
+      &--danger:hover {
+        border-color: $danger;
+        color: $danger;
+      }
+      &--warning:hover {
+        border-color: $warning;
+        color: $warning;
+      }
+      &--info:hover {
+        border-color: $info;
+        color: $info;
+      }
+    }
+  }
+
+  // -------------------- Ciclo de vida --------------------
+  .lifecycle {
+    background: $surface;
+    border: 1px solid $border-default;
+    border-radius: $border-radius-lg;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+
+    h2 {
+      margin: 0 0 1rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .lifecycle-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .lifecycle-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: $text-primary;
+      font-size: 0.88rem;
+    }
+
+    .lifecycle-dot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: $primary-light;
+      color: $primary;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .lifecycle-arrow {
+      color: $text-tertiary;
+    }
+
+    .lifecycle-alt {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: $text-secondary;
+      font-size: 0.85rem;
+
+      li {
+        margin-bottom: 0.2rem;
+      }
+
+      strong {
+        color: $text-primary;
+      }
+    }
+  }
+
+  // -------------------- Movimentações / Lotes --------------------
+  section.movimentacoes,
+  section.lotes {
+    margin-bottom: 2rem;
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: $text-primary;
+    }
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+
+    h2 {
+      margin: 0;
+    }
+  }
+
+  .tipo-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+
+    .chip {
+      padding: 0.3rem 0.7rem;
+      border: 1px solid $border-default;
+      border-radius: 999px;
+      background: $surface;
+      color: $text-secondary;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: $transition-fast;
+
+      &:hover {
+        border-color: $primary;
+        color: $text-primary;
+      }
+
+      &--active {
+        background: $primary;
+        border-color: $primary;
+        color: #fff;
+      }
+    }
+  }
+}

@@ -2,6 +2,14 @@
 # Baseado no docker-compose.yml principal, adaptado para desenvolvimento
 # BuildKit habilitado para cache de pip (builds muito mais rápidos)
 
+# Teto por container. Limite não reserva memória: só impede que um serviço em
+# loop leve a máquina junto. db e frontend-dev sobrescrevem com valores maiores.
+x-dev-limits: &dev-limits
+  resources:
+    limits:
+      cpus: '0.5'
+      memory: 512M
+
 networks:
   erp-network:
     driver: bridge
@@ -11,7 +19,6 @@ volumes:
   rabbitmq_data:
   redis_data:
   db_data:
-  nginx_logs:
 
 services:
   # ============================================
@@ -31,6 +38,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -46,6 +54,7 @@ services:
       - redis_data:/data
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -69,6 +78,9 @@ services:
       - ./postgres/init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql:ro
     networks:
       - erp-network
+    deploy:
+      resources:
+        limits: {cpus: '1.0', memory: 1G}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U erp -d erp"]
       interval: 10s
@@ -81,46 +93,50 @@ services:
   # PGADMIN
   # ============================================
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: erp-pgadmin-dev
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@runas.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
-      - ./pgadmin/pgpass:/tmp/pgpass:ro
-    depends_on:
-      - db
-    networks:
-      - erp-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/misc/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    entrypoint: >
-      /bin/sh -c "
-      mkdir -p /var/lib/pgadmin/storage/admin_runas.com &&
-      cp /tmp/pgpass /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
-      chmod 600 /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
-      chown -R pgadmin:root /var/lib/pgadmin/storage &&
-      /entrypoint.sh
-      "
+  # pgadmin:
+  #  image: dpage/pgadmin4:latest
+  #  container_name: erp-pgadmin-dev
+  #  environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@runas.com}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #     PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+  #     PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+  #  ports:
+  #    - "5050:80"
+  # volumes:docker compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
+  #    - pgadmin_data:/var/lib/pgadmin
+  #    - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+  #    - ./pgadmin/pgpass:/tmp/pgpass:ro
+  #  depends_on:
+  #    - db
+  #  networks:
+  #    - erp-network
+  #  healthcheck:
+  #     test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/misc/ping"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #     mkdir -p /var/lib/pgadmin/storage/admin_runas.com &&
+  #     cp /tmp/pgpass /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+  #     chmod 600 /var/lib/pgadmin/storage/admin_runas.com/pgpass &&
+  #     chown -R pgadmin:root /var/lib/pgadmin/storage &&
+  #     /entrypoint.sh
+  #     "
 
   # ============================================
   # EVOLUTION API (WhatsApp)
   # ============================================
 
+  # Imagem atendai/evolution-api saiu do Docker Hub — fora do "up" padrão.
+  # WhatsApp não é usado no fluxo da loja; reative com --profile whatsapp se voltar.
   evolution-api:
     image: atendai/evolution-api:latest
     container_name: erp-evolution-api-dev
+    profiles:
+      - whatsapp
     environment:
       # Database
       DATABASE_PROVIDER: postgresql
@@ -152,6 +168,7 @@ services:
         condition: service_healthy
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
       interval: 30s
@@ -206,12 +223,13 @@ services:
       - ./api-gateway:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-delay 2
 
   clientes:
     build:
@@ -236,13 +254,14 @@ services:
       - ./services/clientes:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload --reload-delay 2
 
   produtos:
     build:
@@ -267,13 +286,14 @@ services:
       - ./services/produtos:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8002 --reload --reload-delay 2
 
   estoque:
     build:
@@ -298,13 +318,14 @@ services:
       - ./services/estoque:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8003 --reload --reload-delay 2
 
   vendas:
     build:
@@ -324,6 +345,8 @@ services:
       MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
       MP_ENVIRONMENT: ${MP_ENVIRONMENT:-sandbox}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
       PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
       ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
@@ -339,13 +362,14 @@ services:
       - ./services/vendas:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8004 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8004 --reload --reload-delay 2
 
   financeiro:
     build:
@@ -370,13 +394,14 @@ services:
       - ./services/financeiro:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8005 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8005 --reload --reload-delay 2
 
   notificacoes:
     build:
@@ -404,13 +429,14 @@ services:
       - ./services/notificacoes:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8006 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8006 --reload --reload-delay 2
 
   empresas:
     build:
@@ -435,13 +461,14 @@ services:
       - ./services/empresas:/app
     networks:
       - erp-network
+    deploy: *dev-limits
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8007 --reload
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8007 --reload --reload-delay 2
 
   # ============================================
   # FRONTEND
@@ -457,12 +484,14 @@ services:
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
       - /app/node_modules
     environment:
-      # ATENÇÃO: Estas variáveis são lidas do .env na raiz do projeto.
-      # Se mudar a URL do ngrok, atualize o .env e rode: docker compose up -d --force-recreate frontend-dev
+      # Defaults assume localhost — this file alone IS the local setup, no overlay
+      # needed. docker-compose.cloudflare.yml overrides these with public URLs.
+      # Após mexer no .env: docker compose up -d --force-recreate frontend-dev
       # NÃO use "docker restart" pois ele não relê o .env.
-      VITE_API_URL: ${VITE_API_URL:?VITE_API_URL nao definida no .env}
+      VITE_API_URL: ${VITE_API_URL:-/api}
       VITE_OAUTH_REDIRECT_URI: ${VITE_OAUTH_REDIRECT_URI:-http://localhost:3000/auth/callback}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
       VITE_MICROSOFT_CLIENT_ID: ${VITE_MICROSOFT_CLIENT_ID}
@@ -471,12 +500,17 @@ services:
       # Intervalo aumentado para 1000ms reduz falsos positivos de mudança
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "1000"
-      # VITE_HMR_* não são mais necessárias — o Vite usa defaults e o nginx faz proxy
-      VITE_USE_PROXY: ${VITE_USE_PROXY:-false}
+      # Vite proxy: habilitado para rotear /api/* para api-gateway:8000
+      # Necessário porque removemos o nginx
+      VITE_USE_PROXY: "true"
     depends_on:
       - api-gateway
     networks:
       - erp-network
+    # Vite + HMR: o container mais pesado da stack.
+    deploy:
+      resources:
+        limits: {cpus: '1.5', memory: 1536M}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -486,48 +520,5 @@ services:
     tty: true
     restart: unless-stopped
 
-  # ============================================
-  # PROXY REVERSO (apenas com --profile proxy)
-  # ============================================
+  
 
-  nginx:
-    profiles: ["proxy"]
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    container_name: erp-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - frontend-dev
-      - api-gateway
-    networks:
-      - erp-network
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - nginx_logs:/var/log/nginx
-    environment:
-      - TZ=America/Sao_Paulo
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-
-  ngrok:
-    profiles: ["proxy"]
-    image: ngrok/ngrok:latest
-    container_name: erp-ngrok
-    command: http nginx:80
-    ports:
-      - "4040:4040"  # ngrok web interface
-    depends_on:
-      - nginx
-    networks:
-      - erp-network
-    env_file:
-      - .env.ngrok
-    restart: unless-stopped

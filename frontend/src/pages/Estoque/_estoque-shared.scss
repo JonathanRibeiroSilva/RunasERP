@@ -1,0 +1,418 @@
+// Estilos compartilhados do módulo de Estoque (badges, timeline, tabela, modal de operação).
+// Classes com nomes próprios do domínio — sem colisão com outras páginas.
+@import '@/styles/variables';
+
+// ==================== Estados genéricos ====================
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 280px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: $text-secondary;
+  font-size: 1.05rem;
+}
+
+// ==================== Badges de status de estoque ====================
+
+.estoque-badge {
+  display: inline-block;
+  padding: 0.25rem 0.7rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+
+  &--success {
+    background: $success-light;
+    color: $success;
+  }
+  &--warning {
+    background: $warning-light;
+    color: $warning;
+  }
+  &--danger {
+    background: $danger-light;
+    color: $danger;
+  }
+  &--neutral {
+    background: rgba($text-secondary, 0.15);
+    color: $text-secondary;
+  }
+}
+
+// ==================== Badges de tipo de movimentação ====================
+
+.mov-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+
+  &--entrada {
+    background: $success-light;
+    color: $success;
+  }
+  &--saida {
+    background: $danger-light;
+    color: $danger;
+  }
+  &--ajuste {
+    background: $warning-light;
+    color: $warning;
+  }
+  &--devolucao {
+    background: $info-light;
+    color: $info;
+  }
+  &--perda {
+    background: rgba($danger, 0.18);
+    color: $danger;
+  }
+  &--transferencia {
+    background: rgba($text-secondary, 0.18);
+    color: $text-secondary;
+  }
+}
+
+// ==================== Tabela de estoque ====================
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.estoque-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: $surface;
+  border: 1px solid $border-default;
+  border-radius: $border-radius;
+  overflow: hidden;
+
+  thead {
+    background: $surface-hover;
+    border-bottom: 2px solid $border-default;
+
+    th {
+      padding: 0.9rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: $text-primary;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+
+      &.num {
+        text-align: right;
+      }
+
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+
+        svg {
+          vertical-align: middle;
+          margin-left: 0.25rem;
+        }
+
+        &:hover {
+          color: $primary;
+        }
+      }
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $border-default;
+    transition: background-color 0.15s ease;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: rgba($primary, 0.05);
+    }
+  }
+
+  td {
+    padding: 0.85rem 1rem;
+    color: $text-primary;
+    font-size: 0.92rem;
+
+    &.nome {
+      font-weight: 500;
+    }
+    &.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    &.strong {
+      font-weight: 600;
+    }
+    &.muted {
+      color: $text-secondary;
+    }
+
+    &.acoes {
+      display: flex;
+      gap: 0.35rem;
+
+      .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem;
+        border: none;
+        border-radius: 0.25rem;
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: $transition-fast;
+
+        &.btn-info {
+          color: $info;
+          &:hover {
+            background: $info-light;
+          }
+        }
+        &.btn-success {
+          color: $success;
+          &:hover {
+            background: $success-light;
+          }
+        }
+        &.btn-danger {
+          color: $danger;
+          &:hover {
+            background: $danger-light;
+          }
+        }
+        &.btn-warning {
+          color: $warning;
+          &:hover {
+            background: $warning-light;
+          }
+        }
+      }
+    }
+  }
+}
+
+.lote-flag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+
+  &--warning {
+    background: $warning-light;
+    color: $warning;
+  }
+  &--danger {
+    background: $danger-light;
+    color: $danger;
+  }
+}
+
+// ==================== Linha do tempo de movimentações ====================
+
+.mov-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0 0 0;
+
+  &__item {
+    position: relative;
+    display: flex;
+    gap: 0.85rem;
+    padding: 0 0 1.1rem 0.25rem;
+
+    &:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 0.32rem;
+      top: 0.9rem;
+      bottom: 0;
+      width: 2px;
+      background: $border-default;
+    }
+  }
+
+  &__marker {
+    flex: 0 0 auto;
+    width: 0.7rem;
+    height: 0.7rem;
+    margin-top: 0.25rem;
+    border-radius: 50%;
+    background: $text-tertiary;
+    z-index: 1;
+
+    &--entrada,
+    &--devolucao {
+      background: $success;
+    }
+    &--saida,
+    &--perda {
+      background: $danger;
+    }
+    &--ajuste {
+      background: $warning;
+    }
+    &--transferencia {
+      background: $secondary;
+    }
+  }
+
+  &__content {
+    flex: 1;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  &__delta {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: $text-primary;
+  }
+
+  &__saldo {
+    color: $text-secondary;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__date {
+    margin-left: auto;
+    color: $text-tertiary;
+    font-size: 0.8rem;
+  }
+
+  &__meta {
+    margin-top: 0.3rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: $text-secondary;
+  }
+
+  &__doc {
+    color: $text-tertiary;
+  }
+}
+
+// ==================== Formulário de operação (dentro do Modal) ====================
+
+.estoque-op-produto {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.estoque-op-saldo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  background: $background;
+  border: 1px solid $border-default;
+  border-radius: $border-radius;
+  font-size: 0.85rem;
+  color: $text-secondary;
+
+  strong {
+    color: $text-primary;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.estoque-op-form {
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: $text-secondary;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid $border-default;
+      border-radius: $border-radius;
+      background: $background;
+      color: $text-primary;
+      font-size: 0.92rem;
+      font-family: inherit;
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        box-shadow: 0 0 0 3px rgba($primary, 0.12);
+      }
+    }
+  }
+}
+
+// Botões do rodapé do modal (tematização própria sobre o .btn do Bootstrap).
+.modal-footer {
+  .btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: $border-radius;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: $transition-fast;
+    border: 1px solid transparent;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-primary {
+    background: $primary;
+    color: #fff;
+    border-color: $primary;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+    }
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: $text-secondary;
+    border-color: $border-default;
+
+    &:hover:not(:disabled) {
+      background: $surface-hover;
+      color: $text-primary;
+    }
+  }
+}

@@ -3,8 +3,7 @@
 
 .categorias-page {
   padding: 2rem;
-  min-height: calc(100vh - 64px);
-  background: $background;
+  background: transparent;
 
   .page-header {
     display: flex;
@@ -13,276 +12,159 @@
     margin-bottom: 2rem;
 
     .header-content {
-      h1 {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 600;
-        color: $text-primary;
-      }
-
-      p {
-        margin: 0.5rem 0 0 0;
-        color: $text-secondary;
-        font-size: 0.95rem;
-      }
+      h1 { margin: 0; font-size: 1.5rem; font-weight: 700; color: #fff; }
+      p { margin: 0.25rem 0 0; color: $text-secondary; font-size: 0.85rem; }
     }
 
     .btn-primary {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background-color: $primary;
-      color: white;
-      border: none;
-      border-radius: 0.5rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: $primary-hover;
-        box-shadow: 0 4px 12px rgba($primary, 0.3);
-      }
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+      padding: 0 1rem;
+      font-size: 0.875rem;
+      background-color: $primary; color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+      height: 36px;
+      width: fit-content;
+      flex: 0 0 auto;
+      
+      svg { font-size: 1.1rem; }
+      
+      &:hover { background-color: $primary-hover; }
     }
-  }
-
-  .loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 400px;
-
-    .spinner-border {
-      width: 3rem;
-      height: 3rem;
-      border: 0.25rem solid rgba($primary, 0.2);
-      border-right-color: $primary;
-      border-radius: 50%;
-      animation: spinner-border 0.75s linear infinite;
-    }
-
-    @keyframes spinner-border {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-  }
-
-  .form-section {
-    background-color: $surface;
-    border: 1px solid $border-default;
-    border-radius: 0.75rem;
-    padding: 2rem;
-    margin-bottom: 2rem;
-
-    h2 {
-      margin: 0 0 1.5rem 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: $text-primary;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid $border-default;
-    }
-
-    form {
-      .form-group {
-        margin-bottom: 1.5rem;
-
-        label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 500;
-          color: $text-primary;
-          font-size: 0.95rem;
-        }
-
-        input,
-        textarea {
-          width: 100%;
-          padding: 0.75rem 1rem;
-          border: 1px solid $border-default;
-          border-radius: 0.5rem;
-          background-color: $background;
-          color: $text-primary;
-          font-size: 0.95rem;
-          transition: all 0.2s ease;
-
-          &:focus {
-            outline: none;
-            border-color: $primary;
-            box-shadow: 0 0 0 3px rgba($primary, 0.1);
-          }
-
-          &::placeholder {
-            color: $text-secondary;
-          }
-        }
-
-        textarea {
-          resize: vertical;
-          font-family: inherit;
-        }
-      }
-
-      .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid $border-default;
-
-        .btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          border-radius: 0.5rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          border: none;
-
-          &.btn-outline-secondary {
-            background-color: transparent;
-            color: $text-secondary;
-            border: 1px solid $border-default;
-
-            &:hover {
-              color: $text-primary;
-              border-color: $primary;
-              background-color: rgba($primary, 0.05);
-            }
-          }
-
-          &.btn-primary {
-            background-color: $primary;
-            color: white;
-
-            &:hover {
-              background-color: $primary-hover;
-              box-shadow: 0 4px 12px rgba($primary, 0.3);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 3rem 2rem;
-    color: $text-secondary;
-    font-size: 1.1rem;
   }
 
   .categorias-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
 
     .categoria-card {
-      background-color: $surface;
-      border: 1px solid $border-default;
+      display: flex;
+      align-items: center;
+      background-color: #1e2532;
+      border: 1px solid rgba(255,255,255,0.05);
       border-radius: 0.75rem;
-      padding: 1.5rem;
+      padding: 1.25rem;
+      width: calc(33.333% - 0.67rem);
+      min-width: 280px;
+      gap: 1rem;
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: $primary;
-        box-shadow: 0 4px 12px rgba($primary, 0.2);
-        transform: translateY(-2px);
+        background-color: #232b38;
+        border-color: rgba(255,255,255,0.1);
       }
 
-      .card-icon {
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, $primary, $secondary);
-        border-radius: 0.75rem;
-        font-size: 1.5rem;
-        color: white;
-        margin-bottom: 1rem;
+      .card-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; color: #fff; font-size: 1.1rem;
+        flex-shrink: 0;
       }
 
       .card-content {
-        h3 {
-          margin: 0 0 0.5rem 0;
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: $text-primary;
+        flex: 1;
+        overflow: hidden;
+        h3 { margin: 0 0 0.25rem; font-size: 1rem; font-weight: 600; color: #fff; }
+        p { margin: 0; font-size: 0.8rem; color: #8e95a5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      }
+
+      .card-actions {
+        display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s ease;
+        .btn-icon {
+          background: transparent; border: none; color: #8e95a5; cursor: pointer; padding: 0.25rem; border-radius: 4px;
+          &:hover { color: #fff; background: rgba(255,255,255,0.1); }
+          &.btn-danger:hover { color: $error; background: rgba($error, 0.1); }
         }
+      }
 
-        p {
-          margin: 0 0 1rem 0;
-          color: $text-secondary;
-          font-size: 0.9rem;
-          line-height: 1.5;
-        }
+      &:hover .card-actions { opacity: 1; }
+    }
+  }
+}
 
-        .card-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding-top: 1rem;
-          border-top: 1px solid $border-default;
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(4, 6, 10, 0.75); backdrop-filter: blur(4px); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease;
+}
 
-          .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+@keyframes fadeIn {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
 
-            &.badge-success {
-              background-color: rgba($success, 0.2);
-              color: $success;
-            }
+.modal-content {
+  background: #1e2532; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.75rem; width: 100%; max-width: 480px;
+  padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  h2 { margin: 0 0 1.5rem; font-size: 1.25rem; font-weight: 600; color: #fff; }
 
-            &.badge-secondary {
-              background-color: rgba($text-secondary, 0.2);
-              color: $text-secondary;
-            }
-          }
+  .form-group {
+    margin-bottom: 1.25rem;
+    label { display: block; margin-bottom: 0.5rem; color: #fff; font-size: 0.9rem; font-weight: 500; }
+    input[type="text"] {
+      width: 100%; padding: 0.75rem 1rem; background: #131823; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;
+      color: #fff; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+      &:focus { border-color: $primary; }
+    }
+  }
 
-          .card-actions {
-            display: flex;
-            gap: 0.5rem;
+  .color-input-wrapper {
+    display: flex; gap: 1rem; align-items: center;
+    input[type="color"] {
+      width: 46px; height: 46px; padding: 0; border: none; border-radius: 0.5rem; background: transparent; cursor: pointer;
+      &::-webkit-color-swatch-wrapper { padding: 0; }
+      &::-webkit-color-swatch { border: none; border-radius: 0.3rem; }
+    }
+    input[type="text"] { flex: 1; }
+  }
 
-            .btn-icon {
-              padding: 0.5rem;
-              border: none;
-              border-radius: 0.25rem;
-              background-color: transparent;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              transition: all 0.2s ease;
-              font-size: 1rem;
+  .form-actions {
+    display: flex; gap: 1rem; margin-top: 2rem;
+    button { flex: 1; padding: 0.75rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-cancel { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.1); &:hover { background: rgba(255,255,255,0.05); } }
+    .btn-save { background: $primary; color: #fff; &:hover { background: $primary-hover; } }
+  }
+}
 
-              &.btn-warning {
-                color: $warning;
+@media (max-width: 768px) {
+  .categorias-page {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .categorias-grid {
+      .categoria-card {
+        width: 100%;
+        min-width: 100%;
+      }
+    }
+  }
 
-                &:hover {
-                  background-color: rgba($warning, 0.1);
-                }
-              }
+  .modal-content {
+    margin: 1rem;
+    height: calc(100vh - 2rem);
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+    
+    form {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
 
-              &.btn-danger {
-                color: $error;
-
-                &:hover {
-                  background-color: rgba($error, 0.1);
-                }
-              }
-            }
-          }
-        }
+    .form-actions {
+      margin-top: auto;
+      padding-top: 1rem;
+      flex-direction: column-reverse;
+      
+      button {
+        width: 100%;
       }
     }
   }
 }
+

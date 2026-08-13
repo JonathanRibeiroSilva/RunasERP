@@ -18,9 +18,10 @@ class Settings(BaseSettings):
     VENDAS_URL: str = "http://vendas:8004"
     FINANCEIRO_URL: str = "http://financeiro:8005"
     
-    # URLs públicas (para Mercado Pago)
-    API_BASE_URL: str = "https://api.seudominio.com"  # URL pública da API
-    FRONTEND_URL: str = "https://loja.seudominio.com"  # URL pública do frontend
+    # URLs públicas (para Mercado Pago, webhooks, redirect)
+    # Defaults locais; produção/tunnel definem via environment (docker-compose)
+    API_BASE_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # Evolution API (WhatsApp)
     EVOLUTION_API_URL: str = ""  # URL da Evolution API (opcional)
@@ -40,7 +41,18 @@ class Settings(BaseSettings):
     
     # API Gateway URL
     API_GATEWAY_URL: str = "http://api-gateway:8000"
-    
+
+    # Mercado Pago environment switch.
+    # "sandbox" (default) forces the sandbox/test checkout flow; production is only
+    # used when MP_ENVIRONMENT is explicitly set to "production". This is the single
+    # source of truth — no token-format heuristics.
+    MP_ENVIRONMENT: str = "sandbox"
+
+    @property
+    def mercadopago_sandbox(self) -> bool:
+        """True unless MP_ENVIRONMENT is explicitly 'production'."""
+        return self.MP_ENVIRONMENT.strip().lower() != "production"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

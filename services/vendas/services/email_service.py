@@ -12,7 +12,14 @@ from config import settings
 log = structlog.get_logger()
 
 
-def _build_welcome_email_html(email: str, senha_temporaria: str, empresa_nome: str) -> str:
+def _loja_login_url(empresa_slug: str | None) -> str:
+    """URL de login da loja do tenant; sem slug, cai na raiz do site."""
+    if empresa_slug:
+        return f"{settings.FRONTEND_URL}/c/{empresa_slug}/login"
+    return settings.FRONTEND_URL
+
+
+def _build_welcome_email_html(email: str, senha_temporaria: str, empresa_nome: str, login_url: str) -> str:
     """Monta o HTML do email de boas-vindas com credenciais."""
     return f"""
 <!DOCTYPE html>
@@ -83,7 +90,7 @@ def _build_welcome_email_html(email: str, senha_temporaria: str, empresa_nome: s
                   <td align="center"
                       style="background:linear-gradient(135deg,#3b82f6 0%,#8b5cf6 100%);
                              border-radius:8px;">
-                    <a href="{settings.FRONTEND_URL}/loja/login"
+                    <a href="{login_url}"
                        style="display:inline-block;padding:14px 36px;
                               font-size:15px;font-weight:600;color:#ffffff;
                               text-decoration:none;letter-spacing:0.3px;">
@@ -131,7 +138,8 @@ def _build_welcome_email_html(email: str, senha_temporaria: str, empresa_nome: s
 async def enviar_email_credenciais(
     to_email: str,
     senha_temporaria: str,
-    empresa_nome: str = "Loja Online"
+    empresa_nome: str = "Loja Online",
+    empresa_slug: str | None = None
 ) -> bool:
     """
     Envia email com credenciais de acesso para conta recém-criada.
@@ -140,10 +148,12 @@ async def enviar_email_credenciais(
         to_email: Email do destinatário
         senha_temporaria: Senha temporária gerada
         empresa_nome: Nome da empresa/loja
+        empresa_slug: Slug da loja (monta o link /c/{slug}/login)
 
     Returns:
         True se enviado com sucesso, False caso contrário
     """
+    login_url = _loja_login_url(empresa_slug)
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
         log.warning("email.smtp_not_configured", message="SMTP não configurado, email não será enviado")
         return False
@@ -162,12 +172,12 @@ async def enviar_email_credenciais(
         f"Email: {to_email}\n"
         f"Senha temporária: {senha_temporaria}\n\n"
         f"Recomendamos que você altere sua senha no primeiro acesso.\n\n"
-        f"Acesse: {settings.FRONTEND_URL}/loja/login\n\n"
+        f"Acesse: {login_url}\n\n"
         f"Runas ERP"
     )
 
     msg.attach(MIMEText(text_body, "plain", "utf-8"))
-    msg.attach(MIMEText(_build_welcome_email_html(to_email, senha_temporaria, empresa_nome), "html", "utf-8"))
+    msg.attach(MIMEText(_build_welcome_email_html(to_email, senha_temporaria, empresa_nome, login_url), "html", "utf-8"))
 
     try:
         await aiosmtplib.send(

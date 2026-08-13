@@ -33,8 +33,9 @@ const CarrinhoPage = () => {
       const key = `${produtoId}-${varianteId || 'null'}`;
       setProcessandoItem(key);
       await removerItem(produtoId, varianteId);
-    } catch (error) {
-      console.error('Erro ao remover item:', error);
+    } catch {
+      // useCarrinho já publicou a mensagem em `erro`, renderizada acima. Só
+      // engolimos o rethrow para não virar unhandled rejection.
     } finally {
       setProcessandoItem(null);
     }
@@ -47,8 +48,8 @@ const CarrinhoPage = () => {
       const key = `${produtoId}-${varianteId || 'null'}`;
       setProcessandoItem(key);
       await atualizarQuantidade(produtoId, varianteId, novaQuantidade);
-    } catch (error) {
-      console.error('Erro ao atualizar quantidade:', error);
+    } catch {
+      // idem: a mensagem já está em `erro`.
     } finally {
       setProcessandoItem(null);
     }
@@ -59,8 +60,8 @@ const CarrinhoPage = () => {
     
     try {
       await limparCarrinho();
-    } catch (error) {
-      console.error('Erro ao limpar carrinho:', error);
+    } catch {
+      // idem: a mensagem já está em `erro`.
     }
   };
 
@@ -145,11 +146,6 @@ const CarrinhoPage = () => {
 
                     <div className="item-info">
                       <h4 className="item-nome">{item.descricao_produto}</h4>
-                      <div className="item-detalhes">
-                        {item.codigo_produto && (
-                          <span className="item-sku">SKU: {item.codigo_produto}</span>
-                        )}
-                      </div>
                       <div className="item-preco-unitario">
                         {formatarPreco(item.preco_unitario)} / unidade
                       </div>

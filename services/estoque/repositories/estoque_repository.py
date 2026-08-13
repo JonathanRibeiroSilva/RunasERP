@@ -24,12 +24,21 @@ class EstoqueRepository:
 
     @staticmethod
     async def criar(db: AsyncSession, **kwargs) -> Estoque:
-        """Cria um novo registro de estoque."""
+        """Cria um novo registro de estoque.
+
+        Defaults de coluna (quantidade/quantidade_reservada) só são aplicados no flush;
+        normalizamos aqui para calcular quantidade_disponivel sem estourar quando o caller
+        não informa esses campos.
+        """
         estoque = Estoque(**kwargs)
+        if estoque.quantidade is None:
+            estoque.quantidade = 0.0
+        if estoque.quantidade_reservada is None:
+            estoque.quantidade_reservada = 0.0
         estoque.quantidade_disponivel = estoque.quantidade - estoque.quantidade_reservada
         db.add(estoque)
-        await db.commit()
-        await db.refresh(estoque)
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return estoque
 
     @staticmethod
@@ -47,21 +56,30 @@ class EstoqueRepository:
         db: AsyncSession,
         empresa_id: int,
         produto_id: UUID,
-        variante_id: Optional[UUID] = None
+        variante_id: Optional[UUID] = None,
+        for_update: bool = False
     ) -> Optional[Estoque]:
-        """Busca estoque por produto e variante."""
+        """
+        Busca estoque por produto e variante.
+
+        for_update=True adquire um lock de linha (SELECT ... FOR UPDATE) para
+        serializar baixas concorrentes do mesmo produto e impedir overselling.
+        """
         query = select(Estoque).where(
             and_(
                 Estoque.empresa_id == empresa_id,
                 Estoque.produto_id == produto_id
             )
         )
-        
+
         if variante_id:
             query = query.where(Estoque.variante_id == variante_id)
         else:
             query = query.where(Estoque.variante_id.is_(None))
-        
+
+        if for_update:
+            query = query.with_for_update()
+
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
@@ -107,10 +125,10 @@ class EstoqueRepository:
         for key, value in kwargs.items():
             if hasattr(estoque, key) and value is not None:
                 setattr(estoque, key, value)
-        
+
         estoque.updated_at = datetime.utcnow()
-        await db.commit()
-        await db.refresh(estoque)
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return estoque
 
     @staticmethod
@@ -128,9 +146,9 @@ class EstoqueRepository:
         estoque.quantidade = quantidade
         estoque.quantidade_disponivel = quantidade - estoque.quantidade_reservada
         estoque.updated_at = datetime.utcnow()
-        
-        await db.commit()
-        await db.refresh(estoque)
+
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return estoque
 
     @staticmethod
@@ -151,9 +169,9 @@ class EstoqueRepository:
         estoque.quantidade_reservada += quantidade
         estoque.quantidade_disponivel = estoque.quantidade - estoque.quantidade_reservada
         estoque.updated_at = datetime.utcnow()
-        
-        await db.commit()
-        await db.refresh(estoque)
+
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return estoque
 
     @staticmethod
@@ -174,9 +192,9 @@ class EstoqueRepository:
         estoque.quantidade_reservada -= quantidade
         estoque.quantidade_disponivel = estoque.quantidade - estoque.quantidade_reservada
         estoque.updated_at = datetime.utcnow()
-        
-        await db.commit()
-        await db.refresh(estoque)
+
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return estoque
 
     @staticmethod
@@ -229,8 +247,8 @@ class MovimentacaoRepository:
         
         movimentacao = Movimentacao(**kwargs)
         db.add(movimentacao)
-        await db.commit()
-        await db.refresh(movimentacao)
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return movimentacao
 
     @staticmethod
@@ -244,6 +262,7 @@ class MovimentacaoRepository:
     @staticmethod
     async def listar(
         db: AsyncSession,
+        empresa_id: Optional[int] = None,
         estoque_id: Optional[UUID] = None,
         tipo: Optional[TipoMovimentacao] = None,
         data_inicio: Optional[datetime] = None,
@@ -251,9 +270,18 @@ class MovimentacaoRepository:
         skip: int = 0,
         limit: int = 100
     ) -> List[Movimentacao]:
-        """Lista movimentações com filtros."""
+        """Lista movimentações com filtros.
+
+        Movimentacao não tem empresa_id próprio; quando informado, o isolamento de
+        tenant é garantido por join no estoque dono da movimentação.
+        """
         query = select(Movimentacao)
-        
+
+        if empresa_id is not None:
+            query = query.join(Estoque, Movimentacao.estoque_id == Estoque.id).where(
+                Estoque.empresa_id == empresa_id
+            )
+
         if estoque_id:
             query = query.where(Movimentacao.estoque_id == estoque_id)
         
@@ -319,8 +347,8 @@ class LoteRepository:
         kwargs['quantidade_inicial'] = kwargs['quantidade']
         lote = Lote(**kwargs)
         db.add(lote)
-        await db.commit()
-        await db.refresh(lote)
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return lote
 
     @staticmethod
@@ -406,9 +434,9 @@ class LoteRepository:
         # Se quantidade zerou, marcar como inativo
         if quantidade == 0:
             lote.status = StatusLote.BLOQUEADO.value
-        
-        await db.commit()
-        await db.refresh(lote)
+
+        # flush only — the calling service owns the transaction (begin_nested + commit).
+        await db.flush()
         return lote
 
     @staticmethod

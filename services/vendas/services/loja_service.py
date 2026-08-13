@@ -3,6 +3,7 @@ Service de Loja Online (E-commerce).
 Gerencia checkout e pedidos online.
 """
 from typing import Optional, List
+from datetime import datetime, timezone
 from uuid import UUID
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,9 +34,24 @@ from services.notificacao_service import NotificacaoService
 from services.cache_service import CacheService
 from services.email_service import enviar_email_credenciais
 from repositories.venda_repository import VendaRepository
+from utils.tenant import get_empresa_slug_by_id
 from config import settings
 
 log = structlog.get_logger()
+
+
+def _utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """
+    Marca um datetime ingênuo (mas armazenado em UTC) como timezone-aware.
+
+    As colunas de data do banco usam `datetime.utcnow()` (naive). Sem o tzinfo, o
+    Pydantic serializa sem sufixo de fuso ("Z"/"+00:00") e o frontend (`new Date(...)`)
+    interpreta o valor como hora local do navegador — deslocando a exibição em até
+    3h para usuários no fuso do Brasil.
+    """
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=timezone.utc)
 
 
 def gerar_senha_temporaria(tamanho: int = 8) -> str:
@@ -62,7 +78,7 @@ class LojaService:
         2. Valida cliente (existente ou convidado)
         3. Se cliente cadastrado com FIADO, verifica permite_fiado_online
         4. Calcula taxa de entrega (se DELIVERY)
-        5. Valida estoque com reserva de 5min (checkout)
+        5. Valida estoque com reserva temporária (15min - TTL padrão do carrinho)
         6. Cria venda com status apropriado (PEDIDO ou PENDENTE_PAGAMENTO)
         7. Se pagamento online, cria preferência Mercado Pago
         8. Registra histórico de status
@@ -72,16 +88,46 @@ class LojaService:
         12. Retorna dados da venda
         """
         try:
+            # 🔍 DEBUG: Log inicial do checkout
+            log.info(
+                "🔍 DEBUG: Iniciando checkout",
+                sessao_id=sessao_id,
+                empresa_id=empresa_id,
+                cliente_id=str(data.cliente_id) if data.cliente_id else None,
+                tem_cliente_novo=bool(data.cliente_novo),
+                tipo_entrega=data.tipo_entrega.value,
+                formas_pagamento=[p.forma_pagamento.value for p in data.pagamentos]
+            )
+            
             # 1. Obter carrinho
             carrinho = await CarrinhoService.obter_ou_criar_carrinho(sessao_id, empresa_id)
             
+            # 🔍 DEBUG: Log do carrinho obtido
+            log.info(
+                "🔍 DEBUG: Carrinho obtido do Redis",
+                sessao_id=sessao_id,
+                carrinho_vazio=not carrinho.itens,
+                quantidade_itens=len(carrinho.itens),
+                subtotal=float(carrinho.subtotal) if carrinho.itens else 0,
+                criado_em=str(carrinho.criado_em),
+                atualizado_em=str(carrinho.atualizado_em)
+            )
+            
             if not carrinho.itens:
+                log.error(
+                    "❌ DEBUG: Carrinho vazio no checkout",
+                    sessao_id=sessao_id,
+                    empresa_id=empresa_id
+                )
                 raise ValueError("Carrinho está vazio")
             
             # 2. Determinar e validar cliente
             cliente_id = data.cliente_id
             cliente_info = None
-            
+            senha_temporaria = None
+            access_token = None
+            conta_criada = False
+
             # 2.1 Cliente convidado (guest)
             if data.cliente_novo and not cliente_id:
                 # Validar dados do cliente convidado
@@ -109,10 +155,6 @@ class LojaService:
                 )
                 
                 # 2.1.1 Se marcou "criar conta", criar cliente e autenticação
-                senha_temporaria = None
-                access_token = None
-                conta_criada = False
-                
                 if data.criar_conta and cliente_info.get('email'):
                     try:
                         log.info("checkout_iniciando_criacao_conta", email=cliente_info['email'])
@@ -150,7 +192,8 @@ class LojaService:
                                 # 2. Criar autenticação no API Gateway
                                 from passlib.context import CryptContext
                                 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-                                senha_hash = pwd_context.hash(senha_temporaria)
+                                # Bcrypt limita senhas a 72 bytes - truncar se necessário
+                                senha_hash = pwd_context.hash(senha_temporaria[:72])
                                 
                                 auth_payload = {
                                     "email": cliente_info['email'],
@@ -199,14 +242,17 @@ class LojaService:
                                             timeout=5.0
                                         )
                                         empresa_nome = "Loja Online"
+                                        empresa_slug = None
                                         if empresa_response.status_code == 200:
                                             empresa_data = empresa_response.json()
                                             empresa_nome = empresa_data.get('nome_fantasia') or empresa_data.get('razao_social', 'Loja Online')
-                                        
+                                            empresa_slug = empresa_data.get('slug')
+
                                         await enviar_email_credenciais(
                                             to_email=cliente_info['email'],
                                             senha_temporaria=senha_temporaria,
-                                            empresa_nome=empresa_nome
+                                            empresa_nome=empresa_nome,
+                                            empresa_slug=empresa_slug
                                         )
                                         log.info("checkout_email_credenciais_enviado", email=cliente_info['email'])
                                     except Exception as e:
@@ -268,8 +314,8 @@ class LojaService:
                     data.endereco_entrega.bairro
                 )
             
-            # 4. Validar estoque e criar reservas de checkout (5min)
-            # Liberar reservas temporárias do carrinho (15min) e criar reservas de checkout (5min)
+            # 4. Validar estoque e recriar reservas temporárias (15min - TTL padrão)
+            # Liberar reservas temporárias do carrinho (15min) e recriar reservas (15min)
             for item in carrinho.itens:
                 # Liberar reserva do carrinho
                 await ReservaTemporariaService.liberar_reserva(
@@ -322,7 +368,9 @@ class LojaService:
                     produto_id=item.produto_id,
                     variante_id=item.variante_id,
                     quantidade=item.quantidade,
-                    preco_unitario=item.preco_unitario
+                    preco_unitario=item.preco_unitario,
+                    codigo_produto=item.codigo_produto,  # 🔧 CORREÇÃO: Incluir código
+                    descricao_produto=item.descricao_produto  # 🔧 CORREÇÃO: Incluir descrição
                 )
                 for item in carrinho.itens
             ]
@@ -351,7 +399,8 @@ class LojaService:
             # 8.1 Atualizar campos adicionais da venda
             updates = {
                 'status': status_inicial.value,
-                'valor_frete': valor_frete
+                'valor_frete': valor_frete,
+                'sessao_carrinho_id': sessao_id  # 🔑 Salvar sessao_id para limpar carrinho depois
             }
             
             # Se cliente convidado, salvar dados
@@ -401,8 +450,13 @@ class LojaService:
                 )
                 
                 try:
-                    # TODO: Obter slug da empresa dinamicamente
-                    empresa_slug = 'distribuidora-central'
+                    # Obter slug da empresa dinamicamente (multi-tenant).
+                    # Sem fallback fixo: um slug de outra loja geraria back_urls/webhook do
+                    # tenant errado. Falha aqui cai no except abaixo — a venda fica
+                    # PENDENTE_PAGAMENTO e o cliente usa o retry-payment.
+                    empresa_slug = await get_empresa_slug_by_id(db, empresa_id)
+                    if not empresa_slug:
+                        raise ValueError(f"Slug não encontrado para empresa_id={empresa_id}")
                     
                     # Buscar venda completa com itens para criar preferência
                     venda_completa = await VendaRepository.buscar_por_id(
@@ -412,7 +466,7 @@ class LojaService:
                         com_relacionamentos=True
                     )
                     
-                    preferencia_id, init_point, erro = await MercadoPagoService.criar_preferencia(
+                    preferencia_id, init_point, sandbox_init_point, erro = await MercadoPagoService.criar_preferencia(
                         db=db,
                         venda=venda_completa,
                         empresa_id=empresa_id,
@@ -420,26 +474,41 @@ class LojaService:
                     )
                     
                     if erro:
-                        log.error("erro_mercadopago", erro=erro)
-                    elif init_point:
+                        log.error("erro_mercadopago", venda_id=str(venda.id), erro=erro)
+
+                    if preferencia_id and init_point:
+                        # Checkout Pro always redirects to init_point. With a Mercado Pago
+                        # test user the preference is already a TEST transaction (the
+                        # account owns it), so the regular checkout accepts test cards.
+                        # The legacy sandbox_init_point (sandbox.mercadopago.com.br) is
+                        # deprecated: card payments are never created there, leaving the
+                        # merchant_order at payment_required with 0 payments. APP_USR
+                        # (test user or live) uses the same init_point for both environments.
                         mercadopago_init_point = init_point
-                        
-                        # Salvar preference_id na venda
+
                         await VendaRepository.atualizar(
                             db,
                             empresa_id,
                             venda.id,
                             mercadopago_preference_id=preferencia_id
                         )
-                    
+
+                        log.info(
+                            "mercadopago_checkout_url_definida",
+                            venda_id=str(venda.id),
+                            checkout_url_tipo="init_point"
+                        )
+
                 except Exception as e:
+                    # Não falhar o checkout por erro no Mercado Pago: a venda fica
+                    # PENDENTE_PAGAMENTO e o job de timeout a cancela se não for paga.
                     log.error(
                         "erro_criar_preferencia_mercadopago",
                         venda_id=str(venda.id),
-                        error=str(e)
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        exc_info=True
                     )
-                    # Não falhar o checkout por erro no Mercado Pago
-                    # Cliente pode pagar depois manualmente
             
             # 11. Enviar notificação WhatsApp (não bloquear checkout se falhar)
             try:
@@ -461,8 +530,51 @@ class LojaService:
                     error=str(e)
                 )
             
-            # 12. Limpar carrinho
-            await CarrinhoService.limpar_carrinho(sessao_id, empresa_id)
+            # 12. Limpar carrinho APENAS se pagamento offline
+            # Para pagamento online, carrinho só é limpo após confirmação do webhook
+            
+            # 🔍 DEBUG: Verificar estado do carrinho ANTES da decisão
+            log.info(
+                "🔍 DEBUG: Estado do carrinho antes da limpeza",
+                sessao_id=sessao_id,
+                venda_id=str(venda.id),
+                tem_pagamento_online=tem_pagamento_online,
+                quantidade_itens_carrinho=len(carrinho.itens),
+                subtotal_carrinho=float(carrinho.subtotal)
+            )
+            
+            if not tem_pagamento_online:
+                await CarrinhoService.limpar_carrinho(sessao_id, empresa_id)
+                log.info(
+                    "✅ Carrinho limpo - pagamento offline",
+                    sessao_id=sessao_id,
+                    venda_id=str(venda.id)
+                )
+            else:
+                log.info(
+                    "⏸️ Carrinho MANTIDO - aguardando pagamento online",
+                    sessao_id=sessao_id,
+                    venda_id=str(venda.id),
+                    sessao_carrinho_id_salvo=updates.get('sessao_carrinho_id'),
+                    mensagem="Carrinho será limpo após confirmação do pagamento via webhook"
+                )
+                
+                # 🔍 DEBUG: Verificar se carrinho ainda existe no Redis
+                try:
+                    carrinho_pos_checkout = await CarrinhoService.obter_ou_criar_carrinho(sessao_id, empresa_id)
+                    log.info(
+                        "🔍 DEBUG: Carrinho após checkout (deve estar intacto)",
+                        sessao_id=sessao_id,
+                        existe=True,
+                        quantidade_itens=len(carrinho_pos_checkout.itens),
+                        subtotal=float(carrinho_pos_checkout.subtotal)
+                    )
+                except Exception as e:
+                    log.error(
+                        "❌ DEBUG: Erro ao verificar carrinho após checkout",
+                        sessao_id=sessao_id,
+                        erro=str(e)
+                    )
             
             await db.commit()
             
@@ -472,7 +584,8 @@ class LojaService:
                 venda_id=str(venda.id),
                 numero_venda=venda.numero_venda,
                 valor_total=float(venda.valor_total),
-                status=status_inicial.value
+                status=status_inicial.value,
+                tem_pagamento_online=tem_pagamento_online
             )
             
             # 13. Retornar resposta
@@ -534,7 +647,7 @@ class LojaService:
                 PedidoClienteResumido(
                     id=venda.id,
                     numero_venda=venda.numero_venda,
-                    data_pedido=venda.data_pedido,
+                    data_pedido=_utc(venda.data_pedido),
                     status=venda.status.value,
                     valor_total=venda.valor_total,
                     quantidade_itens=len(venda.itens)
@@ -576,15 +689,15 @@ class LojaService:
         for h in historico_db:
             historico.append({
                 "etapa": h.status_novo,
-                "descricao": h.observacao or self._get_descricao_status(h.status_novo),
-                "data": h.alterado_em.isoformat(),
+                "descricao": h.observacao or LojaService._get_descricao_status(h.status_novo),
+                "data": _utc(h.alterado_em).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema" if not h.alterado_por else "usuario"
             })
         
         # Se não tem histórico, usar dados das datas da venda (backward compatibility)
         if not historico:
-            historico = self._montar_historico_legado(venda)
+            historico = LojaService._montar_historico_legado(venda)
         
         # Determinar próxima etapa
         proxima_etapa = None
@@ -616,12 +729,12 @@ class LojaService:
         return RastreamentoPedido(
             numero_venda=venda.numero_venda,
             status_atual=venda.status,
-            data_pedido=venda.data_pedido,
-            data_confirmacao=venda.data_confirmacao,
-            data_separacao=venda.data_separacao,
-            data_entregue=venda.data_entregue,
-            data_finalizada=venda.data_finalizada,
-            data_cancelada=venda.data_cancelada,
+            data_pedido=_utc(venda.data_pedido),
+            data_confirmacao=_utc(venda.data_confirmacao),
+            data_separacao=_utc(venda.data_separacao),
+            data_entregue=_utc(venda.data_entregue),
+            data_finalizada=_utc(venda.data_finalizada),
+            data_cancelada=_utc(venda.data_cancelada),
             tipo_entrega=venda.tipo_entrega,
             valor_total=venda.valor_total,
             historico=historico,
@@ -654,7 +767,7 @@ class LojaService:
             historico.append({
                 "etapa": "PEDIDO",
                 "descricao": "Pedido criado",
-                "data": venda.data_pedido.isoformat(),
+                "data": _utc(venda.data_pedido).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -663,7 +776,7 @@ class LojaService:
             historico.append({
                 "etapa": "CONFIRMADA",
                 "descricao": "Pagamento confirmado",
-                "data": venda.data_confirmacao.isoformat(),
+                "data": _utc(venda.data_confirmacao).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -672,7 +785,7 @@ class LojaService:
             historico.append({
                 "etapa": "SEPARADA",
                 "descricao": "Pedido separado",
-                "data": venda.data_separacao.isoformat(),
+                "data": _utc(venda.data_separacao).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -681,7 +794,7 @@ class LojaService:
             historico.append({
                 "etapa": "ENTREGUE",
                 "descricao": "Pedido entregue/retirado",
-                "data": venda.data_entregue.isoformat(),
+                "data": _utc(venda.data_entregue).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -690,7 +803,7 @@ class LojaService:
             historico.append({
                 "etapa": "FINALIZADA",
                 "descricao": "Pedido finalizado",
-                "data": venda.data_finalizada.isoformat(),
+                "data": _utc(venda.data_finalizada).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })
@@ -703,7 +816,7 @@ class LojaService:
             historico.append({
                 "etapa": "CANCELADA",
                 "descricao": descricao,
-                "data": venda.data_cancelada.isoformat(),
+                "data": _utc(venda.data_cancelada).isoformat(),
                 "concluido": True,
                 "alterado_por": "sistema"
             })

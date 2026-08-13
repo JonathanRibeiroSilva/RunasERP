@@ -39,25 +39,6 @@
       flex-wrap: wrap;
     }
 
-    .btn-catalogo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background-color: transparent;
-      color: $primary;
-      border: 1px solid $primary;
-      border-radius: 0.5rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 0.9rem;
-
-      &:hover {
-        background-color: rgba($primary, 0.08);
-      }
-    }
-
     .btn-primary {
       display: flex;
       align-items: center;
@@ -143,6 +124,11 @@
         &:hover {
           border-color: $primary;
           background-color: rgba($primary, 0.05);
+        }
+
+        option {
+          background-color: #1e2532; // dark surface color
+          color: #ffffff;
         }
       }
 
@@ -365,5 +351,85 @@
         cursor: not-allowed;
       }
     }
+  }
+}
+
+/* RESPONSIVE TABLE TO CARDS */
+@media (max-width: 768px) {
+  .produtos-page .table-container {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+
+    table, thead, tbody, th, td, tr {
+      display: block;
+    }
+    
+    thead tr {
+      display: none;
+    }
+    
+    tr {
+      background: $surface;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+    }
+    
+    td {
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+      padding: 0.75rem 0.5rem 0.75rem 40%;
+      position: relative;
+      text-align: right;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      min-height: 40px;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      &::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 35%;
+        text-align: left;
+        font-weight: 700;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: $text-secondary;
+      }
+    }
+
+    .acoes {
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+  }
+
+  .produtos-page .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    
+    .search-bar, .filter-buttons {
+      width: 100%;
+    }
+    
+    .search-bar input, .filter-buttons select, .btn-primary {
+      width: 100%;
+    }
+  }
+
+  .produtos-page .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
   }
 }

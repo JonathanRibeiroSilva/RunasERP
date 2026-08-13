@@ -268,12 +268,14 @@ class EmpresaRepository:
         Returns:
             Empresa com dados públicos ou None
         """
+        # catalogo_ativo NÃO filtra aqui: loja desabilitada ainda expõe branding
+        # (página de manutenção). Catálogo/carrinho/checkout são bloqueados nos
+        # serviços de produtos/vendas com base no flag retornado.
         stmt = select(Empresa).where(
             Empresa.slug == slug.lower(),
-            Empresa.ativo == True,
-            Empresa.catalogo_ativo == True
+            Empresa.ativo == True
         )
-        
+
         result = await self.session.execute(stmt)
         empresa = result.scalar_one_or_none()
         

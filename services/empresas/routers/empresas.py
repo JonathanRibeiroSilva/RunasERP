@@ -2,7 +2,7 @@
 Rotas para Empresas.
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -17,6 +17,32 @@ from services.empresa_service import EmpresaService
 
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
+
+
+async def exigir_tenant(
+    x_empresa_id: Optional[str] = Header(None, alias="X-Empresa-Id")
+) -> int:
+    """
+    Tenant do chamador — injetado pelo gateway a partir do usuário autenticado.
+
+    Fail closed: sem header não há como saber de qual tenant é a requisição,
+    então rotas por empresa_id são rejeitadas (mesmo padrão dos demais serviços).
+    """
+    if not x_empresa_id or not x_empresa_id.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Header X-Empresa-Id é obrigatório"
+        )
+    return int(x_empresa_id)
+
+
+def validar_tenant(empresa_id: int, tenant_id: int) -> None:
+    """Isolamento multi-tenant: um lojista só acessa a própria empresa."""
+    if empresa_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado: empresa não pertence ao seu usuário"
+        )
 
 
 @router.post(
@@ -89,11 +115,13 @@ async def listar_empresas(
 )
 async def buscar_empresa(
     empresa_id: int,
+    tenant_id: int = Depends(exigir_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Busca uma empresa específica por ID.
+    Busca uma empresa específica por ID (apenas a própria empresa do chamador).
     """
+    validar_tenant(empresa_id, tenant_id)
     service = EmpresaService(db)
     return await service.buscar_empresa(empresa_id)
 
@@ -106,13 +134,16 @@ async def buscar_empresa(
 )
 async def buscar_empresa_por_slug(
     slug: str,
+    tenant_id: int = Depends(exigir_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Busca uma empresa específica por slug.
+    Busca uma empresa específica por slug (apenas a própria empresa do chamador).
     """
     service = EmpresaService(db)
-    return await service.buscar_empresa_por_slug(slug)
+    empresa = await service.buscar_empresa_por_slug(slug)
+    validar_tenant(empresa.id, tenant_id)
+    return empresa
 
 
 @router.get(
@@ -146,15 +177,17 @@ async def buscar_info_publica(
 async def atualizar_empresa(
     empresa_id: int,
     empresa_data: EmpresaUpdate,
+    tenant_id: int = Depends(exigir_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Atualiza uma empresa existente.
-    
+    Atualiza uma empresa existente (apenas a própria empresa do chamador).
+
     Validações:
     - Se CNPJ for alterado, deve ser válido e único
     - Se slug for alterado, deve ser único
     """
+    validar_tenant(empresa_id, tenant_id)
     service = EmpresaService(db)
     return await service.atualizar_empresa(empresa_id, empresa_data)
 
@@ -167,13 +200,15 @@ async def atualizar_empresa(
 )
 async def desativar_empresa(
     empresa_id: int,
+    tenant_id: int = Depends(exigir_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Desativa uma empresa (soft delete).
-    
+    Desativa uma empresa (soft delete, apenas a própria empresa do chamador).
+
     A empresa não é removida do banco, apenas marcada como inativa.
     """
+    validar_tenant(empresa_id, tenant_id)
     service = EmpresaService(db)
     return await service.desativar_empresa(empresa_id)
 
@@ -186,10 +221,12 @@ async def desativar_empresa(
 )
 async def listar_filiais(
     empresa_matriz_id: int,
+    tenant_id: int = Depends(exigir_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Lista todas as filiais de uma empresa matriz.
+    Lista todas as filiais de uma empresa matriz (apenas a própria matriz do chamador).
     """
+    validar_tenant(empresa_matriz_id, tenant_id)
     service = EmpresaService(db)
     return await service.listar_filiais(empresa_matriz_id)

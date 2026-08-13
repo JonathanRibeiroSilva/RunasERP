@@ -11,10 +11,12 @@ from redis.asyncio import Redis
 import structlog
 import httpx
 import secrets
+from urllib.parse import urlencode
 from pydantic import BaseModel
 
 from database import get_db
 from repositories.cliente_auth_repository import ClienteAuthRepository
+from models.cliente_auth import ClienteAuth
 from auth.jwt import create_access_token, create_refresh_token, verify_token
 from auth.redis_client import get_redis
 from schemas.cliente import ClienteRegisterRequest, ClienteLoginResponse
@@ -62,6 +64,136 @@ class OAuthCallbackRequest(BaseModel):
     state: str
 
 
+def _internal_headers(empresa_id: int) -> dict[str, str]:
+    """Headers de contexto (multi-tenancy) para chamadas internas ao serviço de clientes."""
+    return {"X-Empresa-Id": str(empresa_id)}
+
+
+async def _upsert_cliente_oauth(empresa_id: int, nome: str, email: str) -> dict:
+    """
+    Cria ou recupera (idempotente, por email) o cliente OAuth no serviço de clientes.
+
+    Único ponto de criação de cliente para fluxos OAuth. /clientes/oauth retorna o
+    cliente existente quando o email já está cadastrado — sem CPF, sem duplicidade.
+    """
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(
+                f"{settings.CLIENTES_URL}/clientes/oauth",
+                json={"empresa_id": empresa_id, "nome": nome, "email": email},
+                headers=_internal_headers(empresa_id),
+                timeout=10.0,
+            )
+        except httpx.RequestError as e:
+            log.error("oauth.cliente.upsert.request_error", error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Erro ao comunicar com serviço de clientes",
+            )
+
+    if resp.status_code != 200:
+        log.error("oauth.cliente.upsert.error", status=resp.status_code, response=resp.text)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao criar cliente",
+        )
+    return resp.json()
+
+
+async def _fetch_cliente(cliente_id: UUID, empresa_id: int) -> dict:
+    """Busca os dados de um cliente no serviço de clientes."""
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(
+                f"{settings.CLIENTES_URL}/clientes/{cliente_id}",
+                headers=_internal_headers(empresa_id),
+                timeout=10.0,
+            )
+        except httpx.RequestError as e:
+            log.error("cliente.fetch.request_error", error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Erro ao comunicar com serviço de clientes",
+            )
+
+    if resp.status_code != 200:
+        log.error("cliente.fetch.error", status=resp.status_code)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao buscar dados do cliente",
+        )
+    return resp.json()
+
+
+async def _issue_cliente_session(
+    response: Response,
+    redis: Redis,
+    cliente_auth: ClienteAuth,
+    empresa_id: int,
+    cliente_data: dict,
+) -> ClienteLoginResponse:
+    """Gera tokens, persiste o refresh token, define cookies e monta a resposta de login."""
+    access_token = create_access_token(
+        user_id=cliente_auth.id,
+        role="CLIENTE",
+        user_type="cliente",
+        empresa_id=empresa_id,
+        cliente_id=cliente_auth.cliente_id,
+    )
+    refresh_token = create_refresh_token(cliente_auth.id)
+
+    await redis.setex(
+        f"refresh:cliente:{cliente_auth.id}",
+        settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        refresh_token,
+    )
+
+    set_auth_cookies(response, access_token, refresh_token)
+
+    return ClienteLoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_type="cliente",
+        cliente=cliente_data,
+    )
+
+
+async def _complete_cliente_oauth(
+    response: Response,
+    redis: Redis,
+    repo: ClienteAuthRepository,
+    empresa_id: int,
+    email: str,
+    nome: str,
+) -> ClienteLoginResponse:
+    """
+    Finaliza o login OAuth de cliente — isolado e idempotente por email.
+
+    - Se já existe ClienteAuth para o email: busca o cliente e emite a sessão.
+    - Caso contrário: faz upsert do cliente (/clientes/oauth) e cria o ClienteAuth.
+
+    Mesmo input ⇒ mesmo cliente. Seguro para retry. Provedores (Google/Microsoft)
+    compartilham este fluxo; só diferem na troca de code e no parsing do userinfo.
+    """
+    cliente_auth = await repo.buscar_por_email(email)
+
+    if not cliente_auth:
+        cliente_data = await _upsert_cliente_oauth(empresa_id, nome, email)
+        cliente_id = UUID(cliente_data["id"])
+        cliente_auth = await repo.criar(
+            email=email,
+            senha="",  # OAuth não usa senha
+            cliente_id=cliente_id,
+            empresa_id=empresa_id,
+        )
+        log.info("oauth.cliente.created", cliente_id=str(cliente_id), empresa_id=empresa_id)
+    else:
+        cliente_data = await _fetch_cliente(cliente_auth.cliente_id, empresa_id)
+        log.info("oauth.cliente.login", cliente_id=str(cliente_auth.cliente_id))
+
+    return await _issue_cliente_session(response, redis, cliente_auth, empresa_id, cliente_data)
+
+
 @router.post("/register", response_model=ClienteLoginResponse, status_code=status.HTTP_201_CREATED)
 async def register_cliente(
     response: Response,
@@ -93,15 +225,16 @@ async def register_cliente(
             cliente_response = await client.post(
                 f"{settings.CLIENTES_URL}/clientes",
                 json={
+                    "empresa_id": data.empresa_id,
                     "cpf": data.cpf,
                     "nome": data.nome,
                     "telefone": data.telefone,
                     "email": data.email
                 },
-                headers={"X-Empresa-Id": str(data.empresa_id)},
+                headers=_internal_headers(data.empresa_id),
                 timeout=10.0
             )
-            
+
             if cliente_response.status_code != 201:
                 log.error("cliente.register.service_error", 
                          status=cliente_response.status_code,
@@ -135,34 +268,9 @@ async def register_cliente(
              cliente_auth_id=str(cliente_auth.id),
              cliente_id=str(cliente_id),
              empresa_id=data.empresa_id)
-    
-    # Gerar tokens
-    access_token = create_access_token(
-        user_id=cliente_auth.id,
-        role="CLIENTE",
-        user_type="cliente",
-        empresa_id=data.empresa_id
-    )
-    refresh_token = create_refresh_token(cliente_auth.id)
-    
-    # Salvar refresh token no Redis
-    await redis.setex(
-        f"refresh:cliente:{cliente_auth.id}",
-        settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        refresh_token
-    )
-    
-    # Definir cookies
-    set_auth_cookies(response, access_token, refresh_token)
-    
+
     log.info("cliente.register.success", cliente_id=str(cliente_id))
-    
-    return ClienteLoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_type="cliente",
-        cliente=cliente_data
-    )
+    return await _issue_cliente_session(response, redis, cliente_auth, data.empresa_id, cliente_data)
 
 
 @router.post("/login", response_model=ClienteLoginResponse)
@@ -196,57 +304,24 @@ async def login_cliente(
         )
     
     # Buscar dados do cliente no serviço de clientes
-    async with httpx.AsyncClient() as client:
-        try:
-            cliente_response = await client.get(
-                f"{settings.CLIENTES_URL}/clientes/{cliente_auth.cliente_id}",
-                headers={"X-Empresa-Id": str(cliente_auth.empresa_id)},
-                timeout=10.0
-            )
-            
-            if cliente_response.status_code != 200:
-                log.error("cliente.login.fetch_error", status=cliente_response.status_code)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Erro ao buscar dados do cliente"
-                )
-            
-            cliente_data = cliente_response.json()
-            
-        except httpx.RequestError as e:
-            log.error("cliente.login.request_error", error=str(e))
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Erro ao comunicar com serviço de clientes"
-            )
-    
-    # Gerar tokens
-    access_token = create_access_token(
-        user_id=cliente_auth.id,
-        role="CLIENTE",
-        user_type="cliente",
-        empresa_id=cliente_auth.empresa_id
-    )
-    refresh_token = create_refresh_token(cliente_auth.id)
-    
-    # Salvar refresh token no Redis
-    await redis.setex(
-        f"refresh:cliente:{cliente_auth.id}",
-        settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        refresh_token
-    )
-    
-    # Definir cookies
-    set_auth_cookies(response, access_token, refresh_token)
-    
+    cliente_data = await _fetch_cliente(cliente_auth.cliente_id, cliente_auth.empresa_id)
+
     log.info("cliente.login.success", cliente_id=str(cliente_auth.cliente_id))
-    
-    return ClienteLoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_type="cliente",
-        cliente=cliente_data
+    return await _issue_cliente_session(
+        response, redis, cliente_auth, cliente_auth.empresa_id, cliente_data
     )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout_cliente(response: Response):
+    """Logout do cliente: remove os cookies de autenticação.
+
+    Não exige autenticação para que o logout sempre limpe o cookie HttpOnly,
+    mesmo com token expirado (o JS do navegador não consegue removê-lo).
+    """
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/")
+    return None
 
 
 @router.post("/oauth/google/init")
@@ -268,16 +343,15 @@ async def oauth_google_init_cliente(
     
     log.info("oauth.cliente.google.init", state=state, empresa_id=request.empresa_id)
     
-    auth_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth"
-        f"?client_id={settings.GOOGLE_CLIENT_ID}"
-        f"&redirect_uri={request.redirect_uri}"
-        f"&response_type=code"
-        f"&scope=openid email profile"
-        f"&state={state}"
-        f"&access_type=offline"
-        f"&prompt=consent"
-    )
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": request.redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "offline",
+        "prompt": "consent",
+    })
     
     return {"auth_url": auth_url, "state": state}
 
@@ -354,107 +428,12 @@ async def oauth_google_callback_cliente(
         
         user_data = user_response.json()
     
-    # Buscar ou criar cliente
+    # Login OAuth isolado e idempotente (mesmo email ⇒ mesmo cliente)
     repo = ClienteAuthRepository(db)
     email = user_data.get("email")
     nome = user_data.get("name", email.split("@")[0])
-    
-    cliente_auth = await repo.buscar_por_email(email)
-    
-    if not cliente_auth:
-        # Criar cliente no serviço de clientes
-        async with httpx.AsyncClient() as client:
-            try:
-                cliente_response = await client.post(
-                    f"{settings.CLIENTES_URL}/clientes",
-                    json={
-                        "cpf": "00000000000",  # CPF temporário para OAuth
-                        "nome": nome,
-                        "telefone": "0000000000",  # Telefone temporário
-                        "email": email
-                    },
-                    headers={"X-Empresa-Id": str(empresa_id)},
-                    timeout=10.0
-                )
-                
-                if cliente_response.status_code != 201:
-                    log.error("oauth.cliente.google.create_error", status=cliente_response.status_code)
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Erro ao criar cliente"
-                    )
-                
-                cliente_data = cliente_response.json()
-                cliente_id = UUID(cliente_data["id"])
-                
-            except httpx.RequestError as e:
-                log.error("oauth.cliente.google.request_error", error=str(e))
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Erro ao comunicar com serviço de clientes"
-                )
-        
-        # Criar autenticação
-        cliente_auth = await repo.criar(
-            email=email,
-            senha="",  # OAuth não usa senha
-            cliente_id=cliente_id,
-            empresa_id=empresa_id
-        )
-        
-        log.info("oauth.cliente.google.created", cliente_id=str(cliente_id))
-    else:
-        # Buscar dados do cliente
-        async with httpx.AsyncClient() as client:
-            try:
-                cliente_response = await client.get(
-                    f"{settings.CLIENTES_URL}/clientes/{cliente_auth.cliente_id}",
-                    headers={"X-Empresa-Id": str(empresa_id)},
-                    timeout=10.0
-                )
-                
-                if cliente_response.status_code != 200:
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Erro ao buscar cliente"
-                    )
-                
-                cliente_data = cliente_response.json()
-                
-            except httpx.RequestError as e:
-                log.error("oauth.cliente.google.fetch_error", error=str(e))
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Erro ao comunicar com serviço de clientes"
-                )
-        
-        log.info("oauth.cliente.google.login", cliente_id=str(cliente_auth.cliente_id))
-    
-    # Gerar tokens
-    access_token = create_access_token(
-        user_id=cliente_auth.id,
-        role="CLIENTE",
-        user_type="cliente",
-        empresa_id=empresa_id
-    )
-    refresh_token = create_refresh_token(cliente_auth.id)
-    
-    # Salvar refresh token
-    await redis.setex(
-        f"refresh:cliente:{cliente_auth.id}",
-        settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        refresh_token
-    )
-    
-    # Definir cookies
-    set_auth_cookies(response, access_token, refresh_token)
-    
-    return ClienteLoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_type="cliente",
-        cliente=cliente_data
-    )
+
+    return await _complete_cliente_oauth(response, redis, repo, empresa_id, email, nome)
 
 
 @router.post("/oauth/microsoft/init")
@@ -479,13 +458,15 @@ async def oauth_microsoft_init_cliente(
     tenant = settings.MICROSOFT_TENANT_ID or "common"
     
     auth_url = (
-        f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize"
-        f"?client_id={settings.MICROSOFT_CLIENT_ID}"
-        f"&redirect_uri={request.redirect_uri}"
-        f"&response_type=code"
-        f"&scope=openid email profile User.Read"
-        f"&state={state}"
-        f"&prompt=consent"
+        f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?"
+        + urlencode({
+            "client_id": settings.MICROSOFT_CLIENT_ID,
+            "redirect_uri": request.redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile User.Read",
+            "state": state,
+            "prompt": "consent",
+        })
     )
     
     return {"auth_url": auth_url, "state": state}
@@ -564,106 +545,12 @@ async def oauth_microsoft_callback_cliente(
         
         user_data = user_response.json()
     
-    # Buscar ou criar cliente
+    # Login OAuth isolado e idempotente (mesmo email ⇒ mesmo cliente)
     repo = ClienteAuthRepository(db)
     email = user_data.get("mail") or user_data.get("userPrincipalName")
     nome = user_data.get("displayName", email.split("@")[0])
-    
-    cliente_auth = await repo.buscar_por_email(email)
-    
-    if not cliente_auth:
-        # Criar cliente no serviço
-        async with httpx.AsyncClient() as client:
-            try:
-                cliente_response = await client.post(
-                    f"{settings.CLIENTES_URL}/clientes",
-                    json={
-                        "cpf": "00000000000",
-                        "nome": nome,
-                        "telefone": "0000000000",
-                        "email": email
-                    },
-                    headers={"X-Empresa-Id": str(empresa_id)},
-                    timeout=10.0
-                )
-                
-                if cliente_response.status_code != 201:
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Erro ao criar cliente"
-                    )
-                
-                cliente_data = cliente_response.json()
-                cliente_id = UUID(cliente_data["id"])
-                
-            except httpx.RequestError as e:
-                log.error("oauth.cliente.microsoft.request_error", error=str(e))
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Erro ao comunicar com serviço de clientes"
-                )
-        
-        # Criar autenticação
-        cliente_auth = await repo.criar(
-            email=email,
-            senha="",
-            cliente_id=cliente_id,
-            empresa_id=empresa_id
-        )
-        
-        log.info("oauth.cliente.microsoft.created", cliente_id=str(cliente_id))
-    else:
-        # Buscar dados
-        async with httpx.AsyncClient() as client:
-            try:
-                cliente_response = await client.get(
-                    f"{settings.CLIENTES_URL}/clientes/{cliente_auth.cliente_id}",
-                    headers={"X-Empresa-Id": str(empresa_id)},
-                    timeout=10.0
-                )
-                
-                if cliente_response.status_code != 200:
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Erro ao buscar cliente"
-                    )
-                
-                cliente_data = cliente_response.json()
-                
-            except httpx.RequestError as e:
-                log.error("oauth.cliente.microsoft.fetch_error", error=str(e))
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Erro ao comunicar com serviço de clientes"
-                )
-        
-        log.info("oauth.cliente.microsoft.login", cliente_id=str(cliente_auth.cliente_id))
-    
-    # Gerar tokens
-    access_token = create_access_token(
-        user_id=cliente_auth.id,
-        role="CLIENTE",
-        user_type="cliente",
-        empresa_id=empresa_id
-    )
-    refresh_token = create_refresh_token(cliente_auth.id)
-    
-    # Salvar refresh token
-    await redis.setex(
-        f"refresh:cliente:{cliente_auth.id}",
-        settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        refresh_token
-    )
-    
-    # Definir cookies
-    set_auth_cookies(response, access_token, refresh_token)
-    
-    return ClienteLoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_type="cliente",
-        cliente=cliente_data
-    )
+
+    return await _complete_cliente_oauth(response, redis, repo, empresa_id, email, nome)
 
 
 
@@ -698,7 +585,6 @@ async def registrar_cliente_interno(
         )
     
     # Criar registro de autenticação com hash já fornecido
-    from models.cliente_auth import ClienteAuth
     cliente_auth = ClienteAuth(
         email=data.email,
         senha_hash=data.senha_hash,

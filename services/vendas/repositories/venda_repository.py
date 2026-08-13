@@ -38,23 +38,45 @@ class VendaRepository:
         db: AsyncSession,
         empresa_id: int,
         venda_id: UUID,
-        com_relacionamentos: bool = False
+        com_relacionamentos: bool = False,
+        com_lock: bool = False,
+        skip_locked: bool = False
     ) -> Optional[Venda]:
-        """Busca venda por ID isolada por empresa."""
+        """
+        Busca venda por ID isolada por empresa.
+
+        com_lock=True adquire um lock de linha (SELECT ... FOR UPDATE) na venda para
+        serializar confirmações concorrentes (webhooks payment + merchant_order do
+        mesmo pedido) e garantir idempotência da confirmação.
+
+        skip_locked=True (com com_lock) usa FOR UPDATE SKIP LOCKED: se outra instância já
+        detém o lock da venda, retorna None em vez de bloquear. Usado pelo job de timeout
+        (C3) para impedir que múltiplas instâncias cancelem a mesma venda.
+        """
         query = select(Venda).where(
             and_(
                 Venda.empresa_id == empresa_id,
                 Venda.id == venda_id
             )
         )
-        
+
         if com_relacionamentos:
             query = query.options(
                 selectinload(Venda.itens),
                 selectinload(Venda.pagamentos),
                 selectinload(Venda.reservas)
             )
-        
+
+        if com_lock:
+            # Lock apenas a linha da venda; selectinload roda em queries separadas.
+            # populate_existing força o refresh dos atributos a partir da leitura
+            # travada (o SELECT FOR UPDATE lê o dado fresco, mas sem populate_existing
+            # o SQLAlchemy devolveria a instância em cache do identity map — status
+            # potencialmente desatualizado, quebrando a idempotência da confirmação).
+            query = query.with_for_update(of=Venda, skip_locked=skip_locked).execution_options(
+                populate_existing=True
+            )
+
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
@@ -146,6 +168,28 @@ class VendaRepository:
         """Obtém a próxima sequência de número de venda para a empresa."""
         count = await VendaRepository.contar_por_empresa(db, empresa_id)
         return count + 1
+
+    @staticmethod
+    async def buscar_por_sessao_carrinho(
+        db: AsyncSession,
+        empresa_id: int,
+        sessao_carrinho_id: str
+    ) -> Optional[Venda]:
+        """
+        Busca venda por sessao_carrinho_id.
+        
+        Retorna a venda mais recente se houver múltiplas com mesmo sessao_id
+        (caso de bug onde mesmo carrinho foi usado em múltiplas vendas).
+        """
+        query = select(Venda).where(
+            and_(
+                Venda.empresa_id == empresa_id,
+                Venda.sessao_carrinho_id == sessao_carrinho_id
+            )
+        ).order_by(desc(Venda.created_at))
+        
+        result = await db.execute(query)
+        return result.scalars().first()  # Retorna a mais recente
 
 
 class ItemVendaRepository:

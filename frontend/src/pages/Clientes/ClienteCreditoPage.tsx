@@ -5,13 +5,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FiArrowLeft, FiSave, FiLock, FiUnlock, FiDollarSign, FiAlertCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { api } from '@/services/api/axios';
+import { clientesApi } from '@/services/api/clientesApi';
+import { getErrorMessage } from '@/services/api/axios';
 import './ClienteCreditoPage.scss';
 
 // Schema de validação
 const creditoSchema = z.object({
   limite_credito: z.number().min(0, 'Limite de crédito não pode ser negativo'),
-  dia_vencimento: z.number().min(1).max(28, 'Dia deve estar entre 1 e 28').optional(),
+  // Campo numérico vazio vira NaN (valueAsNumber) — tratar como "não informado"
+  dia_vencimento: z.preprocess(
+    (v) => (typeof v === 'number' && Number.isNaN(v) ? undefined : v),
+    z.number().min(1, 'Dia deve estar entre 1 e 28').max(28, 'Dia deve estar entre 1 e 28').optional()
+  ),
 });
 
 type CreditoFormData = z.infer<typeof creditoSchema>;
@@ -63,15 +68,15 @@ const ClienteCreditoPage = () => {
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [clienteRes, historicoRes] = await Promise.all([
-        api.get(`/clientes/${id}`),
-        api.get(`/clientes/${id}/historico-credito`).catch(() => ({ data: [] })),
+      const [clienteData, historicoData] = await Promise.all([
+        clientesApi.obter(id!),
+        clientesApi.obterHistoricoCredito(id!).catch(() => []),
       ]);
-      setCliente(clienteRes.data);
-      setHistorico(historicoRes.data);
+      setCliente(clienteData);
+      setHistorico(historicoData);
       reset({
-        limite_credito: clienteRes.data.limite_credito,
-        dia_vencimento: clienteRes.data.dia_vencimento,
+        limite_credito: clienteData.limite_credito,
+        dia_vencimento: clienteData.dia_vencimento,
       });
     } catch (error) {
       toast.error('Erro ao carregar dados');
@@ -85,11 +90,14 @@ const ClienteCreditoPage = () => {
   const onSubmit = async (data: CreditoFormData) => {
     try {
       setSubmitting(true);
-      await api.put(`/clientes/${id}/credito`, data);
+      await clientesApi.atualizarCredito(id!, {
+        limite_credito: data.limite_credito,
+        dia_vencimento: data.dia_vencimento ?? null,
+      });
       toast.success('Crédito atualizado com sucesso');
       carregarDados();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao atualizar crédito';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao atualizar crédito');
       toast.error(message);
       console.error(error);
     } finally {
@@ -107,13 +115,11 @@ const ClienteCreditoPage = () => {
 
     try {
       setAlterandoBloqueio(true);
-      await api.patch(`/clientes/${id}/bloqueio`, {
-        bloqueado: !cliente.bloqueado,
-      });
+      await clientesApi.executarAcao(id!, acao);
       toast.success(`Cliente ${cliente.bloqueado ? 'desbloqueado' : 'bloqueado'} com sucesso`);
       carregarDados();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Erro ao alterar bloqueio';
+    } catch (error) {
+      const message = getErrorMessage(error, 'Erro ao alterar bloqueio');
       toast.error(message);
       console.error(error);
     } finally {

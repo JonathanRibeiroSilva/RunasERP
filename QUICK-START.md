@@ -11,60 +11,49 @@
 
 **Use quando**: Testar localmente sem precisar de acesso externo
 
-```bash
+```powershell
 # 1. Subir todos os serviços
-docker-compose up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # 2. Aguardar ~30 segundos e verificar status
-docker-compose ps
+docker-compose -f docker-compose.dev.yml ps
 
-# 3. Executar testes automatizados
-bash tests/test-mvp.sh
+# 3. Verificar logs
+docker logs erp-api-gateway-dev -f
 ```
 
 **✅ Acesso**:
-- Frontend: http://localhost:80
+- Frontend: http://localhost:3000
 - API Gateway: http://localhost:8000
 - API Docs: http://localhost:8000/docs
+- PgAdmin: http://localhost:5050
 
 ---
 
-### 🌐 Método 2: Ngrok (Acesso Externo via Internet)
+### 🌐 Método 2: Cloudflare Tunnel (Acesso Externo via Internet)
 
 **Use quando**: Precisa de webhooks, OAuth, testes mobile ou demonstrações remotas
 
 #### Pré-requisitos adicionais:
-1. Conta ngrok (gratuita): https://ngrok.com/
-2. Token de autenticação configurado no `.env.ngrok`
+1. Token Cloudflare Tunnel configurado no `.env.cloudflare`
+2. Domínio configurado (www.runaserp.com.br)
 
-```bash
-# 1. Configurar token do ngrok (primeira vez apenas)
-# Edite .env.ngrok e adicione seu token:
-# NGROK_AUTHTOKEN=seu-token-aqui
+```powershell
+# 1. Subir com Cloudflare Tunnel
+docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
 
-# 2. Subir com nginx + ngrok
-docker-compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
+# 2. Verificar status do túnel
+docker logs erp-cloudflared-dev -f
 
-# 3. Aguardar ~30 segundos
-sleep 30
-
-# 4. Obter URL pública do ngrok
-docker-compose logs ngrok | grep "url="
+# 3. Acessar via domínio
 ```
 
 **✅ Acesso**:
-- URL Pública: https://abc123-xyz456.ngrok-free.dev (copie dos logs)
-- Dashboard ngrok: http://localhost:4040
-- API via ngrok: https://abc123-xyz456.ngrok-free.dev/api
+- Frontend: https://www.runaserp.com.br
+- API Gateway: https://www.runaserp.com.br/api
+- API Docs: https://www.runaserp.com.br/api/docs
 
-**⚠️ Importante**: Após obter a URL do ngrok, atualize `FRONTEND_URL` no `.env` e reinicie o API Gateway:
-```bash
-# Edite .env e mude:
-FRONTEND_URL=https://abc123-xyz456.ngrok-free.dev
-
-# Reinicie o gateway
-docker-compose restart api-gateway
-```
+**⚠️ Importante**: OAuth2 e webhooks já estão configurados para o domínio Cloudflare.
 
 ---
 
@@ -76,22 +65,35 @@ docker-compose restart api-gateway
 
 ### 1. Login e obter token
 
-```bash
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin@runas.com&password=Admin@123"
+```powershell
+# Localhost
+Invoke-WebRequest -Uri "http://localhost:8000/api/auth/login" `
+  -Method POST `
+  -Headers @{"Content-Type"="application/x-www-form-urlencoded"} `
+  -Body "username=admin@runas.com&password=Admin@123"
+
+# Cloudflare
+Invoke-WebRequest -Uri "https://www.runaserp.com.br/api/auth/login" `
+  -Method POST `
+  -Headers @{"Content-Type"="application/x-www-form-urlencoded"} `
+  -Body "username=admin@runas.com&password=Admin@123"
 ```
 
 **Copie o `access_token` da resposta!**
 
 ### 2. Criar um cliente
 
-```bash
-# Substitua SEU_TOKEN pelo token copiado acima
-curl -X POST http://localhost:8000/api/clientes \
-  -H "Authorization: Bearer SEU_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
+```powershell
+$token = "SEU_TOKEN_AQUI"
+
+# Localhost
+Invoke-WebRequest -Uri "http://localhost:8000/api/clientes" `
+  -Method POST `
+  -Headers @{
+    "Authorization"="Bearer $token"
+    "Content-Type"="application/json"
+  } `
+  -Body '{
     "nome": "João Silva",
     "cpf_cnpj": "12345678901",
     "email": "joao@example.com",
@@ -100,381 +102,130 @@ curl -X POST http://localhost:8000/api/clientes \
   }'
 ```
 
-### 3. Listar clientes
+### 3. Listar produtos
 
-```bash
-curl -X GET http://localhost:8000/api/clientes \
-  -H "Authorization: Bearer SEU_TOKEN"
-```
+```powershell
+# Localhost
+Invoke-WebRequest -Uri "http://localhost:8000/api/produtos" `
+  -Headers @{"Authorization"="Bearer $token"}
 
-**Sucesso!** Você acabou de testar o fluxo completo: autenticação → criação → listagem. 🎉
-
----
-
-## 🖥️ Acessar Interfaces Web
-
-| Interface | URL | Credenciais |
-|-----------|-----|-------------|
-| **API Docs (Swagger)** | http://localhost:8000/docs | - |
-| **pgAdmin** | http://localhost:5050 | admin@runas.local / admin123 |
-| **RabbitMQ** | http://localhost:15672 | guest / guest |
-| **Evolution API** | http://localhost:8080 | - |
-
----
-
-## 📊 Verificar Status dos Serviços
-
-```bash
-# Ver status de todos os containers
-docker-compose ps
-
-# Ver logs em tempo real
-docker-compose logs -f
-
-# Ver logs de um serviço específico
-docker-compose logs -f api-gateway
-docker-compose logs -f clientes
-docker-compose logs -f produtos
+# Cloudflare
+Invoke-WebRequest -Uri "https://www.runaserp.com.br/api/produtos" `
+  -Headers @{"Authorization"="Bearer $token"}
 ```
 
 ---
 
-## 🛑 Parar e Limpar
+## 🔧 Troubleshooting
 
-```bash
-# Parar todos os serviços (mantém dados)
-docker-compose down
+### ❌ "Port already in use"
 
-# Parar e remover TUDO (incluindo dados)
-docker-compose down -v
-
-# Reiniciar um serviço específico
-docker-compose restart api-gateway
-```
-
----
-
-## 🔧 Comandos Úteis
-
-```bash
-# Subir apenas infraestrutura (bancos, redis, rabbitmq)
-docker-compose up -d db-gateway db-clientes db-produtos redis rabbitmq
-
-# Subir apenas o MVP (gateway + clientes + produtos)
-docker-compose up -d api-gateway clientes produtos
-
-# Executar comando dentro de um container
-docker-compose exec api-gateway bash
-docker-compose exec clientes python seed.py
-
-# Ver uso de recursos
-docker stats
-```
-
----
-
-## 🐛 Problemas Comuns
-
-### Método Localhost
-
-#### Container não sobe
-
-```bash
-# Ver o erro
-docker-compose logs <nome-do-servico>
-
-# Recriar o container
-docker-compose up -d --force-recreate <nome-do-servico>
-```
-
-#### Porta já em uso
-
-```bash
-# Descobrir qual processo está usando a porta
-# Linux/Mac
-lsof -i :8000
-
-# Windows
+```powershell
+# Verificar qual processo está usando a porta
 netstat -ano | findstr :8000
 
-# Matar o processo ou mudar a porta no docker-compose.yml
+# Parar todos os containers e tentar novamente
+docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.dev.yml up -d
 ```
 
-#### Banco de dados não conecta
+### ❌ "Container exited with code 1"
 
-```bash
-# Verificar se o banco está healthy
-docker-compose ps
+```powershell
+# Ver logs do container problemático
+docker logs erp-api-gateway-dev
+docker logs erp-db-dev
 
-# Reiniciar o banco
-docker-compose restart db
-
-# Ver logs do banco
-docker-compose logs db
+# Verificar .env está configurado
+cat .env
 ```
 
-### Método Ngrok
+### ❌ "Cannot connect to database"
 
-#### ❌ "Bind for 0.0.0.0:80 failed: port is already allocated"
+```powershell
+# Verificar se o banco está rodando
+docker ps | Select-String "postgres"
 
-```bash
-# Você subiu primeiro com docker-compose up -d
-# O frontend já está usando a porta 80
+# Verificar logs do banco
+docker logs erp-db-dev
 
-# Solução: Parar tudo e subir com o método correto
-docker-compose down
-docker-compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
+# Aguardar healthcheck do banco (30 segundos)
+Start-Sleep -Seconds 30
 ```
 
-#### ❌ "nginx: host not found in upstream"
+### ❌ Frontend não carrega
 
-```bash
-# O nginx não encontra o container do API Gateway
-# Verifique se o nome do container está correto
+```powershell
+# Verificar se o container está rodando
+docker ps | Select-String "frontend"
 
-# Ver containers rodando
-docker-compose ps
+# Ver logs
+docker logs erp-frontend-dev -f
 
-# Deve ter: erp-api-gateway (sem -dev)
-```
-
-#### ❌ "Token inválido" ao subir ngrok
-
-```bash
-# Verificar seu token
-docker-compose logs ngrok
-
-# Se vir erro, regere o token em: https://dashboard.ngrok.com/get-started/your-authtoken
-# Atualize .env.ngrok e rode:
-docker-compose restart ngrok
-```
-
-### Ambos os Métodos
-
-### Ambos os Métodos
-
-#### Token expirado (401 Unauthorized)
-
-```bash
-# Tokens expiram em 30 minutos
-# Faça login novamente para obter um novo token
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin@runas.com&password=Admin@123"
+# Rebuild do frontend se necessário
+docker-compose -f docker-compose.dev.yml up -d --force-recreate frontend-dev
 ```
 
 ---
 
-## 📚 Documentação Completa
+## 📚 Próximos Passos
 
-Para mais detalhes, consulte:
-
-- **[docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md)** - Guia completo de testes com exemplos de cURL
-- **[docs/mvp/STATUS-FINAL.md](./docs/mvp/STATUS-FINAL.md)** - Status detalhado de todos os componentes
-- **[docs/mvp/RESUMO-EXECUTIVO.md](./docs/mvp/RESUMO-EXECUTIVO.md)** - Visão geral do MVP
-- **[README.md](./README.md)** - Documentação principal do projeto
+1. **Frontend**: Acesse http://localhost:3000 e faça login com `admin@runas.com` / `Admin@123`
+2. **Explorar API**: Visite http://localhost:8000/docs para ver todos os endpoints
+3. **Criar Seed Data**: Rode `docker-compose -f docker-compose.dev.yml exec api-gateway python seed.py`
+4. **Documentação Completa**: Veja `docs/README.md` para detalhes
 
 ---
 
-## 🎯 Endpoints Principais
+## 🛠️ Comandos Úteis
 
-### Autenticação
-- `POST /auth/login` - Login
-- `POST /auth/refresh` - Renovar token
-- `POST /auth/logout` - Logout
-- `GET /auth/me` - Dados do usuário
+```powershell
+# Parar todos os serviços
+docker-compose -f docker-compose.dev.yml down
 
-### Clientes (via /api/clientes)
-- `GET /api/clientes` - Listar
-- `POST /api/clientes` - Criar
-- `GET /api/clientes/{id}` - Buscar
-- `PUT /api/clientes/{id}` - Atualizar
-- `DELETE /api/clientes/{id}` - Deletar
+# Ver logs de um serviço específico
+docker logs erp-api-gateway-dev -f
 
-### Produtos (via /api/produtos)
-- `GET /api/produtos` - Listar
-- `POST /api/produtos` - Criar
-- `GET /api/produtos/{id}` - Buscar
-- `PUT /api/produtos/{id}` - Atualizar
+# Restartar um serviço específico
+docker-compose -f docker-compose.dev.yml restart api-gateway
 
-### Categorias (via /api/categorias)
-- `GET /api/categorias` - Listar
-- `POST /api/categorias` - Criar
+# Ver status de todos os serviços
+docker-compose -f docker-compose.dev.yml ps
 
-**Total**: 52 endpoints disponíveis
+# Limpar tudo (incluindo volumes)
+docker-compose -f docker-compose.dev.yml down -v
 
----
-
-## 🔐 Credenciais Padrão
-
-```
-Admin API:
-  Email: admin@runas.com
-  Senha: Admin@123
-
-pgAdmin:
-  Email: admin@runas.local
-  Senha: admin123
-
-RabbitMQ:
-  User: guest
-  Pass: guest
-
-PostgreSQL:
-  User: erp
-  Pass: erp
+# Rebuild de um serviço
+docker-compose -f docker-compose.dev.yml up -d --build api-gateway
 ```
 
 ---
 
-## ✅ Checklist Rápido
+## 🎯 Estrutura do Projeto
 
-- [ ] `docker-compose up -d` executado
-- [ ] Todos os containers com status "Up (healthy)"
-- [ ] `bash tests/test-mvp.sh` passou todos os testes
-- [ ] Login funciona e retorna token
-- [ ] Criar cliente funciona
-- [ ] Listar clientes funciona
-- [ ] Swagger acessível em http://localhost:8000/docs
-
-**Se todos os itens estão marcados, o MVP está 100% funcional!** 🎉
-
----
-
-## 🌐 Configuração Avançada do Ngrok
-
-### Por que usar ngrok?
-
-O ngrok permite expor seu servidor local para a internet, essencial para:
-- ✅ **Webhooks**: Receber notificações do Mercado Pago e WhatsApp
-- ✅ **OAuth**: Callbacks de autenticação externa (Google, Microsoft)
-- ✅ **Testes Mobile**: Acessar a API de dispositivos móveis
-- ✅ **Demonstrações**: Mostrar o sistema para clientes remotos
-
----
-
-### 📋 Checklist Completo de Setup
-
-- [ ] 1. Criar conta ngrok (https://ngrok.com/)
-- [ ] 2. Copiar token de autenticação (https://dashboard.ngrok.com/get-started/your-authtoken)
-- [ ] 3. Atualizar `.env.ngrok` com seu token
-- [ ] 4. Subir com `docker-compose -f docker-compose.yml -f docker-compose.nginx.yml up -d`
-- [ ] 5. Obter URL pública: `docker-compose logs ngrok | grep "url="`
-- [ ] 6. Atualizar `FRONTEND_URL` no `.env` com a URL do ngrok
-- [ ] 7. Reiniciar API Gateway: `docker-compose restart api-gateway`
-- [ ] 8. Se usar OAuth, registrar redirect URIs nos provedores
-
----
-
-### 🔐 Configuração de OAuth (Opcional)
-
-Se você usa Google, Microsoft ou outro provedor OAuth:
-
-#### Google Cloud Console
-1. Acesse https://console.cloud.google.com/
-2. Vá para "Credenciais" → "OAuth 2.0 Client IDs"
-3. Edite seu cliente
-4. Em "URIs de redirecionamento autorizados", adicione:
-   ```
-   https://sua-url-ngrok.ngrok-free.dev/auth/google/callback
-   ```
-5. Salve
-
-#### Microsoft Azure
-1. Acesse https://portal.azure.com/
-2. Vá para "Azure Active Directory" → "App registrations"
-3. Edite seu app
-4. Em "Authentication" → "Redirect URIs", adicione:
-   ```
-   https://sua-url-ngrok.ngrok-free.dev/auth/microsoft/callback
-   ```
-5. Salve
-
-#### Atualizar `.env`
-```env
-# OAuth Credentials
-GOOGLE_CLIENT_ID=seu-client-id
-GOOGLE_CLIENT_SECRET=seu-secret
-MICROSOFT_CLIENT_ID=seu-client-id
-MICROSOFT_CLIENT_SECRET=seu-secret
-
-# Frontend URL (URL do ngrok)
-FRONTEND_URL=https://sua-url-ngrok.ngrok-free.dev
-
-# CORS Origins
-CORS_ORIGINS=https://sua-url-ngrok.ngrok-free.dev,http://localhost:3000
+```
+RunasERP/
+├── api-gateway/              # Gateway de autenticação e proxy
+├── services/                 # Microserviços
+│   ├── clientes/
+│   ├── produtos/
+│   ├── estoque/
+│   ├── vendas/
+│   ├── financeiro/
+│   └── notificacoes/
+├── frontend/                 # React + TypeScript
+├── shared/                   # Código compartilhado
+├── tests/                    # Testes pytest
+├── docker-compose.dev.yml    # Desenvolvimento
+├── docker-compose.prod.yml   # Produção
+└── docker-compose.cloudflare.yml  # Cloudflare Tunnel
 ```
 
 ---
 
-### ✅ Verificação Rápida
+<div align="center">
 
-Testar se tudo está funcionando:
+**Quick Start Completo** | Junho 2026  
+**Documentação**: `docs/README.md` | **Suporte**: Issues no GitHub
 
-```bash
-# 1. Testar autenticação via ngrok
-curl -X POST https://sua-url-ngrok.ngrok-free.dev/api/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin@runas.com&password=Admin@123"
-
-# Deve retornar um token
-
-# 2. Testar endpoint público
-curl https://sua-url-ngrok.ngrok-free.dev/api/categorias
-
-# 3. Acessar dashboard do ngrok
-# URL: http://localhost:4040
-# Verá todas as requisições em tempo real
-```
-
----
-
-### 🔧 Troubleshooting Ngrok
-
-#### ❌ OAuth com erro "redirect_uri_mismatch"
-```
-A URL do ngrok no seu provedor (Google/Microsoft) é diferente da que você está usando.
-
-Solução:
-1. Verificar URL exata: docker-compose logs ngrok | grep "url="
-2. Registrar EXATAMENTE essa URL no provedor OAuth
-3. Usar EXATAMENTE essa URL no .env (FRONTEND_URL)
-```
-
-#### ❌ Cookies não funcionam
-```
-Certifique-se que:
-- FRONTEND_URL no .env está com https://
-- Cookie secure flag está configurado (já está por padrão)
-- Está acessando via URL do ngrok, não localhost
-```
-
-#### ❌ CORS errors
-```
-Adicionar URL do ngrok em CORS_ORIGINS no .env:
-CORS_ORIGINS=https://sua-url-ngrok.ngrok-free.dev,http://localhost:3000
-
-Reiniciar API Gateway:
-docker-compose restart api-gateway
-```
-
-#### ❌ URL do ngrok muda toda vez
-```
-Plano gratuito do ngrok gera URL aleatória a cada restart.
-
-Soluções:
-1. Usar ngrok pago (URL fixa)
-2. Ou atualizar .env e provedores OAuth toda vez que reiniciar
-```
-
----
-
-### 📚 Documentação Adicional
-
-Para mais detalhes sobre OAuth com ngrok:
-- **[docs/09-troubleshooting/oauth-issues.md](./docs/09-troubleshooting/oauth-issues.md)** - Guia completo de troubleshooting OAuth
-
----
-
-**Última atualização**: 26 de Maio de 2026  
-**Versão**: 1.0.0-MVP
+</div>

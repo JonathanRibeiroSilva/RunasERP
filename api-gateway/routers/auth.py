@@ -9,6 +9,7 @@ from redis.asyncio import Redis
 import structlog
 import httpx
 import secrets
+from urllib.parse import urlencode
 from pydantic import BaseModel
 
 from database import get_db
@@ -16,10 +17,11 @@ from repositories.usuario_repository import UsuarioRepository
 from auth.jwt import create_access_token, create_refresh_token, verify_token
 from auth.oauth2 import get_current_user
 from auth.redis_client import get_redis
-from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioResponse, LoginResponse, ForgotPasswordRequest, ResetPasswordRequest
+from schemas.usuario import Token, RefreshTokenRequest, UsuarioCreate, UsuarioResponse, LoginResponse, ForgotPasswordRequest, ResetPasswordRequest, AlterarSenhaRequest
 from models.usuario import Usuario, RoleEnum
 from config import settings
 from services.email_service import send_reset_password_email
+from proxy.service_proxy import ServiceProxy
 
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -113,6 +115,14 @@ async def register(
     return usuario
 
 
+async def _usuario_response_com_slug(usuario: Usuario) -> UsuarioResponse:
+    """Serializa o usuário incluindo o slug da empresa (multi-tenancy)."""
+    empresa_slug = await ServiceProxy.get_empresa_slug_from_id(usuario.empresa_id)
+    return UsuarioResponse.model_validate(usuario).model_copy(
+        update={"empresa_slug": empresa_slug}
+    )
+
+
 @router.get("/me", response_model=UsuarioResponse)
 async def get_current_user_info(
     current_user: Annotated[Usuario, Depends(get_current_user)]
@@ -120,7 +130,7 @@ async def get_current_user_info(
     """
     Retorna informações do usuário logado.
     """
-    return current_user
+    return await _usuario_response_com_slug(current_user)
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -171,11 +181,11 @@ async def login(
     set_auth_cookies(response, access_token, refresh_token)
     
     log.info("login.success", user_id=str(usuario.id), role=usuario.role.value)
-    
+
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        user=usuario
+        user=await _usuario_response_com_slug(usuario)
     )
 
 
@@ -339,6 +349,32 @@ async def reset_password(
     }
 
 
+@router.post("/alterar-senha", status_code=status.HTTP_200_OK)
+async def alterar_senha(
+    request: AlterarSenhaRequest,
+    current_user: Annotated[Usuario, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    redis: Annotated[Redis, Depends(get_redis)]
+):
+    """Altera a senha do usuário autenticado, exigindo a senha atual."""
+    repo = UsuarioRepository(db)
+
+    if not current_user.senha_hash or not repo.verify_password(request.senha_atual, current_user.senha_hash):
+        log.warning("alterar_senha.senha_atual_incorreta", user_id=str(current_user.id))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Senha atual incorreta"
+        )
+
+    await repo.atualizar_senha(current_user.id, request.nova_senha)
+
+    # Invalidar refresh tokens (forçar novo login nas outras sessões)
+    await redis.delete(f"refresh:{current_user.id}")
+
+    log.info("alterar_senha.success", user_id=str(current_user.id))
+    return {"message": "Senha alterada com sucesso"}
+
+
 # ==================== OAUTH ROUTES (DEPRECATED) ====================
 # OAuth para OPERADORES está deprecated.
 # Use /auth/cliente/oauth/* para autenticação de clientes compradores.
@@ -365,17 +401,16 @@ async def oauth_google_init(
     # Salvar state no Redis (expira em 10 minutos)
     await redis.setex(f"oauth:state:{state}", 600, request.redirect_uri)
     
-    # Construir URL de autorização do Google
-    auth_url = (
-        "https://accounts.google.com/o/oauth2/v2/auth"
-        f"?client_id={settings.GOOGLE_CLIENT_ID}"
-        f"&redirect_uri={request.redirect_uri}"
-        "&response_type=code"
-        "&scope=openid email profile"
-        f"&state={state}"
-        "&access_type=offline"
-        "&prompt=consent"
-    )
+    # Construir URL de autorização do Google (parâmetros URL-encoded, RFC 6749)
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": request.redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "offline",
+        "prompt": "consent",
+    })
     
     log.info("oauth.google.init", state=state)
     
@@ -599,16 +634,18 @@ async def oauth_microsoft_init(
     
     tenant = settings.MICROSOFT_TENANT_ID or "common"
     
-    # Construir URL de autorização da Microsoft
+    # Construir URL de autorização da Microsoft (parâmetros URL-encoded, RFC 6749)
     # Scope User.Read é necessário para acessar o Microsoft Graph API
     auth_url = (
-        f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize"
-        f"?client_id={settings.MICROSOFT_CLIENT_ID}"
-        f"&redirect_uri={request.redirect_uri}"
-        "&response_type=code"
-        "&scope=openid email profile User.Read"
-        f"&state={state}"
-        "&response_mode=query"
+        f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?"
+        + urlencode({
+            "client_id": settings.MICROSOFT_CLIENT_ID,
+            "redirect_uri": request.redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile User.Read",
+            "state": state,
+            "response_mode": "query",
+        })
     )
     
     log.info("oauth.microsoft.init", state=state)

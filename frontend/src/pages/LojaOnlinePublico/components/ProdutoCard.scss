@@ -83,6 +83,26 @@
       cursor: pointer;
     }
 
+    .produto-preco {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+
+      .preco-antigo {
+        font-size: 0.8rem;
+        color: $text-tertiary;
+        text-decoration: line-through;
+      }
+
+      .preco-atual {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: $primary;
+      }
+    }
+
     .produto-footer {
       display: flex;
       justify-content: space-between;
