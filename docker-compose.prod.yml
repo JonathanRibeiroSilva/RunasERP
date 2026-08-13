@@ -1,11 +1,17 @@
-# Production stack. Standalone: brings up infra + apps + tunnel in one command.
-#   docker compose -f docker-compose.prod.yml up -d --build --wait
+# Production stack — pull only. This is the file Coolify reads on the VPS:
+#   docker compose -f docker-compose.prod.yml up -d --wait
+#
+# No `build:` anywhere on purpose. The VPS is 1 vCPU / 4 GB and cannot build
+# nine images without starving the running stack, so CI builds and pushes to
+# ghcr and this host only ever pulls. Build sections live in
+# docker-compose.build.yml, which only CI ever loads.
 #
 # No nginx-prod / no Let's Encrypt: TLS terminates at Cloudflare and traffic
 # arrives through the tunnel, so this host needs no inbound ports at all.
-#
-# No nginx-prod / no Let's Encrypt: TLS terminates at Cloudflare and traffic
-# arrives through the tunnel, so this host needs no inbound ports at all.
+
+# REGISTRY is overridable so a fork pushes to its own namespace. TAG pins a
+# rollback to one commit — CI publishes every image as both :<sha> and :latest.
+# A YAML anchor can't be spliced into a string, so the default is repeated.
 
 x-limits: &limits
   resources:
@@ -95,9 +101,7 @@ services:
   # ============================================
   api-gateway-prod:
     <<: *service
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/api-gateway:${TAG:-latest}
     container_name: erp-api-gateway-prod
     environment:
       <<: *service-env
@@ -137,7 +141,7 @@ services:
   # ============================================
   empresas-prod:
     <<: *service
-    build: {context: ./services/empresas, dockerfile: Dockerfile}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/empresas:${TAG:-latest}
     container_name: erp-empresas-prod
     environment:
       <<: *service-env
@@ -150,7 +154,7 @@ services:
 
   clientes-prod:
     <<: *service
-    build: {context: ./services/clientes, dockerfile: Dockerfile}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/clientes:${TAG:-latest}
     container_name: erp-clientes-prod
     environment:
       <<: *service-env
@@ -163,7 +167,7 @@ services:
 
   produtos-prod:
     <<: *service
-    build: {context: ./services/produtos, dockerfile: Dockerfile}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/produtos:${TAG:-latest}
     container_name: erp-produtos-prod
     environment:
       <<: *service-env
@@ -176,7 +180,7 @@ services:
 
   estoque-prod:
     <<: *service
-    build: {context: ./services/estoque, dockerfile: Dockerfile}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/estoque:${TAG:-latest}
     container_name: erp-estoque-prod
     environment:
       <<: *service-env
@@ -189,7 +193,7 @@ services:
 
   vendas-prod:
     <<: *service
-    build: {context: ./services/vendas, dockerfile: Dockerfile}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/vendas:${TAG:-latest}
     container_name: erp-vendas-prod
     environment:
       <<: *service-env
@@ -214,7 +218,7 @@ services:
 
   financeiro-prod:
     <<: *service
-    build: {context: ./services/financeiro, dockerfile: Dockerfile}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/financeiro:${TAG:-latest}
     container_name: erp-financeiro-prod
     environment:
       <<: *service-env
@@ -227,7 +231,7 @@ services:
 
   notificacoes-prod:
     <<: *service
-    build: {context: ./services/notificacoes, dockerfile: Dockerfile}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/notificacoes:${TAG:-latest}
     container_name: erp-notificacoes-prod
     environment:
       <<: *service-env
@@ -246,16 +250,10 @@ services:
   # ============================================
   # FRONTEND — built SPA, served by nginx inside the image
   # ============================================
+  # VITE_* are baked into the bundle at build time, so the build args that make
+  # this image environment-specific live in docker-compose.build.yml.
   frontend-prod:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=/api
-        - VITE_OAUTH_REDIRECT_URI=${FRONTEND_URL}/auth/callback
-        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
-        - VITE_MICROSOFT_CLIENT_ID=${VITE_MICROSOFT_CLIENT_ID}
-        - VITE_MICROSOFT_TENANT_ID=${VITE_MICROSOFT_TENANT_ID:-common}
+    image: ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/frontend:${TAG:-latest}
     container_name: erp-frontend-prod
     networks: [erp-network]
     restart: unless-stopped

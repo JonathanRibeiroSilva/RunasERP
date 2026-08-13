@@ -230,11 +230,20 @@ chore(docker): consolidate postgres containers
 
 **Domains:** app → `https://app.runaserp.com.br` (tunnel) · landing → `https://runaserp.com.br` + `www` (Cloudflare Pages, serves `landing-page/`, outside the tunnel)
 
-| File | Use |
-|------|-----|
-| `docker-compose.dev.yml` | local dev |
-| `docker-compose.prod.yml` | production |
-| `docker-compose.cloudflare.yml` | Cloudflare tunnel |
+One base file per kind of machine, plus overlays for the one axis that varies.
+Compose files stack: `-f base -f overlay`, where the overlay only restates the
+lines it changes.
+
+| File | Read by | Use |
+|------|---------|-----|
+| `docker-compose.dev.yml` | your machine | local dev — builds from source, hot reload. **Localhost is the default, no overlay needed.** |
+| `docker-compose.cloudflare.yml` | your machine | overlay on dev: public URLs + tunnel. The only reason to add a second `-f`. |
+| `docker-compose.prod.yml` | Coolify | production runtime. **Pull only — no `build:` anywhere**, images come from ghcr. |
+| `docker-compose.build.yml` | GitHub Actions | overlay on prod: adds the `build:` sections back so CI can build and push. |
+
+Production images are `${REGISTRY}/<service>:${TAG}` (defaults in the compose:
+`ghcr.io/jonathanribeirosilva/runaserp`, `latest`). CI publishes every image
+twice, as `:<sha>` and `:latest`; a rollback is `TAG=<sha>` on the VPS.
 
 ```powershell
 # API testing — ALWAYS via Cloudflare tunnel (tests OAuth, CORS, HTTPS, webhooks)
@@ -264,7 +273,9 @@ https://app.runaserp.com.br/auth/callback/microsoft
 
 **DB access:** `localhost:5432` with credentials from `.env` (use DBeaver or any PostgreSQL client).
 
-Removed and dead — never reference: Ngrok, Nginx, PgAdmin container, `docker-compose.nginx.yml`.
+Removed and dead — never reference: Ngrok, Nginx, PgAdmin container,
+`docker-compose.nginx.yml`, `docker-compose.local.yml` (its localhost values are
+the defaults in `docker-compose.dev.yml` now).
 
 ---
 

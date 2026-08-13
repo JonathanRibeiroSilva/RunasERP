@@ -5,6 +5,9 @@
 # cannot build nine images without starving the running stack. With the build
 # sections here, the file Coolify reads has nothing to build and can only pull.
 #
+# Image names are NOT repeated here — they come from the `image:` key in
+# docker-compose.prod.yml, so a build tags exactly what production will pull.
+#
 #   CI:    TAG=<sha> docker compose -f docker-compose.prod.yml -f docker-compose.build.yml build
 #   local: same command, then `up -d` with both files
 services:

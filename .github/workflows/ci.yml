@@ -22,8 +22,10 @@ jobs:
           docker compose --env-file .env.production.example -f docker-compose.prod.yml config >/dev/null
           docker compose --env-file .env.example -f docker-compose.dev.yml config >/dev/null
 
+      # docker-compose.prod.yml is pull-only; the build sections it needs come
+      # from docker-compose.build.yml, same pair the deploy workflow uses.
       - name: Build all production images
-        run: docker compose --env-file .env.production.example -f docker-compose.prod.yml build
+        run: docker compose --env-file .env.production.example -f docker-compose.prod.yml -f docker-compose.build.yml build
 
   frontend:
     runs-on: ubuntu-latest
