@@ -28,6 +28,7 @@ env/
 # IDE
 .vscode/
 .idea/
+.obsidian/
 *.swp
 *.swo
 *~
@@ -42,8 +43,7 @@ logs/
 
 # Environment
 .env
-.env.local
-.env.*.local
+.env.*
 
 # Keep example env files
 !.env.example
