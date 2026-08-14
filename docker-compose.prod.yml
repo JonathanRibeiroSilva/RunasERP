@@ -304,7 +304,13 @@ services:
       api-gateway-prod: {condition: service_healthy}
     deploy: *limits
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      # 127.0.0.1, not localhost: busybox wget resolves localhost to ::1 first and
+      # gives up on "Connection refused" without falling back to IPv4. nginx:alpine
+      # would normally add `listen [::]:80` through its 10-listen-on-ipv6-by-default
+      # entrypoint script, but that script skips any conf.d file whose checksum
+      # differs from the packaged one — which ours does. nginx serves fine on IPv4;
+      # only the probe was looking at the wrong address.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -33,8 +33,11 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 
 # Health check
+# 127.0.0.1, not localhost: busybox wget tries ::1 first and gives up there, and
+# nginx.conf only has `listen 80`. The image's 10-listen-on-ipv6-by-default script
+# would have added the IPv6 listener, but it skips customised conf.d files.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1
 
 # Comando para iniciar nginx
 CMD ["nginx", "-g", "daemon off;"]
