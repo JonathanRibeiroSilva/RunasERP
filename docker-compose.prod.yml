@@ -25,6 +25,9 @@ x-service: &service
   deploy: *limits
   depends_on:
     db: {condition: service_healthy}
+    # A healthy postgres is not a usable one here: every service issues
+    # CREATE TABLE <schema>.<table> and SQLAlchemy never creates the schema.
+    db-init: {condition: service_completed_successfully}
     redis: {condition: service_healthy}
     rabbitmq: {condition: service_healthy}
 
@@ -48,9 +51,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-erp}
       TZ: America/Sao_Paulo
+    # No /docker-entrypoint-initdb.d bind mount: Coolify copies the compose file
+    # to /data/coolify/applications/<uuid>/ and nothing else, so the repo-relative
+    # ./postgres/init-schemas.sql resolved to a path that did not exist. Docker
+    # answers that by creating an empty DIRECTORY, and psql died with "could not
+    # read from input file: Is a directory" — the cluster came up with only the
+    # `public` schema and every CREATE TABLE failed. See db-init below.
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./postgres/init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql:ro
     networks: [erp-network]
     restart: unless-stopped
     healthcheck:
@@ -63,6 +71,41 @@ services:
         # Docker rejects a cpus limit above the host core count, so 1.5 would fail
         # to start on the 1 vCPU production VPS. Raise this only alongside the host.
         limits: {cpus: '1.0', memory: 1G}
+
+  # Creates the per-service schemas. SQLAlchemy's create_all emits
+  # CREATE TABLE <schema>.<table> but never CREATE SCHEMA, so without this every
+  # service dies on first boot with `schema "vendas" does not exist`.
+  #
+  # Inline rather than mounting postgres/init-schemas.sql, for two reasons:
+  # Coolify does not ship the repo to the VPS (see the note on db above), and
+  # /docker-entrypoint-initdb.d runs once per volume — a schema added later would
+  # need someone to remember to run SQL by hand. This is idempotent and runs on
+  # every deploy. Keep the list in sync with postgres/init-schemas.sql, which is
+  # still how dev seeds its schemas.
+  db-init:
+    image: postgres:15-alpine
+    container_name: erp-db-init-prod
+    networks: [erp-network]
+    restart: "no"
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      PGDATABASE: ${POSTGRES_DB:-erp}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        for s in gateway empresas clientes produtos estoque vendas financeiro notificacoes evolution; do
+          psql -v ON_ERROR_STOP=1 \
+            -c "CREATE SCHEMA IF NOT EXISTS $$s" \
+            -c "GRANT ALL ON SCHEMA $$s TO \"$$PGUSER\"" \
+            -c "ALTER DEFAULT PRIVILEGES IN SCHEMA $$s GRANT ALL ON TABLES TO \"$$PGUSER\"" \
+            -c "ALTER DEFAULT PRIVILEGES IN SCHEMA $$s GRANT ALL ON SEQUENCES TO \"$$PGUSER\"" >/dev/null
+        done
+        echo "schemas ready"
 
   redis:
     image: redis:7-alpine
