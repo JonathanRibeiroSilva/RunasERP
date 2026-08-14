@@ -49,7 +49,9 @@ const produtoSchema = z
     path: ['estoque_inicial'],
   });
 
-type ProdutoFormData = z.infer<typeof produtoSchema>;
+// zod 4 splits input from output: coerce/preprocess take unknown in, give number out.
+type ProdutoFormInput = z.input<typeof produtoSchema>;
+type ProdutoFormData = z.output<typeof produtoSchema>;
 
 interface Categoria {
   id: string;
@@ -79,7 +81,7 @@ const ProdutoFormPage: React.FC<ProdutoFormPageProps> = ({ isModal, produtoId: m
     formState: { errors },
     reset,
     watch,
-  } = useForm<ProdutoFormData>({
+  } = useForm<ProdutoFormInput, unknown, ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
     defaultValues: { unidade_medida: 'UN', ativo: true, estoque_inicial: 0, estoque_minimo: 0 },
   });

@@ -19,7 +19,10 @@ const creditoSchema = z.object({
   ),
 });
 
-type CreditoFormData = z.infer<typeof creditoSchema>;
+// zod 4 splits input from output: preprocess takes unknown in, gives number out.
+// useForm needs both, otherwise the resolver type no longer matches.
+type CreditoFormInput = z.input<typeof creditoSchema>;
+type CreditoFormData = z.output<typeof creditoSchema>;
 
 interface Cliente {
   id: string;
@@ -55,7 +58,7 @@ const ClienteCreditoPage = () => {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<CreditoFormData>({
+  } = useForm<CreditoFormInput, unknown, CreditoFormData>({
     resolver: zodResolver(creditoSchema),
   });
 

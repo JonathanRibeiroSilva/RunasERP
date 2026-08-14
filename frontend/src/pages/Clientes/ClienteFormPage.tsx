@@ -36,7 +36,10 @@ const clienteSchema = z.object({
   uf: z.string().length(2, 'UF deve ter 2 caracteres').optional().or(z.literal('')),
 });
 
-type ClienteFormData = z.infer<typeof clienteSchema>;
+// zod 4 splits input from output: `ativo` has a default and `dia_vencimento` goes
+// through preprocess, so the two types diverge.
+type ClienteFormInput = z.input<typeof clienteSchema>;
+type ClienteFormData = z.output<typeof clienteSchema>;
 
 interface ClienteFormPageProps {
   // Modal mode
@@ -61,7 +64,7 @@ const ClienteFormPage: React.FC<ClienteFormPageProps> = ({ isModal, clienteId: m
     formState: { errors },
     reset,
     setValue,
-  } = useForm<ClienteFormData>({
+  } = useForm<ClienteFormInput, unknown, ClienteFormData>({
     resolver: zodResolver(clienteSchema),
     defaultValues: { limite_credito: 0, ativo: true },
   });
