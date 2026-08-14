@@ -29,7 +29,7 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Compose refuses to parse without the ${VAR:?} entries, and the frontend
       # bakes VITE_* into the bundle at build time — those values have to be
@@ -41,7 +41,7 @@ jobs:
           ${{ secrets.PROD_ENV }}
           PROD_ENV_EOF
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
