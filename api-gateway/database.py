@@ -1,6 +1,9 @@
 """
 Configuração do banco de dados para o API Gateway.
 """
+import asyncio
+import subprocess
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from config import settings
@@ -41,19 +44,13 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
+    """Applies pending Alembic migrations before the app serves traffic.
+
+    Runs as a subprocess, not through alembic's Python API: alembic/env.py calls
+    fileConfig(), which would replace the running app's logging configuration.
+    A failure here kills startup on purpose — serving on a stale schema is worse
+    than a container that restarts.
     """
-    Inicializa o banco de dados.
-    
-    IMPORTANTE: Este método não cria mais as tabelas automaticamente.
-    Use Alembic migrations para gerenciar o schema do banco:
-    
-    ```bash
-    # Criar migration
-    alembic revision --autogenerate -m "descrição"
-    
-    # Aplicar migration
-    alembic upgrade head
-    ```
-    """
-    # Apenas log - tabelas são criadas via Alembic migrations
-    pass
+    await asyncio.to_thread(
+        subprocess.run, ["alembic", "upgrade", "head"], check=True
+    )

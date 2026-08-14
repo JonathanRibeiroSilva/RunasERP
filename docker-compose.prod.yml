@@ -23,6 +23,11 @@ x-service: &service
   restart: unless-stopped
   networks: [erp-network]
   deploy: *limits
+  # :latest is a moving tag, and compose's default pull policy is "missing" —
+  # it keeps whatever copy the host already has and never checks the registry
+  # again. That is how a deploy came up on a fifteen-hour-old image minutes
+  # after CI had published the new one, with nothing in either log to say so.
+  pull_policy: always
   depends_on:
     db: {condition: service_healthy}
     # A healthy postgres is not a usable one here: every service issues
@@ -300,6 +305,8 @@ services:
     container_name: erp-frontend-prod
     networks: [erp-network]
     restart: unless-stopped
+    # Not covered by *service, so it needs its own — same moving-tag problem.
+    pull_policy: always
     depends_on:
       api-gateway-prod: {condition: service_healthy}
     deploy: *limits

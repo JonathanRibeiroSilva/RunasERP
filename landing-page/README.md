@@ -15,6 +15,28 @@ python -m http.server 8000
 # http://localhost:8000
 ```
 
+## Deploy
+
+Cloudflare Pages, projeto `runas-landing` (Direct Upload — não é conectado ao
+GitHub, push não publica nada):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/deploy.ps1
+```
+
+O script copia `index.html`, `.image-slots.state.json` e `assets/` para uma
+pasta temporária e sobe só isso. **Não troque por `wrangler pages deploy .`**:
+o comando manda a pasta inteira — `README.md`, `tools/` e `.design/` foram todos
+ao ar no primeiro deploy. `.assetsignore` não é lido por esse comando.
+`.design/source/index.original.html` é a página duplicada; indexada, vira
+duplicate content.
+
+⚠️ `.image-slots.state.json` **precisa** ir junto. Parece arquivo de trabalho da
+ferramenta, mas `image-slot.js` faz `fetch()` dele em runtime (`STATE_FILE`) e é
+lá que moram a capa e o avatar da loja, em base64 — esses dois slots não têm
+atributo `src`. Deixar de fora publica a página com o placeholder tracejado de
+"solte uma imagem" no lugar das duas. Já aconteceu.
+
 ## Estrutura
 
 ```

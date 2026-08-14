@@ -60,6 +60,9 @@ htmlcov/
 
 # Node (Frontend)
 node_modules/
+
+# Cache local do wrangler (criado ao rodar landing-page/tools/deploy.ps1)
+.wrangler/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

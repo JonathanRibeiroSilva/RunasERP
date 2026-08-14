@@ -1,0 +1,30 @@
+# Dependency updates. The CVE bumps in this repo were found by hand
+# (c90fc31: python-multipart, python-jose, jinja2) — this is the automation
+# that makes the next one arrive as a PR instead of a discovery.
+#
+# One grouped PR per ecosystem per week, not one per package: nine services
+# sharing the same pins would otherwise open dozens of PRs nobody reviews.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: weekly}
+    groups:
+      actions: {patterns: ["*"]}
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: {interval: weekly}
+    groups:
+      frontend: {patterns: ["*"]}
+
+  # Glob covers every service without a line per service — a new one under
+  # services/ is picked up with no edit here.
+  - package-ecosystem: pip
+    directories:
+      - /api-gateway
+      - /services/*
+      - /tests
+    schedule: {interval: weekly}
+    groups:
+      python: {patterns: ["*"]}
