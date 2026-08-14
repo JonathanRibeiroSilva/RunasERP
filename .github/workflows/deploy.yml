@@ -79,13 +79,34 @@ jobs:
       # up — without this step a deploy that never comes back is a green job.
       # Reads the URL out of the .env written above, so there is no second place
       # to keep the domain in sync.
+      #
+      # The domain sits behind Cloudflare, which answers the runner's curl by
+      # itself — datacenter IP plus a default user-agent gets a 403 that never
+      # reaches the VPS. The first version of this step required 2xx and so
+      # failed every deploy, working or not. What it can actually prove is that
+      # the tunnel has a live origin: 530 means no tunnel, 502/504 an origin
+      # that is not answering, 000 an unreachable edge. Those still fail.
+      #
+      # ponytail: a run that only ever sees 403 passes unverified. Fixing that
+      # means a check the edge does not intercept — a Coolify status poll, or a
+      # WAF rule allowing the runner.
       - name: Wait for production to answer
         run: |
           url="$(sed -n 's/^API_BASE_URL=//p' .env | head -1 | tr -d "\"' \r")/health"
           echo "polling $url"
+          code=000
           for _ in $(seq 30); do
             sleep 10
-            curl -fsS "$url" >/dev/null && echo "production is up" && exit 0
+            code="$(curl -s -o /dev/null -w '%{http_code}' \
+              -A 'Mozilla/5.0 (compatible; RunasDeployCheck/1.0)' "$url")"
+            case "$code" in
+              2??) echo "production is up ($code)"; exit 0 ;;
+            esac
+            echo "  $code"
           done
-          echo "::error::no answer from $url after 5 minutes"
+          if [ "$code" = 403 ]; then
+            echo "::warning::Cloudflare answered 403 for 5 minutes — the edge blocked this check, so the stack was not verified"
+            exit 0
+          fi
+          echo "::error::no answer from $url after 5 minutes (last code: $code)"
           exit 1
