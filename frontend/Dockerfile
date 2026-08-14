@@ -9,7 +9,10 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++ curl
 
 # Copiar package files
-COPY package*.json ./
+# .npmrc goes with them: the lockfile was resolved with legacy-peer-deps=true.
+# Without it npm ci resolves peers strictly, builds a different tree than CI
+# tested, and fails with EUSAGE.
+COPY package*.json .npmrc ./
 
 # npm ci, not install: package-lock.json is committed, so the image gets the
 # exact tree CI tested. Deleting the lockfile and re-resolving made every build
