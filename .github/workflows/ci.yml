@@ -3,8 +3,10 @@ name: CI
 on:
   pull_request:
     branches: [main, Developer]
+  # main is here too: a hotfix pushed straight to main skips the PR gate
+  # otherwise, and main is what the deploy workflow builds from.
   push:
-    branches: [Developer]
+    branches: [main, Developer]
 
 jobs:
   # Catches the class of bug that shipped broken for months: a compose file
@@ -36,8 +38,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
 
-      # npm install, not ci: there is no package-lock.json committed yet.
-      - run: npm install
+      # npm ci, not install: package-lock.json is committed, so the build is
+      # reproducible and a lockfile that drifts from package.json fails here
+      # instead of resolving to something nobody tested.
+      - run: npm ci
 
       # The lint script pins --max-warnings to the count that existed when this
       # gate went in (all no-explicit-any). It blocks NEW warnings without
@@ -58,6 +62,6 @@ jobs:
       # Scoped to tests/unit by path, not by marker: several files directly under
       # tests/ are manual scripts that call a live localhost service and carry no
       # marker, so a marker filter still collects them and they fail with no stack up.
-      # Exit 5 = "no tests collected", tolerated while tests/unit is still thin.
+      # No exit-5 tolerance: an empty tests/unit means the gate is not a gate.
       - name: Unit tests
-        run: pytest -c tests/pytest.ini tests/unit || [ $? -eq 5 ]
+        run: pytest -c tests/pytest.ini tests/unit
