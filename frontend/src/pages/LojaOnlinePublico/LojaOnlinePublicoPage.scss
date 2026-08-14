@@ -1,516 +1,544 @@
 @import '@/styles/variables';
+@import '@/styles/mixins';
 
-.loja-online-publico-page {
+.store-page-wrapper {
+  background-color: $background;
   min-height: 100vh;
-  height: 100vh;
-  background: $background;
+  color: $text-primary;
   display: flex;
   flex-direction: column;
-  overflow: hidden; // Previne scroll duplo
+  padding-bottom: 3rem;
+}
 
-  // Página de manutenção (loja desabilitada pelo lojista)
-  .loja-manutencao {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 2rem;
-    text-align: center;
+/* ========================================
+   ESTADOS SEM VITRINE (404 / manutenção)
+   ======================================== */
+.loja-manutencao {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
 
-    &__logo {
-      max-width: 120px;
-      max-height: 120px;
-      object-fit: contain;
-    }
-
-    h1 {
-      margin: 0;
-      color: $text-primary;
-    }
-
-    p {
-      margin: 0;
-      color: $text-secondary;
-      font-size: 1.05rem;
-    }
+  &__logo {
+    max-width: 120px;
+    max-height: 120px;
+    object-fit: contain;
   }
 
-  // Header
-  .loja-online-publico-header {
-    background: linear-gradient(135deg, darken($primary, 10%), $primary);
-    padding: 1.5rem 1rem;
-    color: white;
-    flex-shrink: 0; // Não encolhe
+  h1 {
+    margin: 0;
+    color: $text-primary;
+  }
 
-    .header-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
+  p {
+    margin: 0;
+    color: $text-secondary;
+    font-size: 1.05rem;
+  }
+}
 
-      .header-info {
-        flex: 1;
-        min-width: 250px;
+/* ========================================
+   HEADER
+   ======================================== */
+.store-header {
+  position: relative;
+  border-radius: 0 0 $border-radius-xl $border-radius-xl;
+  margin: 1rem 1rem 2rem 1rem;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+
+  // Gradiente do próprio design system. A maquete original puxava uma foto do
+  // Unsplash aqui — dependência externa num header que toda loja renderiza.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, $surface, $background);
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+      background: $primary;
+      border-radius: 12px;
+      @include flex-center;
+      color: white;
+      overflow: hidden;
+      box-shadow: 0 4px 12px $primary-glow;
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .brand-text {
+      .brand-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
 
         h1 {
-          font-size: 1.75rem;
-          font-weight: 700;
-          margin: 0 0 0.25rem 0;
-          line-height: 1.2;
-        }
-        p {
+          font-size: 1.5rem;
+          font-weight: 800;
           margin: 0;
-          opacity: 0.9;
-          font-size: 0.95rem;
+          letter-spacing: -0.02em;
+        }
+
+        .badge-aberto {
+          background: $success-light;
+          color: $success;
+          padding: 0.2rem 0.6rem;
+          border-radius: 20px;
+          font-size: 0.7rem;
+          font-weight: 700;
+          white-space: nowrap;
+          border: 1px solid $success-border;
         }
       }
 
-      .header-actions {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
+      .brand-subtitle {
+        font-size: 0.85rem;
+        color: $text-secondary;
+        margin: 0;
+      }
+    }
+  }
 
-        .btn-entrar {
-          position: relative;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.6rem 1rem;
-          background: rgba(white, 0.95);
-          border: 1px solid white;
-          color: $primary;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.2s;
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
 
-          &:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          }
+    button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      border: 1px solid transparent;
 
-          svg {
-            font-size: 1.1rem;
-          }
+      &.btn-action-dark {
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        border-color: $border-default;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
         }
+      }
 
-        .btn-carrinho {
-          position: relative;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.6rem 1rem;
-          background: rgba(white, 0.2);
-          border: 1px solid rgba(white, 0.3);
+      &.btn-action-green {
+        background: #25D366;
+        color: white;
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+
+        &:hover {
+          background: #1EBE5A;
+        }
+      }
+
+      &.btn-cart {
+        position: relative;
+
+        .carrinho-badge {
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          background: $primary;
           color: white;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.2s;
-
-          &:hover {
-            background: rgba(white, 0.3);
-            border-color: rgba(white, 0.5);
-            transform: translateY(-1px);
-          }
-
-          svg {
-            font-size: 1.1rem;
-          }
-
-          .carrinho-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: $danger;
-            color: white;
-            font-size: 0.7rem;
-            font-weight: 700;
-            min-width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            padding: 0 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          }
-        }
-
-        button {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.6rem 1rem;
-          border-radius: 0.5rem;
-          font-weight: 500;
-          font-size: 0.85rem;
-          cursor: pointer;
-          border: none;
-          transition: all 0.2s ease;
-          white-space: nowrap;
-        }
-
-        .btn-compartilhar {
-          background: rgba(white, 0.15);
-          color: white;
-          border: 1px solid rgba(white, 0.3);
-          &:hover { background: rgba(white, 0.25); }
-        }
-
-        .btn-whatsapp {
-          background: #25D366;
-          color: white;
-          &:hover { background: darken(#25D366, 8%); }
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          font-size: 0.65rem;
+          @include flex-center;
         }
       }
     }
   }
 
-  // Filtros
-  .filtros-section {
-    max-width: 1200px;
-    width: 100%;
-    margin: 1.5rem auto 0;
-    padding: 0 1rem;
-    flex-shrink: 0; // Não encolhe
+  .header-bottom {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.2);
 
-    .busca-container {
+    .info-item {
       display: flex;
       align-items: center;
-      background: $surface;
-      border: 1px solid $border-default;
-      border-radius: 0.5rem;
-      padding: 0.6rem 1rem;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: $text-secondary;
+
+      svg {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .info-muted {
+        color: rgba(255, 255, 255, 0.4);
+      }
+    }
+  }
+}
+
+/* ========================================
+   LAYOUT E SIDEBAR
+   ======================================== */
+.store-main-container {
+  flex: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.store-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .categorias-widget {
+    @include premium-card;
+    padding: 1.25rem;
+    border-radius: $border-radius-lg;
+    background-color: $surface;
+    border: 1px solid $border-subtle;
+
+    h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: white;
       margin-bottom: 1rem;
-      gap: 0.5rem;
+    }
+
+    .cat-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        color: $text-secondary;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        .cat-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          min-width: 0;
+        }
+
+        .cat-icon {
+          flex-shrink: 0;
+          color: rgba(255, 255, 255, 0.3);
+          font-size: 1.1rem;
+        }
+
+        .count {
+          color: rgba(255, 255, 255, 0.2);
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.03);
+          color: white;
+        }
+
+        &.active {
+          background: $primary-light;
+          color: $primary;
+          font-weight: 600;
+
+          .cat-icon,
+          .count {
+            color: $primary;
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ========================================
+   CONTEÚDO
+   ======================================== */
+.store-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+
+  .search-bar-row {
+    display: flex;
+    gap: 1rem;
+
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
 
       .search-icon {
-        color: $text-secondary;
-        font-size: 1.1rem;
-        flex-shrink: 0;
+        position: absolute;
+        left: 1rem;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 1.2rem;
       }
 
       input {
-        flex: 1;
-        min-width: 0; // Permite encolher
-        border: none;
-        background: transparent;
-        color: $text-primary;
+        width: 100%;
+        background: $surface;
+        border: 1px solid $border-subtle;
+        padding: 1rem 3rem 1rem 3rem;
+        border-radius: $border-radius-md;
+        color: white;
         font-size: 0.95rem;
-        outline: none;
-        &::placeholder { color: $text-secondary; }
+
+        &:focus {
+          outline: none;
+          border-color: $primary;
+          box-shadow: 0 0 0 1px $primary-glow;
+        }
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.2);
+        }
       }
 
-      .btn-limpar {
+      .clear-search {
+        position: absolute;
+        right: 1rem;
         background: none;
         border: none;
-        color: $text-secondary;
+        color: rgba(255, 255, 255, 0.3);
         cursor: pointer;
-        font-size: 1rem;
-        padding: 0 0.25rem;
-        flex-shrink: 0;
-        &:hover { color: $text-primary; }
-      }
+        padding: 0.25rem;
 
-      .btn-buscar {
-        padding: 0.45rem 1rem;
-        background: $primary;
-        color: white;
-        border: none;
-        border-radius: 0.375rem;
-        font-weight: 500;
-        font-size: 0.85rem;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background 0.2s;
-        flex-shrink: 0;
-        &:hover { background: $primary-hover; }
+        &:hover {
+          color: white;
+        }
       }
     }
 
-    .filtros-container {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
+    .btn-buscar-primary {
+      background: $primary;
+      color: white;
+      border: none;
+      border-radius: $border-radius-md;
+      padding: 0 2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
 
-      .filtro-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+      &:hover {
+        background: $primary-hover;
+      }
+    }
+  }
+
+  .products-section {
+    margin-top: 1rem;
+
+    .products-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+
+      .products-count {
+        color: $text-secondary;
+        font-size: 0.9rem;
+
+        strong {
+          color: white;
+        }
+      }
+
+      .sort-dropdown select {
         background: $surface;
         border: 1px solid $border-default;
-        border-radius: 0.5rem;
-        padding: 0.6rem 1rem;
-        flex: 1;
-        min-width: 150px;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        outline: none;
+        cursor: pointer;
 
-        svg { color: $text-secondary; flex-shrink: 0; }
-
-        select {
-          flex: 1;
-          min-width: 0;
-          border: none;
-          background: transparent;
-          color: $text-primary;
-          font-size: 0.9rem;
-          outline: none;
-          cursor: pointer;
+        option {
+          background: $surface;
         }
       }
     }
-  }
 
-  // Conteúdo principal (scrollável)
-  .loja-online-publico-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0; // Permite scroll
-    overflow-y: auto; // Habilita scroll vertical
-    overflow-x: hidden;
-
-    // Resultados
-    .resultados-info {
-      max-width: 1200px;
-      width: 100%;
-      margin: 1rem auto 0.75rem;
-      padding: 0 1rem;
-      color: $text-secondary;
-      font-size: 0.9rem;
-      flex-shrink: 0;
-    }
-
-    // Grid
-    .produtos-grid {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 0 1rem 2rem;
+    .products-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 1.25rem;
-      align-content: start; // Alinha ao topo
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.5rem;
     }
 
-    // Loading
-    .loading {
-      flex: 1;
+    .loading-state,
+    .empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 1rem;
-      padding: 4rem 1rem;
+      padding: 4rem 2rem;
+      text-align: center;
       color: $text-secondary;
+
+      h3 {
+        margin: 0;
+        color: $text-primary;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      svg {
+        color: rgba(255, 255, 255, 0.15);
+      }
 
       .spinner {
-        width: 2.5rem;
-        height: 2.5rem;
-        border: 3px solid rgba($primary, 0.2);
+        width: 40px;
+        height: 40px;
+        border: 3px solid $border-default;
         border-top-color: $primary;
         border-radius: 50%;
-        animation: spin 0.75s linear infinite;
+        animation: store-spin 0.8s linear infinite;
       }
-
-      @keyframes spin { to { transform: rotate(360deg); } }
-    }
-
-    // Skeleton Loading
-    .skeleton-grid {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 0 1rem 2rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .skeleton-card {
-      background: $surface;
-      border: 1px solid $border-default;
-      border-radius: 0.75rem;
-      overflow: hidden;
-
-      .skeleton-image {
-        width: 100%;
-        aspect-ratio: 1;
-        background: linear-gradient(90deg, $background 25%, rgba($primary, 0.05) 50%, $background 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-      }
-
-      .skeleton-content {
-        padding: 1rem;
-
-        .skeleton-line {
-          height: 1rem;
-          background: linear-gradient(90deg, $background 25%, rgba($primary, 0.05) 50%, $background 75%);
-          background-size: 200% 100%;
-          animation: shimmer 1.5s infinite;
-          border-radius: 0.25rem;
-          margin-bottom: 0.75rem;
-
-          &.title { width: 80%; height: 1.25rem; }
-          &.subtitle { width: 60%; }
-          &.price { width: 40%; height: 1.5rem; margin-top: 1rem; }
-        }
-      }
-
-      @keyframes shimmer {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-      }
-    }
-
-    // Empty
-    .empty-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      padding: 4rem 1rem;
-      color: $text-secondary;
-
-      .empty-icon { font-size: 3rem; }
-      p { font-size: 1.1rem; margin: 0; text-align: center; }
 
       .btn-limpar-busca {
-        padding: 0.5rem 1.5rem;
         background: $primary;
         color: white;
         border: none;
-        border-radius: 0.375rem;
+        border-radius: $border-radius-md;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
         cursor: pointer;
-        font-weight: 500;
-        &:hover { background: $primary-hover; }
+
+        &:hover {
+          background: $primary-hover;
+        }
       }
     }
   }
+}
 
-  // Footer
-  .loja-online-publico-footer {
-    text-align: center;
-    padding: 1.5rem 1rem;
+@keyframes store-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.store-footer {
+  text-align: center;
+  padding: 2rem 1rem 0;
+  color: $text-tertiary;
+  font-size: 0.85rem;
+
+  strong {
     color: $text-secondary;
-    font-size: 0.85rem;
-    border-top: 1px solid $border-default;
-    flex-shrink: 0; // Não encolhe
-    background: $surface;
+  }
+}
 
-    strong { color: $primary; }
+/* ========================================
+   RESPONSIVO
+   ======================================== */
+@media (max-width: 1024px) {
+  .store-main-container {
+    grid-template-columns: 1fr;
   }
 
-  // Responsivo Tablet
-  @media (max-width: 768px) {
-    .loja-online-publico-header {
-      padding: 1.25rem 1rem;
-
-      .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-
-        .header-info {
-          width: 100%;
-
-          h1 { font-size: 1.5rem; }
-          p { font-size: 0.9rem; }
-        }
-
-        .header-actions {
-          width: 100%;
-          justify-content: flex-start;
-
-          button {
-            font-size: 0.8rem;
-            padding: 0.5rem 0.85rem;
-          }
-        }
-      }
-    }
-
-    .filtros-section {
-      margin: 1rem auto 0;
-
-      .filtros-container .filtro-item {
-        flex: 1 1 calc(50% - 0.375rem);
-      }
-    }
-
-    .loja-online-publico-content {
-      .produtos-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1rem;
-      }
-    }
+  .store-sidebar {
+    display: none;
   }
+}
 
-  // Responsivo Mobile
-  @media (max-width: 480px) {
-    .loja-online-publico-header {
-      padding: 1rem;
+@media (max-width: 768px) {
+  .store-header {
+    margin: 0 0 1.5rem 0;
+    border-radius: 0;
 
-      .header-content {
-        .header-info h1 {
-          font-size: 1.25rem;
-        }
-
-        .header-actions {
-          flex-wrap: wrap;
-          gap: 0.5rem;
-
-          .btn-carrinho,
-          .btn-compartilhar,
-          .btn-whatsapp {
-            flex: 1;
-            justify-content: center;
-            min-width: calc(50% - 0.25rem);
-          }
-        }
-      }
+    .header-top {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.5rem;
     }
 
-    .filtros-section {
-      .filtros-container .filtro-item {
-        flex: 1 1 100%;
-      }
-    }
+    .header-actions {
+      width: 100%;
+      flex-wrap: wrap;
 
-    .loja-online-publico-content {
-      .produtos-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-      }
-
-      .resultados-info {
-        font-size: 0.85rem;
-      }
-    }
-  }
-
-  // Responsivo Mobile Pequeno
-  @media (max-width: 360px) {
-    .loja-online-publico-header .header-content .header-actions {
       button {
-        flex: 1 1 100%;
-        min-width: 100%;
+        flex: 1;
+        justify-content: center;
       }
     }
 
-    .loja-online-publico-content .produtos-grid {
-      grid-template-columns: 1fr;
+    .header-bottom {
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+  }
+
+  .store-content .search-bar-row {
+    flex-direction: column;
+
+    .btn-buscar-primary {
+      padding: 1rem;
     }
   }
 }
