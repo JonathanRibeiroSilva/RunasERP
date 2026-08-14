@@ -74,3 +74,18 @@ jobs:
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
             "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_UUID }}&force=false"
+
+      # Coolify answers as soon as it accepts the request, not when the stack is
+      # up — without this step a deploy that never comes back is a green job.
+      # Reads the URL out of the .env written above, so there is no second place
+      # to keep the domain in sync.
+      - name: Wait for production to answer
+        run: |
+          url="$(sed -n 's/^API_BASE_URL=//p' .env | head -1 | tr -d "\"' \r")/health"
+          echo "polling $url"
+          for _ in $(seq 30); do
+            sleep 10
+            curl -fsS "$url" >/dev/null && echo "production is up" && exit 0
+          done
+          echo "::error::no answer from $url after 5 minutes"
+          exit 1
