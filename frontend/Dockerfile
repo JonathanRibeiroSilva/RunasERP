@@ -11,8 +11,11 @@ RUN apk add --no-cache python3 make g++ curl
 # Copiar package files
 COPY package*.json ./
 
-# Limpar cache e reinstalar
-RUN rm -rf node_modules package-lock.json && npm install
+# npm ci, not install: package-lock.json is committed, so the image gets the
+# exact tree CI tested. Deleting the lockfile and re-resolving made every build
+# pick its own versions — that is how a peer conflict reached the image instead
+# of failing in the PR that introduced it.
+RUN npm ci
 
 # Copiar código fonte
 COPY . .
