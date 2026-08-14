@@ -17,4 +17,6 @@ COPY . .
 
 EXPOSE 8005
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8005", "--reload"]
+# No --reload: this is the production image. The dev stack overrides the
+# command with its own --reload in docker-compose.dev.yml.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8005"]
