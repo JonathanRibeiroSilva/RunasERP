@@ -17,6 +17,16 @@ updates:
     schedule: {interval: weekly}
     groups:
       frontend: {patterns: ["*"]}
+    # These two majors are migrations, not bumps, and one grouped PR fails as a
+    # unit — riding along, they took 22 harmless updates down with them (#10).
+    # TypeScript 7 is outside the peer range typescript-eslint declares
+    # (<6.1.0), and ESLint 9 dropped .eslintrc for flat config. Each needs its
+    # own PR; drop the entry once that PR lands.
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
 
   # Glob covers every service without a line per service — a new one under
   # services/ is picked up with no edit here.
