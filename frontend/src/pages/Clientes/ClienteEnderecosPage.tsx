@@ -21,7 +21,9 @@ const enderecoSchema = z.object({
   principal: z.boolean().default(false),
 });
 
-type EnderecoFormData = z.infer<typeof enderecoSchema>;
+// zod 4 splits input from output: `principal` has a default, so it is optional on input.
+type EnderecoFormInput = z.input<typeof enderecoSchema>;
+type EnderecoFormData = z.output<typeof enderecoSchema>;
 
 interface Endereco extends EnderecoFormData {
   id: string;
@@ -50,7 +52,7 @@ const ClienteEnderecosPage = () => {
     formState: { errors },
     reset,
     setValue,
-  } = useForm<EnderecoFormData>({
+  } = useForm<EnderecoFormInput, unknown, EnderecoFormData>({
     resolver: zodResolver(enderecoSchema),
   });
 
