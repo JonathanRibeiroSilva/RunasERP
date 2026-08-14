@@ -26,5 +26,9 @@ coverage.xml
 .env
 .env.*
 !.env.example
-alembic/versions/*.py
-!alembic/versions/__init__.py
+# alembic/versions/*.py was excluded here and nowhere else. The image shipped an
+# empty versions directory, so `alembic upgrade head` found no revisions, exited
+# 0, and left the empresas schema with zero tables — which read as "migrations
+# are up to date" instead of "there are no migrations". Every other service
+# ships its versions; this one has to as well, all the more so once services
+# migrate themselves on startup.
