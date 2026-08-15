@@ -47,11 +47,18 @@ jobs:
           # Kept on one line per statement: python -c does not dedent, so an
           # indented block here is an IndentationError, not a test.
           check='from passlib.context import CryptContext; ctx = CryptContext(schemes=["bcrypt"], deprecated="auto"); h = ctx.hash("smoke-test-123"); assert ctx.verify("smoke-test-123", h), "rejected the correct password"; assert not ctx.verify("wrong", h), "accepted a wrong password"; print("auth primitives ok")'
+          # docker run, not compose run: compose wants the service's external
+          # volumes to exist before it starts anything, and this needs no
+          # network, no database and no volume — just the interpreter inside the
+          # image. The tag still comes from the compose config, so REGISTRY and
+          # TAG stay defined in one place.
           for svc in api-gateway-prod vendas-prod; do
             echo "== $svc"
-            docker compose --env-file .env.production.example \
+            img="$(docker compose --env-file .env.production.example \
               -f docker-compose.prod.yml -f docker-compose.build.yml \
-              run --rm --no-deps --entrypoint python "$svc" -c "$check"
+              config --format json \
+              | python3 -c "import json,sys; print(json.load(sys.stdin)['services']['$svc']['image'])")"
+            docker run --rm --entrypoint python "$img" -c "$check"
           done
 
   frontend:
