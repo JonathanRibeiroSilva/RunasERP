@@ -2,7 +2,11 @@ fastapi==0.141.1
 uvicorn[standard]==0.52.1
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
-bcrypt==5.0.0
+# Held at 4.0.1: passlib 1.7.4 reads bcrypt.__about__ to detect the backend,
+# removed in bcrypt 4.1. The backend then loads half-broken and hash() raises
+# "password cannot be longer than 72 bytes" on a 9-character password, so every
+# login 500s. Unpin only together with passlib.
+bcrypt==4.0.1
 python-multipart==0.0.32
 sqlalchemy[asyncio]==2.0.52
 asyncpg==0.31.0

@@ -38,3 +38,10 @@ updates:
     schedule: {interval: weekly}
     groups:
       python: {patterns: ["*"]}
+    # bcrypt 5 took production login down: passlib 1.7.4 cannot detect a backend
+    # past bcrypt 4.0, and the group PR carried the bump in with 26 harmless
+    # ones. Drop this once passlib is replaced or reaches a release that
+    # supports current bcrypt.
+    ignore:
+      - dependency-name: bcrypt
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
