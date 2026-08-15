@@ -29,6 +29,31 @@ jobs:
       - name: Build all production images
         run: docker compose --env-file .env.production.example -f docker-compose.prod.yml -f docker-compose.build.yml build
 
+      # A green build only proves pip resolved the requirements — it never runs
+      # a line of the app. bcrypt 5.0 installed perfectly and then broke every
+      # login on the first request, because passlib could not read its version
+      # and hash() started rejecting a 9-character password as "longer than 72
+      # bytes". Nothing in CI called hash(), so it shipped.
+      #
+      # This runs the real primitive inside the real image with the real pins.
+      # Both services that authenticate get it: the gateway for operators, and
+      # vendas for storefront customers.
+      #
+      # ponytail: covers password hashing only, because that is what broke and
+      # what a dependency bump can break without failing the build. Widen it the
+      # next time a bump reaches production through the same blind spot.
+      - name: Smoke-test auth primitives inside the built images
+        run: |
+          # Kept on one line per statement: python -c does not dedent, so an
+          # indented block here is an IndentationError, not a test.
+          check='from passlib.context import CryptContext; ctx = CryptContext(schemes=["bcrypt"], deprecated="auto"); h = ctx.hash("smoke-test-123"); assert ctx.verify("smoke-test-123", h), "rejected the correct password"; assert not ctx.verify("wrong", h), "accepted a wrong password"; print("auth primitives ok")'
+          for svc in api-gateway-prod vendas-prod; do
+            echo "== $svc"
+            docker compose --env-file .env.production.example \
+              -f docker-compose.prod.yml -f docker-compose.build.yml \
+              run --rm --no-deps --entrypoint python "$svc" -c "$check"
+          done
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

@@ -36,8 +36,16 @@ updates:
       - /services/*
       - /tests
     schedule: {interval: weekly}
+    # Order matters — a package lands in the first group it matches. Auth and
+    # crypto move on their own because bcrypt 5 rode into production inside a
+    # 27-package PR: the group was reviewed as "dependency bumps" and one of them
+    # was a breaking change to how passwords are hashed. A PR holding only these
+    # names its own blast radius.
     groups:
-      python: {patterns: ["*"]}
+      python-auth:
+        patterns: ["bcrypt", "passlib", "python-jose", "cryptography", "python-multipart"]
+      python:
+        patterns: ["*"]
     # bcrypt 5 took production login down: passlib 1.7.4 cannot detect a backend
     # past bcrypt 4.0, and the group PR carried the bump in with 26 harmless
     # ones. Drop this once passlib is replaced or reaches a release that
