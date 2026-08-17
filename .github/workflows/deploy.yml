@@ -6,11 +6,17 @@ name: Deploy
 # Split of responsibility: this workflow only produces images. Coolify owns the
 # VPS and does the actual deploy — it is told to go once the images are up.
 on:
-  # Manual only until the secrets below exist — PROD_ENV, COOLIFY_URL,
-  # COOLIFY_TOKEN, COOLIFY_UUID. With none of them set this job cannot do
-  # anything but fail, and on a push trigger it would fail on every merge to
-  # main. Restore `push: {branches: [main]}` here once they are configured;
-  # that is the whole switch from manual to automatic deploys.
+  # Every merge to main ships. The secrets this needs (PROD_ENV, COOLIFY_URL,
+  # COOLIFY_TOKEN, COOLIFY_UUID) are configured, which is what kept this manual
+  # before. CI gates the PR into main and this job rebuilds all nine images
+  # itself, so a build that does not compile never reaches the registry.
+  #
+  # The graphify workflow commits back to main with GITHUB_TOKEN, and a push made
+  # with that token does not trigger workflows — a graph refresh never deploys.
+  push:
+    branches: [main]
+  # Kept alongside the push trigger: a redeploy or a TAG rollback should not
+  # require inventing a commit.
   workflow_dispatch:
 
 # A second push waits for the first instead of racing it to the registry.
