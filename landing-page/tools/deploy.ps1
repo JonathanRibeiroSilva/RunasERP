@@ -10,6 +10,11 @@
 # que são base64 e não têm atributo src. Sem ele, os dois slots renderizam o
 # placeholder tracejado de "solte uma imagem" em produção.
 #
+# Um push em landing-page/ na main já publica sozinho via
+# .github/workflows/landing.yml, que faz exatamente este staging. Este script
+# continua sendo o caminho manual (publicar sem commitar, ou com o Actions fora
+# do ar) — se mexer no staging aqui, mexa lá também.
+#
 # Uso: powershell -ExecutionPolicy Bypass -File tools/deploy.ps1
 
 $ErrorActionPreference = "Stop"
