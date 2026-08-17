@@ -186,7 +186,14 @@ services:
       # do ar por deploy. start_period não conta as falhas iniciais, então dá
       # para sondar de 5 em 5 sem marcar o container como unhealthy no boot.
       interval: 5s
-      start_period: 30s
+      # 60s, nao 30s: no deploy u143gkg9hauofqlaojmw0adz este container ficou
+      # Started as 19:32:13.310 e Healthy as 19:32:44.315 — 31,0s, um segundo
+      # depois do start_period antigo. Passado o start_period, interval 5s com
+      # retries 3 significa que 15s de atraso o marcam unhealthy; ai o frontend
+      # (que depende dele healthy) nunca sobe e o deploy falha de verdade. Numa
+      # VPS de 1 vCPU subindo 14 containers ao mesmo tempo, 15s de variacao e
+      # rotina. Falha dentro do start_period nao conta, entao a folga e de graca.
+      start_period: 60s
       timeout: 10s
       retries: 3
 
