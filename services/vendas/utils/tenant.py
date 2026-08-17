@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import httpx
 
+from config import settings
+
 
 async def get_empresa_id_by_slug(
     db: AsyncSession,
@@ -25,7 +27,7 @@ async def get_empresa_id_by_slug(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"http://empresas:8007/empresas/publico/{slug}",
+                f"{settings.EMPRESAS_URL}/empresas/publico/{slug}",
                 timeout=5.0
             )
             
@@ -60,7 +62,7 @@ async def get_empresa_slug_by_id(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"http://empresas:8007/empresas/{empresa_id}",
+                f"{settings.EMPRESAS_URL}/empresas/{empresa_id}",
                 headers={"X-Empresa-Id": str(empresa_id)},
                 timeout=5.0
             )
@@ -124,7 +126,7 @@ async def get_empresa_id_from_slug(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"http://empresas:8007/empresas/publico/{empresaSlug}",
+                f"{settings.EMPRESAS_URL}/empresas/publico/{empresaSlug}",
                 timeout=5.0
             )
             
