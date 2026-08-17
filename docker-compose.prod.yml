@@ -344,8 +344,17 @@ services:
     container_name: erp-cloudflared-prod
     # Token mode: no credentials file to mount, which a Coolify-managed deploy
     # cannot provide cleanly. Ingress is configured in the Cloudflare Zero Trust
-    # dashboard: app.runaserp.com.br -> http://frontend-prod:80
+    # dashboard:
+    #   app.runaserp.com.br     -> http://frontend-prod:80
+    #   coolify.runaserp.com.br -> http://host.docker.internal:8000
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in Coolify}
+    # Coolify listens on the *host*, not on erp-network, so the tunnel needs a
+    # route out of the bridge to reach it. This is what lets the deploy trigger
+    # arrive over the tunnel instead of as an inbound connection to the VPS IP:
+    # GitHub runners cannot reliably open one (see .github/workflows/deploy.yml),
+    # but the tunnel is already dialled outbound and always up.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # No depends_on, and note the absence of `pull_policy: always` — both are
     # deliberate, and both are the opposite of every service above. The tunnel is
     # the only ingress, so it has to outlive the containers it fronts. With

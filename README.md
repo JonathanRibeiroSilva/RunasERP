@@ -1,11 +1,18 @@
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="landing-page/assets/img/brand/runas-white.png">
+    <img src="landing-page/assets/img/brand/runas-black.png" alt="Runas ERP" width="320">
+  </picture>
+</div>
+
 # 🏪 Runas ERP
 
 > Sistema ERP completo para comércio de alimentos e bebidas com arquitetura de microsserviços
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.141-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
-![React](https://img.shields.io/badge/React-18-blue)
+![React](https://img.shields.io/badge/React-19-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![Status](https://img.shields.io/badge/Status-Operacional-success)
@@ -33,8 +40,8 @@
 git clone <repo-url>
 cd RunasERP
 
-# 2. Suba todos os serviços
-docker-compose up -d
+# 2. Suba todos os serviços (não existe docker-compose.yml simples — sempre use -f)
+docker-compose -f docker-compose.dev.yml up -d
 
 # 3. Acesse
 # - Frontend: http://localhost:3000
@@ -48,30 +55,34 @@ docker-compose up -d
 
 ---
 
-## 📊 Status Atual (Junho 2026)
+## 📊 Status Atual (Agosto 2026)
 
 ### ✅ Módulos Completos
 
-| Módulo | Backend | Frontend | Endpoints |
-|--------|---------|----------|-----------|
-| **API Gateway** | 🟢 100% | - | 15 |
-| **Clientes** | 🟢 100% | 🟢 100% | 12 |
-| **Produtos** | 🟢 100% | 🟢 100% | 25 |
-| **Loja Online** | 🟢 100% | 🟢 100% | 26 |
+Endpoints contados por serviço (decorators de rota em `api-gateway/` e `services/<serviço>/`):
 
-**Total operacional**: 78 endpoints | ~15.000 linhas de código
+| Módulo | Serviço | Backend | Frontend | Endpoints |
+|--------|---------|---------|----------|-----------|
+| **API Gateway** (auth, RBAC, proxy) | `api-gateway` | 🟢 100% | - | 27 |
+| **Empresas** (multi-tenancy) | `empresas` | 🟢 100% | 🟢 100% | 8 |
+| **Clientes** | `clientes` | 🟢 100% | 🟢 100% | 17 |
+| **Produtos** (categorias, variantes, fornecedores, catálogo público) | `produtos` | 🟢 100% | 🟢 100% | 42 |
+| **Estoque** | `estoque` | 🟢 100% | 🟢 100% | 19 |
+| **Loja Online** (vitrine, carrinho, checkout, rastreio, pagamento) | `vendas` | 🟢 100% | 🟢 100% | 40 |
+
+**Total operacional**: 153 endpoints | ~27.000 linhas Python + ~14.000 linhas TypeScript
 
 ### 🟡 Backend Pronto (Frontend Pendente)
 
 | Módulo | Backend | Frontend | Prioridade |
 |--------|---------|----------|------------|
-| **Vendas/PDV** | 🟢 100% | 🔴 0% | 🔥 Alta |
-| **Estoque** | 🟢 100% | 🔴 0% | 🔥 Alta |
+| **Vendas/PDV** (interno) | 🟢 100% (serviço `vendas`) | 🔴 placeholder | 🔥 Alta |
+| **Pedidos Online** (painel admin) | 🟢 100% (serviço `vendas`) | 🔴 placeholder | 🔥 Alta |
 
 ### 🔴 Planejado
 
-- Financeiro
-- Notificações
+- **Financeiro** - serviço criado, sem models/routers ainda (frontend é placeholder)
+- **Notificações** - serviço criado, sem models/routers ainda
 - Relatórios Avançados
 
 ---
@@ -128,22 +139,26 @@ docker-compose up -d
 ## 🛠️ Tecnologias
 
 ### Backend
-- **FastAPI** 0.109 - Framework web moderno
+- **FastAPI** 0.141 - Framework web moderno
 - **SQLAlchemy** 2.0 - ORM assíncrono
 - **PostgreSQL** 15 - Banco de dados
 - **Redis** 7 - Cache e sessões
 - **RabbitMQ** 3.12 - Mensageria
 
 ### Frontend
-- **React** 18 - UI library
+- **React** 19 - UI library
 - **TypeScript** 5 - Type safety
-- **React Bootstrap** - Componentes UI
-- **SWR** - Data fetching
-- **React Router** - Navegação
+- **Vite** 8 - Build e dev server
+- **React Bootstrap** 2 + **Bootstrap** 5 - Componentes UI
+- **TanStack Query** 5 - Data fetching e cache
+- **Axios** - Cliente HTTP
+- **React Hook Form** + **Zod** - Formulários e validação
+- **React Router** 7 - Navegação
 
 ### DevOps
 - **Docker** + **Docker Compose** - Containerização
 - **Alembic** - Migrations
+- **Vitest** - Testes de frontend
 - **Git** - Versionamento
 
 ---
@@ -154,7 +169,7 @@ Para um roadmap detalhado, consulte: [docs/01-visao-geral/roadmap.md](./docs/01-
 
 ### Alta Prioridade
 - **PDV (Vendas)** - Frontend para ponto de venda
-- **Estoque** - Frontend para gestão de estoque
+- **Pedidos Online** - Painel admin para pedidos da loja online
 - **Relatórios** - Dashboards e relatórios
 
 ### Médio Prazo
@@ -183,11 +198,10 @@ cd frontend
 npm run dev                       # Rodar em desenvolvimento
 npm run build                     # Build de produção
 
-# Backend
-cd services/[serviço]
-alembic upgrade head              # Rodar migrations
-python seed.py                    # Popular dados de teste
-pytest                            # Rodar testes
+# Backend (rodam dentro do container — cada serviço tem seu próprio Alembic)
+docker exec -it erp-[serviço]-dev alembic upgrade head    # Rodar migrations
+docker-compose -f docker-compose.dev.yml exec [serviço] python seed.py   # Popular dados
+pytest                            # Testes de integração (da raiz do repo, serviços no ar)
 ```
 
 ---
@@ -246,7 +260,7 @@ Dependências de terceiros permanecem sob suas licenças originais.
 
 <div align="center">
 
-**Versão 2.0.0** | Junho 2026
+**Versão 1.0.0** | Agosto 2026
 
 Desenvolvido por **Equipe DenebCorp**
 
