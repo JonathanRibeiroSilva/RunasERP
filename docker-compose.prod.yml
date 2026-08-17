@@ -233,6 +233,7 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_ESTOQUE:?set DATABASE_URL_ESTOQUE in .env}
+      PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos-prod:8002}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
       interval: 30s
@@ -254,10 +255,15 @@ services:
       MP_ENVIRONMENT: ${MP_ENVIRONMENT:-production}
       API_BASE_URL: ${API_BASE_URL:?set API_BASE_URL in .env}
       FRONTEND_URL: ${FRONTEND_URL}
+      # utils/tenant.py resolves the storefront slug against empresas; without
+      # this the dev default (http://empresas:8007) fails DNS here and every
+      # /loja/* request answers 500.
+      EMPRESAS_URL: ${EMPRESAS_URL:-http://empresas-prod:8007}
       CLIENTES_URL: ${CLIENTES_URL:-http://clientes-prod:8001}
       PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos-prod:8002}
       ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque-prod:8003}
       FINANCEIRO_URL: ${FINANCEIRO_URL:-http://financeiro-prod:8005}
+      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://api-gateway-prod:8000}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
       interval: 30s

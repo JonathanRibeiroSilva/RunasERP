@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     REDIS_URL: str
     
     # URLs de outros serviços (quando necessário)
+    EMPRESAS_URL: str = "http://empresas:8007"
     CLIENTES_URL: str = "http://clientes:8001"
     PRODUTOS_URL: str = "http://produtos:8002"
     ESTOQUE_URL: str = "http://estoque:8003"
