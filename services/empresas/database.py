@@ -3,6 +3,7 @@ Configuração do banco de dados.
 """
 import asyncio
 import subprocess
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -47,6 +48,15 @@ async def init_db():
     Runs as a subprocess, not through alembic's Python API: alembic/env.py calls
     fileConfig(), which would replace the running app's logging configuration.
     """
+    # `alembic upgrade head` sai com 0 quando não encontra revision nenhuma —
+    # indistinguível de "já está no head". Uma linha no .dockerignore excluiu
+    # alembic/versions/*.py da imagem e o serviço subiu saudável, com /health em
+    # 200 e zero tabelas, até o login falhar com 403 três camadas adiante.
+    if not [p for p in Path("alembic/versions").glob("*.py") if p.name != "__init__.py"]:
+        raise RuntimeError(
+            "alembic/versions/ sem revisions: a imagem foi construída sem as "
+            "migrations (verifique o .dockerignore deste serviço)"
+        )
     await asyncio.to_thread(
         subprocess.run, ["alembic", "upgrade", "head"], check=True
     )

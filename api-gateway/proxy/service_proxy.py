@@ -43,18 +43,19 @@ class ServiceProxy:
             
         Returns:
             int: ID da empresa ou None se não encontrado
+
+        None significa "não existe empresa com esse slug" e nada mais. Erros de
+        banco sobem: um `except Exception` aqui transformava
+        `relation "empresas.empresas" does not exist` em um 404 comum, e o stack
+        rodava semanas parecendo saudável com a tabela de tenants ausente.
         """
-        try:
-            async for db in get_db():
-                result = await db.execute(
-                    text("SELECT id FROM empresas.empresas WHERE slug = :slug"),
-                    {"slug": slug}
-                )
-                row = result.first()
-                return row[0] if row else None
-        except Exception as e:
-            log.error("erro ao resolver empresa_id", slug=slug, error=str(e))
-            return None
+        async for db in get_db():
+            result = await db.execute(
+                text("SELECT id FROM empresas.empresas WHERE slug = :slug"),
+                {"slug": slug}
+            )
+            row = result.first()
+            return row[0] if row else None
 
     @classmethod
     async def get_empresa_slug_from_id(cls, empresa_id: int) -> str | None:
@@ -66,18 +67,19 @@ class ServiceProxy:
 
         Returns:
             str: Slug da empresa ou None se não encontrado
+
+        Mesma regra do método acima: erro de banco sobe. Engolir a exceção fazia
+        o /auth/login responder 200 com `empresa_slug: null`, o frontend seguir
+        sem tenant e as chamadas seguintes baterem em 403 no validar_tenant —
+        um login quebrado disfarçado de login bem-sucedido.
         """
-        try:
-            async for db in get_db():
-                result = await db.execute(
-                    text("SELECT slug FROM empresas.empresas WHERE id = :empresa_id"),
-                    {"empresa_id": empresa_id}
-                )
-                row = result.first()
-                return row[0] if row else None
-        except Exception as e:
-            log.error("erro ao resolver slug da empresa", empresa_id=empresa_id, error=str(e))
-            return None
+        async for db in get_db():
+            result = await db.execute(
+                text("SELECT slug FROM empresas.empresas WHERE id = :empresa_id"),
+                {"empresa_id": empresa_id}
+            )
+            row = result.first()
+            return row[0] if row else None
 
     @classmethod
     async def _inject_context_headers(

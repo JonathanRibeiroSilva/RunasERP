@@ -180,7 +180,13 @@ services:
       MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      # O túnel é o único ingress e é o último a voltar: cloudflared espera
+      # frontend healthy, que espera este healthy. Com interval 30s o primeiro
+      # probe só acontece em t+30s, e a cadeia inteira custava ~90s de site fora
+      # do ar por deploy. start_period não conta as falhas iniciais, então dá
+      # para sondar de 5 em 5 sem marcar o container como unhealthy no boot.
+      interval: 5s
+      start_period: 30s
       timeout: 10s
       retries: 3
 
@@ -324,7 +330,9 @@ services:
       # differs from the packaged one — which ours does. nginx serves fine on IPv4;
       # only the probe was looking at the wrong address.
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health"]
-      interval: 30s
+      # Mesmo motivo do gateway: este é o elo do meio da cadeia até o túnel.
+      interval: 5s
+      start_period: 30s
       timeout: 5s
       retries: 3
 
@@ -338,8 +346,18 @@ services:
     # cannot provide cleanly. Ingress is configured in the Cloudflare Zero Trust
     # dashboard: app.runaserp.com.br -> http://frontend-prod:80
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in Coolify}
-    depends_on:
-      frontend-prod: {condition: service_healthy}
+    # No depends_on, and note the absence of `pull_policy: always` — both are
+    # deliberate, and both are the opposite of every service above. The tunnel is
+    # the only ingress, so it has to outlive the containers it fronts. With
+    # `frontend-prod: {condition: service_healthy}` here, recreating the frontend
+    # recreated this too: the tunnel deregistered and Cloudflare served its own
+    # 530 error page — no origin at all — and held it for the whole
+    # api-gateway -> frontend healthcheck chain. Without it, the worst a deploy
+    # can do is a 502 for the seconds the frontend container is missing, and
+    # cloudflared re-resolves frontend-prod per request so nothing stays stuck.
+    #
+    # Cold boot pays for this with ~20s of 502 before the frontend exists. That
+    # is already a full-stack outage, so it costs nothing that matters.
     networks: [erp-network]
     restart: unless-stopped
     deploy: *limits
