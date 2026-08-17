@@ -8,39 +8,102 @@
 # Image names are NOT repeated here — they come from the `image:` key in
 # docker-compose.prod.yml, so a build tags exactly what production will pull.
 #
+# cache_from IS repeated, and it is the one thing here that production feels.
+# Every runner is a fresh machine with an empty build cache, so `pip install`
+# re-executed on every run. pip output is not reproducible — timestamps, .pyc,
+# file ordering — so an unchanged requirements.txt still produced a brand new
+# layer digest, and the VPS treated ~360 MB of identical dependencies as content
+# it had never seen. Deploy u6g9bhcoqgpxhhzel2thseg2 proves it: the only change
+# in that commit was one line of YAML in docker-compose.prod.yml, and the VPS
+# still spent 2m39s pulling, 2m20s of it extracting, with the site down the
+# whole time.
+#
+# Pointing cache_from at the published :latest lets BuildKit reuse the recorded
+# layer instead of re-running pip, which keeps the digest identical run to run.
+# The VPS then reports "Already exists" and extracts nothing. The Dockerfiles
+# were already ordered for this (requirements.txt before COPY . .), so only the
+# code layer changes on a normal commit.
+#
+# :latest, not :${TAG} — TAG is the sha being built now and does not exist yet.
+# The registry default is spelled out because a YAML anchor cannot be spliced
+# into a string; keep it in step with the image: keys in docker-compose.prod.yml.
+#
+# Inline cache metadata is what makes these refs usable, and it is written by
+# BUILDKIT_INLINE_CACHE=1 in .github/workflows/deploy.yml. Without that build
+# arg these cache_from entries are silently useless.
+#
 #   CI:    TAG=<sha> docker compose -f docker-compose.prod.yml -f docker-compose.build.yml build
 #   local: same command, then `up -d` with both files
 services:
   api-gateway-prod:
-    build: {context: ./api-gateway, dockerfile: Dockerfile}
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/api-gateway:latest
 
   empresas-prod:
-    build: {context: ./services/empresas, dockerfile: Dockerfile}
+    build:
+      context: ./services/empresas
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/empresas:latest
 
   clientes-prod:
-    build: {context: ./services/clientes, dockerfile: Dockerfile}
+    build:
+      context: ./services/clientes
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/clientes:latest
 
   produtos-prod:
-    build: {context: ./services/produtos, dockerfile: Dockerfile}
+    build:
+      context: ./services/produtos
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/produtos:latest
 
   estoque-prod:
-    build: {context: ./services/estoque, dockerfile: Dockerfile}
+    build:
+      context: ./services/estoque
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/estoque:latest
 
   vendas-prod:
-    build: {context: ./services/vendas, dockerfile: Dockerfile}
+    build:
+      context: ./services/vendas
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/vendas:latest
 
   financeiro-prod:
-    build: {context: ./services/financeiro, dockerfile: Dockerfile}
+    build:
+      context: ./services/financeiro
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/financeiro:latest
 
   notificacoes-prod:
-    build: {context: ./services/notificacoes, dockerfile: Dockerfile}
+    build:
+      context: ./services/notificacoes
+      dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/notificacoes:latest
 
   # VITE_* are baked into the bundle at build time, so this image is
   # environment-specific: CI must build it with the real production values.
+  #
+  # Least helped by the cache above: this is the only multi-stage build here, and
+  # inline cache records the final image only, so the node build stage is not in
+  # it. Cheapest image in the pull anyway — it finished first in the deploy log,
+  # while the Python services were still going.
   frontend-prod:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      cache_from:
+        - ${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/frontend:latest
       args:
         - VITE_API_URL=/api
         - VITE_OAUTH_REDIRECT_URI=${FRONTEND_URL}/auth/callback

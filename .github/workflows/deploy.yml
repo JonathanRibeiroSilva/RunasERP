@@ -77,14 +77,22 @@ jobs:
 
       # The VPS is 1 vCPU / 4 GB — building nine images there would starve the
       # running stack, so the runner builds and the VPS only ever pulls.
-      # ponytail: no layer cache, every run rebuilds from scratch (~10-15 min).
-      # Swap in docker/build-push-action with cache-from: type=gha per service
-      # when the wait actually hurts.
+      # ponytail: cache_from in docker-compose.build.yml points every service at
+      # the published :latest, and BUILDKIT_INLINE_CACHE=1 below is what writes
+      # the metadata that makes those refs usable — drop the build arg and the
+      # cache entries go silently dead. Together they keep the pip layer digest
+      # stable across runs, which is what stops the VPS from re-pulling ~360 MB
+      # of unchanged dependencies inside its own outage window: 2m39s of pulling,
+      # 2m20s of it extraction, in deploy u6g9bhcoqgpxhhzel2thseg2 — for a commit
+      # whose only change was one line of YAML.
+      #
+      # The first run after this lands still pays full price: it caches against a
+      # :latest that was built without the metadata. The second run is the test.
       - name: Build and push images
         env:
           TAG: ${{ github.sha }}
         run: |
-          docker compose $FILES build
+          docker compose $FILES build --build-arg BUILDKIT_INLINE_CACHE=1
           docker compose $FILES push
 
           # Coolify pulls :latest, so republish the same images under that tag.
