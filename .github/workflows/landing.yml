@@ -41,11 +41,18 @@ jobs:
       # .image-slots.state.json DOES go: assets/js/image-slot.js fetches it at
       # runtime (STATE_FILE) and it holds the store cover and avatar as base64.
       # Without it those two slots render the dashed "drop an image" placeholder
-      # in production. This mirrors tools/deploy.ps1 — keep the two in step.
+      # in production.
+      #
+      # 404.html DOES go, and it is the reason unmatched paths stop returning the
+      # homepage with 200. Pages serves it with a real 404 as soon as it exists;
+      # without it every wrong URL is an indexable duplicate of the home page —
+      # the exact problem excluding index.original.html is meant to avoid.
+      #
+      # This mirrors tools/deploy.ps1 — keep the two in step.
       - name: Stage the publishable files
         run: |
           mkdir -p dist
-          cp landing-page/index.html landing-page/.image-slots.state.json dist/
+          cp landing-page/index.html landing-page/404.html landing-page/.image-slots.state.json dist/
           cp -r landing-page/assets dist/
           echo "staged:"; find dist -type f | sort
 
