@@ -5,7 +5,7 @@
   </picture>
 </div>
 
-# 🏪 Runas ERP
+#  Runas ERP
 
 > Sistema ERP completo para comércio de alimentos e bebidas com arquitetura de microsserviços
 
