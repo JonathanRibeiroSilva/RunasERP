@@ -24,6 +24,7 @@ $stage = Join-Path $env:TEMP "runas-landing-stage"
 Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $stage | Out-Null
 Copy-Item (Join-Path $src "index.html") $stage
+Copy-Item (Join-Path $src "404.html") $stage
 Copy-Item (Join-Path $src ".image-slots.state.json") $stage
 Copy-Item (Join-Path $src "assets") $stage -Recurse
 
