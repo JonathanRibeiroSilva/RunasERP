@@ -544,7 +544,9 @@ h3 {
   display: none;
 }
 
-@media (min-width: 1024px) {
+/* 768 e nao 1024: a nav inteira ocupa ~550px, entao trocar para hamburguer a
+   1024 escondia os links em qualquer janela de desktop nao maximizada. */
+@media (min-width: 768px) {
   .nav-links {
     display: flex;
     align-items: center;
@@ -594,7 +596,7 @@ h3 {
   cursor: pointer;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .nav-toggle {
     display: none;
   }
@@ -611,7 +613,7 @@ h3 {
   overflow-y: auto;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .nav-drawer {
     display: none;
   }
@@ -634,7 +636,7 @@ h3 {
 /* --------------------------------------------------------------------------
    5b. CTA fixo do mobile
    Do fim do hero ate a secao da Loja o telefone ficava sem nenhum botao de
-   conversao na tela. Some a partir de 1024px, onde o CTA vive no header.
+   conversao na tela. Some onde existe mouse — no desktop os CTAs da pagina bastam.
    -------------------------------------------------------------------------- */
 .cta-sticky {
   position: fixed;
@@ -665,7 +667,9 @@ h3 {
   pointer-events: auto;
 }
 
-@media (min-width: 1024px) {
+/* Ponteiro, nao largura: a barra e um alvo de polegar. Amarrada a largura, ela
+   aparecia so por estreitar a janela no desktop. */
+@media (pointer: fine) {
   .cta-sticky {
     display: none;
   }
