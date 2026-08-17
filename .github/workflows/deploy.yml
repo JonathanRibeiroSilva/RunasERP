@@ -75,44 +75,71 @@ jobs:
       # Coolify pulls the new images and restarts the stack. It reads
       # docker-compose.prod.yml from this repo, which has no build sections —
       # so there is nothing it *can* build, only pull.
+      #
+      # COOLIFY_URL must be the Cloudflare hostname in front of the tunnel, not
+      # the VPS IP. Pointing it at the IP asks a GitHub runner to open an
+      # *inbound* connection to 187.127.10.108:8000, and that is a coin flip:
+      # run 32047638162 got a reply in 0.5s, run 32048659255 fifteen minutes
+      # later ate a 132s connect timeout — with the host idle, ufw disabled, no
+      # fail2ban, port 8000 listening and zero kernel-level drops. The SYNs never
+      # arrived. 187.127.0.0/18 is a block Hostinger only took over in 2025, and
+      # reachability depends on which Azure egress the runner happens to land on.
+      # Over the tunnel the VPS dials Cloudflare outbound and the runner only
+      # ever talks to the anycast edge, which has no such problem.
+      #
+      # The retry is a seatbelt, not the fix: it turns one 132s hang into five
+      # bounded attempts. Nothing reaches Coolify on a connect failure, so a
+      # retried POST cannot double-queue a deploy.
       - name: Trigger Coolify deploy
+        id: trigger
         run: |
-          curl -fsS -X POST \
+          response="$(curl -fsS -X POST \
+            --connect-timeout 10 --retry 5 --retry-delay 10 \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_UUID }}&force=false"
+            "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_UUID }}&force=false")"
+          echo "$response"
+          echo "uuid=$(printf '%s' "$response" | jq -r '.deployments[0].deployment_uuid')" >> "$GITHUB_OUTPUT"
 
       # Coolify answers as soon as it accepts the request, not when the stack is
       # up — without this step a deploy that never comes back is a green job.
-      # Reads the URL out of the .env written above, so there is no second place
-      # to keep the domain in sync.
       #
-      # The domain sits behind Cloudflare, which answers the runner's curl by
-      # itself — datacenter IP plus a default user-agent gets a 403 that never
-      # reaches the VPS. The first version of this step required 2xx and so
-      # failed every deploy, working or not. What it can actually prove is that
-      # the tunnel has a live origin: 530 means no tunnel, 502/504 an origin
-      # that is not answering, 000 an unreachable edge. Those still fail.
+      # This used to poll the public /health URL, which Cloudflare answers by
+      # itself: a datacenter IP gets a 403 that never reaches the VPS. The step
+      # counted that 403 as a pass, so it verified nothing — every run that had
+      # it (32029262468, 31853329182, 32047638162) burned the full 5 minutes on
+      # 403s and went green without once seeing the stack. That was tolerable
+      # while deploys were manual; on every merge to main it is a lie.
       #
-      # ponytail: a run that only ever sees 403 passes unverified. Fixing that
-      # means a check the edge does not intercept — a Coolify status poll, or a
-      # WAF rule allowing the runner.
-      - name: Wait for production to answer
+      # Coolify's own deployment record is the check the edge cannot intercept:
+      # same host, same token, already in hand — no WAF rule and no new secret.
+      # It reports what actually happened on the VPS rather than what Cloudflare
+      # felt like saying, and it fails loudly when the deploy fails.
+      - name: Wait for Coolify to finish the deploy
         run: |
-          url="$(sed -n 's/^API_BASE_URL=//p' .env | head -1 | tr -d "\"' \r")/health"
-          echo "polling $url"
-          code=000
-          for _ in $(seq 30); do
-            sleep 10
-            code="$(curl -s -o /dev/null -w '%{http_code}' \
-              -A 'Mozilla/5.0 (compatible; RunasDeployCheck/1.0)' "$url")"
-            case "$code" in
-              2??) echo "production is up ($code)"; exit 0 ;;
-            esac
-            echo "  $code"
-          done
-          if [ "$code" = 403 ]; then
-            echo "::warning::Cloudflare answered 403 for 5 minutes — the edge blocked this check, so the stack was not verified"
-            exit 0
+          uuid='${{ steps.trigger.outputs.uuid }}'
+          if [ -z "$uuid" ] || [ "$uuid" = null ]; then
+            echo "::error::no deployment_uuid in the trigger response"
+            exit 1
           fi
-          echo "::error::no answer from $url after 5 minutes (last code: $code)"
+          echo "polling deployment $uuid"
+          # 90 x 10s = 15 min. A cold pull of all nine images has taken ~10.
+          for _ in $(seq 90); do
+            body="$(curl -fsS --connect-timeout 10 --retry 3 \
+              -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+              "${{ secrets.COOLIFY_URL }}/api/v1/deployments/$uuid")"
+            status="$(printf '%s' "$body" | jq -r '.status // empty')"
+            # Empty means the payload is not shaped as expected — fail now
+            # rather than loop for 15 minutes on a field that will never appear.
+            if [ -z "$status" ]; then
+              echo "::error::unexpected deployment payload: $body"
+              exit 1
+            fi
+            echo "  $status"
+            case "$status" in
+              finished|success) echo "deploy $uuid finished"; exit 0 ;;
+              failed|error|cancelled*) echo "::error::deploy $uuid ended as $status"; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::deploy $uuid still $status after 15 minutes"
           exit 1
