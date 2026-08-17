@@ -20,10 +20,23 @@ on:
     # a one-line README edit — queued a full deploy; that is what this stops.
     # landing-page/ is excluded because it does not ship here at all: it is a
     # static site on Cloudflare Pages with its own workflow (landing.yml).
+    #
+    # .github/ is excluded for the same reason and a sharper one. PR #26 changed
+    # 404.html, landing.yml and deploy.ps1 — nothing that runs in production —
+    # and the deploy it triggered aborted mid-start, leaving the app down for 25
+    # minutes. Coolify tears the old stack down before the new one is up, so
+    # every deploy is an outage window; a deploy that cannot change the running
+    # stack is that risk taken for nothing. Changing the deployment recipe is
+    # not the same as changing the application, and workflow_dispatch below is
+    # how you exercise a workflow change on purpose.
+    #
+    # docker-compose.prod.yml is deliberately NOT here: it lives at the repo
+    # root, Coolify reads it, and a change to it must reach production.
     paths-ignore:
       - 'landing-page/**'
       - 'docs/**'
       - '**.md'
+      - '.github/**'
   # Kept alongside the push trigger: a redeploy or a TAG rollback should not
   # require inventing a commit.
   workflow_dispatch:
