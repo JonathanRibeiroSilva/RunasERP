@@ -112,11 +112,19 @@ jobs:
       # The retry is a seatbelt, not the fix: it turns one 132s hang into five
       # bounded attempts. Nothing reaches Coolify on a connect failure, so a
       # retried POST cannot double-queue a deploy.
+      #
+      # -A is not cosmetic: the zone has a WAF rule ("User-Agent suspeito")
+      # that issues a managed challenge to any UA containing curl or wget.
+      # Default curl sends `curl/8.x` and gets a 403 in 0.2s, from the edge,
+      # with Cf-Mitigated: challenge — run 32058772049 died exactly there.
+      # Same IP, same path, same method, only the UA changed: curl/8.5.0 -> 403,
+      # anything Mozilla-ish -> 401 from Coolify. The edge is what answers.
       - name: Trigger Coolify deploy
         id: trigger
         run: |
           response="$(curl -fsS -X POST \
             --connect-timeout 10 --retry 5 --retry-delay 10 \
+            -A 'Mozilla/5.0 (compatible; RunasDeploy/1.0; +github-actions)' \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
             "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_UUID }}&force=false")"
           echo "$response"
@@ -147,6 +155,7 @@ jobs:
           # 90 x 10s = 15 min. A cold pull of all nine images has taken ~10.
           for _ in $(seq 90); do
             body="$(curl -fsS --connect-timeout 10 --retry 3 \
+              -A 'Mozilla/5.0 (compatible; RunasDeploy/1.0; +github-actions)' \
               -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
               "${{ secrets.COOLIFY_URL }}/api/v1/deployments/$uuid")"
             status="$(printf '%s' "$body" | jq -r '.status // empty')"
