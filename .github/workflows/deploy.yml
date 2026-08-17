@@ -153,18 +153,33 @@ jobs:
           fi
           echo "polling deployment $uuid"
           # 90 x 10s = 15 min. A cold pull of all nine images has taken ~10.
+          unreachable=0
           for _ in $(seq 90); do
-            body="$(curl -fsS --connect-timeout 10 --retry 3 \
+            body="$(curl -fsS --connect-timeout 10 \
               -A 'Mozilla/5.0 (compatible; RunasDeploy/1.0; +github-actions)' \
               -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-              "${{ secrets.COOLIFY_URL }}/api/v1/deployments/$uuid")"
-            status="$(printf '%s' "$body" | jq -r '.status // empty')"
-            # Empty means the payload is not shaped as expected — fail now
-            # rather than loop for 15 minutes on a field that will never appear.
+              "${{ secrets.COOLIFY_URL }}/api/v1/deployments/$uuid")" || body=''
+            status="$(printf '%s' "$body" | jq -r '.status // empty' 2>/dev/null)"
+            # Losing the API mid-deploy is expected, not a failure. cloudflared
+            # is a container in the very stack being deployed, so Coolify stops
+            # the tunnel this request travels through; the edge then answers 530
+            # for COOLIFY_URL until the new stack is up. Run 32060269768 polled
+            # in_progress five times and then died on that 530 — it failed
+            # because the deploy was working. Keep asking; only give up if the
+            # tunnel never comes back, which means production is down anyway.
             if [ -z "$status" ]; then
-              echo "::error::unexpected deployment payload: $body"
-              exit 1
+              unreachable=$((unreachable + 1))
+              echo "  unreachable ($unreachable)"
+              # ~45 misses: each costs up to 10s of connect timeout plus the
+              # 10s sleep, so this is roughly 10-15 minutes of silence.
+              if [ "$unreachable" -ge 45 ]; then
+                echo "::error::Coolify unreachable for ~15 min; last body: $body"
+                exit 1
+              fi
+              sleep 10
+              continue
             fi
+            unreachable=0
             echo "  $status"
             case "$status" in
               finished|success) echo "deploy $uuid finished"; exit 0 ;;
