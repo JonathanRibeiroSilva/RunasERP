@@ -95,45 +95,38 @@ Cinco recortes do mesmo sistema, do DNS até a função: **ingresso**, **stack**
 ### 1. Ingresso — do DNS ao container
 
 Não existe porta inbound aberta na VPS. Todo tráfego entra por uma conexão que o
-próprio host abriu para fora (Cloudflare Tunnel); o apex nem chega na VPS.
+próprio host abriu para fora (Cloudflare Tunnel), e o apex nem chega na VPS.
 
-```mermaid
-flowchart TB
-    subgraph WEB["🌍 Internet"]
-        BROWSER["Navegador<br/>painel admin + loja online"]
-        MP["Mercado Pago<br/>POST webhook payment.*"]
-        OAUTH["Google / Microsoft<br/>OAuth2 callback"]
-        GHA["GitHub Actions<br/>runner ubuntu-latest"]
-    end
-
-    subgraph CF["☁️ Cloudflare — DNS, TLS, WAF"]
-        PAGES["Pages · runas-landing<br/><b>runaserp.com.br</b> + www<br/>landing-page/ estático"]
-        EDGE["Anycast edge<br/><b>app.runaserp.com.br</b><br/><b>coolify.runaserp.com.br</b>"]
-        ZT["Zero Trust · ingress do túnel<br/>app → frontend-prod:80<br/>coolify → host.docker.internal:8000"]
-    end
-
-    subgraph VPS["🖥️ VPS Hostinger · 1 vCPU / 4 GB · nenhuma porta inbound"]
-        CFD["<b>erp-cloudflared-prod</b><br/>modo token, imagem distroless<br/>conexões QUIC de saída"]
-        COOLIFY["<b>Coolify</b> — host:8000<br/>lê docker-compose.prod.yml"]
-        STACK["stack <b>runaserp</b><br/>13 containers"]
-    end
-
-    BROWSER -->|"https://runaserp.com.br"| PAGES
-    BROWSER -->|"https://app.runaserp.com.br"| EDGE
-    MP -->|"/api/loja/{slug}/webhook/mercadopago"| EDGE
-    OAUTH -->|"/auth/callback"| EDGE
-    GHA -->|"POST /api/v1/deploy<br/>UA não-curl: regra de WAF na zona"| EDGE
-    EDGE --> ZT
-    CFD -.->|"QUIC — conexão SEMPRE iniciada de dentro"| ZT
-    ZT -.->|"entrega o request na origem"| CFD
-    CFD -->|"HTTP interno"| STACK
-    CFD -->|"extra_hosts: host-gateway"| COOLIFY
-    COOLIFY -->|"docker compose up -d --wait"| STACK
-
-    classDef edge fill:#f6821f22,stroke:#f6821f
-    classDef host fill:#2ea04322,stroke:#2ea043
-    class PAGES,EDGE,ZT edge
-    class CFD,COOLIFY,STACK host
+```
+  navegador        Mercado Pago     Google / Microsoft    GitHub Actions
+  admin + loja     webhook          OAuth2 callback       runner do CI
+      │                │                  │                    │
+      └────────────────┴─────────┬────────┴────────────────────┘
+                                 │  HTTPS
+  ╔══════════════════════════════▼═══════════════════════════════════════╗
+  ║ CLOUDFLARE  —  DNS · TLS · WAF                                       ║
+  ║                                                                      ║
+  ║  runaserp.com.br + www    ──►  Pages · landing-page/                 ║
+  ║                                estático, nunca toca a VPS            ║
+  ║                                                                      ║
+  ║  app.runaserp.com.br      ──┐                                        ║
+  ║  coolify.runaserp.com.br  ──┴►  Zero Trust · ingress do túnel        ║
+  ║                                 app     → frontend-prod:80           ║
+  ║                                 coolify → host.docker.internal:8000  ║
+  ╚══════════════════════════════╤═══════════════════════════════════════╝
+                                 ┊  QUIC — a conexão é SEMPRE iniciada de dentro
+                                 ┊  (o edge nunca disca para a VPS)
+  ╔══════════════════════════════▼═══════════════════════════════════════╗
+  ║ VPS Hostinger  —  1 vCPU / 4 GB  —  NENHUMA porta inbound aberta     ║
+  ║                                                                      ║
+  ║   ┌────────────────────────┐                                         ║
+  ║   │  erp-cloudflared-prod  │──── HTTP interno ───►  stack (§2)       ║
+  ║   │  modo token, distroless│──── host-gateway ───►  Coolify          ║
+  ║   └────────────────────────┘                          │              ║
+  ║                               docker compose up -d    │              ║
+  ║     stack runaserp · 14 containers  ◄─────────────────┘              ║
+  ║                                                                      ║
+  ╚══════════════════════════════════════════════════════════════════════╝
 ```
 
 **Por que o túnel e não nginx + Let's Encrypt:** o TLS termina no edge, então o
@@ -151,61 +144,55 @@ mas a saída para o anycast da Cloudflare sempre funciona.
 | Imagens | `build:` local, hot reload por bind mount | `pull_policy: always` do ghcr, sem `build:` |
 | Ativação | `-f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy` | é o padrão |
 
-### 2. O stack — 13 containers em uma rede bridge
+### 2. O stack — 14 containers em uma rede bridge
 
-```mermaid
-flowchart TB
-    CFD(["cloudflared<br/>único ingress"])
+```
+                   ┌──────────────────────────────────────┐
+                   │  cloudflared  —  o único ingress     │
+                   └──────────────────┬───────────────────┘
+                                      │
+                   ┌──────────────────▼───────────────────┐
+                   │  frontend-prod                   :80 │
+                   │  nginx + SPA React 19                │
+                   │  /api/ → gateway · /assets/ 1 ano    │
+                   └──────────────────┬───────────────────┘
+                                      │ proxy_pass  /api/  →  :8000/
+                   ┌──────────────────▼───────────────────┐
+                   │  api-gateway                   :8000 │
+                   │  JWT HS256 · RBAC · rate limit       │
+                   │  OAuth2 Google / Microsoft           │
+                   │  injeta X-Empresa-Id / X-Cliente-Id  │
+                   └──────────────────┬───────────────────┘
+        ┌─────────┬─────────┬─────────┼─────────┬─────────┬─────────┐
+        ▼         ▼         ▼         ▼         ▼         ▼         ▼
+    ┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐
+    │Empresas││Clientes││Produtos││Estoque ││ Vendas ││Financ. ││Notific.│
+    │ :8007  ││ :8001  ││ :8002  ││ :8003  ││ :8004  ││ :8005~ ││ :8006~ │
+    └───┬────┘└───┬────┘└───┬────┘└───┬────┘└───┬────┘└───┬────┘└───┬────┘
+        └─────────┴─────────┴─────────┼─────────┴─────────┴─────────┘
+                                      │ cada serviço só enxerga o próprio schema
+              ┌───────────────────────┼───────────────────────┐
+              ▼                       ▼                       ▼
+     ┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐
+     │  PostgreSQL 15     │  │  Redis 7           │  │  RabbitMQ 3.12     │
+     │  1 schema/serviço  │  │  cache · carrinho  │  │  erp.events (topic)│
+     │  volume externo    │  │  blacklist refresh │  │  durable           │
+     └────────────────────┘  └────────────────────┘  └────────────────────┘
+```
 
-    subgraph NET["🐳 rede runaserp_erp-network — nenhum port mapping no host"]
-        direction TB
+`~` = serviço criado, sem models/routers ainda. Nenhum container publica porta no
+host: o único caminho de fora para dentro é o `cloudflared`.
 
-        FE["<b>frontend-prod</b> :80<br/>nginx + SPA React 19<br/>/api/ → gateway · /assets/ immutable 1y"]
+```
+   chamadas HTTP diretas, dentro da rede (não passam pelo gateway):
+      vendas   ──►  empresas (slug → id) · clientes (cadastro) · produtos (preço)
+      vendas   ──►  estoque (reserva e baixa)
+      estoque  ──►  produtos (valida o produto)
 
-        GW["<b>api-gateway-prod</b> :8000<br/>JWT HS256 · RBAC · rate limit<br/>OAuth2 Google/Microsoft<br/>injeta X-Empresa-Id / X-Cliente-Id"]
-
-        subgraph SVC["🧩 7 microsserviços FastAPI — sem porta exposta, só via gateway"]
-            direction LR
-            EMP["empresas<br/>:8007"]
-            CLI["clientes<br/>:8001"]
-            PRD["produtos<br/>:8002"]
-            EST["estoque<br/>:8003"]
-            VND["vendas<br/>:8004"]
-            FIN["financeiro<br/>:8005 🚧"]
-            NOT["notificacoes<br/>:8006 🚧"]
-        end
-
-        subgraph INFRA["🗄️ Infraestrutura"]
-            direction LR
-            PG[("<b>PostgreSQL 15</b><br/>schema por serviço<br/>volume runaserp_db_data<br/>external: true")]
-            RD[("<b>Redis 7</b><br/>cache, carrinho,<br/>blacklist de refresh<br/>256mb allkeys-lru")]
-            MQ[("<b>RabbitMQ 3.12</b><br/>exchange erp.events<br/>topic, durable")]
-        end
-
-        INIT["db-init<br/>roda e sai a cada deploy<br/>CREATE SCHEMA IF NOT EXISTS ×9"]
-    end
-
-    CFD --> FE
-    FE -->|"proxy_pass /api/ → :8000/"| GW
-    GW --> EMP & CLI & PRD & EST & VND & FIN & NOT
-
-    VND -.->|"HTTP: slug, cliente,<br/>preço, baixa de estoque"| EMP
-    VND -.-> CLI
-    VND -.-> PRD
-    VND -.-> EST
-    EST -.->|"HTTP: valida produto"| PRD
-
-    EMP & CLI & PRD & EST & VND & FIN & NOT --> PG
-    GW --> PG
-    GW --> RD
-    VND --> RD
-    EST -.->|"estoque.minimo"| MQ
-    VND -.->|"pedido.confirmado<br/>pedido.cancelado"| MQ
-    MQ -.-> NOT
-    INIT ==>|"antes de todo mundo"| PG
-
-    classDef pending stroke-dasharray: 5 5,opacity:0.6
-    class FIN,NOT pending
+   eventos — RabbitMQ, exchange erp.events (topic, durable, persistente):
+      vendas      ──pedido.confirmado / pedido.cancelado──►  estoque · financeiro
+      estoque     ──estoque.minimo──────────────────────────►  notificacoes
+      financeiro  ──cobranca.* / conta.quitada─────────────►  notificacoes
 ```
 
 | Container | Imagem | Porta interna | Schema | Estado |
@@ -231,14 +218,22 @@ sem teto derruba os outros oito.
 
 **Ordem de subida** — `depends_on` por *condition*, não por nome:
 
-```mermaid
-flowchart LR
-    DB["db<br/>healthy: pg_isready"] --> INIT["db-init<br/>completed_successfully"]
-    INIT --> SVCS["7 serviços + gateway<br/>healthy: curl /health"]
-    RD["redis healthy"] --> SVCS
-    MQ["rabbitmq healthy"] --> SVCS
-    SVCS -->|"api-gateway healthy"| FE["frontend<br/>healthy: wget 127.0.0.1/health"]
-    FE -.->|"SEM depends_on — proposital"| CFD["cloudflared"]
+```
+   db  ──healthy (pg_isready)──►  db-init  ──completed successfully──┐
+   redis  ──healthy (redis-cli ping)──────────────────────────────►  │
+   rabbitmq  ──healthy (rabbitmq-diagnostics ping)────────────────►  │
+                                                                     ▼
+                                          api-gateway  +  7 microsserviços
+                                          healthcheck: curl /health
+                                          gateway: interval 5s, start_period 60s
+                                                          │
+                                                          │  api-gateway healthy
+                                                          ▼
+                                          frontend-prod  (wget 127.0.0.1/health)
+                                                          ┊
+                                                          ┊  SEM depends_on
+                                                          ▼  — proposital
+                                          cloudflared  (sobrevive ao deploy)
 ```
 
 > `db-init` existe porque o SQLAlchemy emite `CREATE TABLE <schema>.<tabela>` e
@@ -252,52 +247,55 @@ flowchart LR
 ### 3. Microsserviços — roteamento, isolamento e comunicação
 
 O gateway é o **único** ponto de entrada: nenhum serviço aceita request direto na
-própria porta, e nenhum lê o schema de outro. Quem precisa de dado alheio faz HTTP
-pelo `<SERVIÇO>_URL` ou reage a um evento.
+própria porta, e nenhum lê o schema de outro.
 
-```mermaid
-flowchart LR
-    subgraph GWBOX["🚪 api-gateway :8000"]
-        direction TB
-        AUTH["<b>auth</b><br/>/auth/login · refresh · logout<br/>/auth/google · /auth/microsoft<br/>/auth/callback · password-reset"]
-        MW["<b>middleware</b><br/>LoggingMiddleware (structlog JSON)<br/>rate limit: 5/min login, 10/min register"]
-        TEN["<b>_inject_context_headers</b><br/>slug público → empresa_id<br/>ou JWT → empresa_id / cliente_id<br/>pipeline único, sem exceção por rota"]
-        MAP["<b>SERVICE_URLS</b>"]
-        AUTH --> MW --> TEN --> MAP
-    end
+```
+   api-gateway  :8000
+   ══════════════════
 
-    MAP -->|"/clientes"| CLI["<b>clientes</b> :8001<br/>PF/PJ, endereços, limite de crédito,<br/>bloqueio por inadimplência"]
-    MAP -->|"/produtos /categorias<br/>/variantes /fornecedores<br/>/loja-online"| PRD["<b>produtos</b> :8002<br/>catálogo, variantes, preços,<br/>vitrine pública por slug"]
-    MAP -->|"/estoque"| EST["<b>estoque</b> :8003<br/>saldo, movimentações,<br/>reservas, estoque mínimo"]
-    MAP -->|"/loja /carrinho<br/>/pagamentos"| VND["<b>vendas</b> :8004<br/>carrinho, checkout, PDV, pedidos,<br/>entrega, Mercado Pago, fiado"]
-    MAP -->|"/contas"| FIN["<b>financeiro</b> :8005 🚧<br/>contas a receber, fiado"]
-    MAP -->|"/notificacoes"| NOT["<b>notificacoes</b> :8006 🚧<br/>WhatsApp via Evolution API"]
-    MAP -->|"/empresas"| EMP["<b>empresas</b> :8007<br/>multi-tenancy: slug ↔ empresa_id"]
+     routers/auth · auth_cliente · auth_admin
+        login · refresh · logout · register · password-reset
+        google · microsoft · callback
+                     │
+     middleware      │   structlog JSON · rate limit 5/min login, 10/min register
+                     ▼
+     _inject_context_headers          (pipeline único — sem injeção por rota)
+        slug público  → SELECT id FROM empresas.empresas → X-Empresa-Id
+        JWT do usuário → X-Empresa-Id     JWT do cliente → X-Cliente-Id
+                     │
+                     ▼
+     SERVICE_URLS
+          │
+          ├─ /clientes ─────────────────────────►  clientes      :8001
+          ├─ /produtos /categorias /variantes ──►  produtos      :8002
+          │  /fornecedores /loja-online
+          ├─ /estoque ──────────────────────────►  estoque       :8003
+          ├─ /loja /carrinho /pagamentos ───────►  vendas        :8004
+          ├─ /contas ───────────────────────────►  financeiro    :8005  ~
+          ├─ /notificacoes ─────────────────────►  notificacoes  :8006  ~
+          └─ /empresas ─────────────────────────►  empresas      :8007
 ```
 
-**Multi-tenancy.** Toda rota proxiada passa pelo mesmo pipeline: rota pública de
-loja resolve `empresa_id` pelo slug da URL (`SELECT id FROM empresas.empresas`),
+**Multi-tenancy.** Rota pública de loja resolve `empresa_id` pelo slug da URL;
 rota autenticada tira do JWT. O serviço a jusante só enxerga `X-Empresa-Id` —
 nunca decide sozinho de qual tenant é o dado.
 
 **Anatomia de um serviço** — idêntica nos sete; copiar um é o jeito de criar o próximo:
 
 ```
-services/<nome>/
-├── main.py             # FastAPI + lifespan (init_db, jobs periódicos)
-├── config.py           # pydantic-settings; URLs dos vizinhos vêm do ambiente
-├── database.py         # engine assíncrono, schema próprio
-├── routers/            # HTTP: valida entrada, delega
-├── services/           # regra de negócio
-├── repositories/       # acesso a dados — só aqui entra SQLAlchemy
-├── models/             # ORM (schema = "<nome>")
-├── schemas/            # Pydantic in/out
-├── events/publisher.py # aio_pika → exchange erp.events (topic, durable)
-├── jobs/               # rotinas periódicas
-└── alembic/            # migrations próprias, por serviço
+   services/<nome>/
+   ├── main.py             FastAPI + lifespan (init_db, jobs periódicos)
+   ├── config.py           pydantic-settings; URL dos vizinhos vem do ambiente
+   ├── database.py         engine assíncrono, schema próprio
+   ├── routers/            HTTP: valida entrada, delega
+   ├── services/           regra de negócio
+   ├── repositories/       acesso a dados — só aqui entra SQLAlchemy
+   ├── models/             ORM (schema = "<nome>")
+   ├── schemas/            Pydantic in/out
+   ├── events/publisher.py aio_pika → exchange erp.events
+   ├── jobs/               rotinas periódicas
+   └── alembic/            migrations próprias, por serviço
 ```
-
-**Eventos de domínio** — `erp.events`, topic exchange durável, mensagens persistentes:
 
 | Routing key | Publica | Consome |
 |---|---|---|
@@ -318,35 +316,27 @@ services/<nome>/
 
 ### 4. Entrega — do push ao container rodando
 
-```mermaid
-flowchart LR
-    subgraph DEV["👩‍💻 Local"]
-        BR["branch feat/*"] --> DEVB["<b>Developer</b><br/>branch de integração"]
-    end
-
-    DEVB -->|"Pull Request"| CI
-
-    subgraph GH["⚙️ GitHub Actions"]
-        CI["<b>ci.yml</b><br/>valida compose · build das 9 imagens<br/>smoke test de auth · lint + build + vitest<br/>pytest do backend"]
-        MAIN["merge em <b>main</b>"]
-        DEP["<b>deploy.yml</b><br/>ignora landing-page/, docs/, *.md, .github/<br/>concurrency: deploy-production"]
-        LND["<b>landing.yml</b><br/>só landing-page/ → wrangler pages deploy"]
-        GRF["<b>graphify-update.yml</b><br/>atualiza o grafo de código"]
-    end
-
-    CI --> MAIN --> DEP
-    MAIN --> LND
-    MAIN --> GRF
-
-    DEP -->|"docker compose build + push<br/>BUILDKIT_INLINE_CACHE=1"| GHCR[("ghcr.io/…/runaserp<br/>cada imagem como :sha E :latest")]
-    DEP -->|"POST /api/v1/deploy?uuid=…<br/>pelo túnel, com retry"| COO["<b>Coolify</b> na VPS"]
-    DEP -->|"poll /api/v1/deployments/{uuid}<br/>até finished ou failed"| COO
-    COO -->|"pull_policy: always"| GHCR
-    COO -->|"docker compose -f docker-compose.prod.yml up -d --wait"| STACK["stack em produção"]
-    LND --> PAGES[("Cloudflare Pages")]
 ```
-
-Quatro arquivos de compose, um por tipo de máquina:
+   feat/*  ──►  Developer  ──PR──►  ci.yml  ──merge──►  main
+                                    compose · 9 imagens          │
+                                    vitest · pytest              │
+        ┌───────────────────────┬────────────────────────────────┤
+        ▼                       ▼                                ▼
+   deploy.yml              landing.yml                   graphify-update.yml
+   ignora *.md, docs/,     só landing-page/              regrava o grafo
+   landing-page/, .github/ wrangler pages deploy         (GITHUB_TOKEN não
+        │                       │                         dispara workflow)
+        │                       └──►  Cloudflare Pages
+        │
+        ├─ build + push ──►  ghcr.io/…/<serviço>:<sha>   e   :latest
+        │
+        └─ POST /api/v1/deploy ──(pelo túnel · UA não-curl · retry 5×)──►  Coolify
+                                                                             │
+              docker compose -f docker-compose.prod.yml up -d --wait  ◄──────┤
+              pull_policy: always  (:latest é tag móvel)                     │
+                                                                             │
+              poll /api/v1/deployments/{uuid}  ──►  finished | failed  ◄──────┘
+```
 
 | Arquivo | Lido por | Papel |
 |---|---|---|
@@ -362,40 +352,25 @@ Quatro arquivos de compose, um por tipo de máquina:
 
 ### 5. Um request de ponta a ponta — checkout PIX na loja online
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant C as Cliente
-    participant CF as Cloudflare edge
-    participant T as cloudflared
-    participant N as nginx do frontend
-    participant G as api-gateway
-    participant V as vendas
-    participant E as estoque
-    participant R as Redis
-    participant MP as Mercado Pago
+```
+    1  navegador ──GET /loja/{slug}──► edge ─► túnel ─► nginx ─► SPA React
+    2  navegador ──POST /api/carrinho/itens──► nginx ──proxy_pass──► gateway
+    3  gateway    resolve slug → empresa_id, injeta X-Empresa-Id ──► vendas
+    4  vendas ──► Redis: grava carrinho + reserva temporária
+    5  vendas ──HTTP──► estoque: valida saldo disponível
+    6  navegador ──POST /api/pagamentos (PIX)──► gateway ──► vendas
+    7  vendas ──► Mercado Pago: cria preference com
+                  notification_url = {API_BASE_URL}/loja/{slug}/webhook/mercadopago
+    8  Mercado Pago ──QR Code PIX──► navegador
 
-    C->>CF: GET app.runaserp.com.br/loja/{slug}
-    CF->>T: túnel (conexão já aberta)
-    T->>N: HTTP :80 → SPA
-    C->>N: POST /api/carrinho/itens
-    N->>G: proxy_pass /api/ → :8000/
-    G->>G: resolve slug → empresa_id, injeta X-Empresa-Id
-    G->>V: POST /carrinho/itens
-    V->>R: grava carrinho + reserva temporária
-    V->>E: HTTP valida saldo disponível
-    C->>G: POST /pagamentos (checkout PIX)
-    G->>V: proxy
-    V->>MP: cria preference com notification_url<br/>{API_BASE_URL}/loja/{slug}/webhook/mercadopago
-    MP-->>C: QR Code PIX
-    MP->>CF: POST webhook payment.approved
-    CF->>T: túnel
-    T->>N: /api/loja/{slug}/webhook/mercadopago
-    N->>G: proxy
-    G->>V: webhook (idempotente por payment id)
-    V->>E: baixa definitiva de estoque
-    V-->>V: publica pedido.confirmado em erp.events
-    Note over V,E: baixa indeterminada nunca cancela venda paga —<br/>fica marcada e o job de reconciliação retenta a cada 120 s
+   ═══════════════════  cliente paga — minutos depois  ═══════════════════
+
+    9  Mercado Pago ──POST webhook──► edge ─► túnel ─► nginx ─► gateway ─► vendas
+   10  vendas     idempotente por payment id ──► baixa definitiva no estoque
+   11  vendas ──publica pedido.confirmado──► RabbitMQ (erp.events)
+
+        └─ baixa indeterminada NUNCA cancela venda paga: fica marcada e o job
+           reconciliar_estoque_vendas retenta a cada 120 s
 ```
 
 **Autenticação.** JWT HS256, `access_token` de 30 min, `refresh_token` de 7 dias em
