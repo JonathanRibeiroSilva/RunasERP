@@ -7,6 +7,16 @@ on:
   # otherwise, and main is what the deploy workflow builds from.
   push:
     branches: [main, Developer]
+    # Só no push: um PR continua rodando o gate inteiro, aconteça o que
+    # acontecer no diff. Aqui o que se evita é rebuildar nove imagens por um
+    # commit que não pode quebrar nenhuma delas — c26e51e, só README, gastou
+    # o ciclo completo. Mesma lista do deploy.yml MENOS .github/**: uma
+    # mudança em workflow não muda o que roda em produção, mas muda o que a
+    # CI faz, e essa é a única chance de validá-la fora de um PR.
+    paths-ignore:
+      - 'landing-page/**'
+      - 'docs/**'
+      - '**.md'
 
 jobs:
   # Catches the class of bug that shipped broken for months: a compose file
