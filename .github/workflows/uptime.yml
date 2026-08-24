@@ -1,29 +1,40 @@
 name: Uptime
 
 # Every health signal that exists today looks from inside the box: the container
-# healthcheck curls itself, and Coolify only reads it during a deploy. None of
-# them sees DNS, a deregistered tunnel or a WAF rule — and Docker never acts on
-# `unhealthy` anyway, since `restart: unless-stopped` restarts on exit, not on a
-# failed probe. A container can sit there forever, unhealthy and running.
+# healthcheck curls itself, and Coolify only reads it during a deploy. Docker
+# never acts on `unhealthy` either — restart: unless-stopped restarts on exit,
+# not on a failed probe — so a container can sit there unhealthy and running.
 #
-# This is the only check that looks from outside, on the path a visitor takes.
+# Coolify's own "Container Status Changes" notification does not close this: the
+# ContainerStopped dispatch is commented out at both call sites in
+# app/Actions/Docker/GetContainersStatus.php on v4.1.2. Coolify covers the server
+# and the deploy; nothing but this covers the application.
 on:
   schedule:
-    # Ten minutes, not five: GitHub delays scheduled runs under load, so a
-    # tighter cron buys less than it looks like. Detection here is tens of
-    # minutes — good enough while production carries seed data, not good enough
+    # GitHub throttles scheduled runs hard: with '*/10' the first two real runs
+    # landed 32 minutes apart (17:46 and 18:18 UTC, 2026-08-24). Asking for ten
+    # minutes is how you get thirty — a tighter cron does not buy a tighter
+    # interval, so this stays honest about what it is. Detection here is tens of
+    # minutes: good enough while production carries seed data, not good enough
     # the day it carries money. A dedicated uptime service is the upgrade.
     - cron: '*/10 * * * *'
   workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to probe (override to rehearse the alarm)'
+        default: 'https://app.runaserp.com.br/api/health'
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      URL: ${{ inputs.url || 'https://app.runaserp.com.br/api/health' }}
     steps:
       # -A is load-bearing: the zone has a WAF rule ("User-Agent suspeito") that
       # challenges any UA containing curl or wget and answers 403 from the edge,
       # without ever reaching the VPS. That is how the old verification step in
-      # deploy.yml spent five minutes reading 403s and reporting success.
+      # deploy.yml spent five minutes reading 403s and reporting success. The IP
+      # is not the problem — a GitHub runner gets a clean 200 with this UA.
       #
       # /api/health, not /health: it goes through nginx to the gateway, so one
       # request covers tunnel + frontend + gateway. /health alone would pass with
@@ -37,10 +48,30 @@ jobs:
           for i in 1 2 3; do
             code="$(curl -s -o /dev/null --max-time 10 \
               -A 'Mozilla/5.0 (compatible; RunasUptime/1.0; +github-actions)' \
-              -w '%{http_code}' https://app.runaserp.com.br/api/health)"
+              -w '%{http_code}' "$URL")"
             echo "attempt $i: $code"
             [ "$code" = 200 ] && exit 0
             sleep 20
           done
           echo "::error::production unreachable — last status $code"
           exit 1
+
+      # Same bot as Coolify's alerts, so every alarm lands in one place and on a
+      # phone. GitHub's own failure email stays as the fallback when the secrets
+      # are absent — an alarm nobody sees is the failure mode being avoided here.
+      - name: Alert on Telegram
+        if: failure()
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$CHAT" ]; then
+            echo "TELEGRAM_BOT_TOKEN/CHAT_ID not set — falling back to GitHub's failure email"
+            exit 0
+          fi
+          curl -sS -o /dev/null -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$CHAT" \
+            --data-urlencode "text=🔴 Runas ERP fora do ar
+$URL não respondeu 200 em 3 tentativas.
+$RUN"
