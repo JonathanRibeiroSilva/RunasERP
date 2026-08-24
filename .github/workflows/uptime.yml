@@ -70,8 +70,9 @@ jobs:
             echo "TELEGRAM_BOT_TOKEN/CHAT_ID not set — falling back to GitHub's failure email"
             exit 0
           fi
+          # printf, not a literal multi-line string: a continuation line at
+          # column 0 closes the `run: |` block and the whole file stops parsing.
+          msg="$(printf '🔴 Runas ERP fora do ar\n%s não respondeu 200 em 3 tentativas.\n%s' "$URL" "$RUN")"
           curl -sS -o /dev/null -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
             --data-urlencode "chat_id=$CHAT" \
-            --data-urlencode "text=🔴 Runas ERP fora do ar
-$URL não respondeu 200 em 3 tentativas.
-$RUN"
+            --data-urlencode "text=$msg"
