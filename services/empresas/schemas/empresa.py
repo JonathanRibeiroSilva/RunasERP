@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 import re
 
 from models.empresa import TipoEmpresa, StatusEmpresa, RegimeTributario
+from utils.validators import validar_cnpj as validar_digitos_cnpj
 
 
 def validar_formato_slug(v: str) -> str:
@@ -59,9 +60,13 @@ class EmpresaBase(BaseModel):
     @field_validator("cnpj")
     @classmethod
     def validar_cnpj(cls, v: str) -> str:
-        """Valida formato do CNPJ."""
+        """Valida formato e dígitos verificadores do CNPJ."""
         if not re.match(r'^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$', v):
             raise ValueError("CNPJ deve estar no formato XX.XXX.XXX/XXXX-XX")
+        # A máscara sozinha aceitava 99.999.999/9999-99. O service já checava os
+        # dígitos (empresa_service.py:63), só que depois de a requisição entrar.
+        if not validar_digitos_cnpj(v):
+            raise ValueError("CNPJ inválido")
         return v
 
     @field_validator("cep")
