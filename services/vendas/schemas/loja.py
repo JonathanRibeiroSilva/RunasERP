@@ -88,18 +88,17 @@ class ClienteCheckout(BaseModel):
     @field_validator('cpf')
     @classmethod
     def validate_cpf(cls, v: Optional[str]) -> Optional[str]:
-        """Normaliza e valida CPF."""
+        """Normaliza e valida CPF, dígitos verificadores inclusos."""
         if not v:
             return None
-        
-        # Remove formatação
-        cpf_limpo = re.sub(r'\D', '', v)
-        
-        # Deve ter exatamente 11 dígitos
-        if len(cpf_limpo) != 11:
-            raise ValueError('CPF deve ter 11 dígitos')
-        
-        # TODO: Adicionar validação de dígitos verificadores
+
+        # Import local: services/__init__ carrega venda_service, que importa
+        # schemas de volta — no topo do arquivo isso fecha um ciclo.
+        from services.cliente_validacao_service import ClienteValidacaoService
+
+        valido, cpf_limpo, erro = ClienteValidacaoService.validar_cpf(v)
+        if not valido:
+            raise ValueError(erro)
         return cpf_limpo
 
 
