@@ -1,0 +1,46 @@
+name: Uptime
+
+# Every health signal that exists today looks from inside the box: the container
+# healthcheck curls itself, and Coolify only reads it during a deploy. None of
+# them sees DNS, a deregistered tunnel or a WAF rule — and Docker never acts on
+# `unhealthy` anyway, since `restart: unless-stopped` restarts on exit, not on a
+# failed probe. A container can sit there forever, unhealthy and running.
+#
+# This is the only check that looks from outside, on the path a visitor takes.
+on:
+  schedule:
+    # Ten minutes, not five: GitHub delays scheduled runs under load, so a
+    # tighter cron buys less than it looks like. Detection here is tens of
+    # minutes — good enough while production carries seed data, not good enough
+    # the day it carries money. A dedicated uptime service is the upgrade.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      # -A is load-bearing: the zone has a WAF rule ("User-Agent suspeito") that
+      # challenges any UA containing curl or wget and answers 403 from the edge,
+      # without ever reaching the VPS. That is how the old verification step in
+      # deploy.yml spent five minutes reading 403s and reporting success.
+      #
+      # /api/health, not /health: it goes through nginx to the gateway, so one
+      # request covers tunnel + frontend + gateway. /health alone would pass with
+      # the whole backend down.
+      #
+      # Three attempts, not one: a frontend-only deploy swaps that container and
+      # costs ~3s of 502 (measured 2026-08-24). A single shot would page for a
+      # deploy doing its job.
+      - name: Probe production
+        run: |
+          for i in 1 2 3; do
+            code="$(curl -s -o /dev/null --max-time 10 \
+              -A 'Mozilla/5.0 (compatible; RunasUptime/1.0; +github-actions)' \
+              -w '%{http_code}' https://app.runaserp.com.br/api/health)"
+            echo "attempt $i: $code"
+            [ "$code" = 200 ] && exit 0
+            sleep 20
+          done
+          echo "::error::production unreachable — last status $code"
+          exit 1
