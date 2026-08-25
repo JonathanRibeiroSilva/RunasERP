@@ -2,10 +2,13 @@ name: Auto-Update Graphify Knowledge Graph
 
 on:
   push:
+    # Só main. O bot commita graphify-out/ regenerado na branch onde roda, então
+    # rodar também na Developer fazia as duas divergirem no mesmo arquivo gerado:
+    # todo merge para main colidia nos seis arquivos de graphify-out/ (PR #43, e
+    # antes dele o merge ae35387). O grafo que alguém consome é o de main.
+    # 'master' saiu junto por ser branch que não existe neste repositório.
     branches:
       - main
-      - master
-      - Developer
     paths:
       - '**.py'
       - '**.ts'
