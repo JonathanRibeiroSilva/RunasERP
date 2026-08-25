@@ -1,14 +1,19 @@
 """
 API Gateway - Ponto de entrada único para todos os microsserviços.
 """
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+import httpx
 import structlog
+from sqlalchemy import text
 
-from database import init_db
-from auth.redis_client import close_redis
+from config import settings
+from database import engine, init_db
+from health import SERVICE_NAMES, summarize
+from auth.redis_client import close_redis, get_redis
 from seed import seed_admin
 from routers import auth, auth_cliente, auth_admin
 from routers import proxy
@@ -58,6 +63,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Sem isto o browser não enxerga o marcador de replay idempotente
+    expose_headers=["X-Idempotent-Replay"],
 )
 
 # Logging middleware
@@ -75,8 +82,70 @@ app.include_router(proxy.router)
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Liveness: prova apenas que o processo responde.
+
+    Fica raso de propósito — é o que o healthcheck do Docker lê, e um blip no
+    Redis não pode marcar o container do gateway como morto. Quem precisa saber
+    se a stack inteira está de pé usa /health/ready.
+    """
     return {"status": "healthy", "service": "api-gateway"}
+
+
+# 2s: a sonda externa tenta 3 vezes com --max-time 10, então uma dependência
+# lenta precisa reprovar bem antes de o curl desistir.
+HEALTH_TIMEOUT = 2.0
+
+
+async def _check(nome: str, sonda) -> dict:
+    """Roda uma sonda e traduz qualquer falha em status "down".
+
+    O erro real vai para o log, nunca para o corpo: /health/ready é público
+    através do Cloudflare, e mensagem de SQLAlchemy carrega host e usuário do
+    banco. O tipo da exceção basta para separar timeout de conexão recusada.
+    """
+    try:
+        await asyncio.wait_for(sonda(), HEALTH_TIMEOUT)
+        return {"name": nome, "status": "up"}
+    except Exception as erro:  # noqa: BLE001 — qualquer falha é "down"
+        log.warning("health.check_failed", check=nome, error=str(erro))
+        return {"name": nome, "status": "down", "error": type(erro).__name__}
+
+
+async def _sonda_postgres():
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
+
+
+async def _sonda_redis():
+    await (await get_redis()).ping()
+
+
+def _sonda_servico(url: str):
+    async def sonda():
+        async with httpx.AsyncClient(timeout=HEALTH_TIMEOUT) as client:
+            resposta = await client.get(f"{url}/health")
+            resposta.raise_for_status()
+
+    return sonda
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    """Readiness: Postgres, Redis e os sete serviços, sondados em paralelo.
+
+    É este que a sonda externa consome. Devolve 503 nomeando quem caiu, para o
+    alarme no Telegram dizer "financeiro não responde" em vez de "fora do ar".
+    """
+    checks = await asyncio.gather(
+        _check("postgres", _sonda_postgres),
+        _check("redis", _sonda_redis),
+        *[
+            _check(nome, _sonda_servico(getattr(settings, f"{nome.upper()}_URL")))
+            for nome in SERVICE_NAMES
+        ],
+    )
+    codigo, corpo = summarize(checks)
+    return JSONResponse(status_code=codigo, content=corpo)
 
 
 @app.exception_handler(Exception)
