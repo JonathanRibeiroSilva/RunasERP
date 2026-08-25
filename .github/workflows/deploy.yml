@@ -32,14 +32,30 @@ on:
     #
     # docker-compose.prod.yml is deliberately NOT here: it lives at the repo
     # root, Coolify reads it, and a change to it must reach production.
+    #
+    # scripts/** is here on the same evidence: every build context is
+    # ./api-gateway, ./services/* or ./frontend, and no Dockerfile copies from
+    # scripts/ — so nothing in that directory can reach a running container. The
+    # PR that added this line changed only .github/ and scripts/, and without it
+    # would have bought a 15-minute rebuild and an outage window for files that
+    # run on a laptop and a runner.
     paths-ignore:
       - 'landing-page/**'
       - 'docs/**'
       - '**.md'
       - '.github/**'
-  # Kept alongside the push trigger: a redeploy or a TAG rollback should not
-  # require inventing a commit.
+      - 'scripts/**'
+  # Kept alongside the push trigger: a redeploy or a rollback should not require
+  # inventing a commit. Leave `tag` empty and this rebuilds the current commit,
+  # exactly as a push does. Fill it with a sha already in ghcr and the build is
+  # skipped entirely: those images are pulled and republished as :latest, which
+  # is the only thing Coolify looks at. That is the rollback.
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'sha already in ghcr to republish as :latest (empty = build this commit)'
+        required: false
+        default: ''
 
 # A second push waits for the first instead of racing it to the registry.
 concurrency:
@@ -88,12 +104,24 @@ jobs:
       #
       # The first run after this lands still pays full price: it caches against a
       # :latest that was built without the metadata. The second run is the test.
-      - name: Build and push images
+      # ROLLBACK_TAG is read through env, not spliced into the script: the value
+      # comes from a dispatch form, and `${{ }}` inside `run:` is textual
+      # substitution — a tag containing $(...) would execute on the runner.
+      #
+      # On the rollback path the images already exist in ghcr but not on this
+      # runner, and `docker tag` cannot rename what is not local — hence the pull.
+      - name: Publish images
         env:
-          TAG: ${{ github.sha }}
+          ROLLBACK_TAG: ${{ inputs.tag }}
+          TAG: ${{ inputs.tag || github.sha }}
         run: |
-          docker compose $FILES build --build-arg BUILDKIT_INLINE_CACHE=1
-          docker compose $FILES push
+          if [ -n "$ROLLBACK_TAG" ]; then
+            echo "rollback: republishing $ROLLBACK_TAG as :latest, no build"
+            docker compose $FILES config --images | grep '^ghcr\.io/' | xargs -rn1 docker pull
+          else
+            docker compose $FILES build --build-arg BUILDKIT_INLINE_CACHE=1
+            docker compose $FILES push
+          fi
 
           # Coolify pulls :latest, so republish the same images under that tag.
           # The SHA tags stay in ghcr and are what a rollback points back at.
@@ -141,11 +169,15 @@ jobs:
       # Coolify answers as soon as it accepts the request, not when the stack is
       # up — without this step a deploy that never comes back is a green job.
       #
-      # This used to poll the public /health URL, which Cloudflare answers by
-      # itself: a datacenter IP gets a 403 that never reaches the VPS. The step
-      # counted that 403 as a pass, so it verified nothing — every run that had
-      # it (32029262468, 31853329182, 32047638162) burned the full 5 minutes on
-      # 403s and went green without once seeing the stack. That was tolerable
+      # This used to poll the public /health URL with default curl, and the WAF
+      # rule described above answered it at the edge: `curl/8.x` gets a 403 with
+      # Cf-Mitigated: challenge and the request never reaches the VPS. The cause
+      # is the User-Agent, not the runner's IP — the same runner, same IP, same
+      # path with a Mozilla-ish UA is let through, which is exactly what the -A
+      # flag above buys. The step counted that 403 as a pass, so it verified
+      # nothing — every run that had it (32029262468, 31853329182, 32047638162)
+      # burned the full 5 minutes on 403s and went green without once seeing the
+      # stack. That was tolerable
       # while deploys were manual; on every merge to main it is a lie.
       #
       # Coolify's own deployment record is the check the edge cannot intercept:
