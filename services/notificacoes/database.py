@@ -1,6 +1,9 @@
 """
 Configuração do banco de dados.
 """
+import asyncio
+import subprocess
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from config import settings
@@ -39,6 +42,14 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db():
-    """Inicializa o banco de dados criando todas as tabelas."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Applies pending Alembic migrations before the app serves traffic.
+
+    Replaces create_all(), which never altered an existing table — every schema
+    change since the first deploy silently did not reach a running database.
+
+    Runs as a subprocess, not through alembic's Python API: alembic/env.py calls
+    fileConfig(), which would replace the running app's logging configuration.
+    """
+    await asyncio.to_thread(
+        subprocess.run, ["alembic", "upgrade", "head"], check=True
+    )
