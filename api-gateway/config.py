@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str
 
+    # Janela em que uma Idempotency-Key devolve a resposta já salva
+    IDEMPOTENCY_TTL_SECONDS: int = 86400
+
     # URLs dos serviços internos
     EMPRESAS_URL: str
     CLIENTES_URL: str
