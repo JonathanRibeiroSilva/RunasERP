@@ -9,6 +9,8 @@ from sqlalchemy import text
 from config import settings
 from models.usuario import Usuario
 from database import get_db
+from auth.redis_client import get_redis
+from proxy import idempotency
 
 log = structlog.get_logger()
 
@@ -161,6 +163,23 @@ class ServiceProxy:
         # Injeção centralizada de contexto multi-tenancy (empresa_id / cliente_id)
         empresa_id = await cls._inject_context_headers(headers, current_user, empresa_slug)
 
+        # Idempotência de escritas: reserva a chave ANTES de encaminhar, para que
+        # um retry do cliente devolva a resposta salva em vez de duplicar a venda.
+        # Sem o header Idempotency-Key nada muda — o caminho segue como antes.
+        chave_idem = None
+        valor_idem = request.headers.get("idempotency-key")
+        if valor_idem and request.method in idempotency.METODOS:
+            redis = await get_redis()
+            chave_idem = idempotency.montar_chave(
+                empresa_id, request.method, path, valor_idem
+            )
+            guardado = await idempotency.reservar(
+                redis, chave_idem, settings.IDEMPOTENCY_TTL_SECONDS
+            )
+            if guardado is not None:
+                log.info("proxy.idempotent_hit", path=path, empresa_id=empresa_id)
+                return idempotency.responder_guardado(guardado)
+
         # Ler body se existir
         body = await request.body() if request.method in ["POST", "PUT", "PATCH"] else None
         
@@ -186,6 +205,16 @@ class ServiceProxy:
                     status_code=response.status_code,
                     path=path
                 )
+
+                if chave_idem:
+                    await idempotency.concluir(
+                        redis,
+                        chave_idem,
+                        response.status_code,
+                        response.content,
+                        response.headers.get("content-type"),
+                        settings.IDEMPOTENCY_TTL_SECONDS
+                    )
                 
                 # Retornar resposta do microsserviço
                 return Response(
@@ -197,18 +226,24 @@ class ServiceProxy:
                 
         except httpx.TimeoutException:
             log.error("proxy.timeout", path=path, target=target_url)
+            if chave_idem:
+                await idempotency.liberar(redis, chave_idem)
             raise HTTPException(
                 status_code=status.HTTP_504_GATEWAY_TIMEOUT,
                 detail="Serviço não respondeu a tempo"
             )
         except httpx.ConnectError:
             log.error("proxy.connection_error", path=path, target=target_url)
+            if chave_idem:
+                await idempotency.liberar(redis, chave_idem)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Serviço indisponível"
             )
         except Exception as e:
             log.error("proxy.error", error=str(e), path=path)
+            if chave_idem:
+                await idempotency.liberar(redis, chave_idem)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Erro ao comunicar com o serviço"
