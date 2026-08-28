@@ -19,6 +19,7 @@ import {
   FiZap,
   FiUser,
   FiExternalLink,
+  FiGrid,
 } from 'react-icons/fi';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmpresa } from '@/hooks/useLojaOnline';
@@ -96,6 +97,13 @@ const navItems: NavItem[] = [
     icon: <FiDollarSign />,
     label: 'Financeiro',
     requiredRole: ['ADMIN'], // ← Apenas ADMIN vê
+  },
+  // PLATAFORMA - Apenas SUPER_ADMIN
+  {
+    path: '/plataforma',
+    icon: <FiGrid />,
+    label: 'Plataforma',
+    requiredRole: ['SUPER_ADMIN'],
   },
   // CONFIGURAÇÕES - Apenas ADMIN
   { 

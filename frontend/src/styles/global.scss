@@ -186,3 +186,261 @@ option {
   background-color: $surface;
   color: $text-primary;
 }
+
+// ========================================
+// LISTAS ADMINISTRATIVAS (Usuários, Plataforma)
+// Um bloco só porque as duas telas são a mesma tabela + modal; separar
+// duplicaria a folha inteira para trocar dois rótulos.
+// ========================================
+.admin-list {
+  padding: $spacer-4;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacer-4;
+    margin-bottom: $spacer-4;
+  }
+
+  .list-counter {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    background-color: $surface;
+    border: 1px solid $border-default;
+    border-radius: 0.75rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid $border-default;
+      font-size: 0.9rem;
+      color: $text-primary;
+    }
+
+    th {
+      color: $text-secondary;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+      text-transform: uppercase;
+      letter-spacing: $letter-spacing-wide;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr.inactive {
+      opacity: 0.55;
+    }
+
+    .sub {
+      display: block;
+      color: $text-tertiary;
+      font-size: $font-size-xs;
+    }
+  }
+
+  .actions-group {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacer-4;
+    margin-top: $spacer-4;
+
+    .page-info {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+  }
+
+  .empty-state {
+    padding: $spacer-6;
+    text-align: center;
+    color: $text-secondary;
+  }
+}
+
+// Forms dentro de Modal — mesmo visual dos .form-section das telas de configuração.
+.admin-form {
+  .form-row {
+    display: flex;
+    gap: 1rem;
+
+    .form-group {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 1.1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+      color: $text-primary;
+      font-size: 0.85rem;
+    }
+
+    input[type='text'],
+    input[type='email'],
+    input[type='password'],
+    select {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1px solid $border-default;
+      border-radius: 0.5rem;
+      background-color: rgba(15, 23, 42, 0.4);
+      color: $text-primary;
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: rgba($primary, 0.5);
+      }
+    }
+
+    &.checkbox-group {
+      display: flex;
+      align-items: center;
+
+      input {
+        margin-right: 0.5rem;
+      }
+    }
+  }
+
+  .field-error {
+    display: block;
+    margin-top: 0.3rem;
+    color: $danger;
+    font-size: $font-size-sm;
+  }
+
+  // Superfície de erro do backend (409 de limite de plano, último admin, etc.)
+  .form-error {
+    margin-bottom: $spacer-4;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: $error-light;
+    border: 1px solid $error-border;
+    color: $error;
+    font-size: $font-size-sm;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-form .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .admin-list table {
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: block;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid $border-default;
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: none;
+      padding: 0.35rem 1rem;
+
+      &:before {
+        content: attr(data-label);
+        color: $text-secondary;
+        font-size: $font-size-xs;
+        text-transform: uppercase;
+      }
+    }
+  }
+}
+
+// ========================================
+// DETALHE DO TENANT (/plataforma) — abas de auditoria, assinatura e backups
+// Reusa .admin-list pela tabela e pelo empty-state; aqui só o que muda por
+// estar dentro de um Modal, mais as abas.
+// ========================================
+.tenant-detalhe {
+  padding: 0;
+  max-width: none;
+
+  .detalhe-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacer-4;
+    margin-bottom: $spacer-4;
+    flex-wrap: wrap;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    cursor: pointer;
+
+    &.active {
+      color: $text-primary;
+      border-bottom-color: $primary;
+    }
+  }
+
+  .detalhe-nota {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    margin-bottom: $spacer-4;
+  }
+
+  // O erro do backend fica fora do <form>: no 409 de reversão a explicação é o
+  // resultado da ação, não a validação de um campo.
+  > .form-error {
+    margin-bottom: $spacer-4;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: $error-light;
+    border: 1px solid $error-border;
+    color: $error;
+    font-size: $font-size-sm;
+  }
+}
