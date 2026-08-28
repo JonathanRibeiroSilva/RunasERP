@@ -55,7 +55,10 @@ app = FastAPI(
     title="ERP Runas - API Gateway",
     description="Gateway de autenticação e roteamento para o ERP Runas",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if settings.DOCS_ENABLED else None,
+    redoc_url="/redoc" if settings.DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if settings.DOCS_ENABLED else None,
 )
 
 # CORS
