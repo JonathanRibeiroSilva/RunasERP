@@ -55,7 +55,8 @@ class NotificacaoService:
         telefone: str,
         numero_venda: str,
         valor_total: Decimal,
-        tipo_entrega: str
+        tipo_entrega: str,
+        empresa_id: int | None = None
     ) -> bool:
         """
         Envia notificação de confirmação de pedido.
@@ -86,7 +87,8 @@ class NotificacaoService:
             
             sucesso = await NotificacaoService._enviar_mensagem(
                 telefone_formatado,
-                mensagem
+                mensagem,
+                empresa_id
             )
             
             if sucesso:
@@ -110,7 +112,8 @@ class NotificacaoService:
     async def enviar_pagamento_confirmado(
         telefone: str,
         numero_venda: str,
-        nome_cliente: Optional[str] = None
+        nome_cliente: Optional[str] = None,
+        empresa_id: int | None = None
     ) -> bool:
         """
         Envia notificação de pagamento confirmado.
@@ -137,7 +140,8 @@ class NotificacaoService:
             
             sucesso = await NotificacaoService._enviar_mensagem(
                 telefone_formatado,
-                mensagem
+                mensagem,
+                empresa_id
             )
             
             if sucesso:
@@ -161,7 +165,8 @@ class NotificacaoService:
     async def enviar_pedido_separado(
         telefone: str,
         numero_venda: str,
-        tipo_entrega: str
+        tipo_entrega: str,
+        empresa_id: int | None = None
     ) -> bool:
         """
         Envia notificação de pedido separado.
@@ -194,7 +199,8 @@ class NotificacaoService:
             
             sucesso = await NotificacaoService._enviar_mensagem(
                 telefone_formatado,
-                mensagem
+                mensagem,
+                empresa_id
             )
             
             if sucesso:
@@ -218,7 +224,8 @@ class NotificacaoService:
     async def enviar_pedido_entregue(
         telefone: str,
         numero_venda: str,
-        tipo_entrega: str
+        tipo_entrega: str,
+        empresa_id: int | None = None
     ) -> bool:
         """
         Envia notificação de pedido entregue.
@@ -251,7 +258,8 @@ class NotificacaoService:
             
             sucesso = await NotificacaoService._enviar_mensagem(
                 telefone_formatado,
-                mensagem
+                mensagem,
+                empresa_id
             )
             
             if sucesso:
@@ -275,7 +283,8 @@ class NotificacaoService:
     async def enviar_pedido_cancelado(
         telefone: str,
         numero_venda: str,
-        motivo: Optional[str] = None
+        motivo: Optional[str] = None,
+        empresa_id: int | None = None
     ) -> bool:
         """
         Envia notificação de pedido cancelado.
@@ -304,7 +313,8 @@ class NotificacaoService:
             
             sucesso = await NotificacaoService._enviar_mensagem(
                 telefone_formatado,
-                mensagem
+                mensagem,
+                empresa_id
             )
             
             if sucesso:
@@ -325,7 +335,9 @@ class NotificacaoService:
             return False
     
     @staticmethod
-    async def _enviar_mensagem(telefone: str, mensagem: str) -> bool:
+    async def _enviar_mensagem(
+        telefone: str, mensagem: str, empresa_id: int | None = None
+    ) -> bool:
         """
         Envia mensagem via Evolution API.
         
@@ -337,16 +349,18 @@ class NotificacaoService:
             bool: True se enviado com sucesso
         """
         try:
-            # Verificar se Evolution API está configurada
-            if not settings.EVOLUTION_API_URL or not settings.EVOLUTION_API_KEY:
-                log.warning("evolution_api_nao_configurada")
+            # Evolution do próprio tenant; sem ela, o env global (comportamento antigo)
+            from services.configuracao_integracao_service import credenciais_whatsapp
+            cred = await credenciais_whatsapp(empresa_id)
+            if not cred:
+                log.warning("evolution_api_nao_configurada", empresa_id=empresa_id)
                 return False
             
             async with httpx.AsyncClient() as client:
-                url = f"{settings.EVOLUTION_API_URL}/message/sendText/{settings.EVOLUTION_INSTANCE}"
+                url = f"{cred['url']}/message/sendText/{cred['instance']}"
                 headers = {
                     "Content-Type": "application/json",
-                    "apikey": settings.EVOLUTION_API_KEY
+                    "apikey": cred["api_key"]
                 }
                 payload = {
                     "number": telefone,

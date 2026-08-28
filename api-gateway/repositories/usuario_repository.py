@@ -60,15 +60,17 @@ class UsuarioRepository:
         )
         return result.scalar_one_or_none()
     
-    async def listar(self, skip: int = 0, limit: int = 100) -> tuple[list[Usuario], int]:
-        """Lista usuários com paginação."""
+    async def listar(self, empresa_id: int, skip: int = 0, limit: int = 100) -> tuple[list[Usuario], int]:
+        """Lista usuários de uma empresa, com paginação."""
         # Total
-        count_result = await self.db.execute(select(Usuario))
+        count_result = await self.db.execute(
+            select(Usuario).where(Usuario.empresa_id == empresa_id)
+        )
         total = len(count_result.all())
         
         # Itens
         result = await self.db.execute(
-            select(Usuario).offset(skip).limit(limit)
+            select(Usuario).where(Usuario.empresa_id == empresa_id).offset(skip).limit(limit)
         )
         usuarios = list(result.scalars().all())
         

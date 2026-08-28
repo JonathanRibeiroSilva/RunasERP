@@ -89,6 +89,27 @@ async def seed_admin():
             else:
                 log.info("seed.operador_exists", email=operador_email)
                 
+            # Super admin da plataforma (sem tenant). Só nasce se o env pedir.
+            super_email = os.getenv("SUPER_ADMIN_EMAIL")
+            super_password = os.getenv("SUPER_ADMIN_PASSWORD")
+            if super_email and super_password:
+                result = await db.execute(
+                    select(Usuario).where(Usuario.email == super_email)
+                )
+                if result.scalar_one_or_none():
+                    log.info("seed.super_admin_exists", email=super_email)
+                else:
+                    db.add(Usuario(
+                        nome=os.getenv("SUPER_ADMIN_NAME", "Plataforma"),
+                        email=super_email,
+                        senha_hash=UsuarioRepository.hash_password(super_password[:72]),
+                        role=RoleEnum.SUPER_ADMIN,
+                        ativo=True,
+                        empresa_id=None
+                    ))
+                    await db.commit()
+                    log.info("seed.super_admin_created", email=super_email)
+
         except Exception as e:
             log.error("seed.error", error=str(e))
             await db.rollback()

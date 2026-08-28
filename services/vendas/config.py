@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     
     # JWT (para criar tokens de clientes)
     SECRET_KEY: str
+    # Cifra das credenciais de integração por tenant (Fernet.generate_key()).
+    # Vazia = escrita de integração falha alto, nunca grava texto plano.
+    INTEGRACOES_SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     
     # API Gateway URL

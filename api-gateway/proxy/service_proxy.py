@@ -30,6 +30,7 @@ class ServiceProxy:
         "/loja": settings.VENDAS_URL,
         "/carrinho": settings.VENDAS_URL,
         "/pagamentos": settings.VENDAS_URL,
+        "/integracoes": settings.VENDAS_URL,
         "/contas": settings.FINANCEIRO_URL,
         "/notificacoes": settings.NOTIFICACOES_URL,
         "/empresas": settings.EMPRESAS_URL,

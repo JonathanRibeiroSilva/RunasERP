@@ -12,6 +12,7 @@ from models.empresa import Empresa, TipoEmpresa, StatusEmpresa
 from schemas.empresa import (
     EmpresaCreate,
     EmpresaUpdate,
+    EmpresaPlanoUpdate,
     EmpresaResponse,
     EmpresaListItem,
     EmpresaPublicInfo,
@@ -268,6 +269,7 @@ class EmpresaService:
     
     async def listar_empresas(
         self,
+        tenant_id: int,
         skip: int = 0,
         limit: int = 100,
         busca: Optional[str] = None,
@@ -279,6 +281,7 @@ class EmpresaService:
         Lista empresas com filtros e paginação.
         
         Args:
+            tenant_id: Empresa do chamador — a listagem nunca sai do próprio tenant
             skip: Número de registros a pular
             limit: Número máximo de registros
             busca: Termo de busca
@@ -301,6 +304,7 @@ class EmpresaService:
                 )
         
         empresas, total = await self.repository.listar(
+            tenant_id=tenant_id,
             skip=skip,
             limit=limit,
             busca=busca,
@@ -393,6 +397,38 @@ class EmpresaService:
             await self.session.rollback()
             raise ValidationError(f"Erro ao atualizar empresa: {str(e)}")
     
+    async def listar_todas_plataforma(self) -> List[EmpresaListItem]:
+        """Todos os tenants, para o painel da plataforma."""
+        return [
+            EmpresaListItem.model_validate(e)
+            for e in await self.repository.listar_todas()
+        ]
+
+    async def atualizar_plano(
+        self,
+        empresa_id: int,
+        plano_data: "EmpresaPlanoUpdate",
+    ) -> EmpresaResponse:
+        """
+        Atualiza plano, limites e status — campos de billing da plataforma.
+
+        Separado de atualizar_empresa de propósito: os dois schemas são
+        disjuntos, e é essa separação que impede o lojista de se auto-promover.
+        """
+        empresa = await self.repository.buscar_por_id(empresa_id)
+        if not empresa:
+            raise NotFoundError(
+                "Empresa não encontrada",
+                {"empresa_id": empresa_id}
+            )
+
+        for campo, valor in plano_data.model_dump(exclude_unset=True).items():
+            setattr(empresa, campo, valor)
+
+        await self.session.commit()
+        await self.session.refresh(empresa)
+        return EmpresaResponse.model_validate(empresa)
+
     async def desativar_empresa(
         self,
         empresa_id: int,

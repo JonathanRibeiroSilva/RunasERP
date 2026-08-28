@@ -342,13 +342,70 @@ class ConfiguracaoPagamento(Base):
     # Multi-tenancy
     empresa_id = Column(Integer, unique=True, nullable=False, index=True)
     
-    # Credenciais Mercado Pago
-    mercadopago_access_token = Column(String(255), nullable=True)
+    # Credenciais Mercado Pago (access token cifrado — ver utils/crypto.py)
+    mercadopago_access_token_enc = Column(Text, nullable=True)
     mercadopago_public_key = Column(String(255), nullable=True)
     
     # Status
     ativo = Column(Boolean, default=True, nullable=False)
     
+    # Auditoria
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    @property
+    def mercadopago_access_token(self) -> str | None:
+        """
+        Access token em claro, decifrado sob demanda.
+
+        Existe para que os pontos de uso (mercadopago_service.py) continuem
+        lendo `config.mercadopago_access_token` sem saber de cifra: um lugar
+        que decifra em vez de seis que poderiam esquecer.
+        """
+        if not self.mercadopago_access_token_enc:
+            return None
+        from utils.crypto import decrypt
+        return decrypt(self.mercadopago_access_token_enc)
+
+    @mercadopago_access_token.setter
+    def mercadopago_access_token(self, valor: str | None) -> None:
+        from utils.crypto import encrypt
+        self.mercadopago_access_token_enc = encrypt(valor) if valor else None
+
+
+class ConfiguracaoIntegracao(Base):
+    """
+    Integrações por empresa: WhatsApp (Evolution) e e-mail SMTP.
+
+    Irmã de ConfiguracaoPagamento — mesma forma, mesmo isolamento por
+    empresa_id. Os segredos moram cifrados (sufixo _enc); nada aqui sai do
+    serviço em texto plano, nem para o próprio admin do tenant.
+    """
+    __tablename__ = "configuracoes_integracao"
+    __table_args__ = (
+        Index('ix_config_integ_empresa', 'empresa_id'),
+        {"schema": "vendas"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4, index=True)
+
+    # Multi-tenancy
+    empresa_id = Column(Integer, unique=True, nullable=False, index=True)
+
+    # WhatsApp / Evolution API
+    evolution_url = Column(String(255), nullable=True)
+    evolution_api_key_enc = Column(Text, nullable=True)
+    evolution_instance = Column(String(100), nullable=True)
+    whatsapp_ativo = Column(Boolean, default=False, nullable=False)
+
+    # E-mail SMTP
+    smtp_host = Column(String(255), nullable=True)
+    smtp_port = Column(Integer, nullable=True)
+    smtp_user = Column(String(255), nullable=True)
+    smtp_password_enc = Column(Text, nullable=True)
+    smtp_from_name = Column(String(100), nullable=True)
+    email_ativo = Column(Boolean, default=False, nullable=False)
+
     # Auditoria
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

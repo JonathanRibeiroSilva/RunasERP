@@ -94,6 +94,7 @@ class EmpresaRepository:
     
     async def listar(
         self,
+        tenant_id: int,
         skip: int = 0,
         limit: int = 100,
         busca: Optional[str] = None,
@@ -105,6 +106,7 @@ class EmpresaRepository:
         Lista empresas com filtros e paginação.
         
         Args:
+            tenant_id: Empresa do chamador — a listagem nunca sai do próprio tenant
             skip: Número de registros a pular
             limit: Número máximo de registros
             busca: Termo de busca (razão social, nome fantasia, CNPJ)
@@ -115,8 +117,11 @@ class EmpresaRepository:
         Returns:
             Tupla com (lista de empresas, total de registros)
         """
-        # Query base - apenas empresas ativas
-        stmt = select(Empresa).where(Empresa.ativo == True)
+        # Query base - apenas empresas ativas, e só a do próprio tenant
+        stmt = select(Empresa).where(
+            Empresa.ativo == True,
+            Empresa.id == tenant_id
+        )
         
         # Aplicar filtros
         if busca:
@@ -152,6 +157,18 @@ class EmpresaRepository:
         
         return empresas, total
     
+    async def listar_todas(self) -> list[Empresa]:
+        """Todos os tenants — método separado de propósito.
+
+        listar() exige tenant_id justamente para não existir um caminho de
+        listagem cross-tenant por omissão de parâmetro. Quem quer todas pede
+        por nome, e só o router de plataforma pede.
+        """
+        result = await self.session.execute(
+            select(Empresa).where(Empresa.ativo == True).order_by(Empresa.nome_fantasia)
+        )
+        return list(result.scalars().all())
+
     async def atualizar(
         self,
         empresa: Empresa,

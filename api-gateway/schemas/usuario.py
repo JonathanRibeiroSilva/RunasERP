@@ -60,7 +60,7 @@ class UsuarioResponse(UsuarioBase):
     id: UUID
     role: RoleEnum
     ativo: bool
-    empresa_id: int
+    empresa_id: int | None = None  # None = SUPER_ADMIN, sem tenant
     empresa_slug: str | None = None
     criado_em: datetime
 

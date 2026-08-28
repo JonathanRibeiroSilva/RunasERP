@@ -203,6 +203,13 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@runas.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123}
       ADMIN_NAME: ${ADMIN_NAME:-Administrador}
+      # Sem estas duas, o seed nao cria super admin nenhum.
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD}
+      SUPER_ADMIN_NAME: ${SUPER_ADMIN_NAME:-Plataforma}
+      # Cobranca da plataforma: conta MP do dono, nao a do lojista.
+      PLATAFORMA_MP_ACCESS_TOKEN: ${PLATAFORMA_MP_ACCESS_TOKEN}
+      PLATAFORMA_JOB_TOKEN: ${PLATAFORMA_JOB_TOKEN}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
@@ -417,6 +424,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
       EVOLUTION_URL: ${EVOLUTION_URL:-http://evolution-api:8080}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      # Cifra as credenciais de integracao por tenant. Vazia = vendas recusa gravar.
+      INTEGRACOES_SECRET_KEY: ${INTEGRACOES_SECRET_KEY}
       EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-runas}
     depends_on:
       db:

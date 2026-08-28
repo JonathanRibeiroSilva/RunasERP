@@ -150,6 +150,22 @@ async def require_admin(
     return current_user
 
 
+async def require_super_admin(
+    current_user: Annotated[Usuario, Depends(get_current_active_user)]
+) -> Usuario:
+    """
+    Dono da plataforma. Papel disjunto de ADMIN, sem herança: o super admin não
+    tem tenant (empresa_id nulo), então cair numa rota de tenant o levaria a um
+    400 do serviço, não a um acesso cross-tenant silencioso.
+    """
+    if current_user.role != RoleEnum.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado: apenas a administração da plataforma"
+        )
+    return current_user
+
+
 async def require_admin_or_operador(
     current_user: Annotated[Usuario, Depends(get_current_active_user)]
 ) -> Usuario:

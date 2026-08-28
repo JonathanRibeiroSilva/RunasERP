@@ -118,8 +118,6 @@ class EmpresaUpdate(BaseModel):
     slug: Optional[str] = Field(None, min_length=3, max_length=100)
     razao_social: Optional[str] = None
     nome_fantasia: Optional[str] = None
-    tipo: Optional[TipoEmpresa] = None
-    status: Optional[StatusEmpresa] = None
     cnpj: Optional[str] = None
     inscricao_estadual: Optional[str] = None
     inscricao_municipal: Optional[str] = None
@@ -142,12 +140,6 @@ class EmpresaUpdate(BaseModel):
     catalogo_titulo: Optional[str] = None
     catalogo_descricao: Optional[str] = None
     catalogo_whatsapp: Optional[str] = None
-    plano: Optional[str] = None
-    max_usuarios: Optional[int] = None
-    max_produtos: Optional[int] = None
-    max_lojas: Optional[int] = None
-    empresa_matriz_id: Optional[int] = None
-    ativo: Optional[bool] = None
 
     @field_validator("slug")
     @classmethod
@@ -156,6 +148,17 @@ class EmpresaUpdate(BaseModel):
         if v is None:
             return v
         return validar_formato_slug(v)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EmpresaPlanoUpdate(BaseModel):
+    """Campos de billing/plataforma — só o router de plataforma pode escrever."""
+    plano: Optional[str] = None
+    max_usuarios: Optional[int] = None
+    max_produtos: Optional[int] = None
+    status: Optional[StatusEmpresa] = None
+    ativo: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -192,6 +195,10 @@ class EmpresaListItem(BaseModel):
     uf: str
     catalogo_ativo: bool
     plano: str
+    # A tela de plano em /plataforma edita estes dois; sem eles o modal abre
+    # em branco e o super admin redigita limites que ja existem.
+    max_usuarios: int
+    max_produtos: int
     ativo: bool
     criado_em: datetime
 

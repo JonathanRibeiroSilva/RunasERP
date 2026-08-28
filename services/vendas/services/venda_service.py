@@ -850,7 +850,8 @@ class VendaService:
                     await NotificacaoService.enviar_pagamento_confirmado(
                         telefone,
                         venda.numero_venda,
-                        nome_cliente
+                        nome_cliente,
+                        empresa_id=empresa_id
                     )
             except Exception as e:
                 log.warning("erro_enviar_notificacao_pagamento", venda_id=str(venda_id), error=str(e))
@@ -1016,7 +1017,8 @@ class VendaService:
                     await NotificacaoService.enviar_pedido_separado(
                         telefone,
                         venda.numero_venda,
-                        venda.tipo_entrega
+                        venda.tipo_entrega,
+                        empresa_id=empresa_id
                     )
             except Exception as e:
                 log.warning("erro_enviar_notificacao_separado", venda_id=str(venda_id), error=str(e))
@@ -1105,7 +1107,8 @@ class VendaService:
                     await NotificacaoService.enviar_pedido_entregue(
                         telefone,
                         venda.numero_venda,
-                        venda.tipo_entrega
+                        venda.tipo_entrega,
+                        empresa_id=empresa_id
                     )
             except Exception as e:
                 log.warning("erro_enviar_notificacao_entregue", venda_id=str(venda_id), error=str(e))
