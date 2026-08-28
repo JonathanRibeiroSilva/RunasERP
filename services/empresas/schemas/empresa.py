@@ -162,6 +162,13 @@ class EmpresaUpdate(BaseModel):
 
 class EmpresaResponse(EmpresaBase):
     """Schema de resposta de empresa."""
+
+    @field_validator("cnpj")
+    @classmethod
+    def validar_cnpj(cls, v: str) -> str:
+        """Resposta não revalida CNPJ: registros legados travariam a leitura/edição."""
+        return v
+
     id: int
     ativo: bool
     criado_em: datetime
