@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     # Protege o endpoint da varredura diaria, chamado pelo cron do host.
     PLATAFORMA_JOB_TOKEN: str = ""
 
+    # Swagger/ReDoc/openapi.json. Desligado por padrao: o schema completo e um
+    # mapa da API pra quem nao deveria ter. Ligue no .env local se precisar.
+    DOCS_ENABLED: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
