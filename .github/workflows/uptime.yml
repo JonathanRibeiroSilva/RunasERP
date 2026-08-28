@@ -49,12 +49,18 @@ jobs:
       # deploy now shows 503 for as long as the services take to come back, not
       # just the ~3s of a frontend swap. If deploys start paging, the fix is to
       # skip this run while one is in flight, not to loosen the probe.
+      #
+      # `|| true` no curl e nao no `code=`: o step roda com `bash -e`, e um
+      # timeout do curl sai 28. Sem isso a primeira tentativa lenta matava o
+      # step inteiro antes do retry, antes do DOWN= e antes da mensagem de erro
+      # — o alarme chegava no Telegram como "sem detalhe" (run de 2026-08-28).
+      # Codigo vazio nao e 200, entao a logica de falha segue igual.
       - name: Probe production
         run: |
           for i in 1 2 3; do
             code="$(curl -s -o /tmp/health.json --max-time 10 \
               -A 'Mozilla/5.0 (compatible; RunasUptime/1.0; +github-actions)' \
-              -w '%{http_code}' "$URL")"
+              -w '%{http_code}' "$URL" || true)"
             echo "attempt $i: $code $(head -c 300 /tmp/health.json)"
             [ "$code" = 200 ] && exit 0
             sleep 20

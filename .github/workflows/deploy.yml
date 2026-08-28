@@ -223,7 +223,15 @@ jobs:
             echo "  $status"
             case "$status" in
               finished|success) echo "deploy $uuid finished"; exit 0 ;;
-              failed|error|cancelled*) echo "::error::deploy $uuid ended as $status"; exit 1 ;;
+              failed|error|cancelled*)
+                # Without this the job says only "ended as failed" and the reason
+                # lives in the Coolify UI. The same record already carries the
+                # deploy log; print it so the failure is readable here.
+                # The grep is not cosmetic: a nine-image pull writes thousands of
+                # progress lines, so an unfiltered tail shows only download bars
+                # and never the error that ended the deploy.
+                printf '%s' "$body" | jq -r '.logs' 2>/dev/null | jq -r '.[].output' 2>/dev/null | grep -vE 'Downloading|Pulling fs layer|Download complete|Extracting|Waiting' | tail -50
+                echo "::error::deploy $uuid ended as $status"; exit 1 ;;
             esac
             sleep 10
           done
