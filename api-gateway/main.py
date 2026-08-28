@@ -15,8 +15,10 @@ from database import engine, init_db
 from health import SERVICE_NAMES, summarize
 from auth.redis_client import close_redis, get_redis
 from seed import seed_admin
-from routers import auth, auth_cliente, auth_admin
+from routers import auth, auth_cliente, auth_admin, plataforma
 from routers import proxy
+from middleware.auditoria_middleware import AuditoriaMiddleware
+from middleware.inadimplencia_middleware import InadimplenciaMiddleware
 from middleware.logging_middleware import LoggingMiddleware
 from middleware.rate_limit import limiter
 
@@ -69,6 +71,8 @@ app.add_middleware(
 
 # Logging middleware
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(AuditoriaMiddleware)  # trilha de intenção (auditoria nível 1)
+app.add_middleware(InadimplenciaMiddleware)  # 402 na escrita de tenant em atraso
 
 # Rate limiting
 app.state.limiter = limiter
@@ -77,6 +81,9 @@ app.state.limiter = limiter
 app.include_router(auth.router)
 app.include_router(auth_cliente.router)
 app.include_router(auth_admin.router)
+# Antes do proxy: Starlette casa por ordem de registro e o proxy tem catch-all.
+app.include_router(plataforma.router)
+app.include_router(plataforma.router_publico)  # webhook do MP e job do cron
 app.include_router(proxy.router)
 
 

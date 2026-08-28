@@ -504,18 +504,33 @@ async def proxy_webhook_mercadopago(request: Request):
     return await ServiceProxy.proxy_request(request, "/pagamentos/webhook/mercadopago")
 
 
+# Integrações do tenant (WhatsApp/Evolution e SMTP) — só admin configura
+@router.api_route(
+    "/integracoes",
+    methods=["GET", "PUT", "DELETE"],
+    tags=["Integrações"],
+    summary="Integrações do tenant"
+)
+async def proxy_integracoes(
+    request: Request,
+    current_user: Annotated[Usuario, Depends(require_admin)]
+):
+    """Proxy para as integrações em vendas (apenas admin)."""
+    return await ServiceProxy.proxy_request(request, "/integracoes", current_user)
+
+
 # Rotas de empresas (admin)
 @router.api_route(
     "/empresas",
-    methods=["GET", "POST"],
+    methods=["GET"],
     tags=["Empresas"],
-    summary="Listar ou criar empresas"
+    summary="Listar a própria empresa"
 )
 async def proxy_empresas_root(
     request: Request,
     current_user: Annotated[Usuario, Depends(require_admin)]
 ):
-    """Proxy para serviço de empresas (apenas admin)."""
+    """Proxy para serviço de empresas (apenas admin). Criação vive em /plataforma."""
     return await ServiceProxy.proxy_request(request, "/empresas", current_user)
 
 

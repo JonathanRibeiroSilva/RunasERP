@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     # Em desenvolvimento local: http://localhost:3000
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Mercado Pago DA PLATAFORMA — cobra a mensalidade dos lojistas. Nada a ver
+    # com vendas.configuracoes_pagamento, que e a conta de cada lojista.
+    PLATAFORMA_MP_ACCESS_TOKEN: str = ""
+    # Protege o endpoint da varredura diaria, chamado pelo cron do host.
+    PLATAFORMA_JOB_TOKEN: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

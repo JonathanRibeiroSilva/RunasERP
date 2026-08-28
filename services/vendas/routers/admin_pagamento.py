@@ -13,7 +13,7 @@ from database import get_db
 from utils.tenant import get_empresa_id
 from services.configuracao_pagamento_service import ConfiguracaoPagamentoService
 
-router = APIRouter(prefix="/admin/pagamento", tags=["admin-pagamento"])
+router = APIRouter(prefix="/pagamentos/admin", tags=["admin-pagamento"])
 
 
 # ==================== SCHEMAS ====================

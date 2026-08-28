@@ -14,6 +14,7 @@ from routers.loja import router as loja_router
 from routers.webhook import router as webhook_router
 from routers.admin_entrega import router as admin_entrega_router
 from routers.admin_pagamento import router as admin_pagamento_router
+from routers.admin_integracao import router as admin_integracao_router
 from jobs.verificar_pagamentos_pendentes import verificar_pagamentos_pendentes
 from jobs.reconciliar_estoque_vendas import reconciliar_estoque_vendas
 
@@ -90,6 +91,7 @@ app.include_router(loja_router)  # Loja Online (E-commerce)
 app.include_router(webhook_router)  # Webhooks (Mercado Pago)
 app.include_router(admin_entrega_router)  # Admin - Configuração de Entrega
 app.include_router(admin_pagamento_router)  # Admin - Configuração de Pagamento
+app.include_router(admin_integracao_router)  # Admin - Integrações (WhatsApp/SMTP)
 
 
 @app.get("/health")

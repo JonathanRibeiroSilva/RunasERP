@@ -252,7 +252,8 @@ class LojaService:
                                             to_email=cliente_info['email'],
                                             senha_temporaria=senha_temporaria,
                                             empresa_nome=empresa_nome,
-                                            empresa_slug=empresa_slug
+                                            empresa_slug=empresa_slug,
+                                            empresa_id=empresa_id
                                         )
                                         log.info("checkout_email_credenciais_enviado", email=cliente_info['email'])
                                     except Exception as e:
@@ -521,7 +522,8 @@ class LojaService:
                         telefone,
                         venda.numero_venda,
                         venda.valor_total,
-                        venda.tipo_entrega
+                        venda.tipo_entrega,
+                        empresa_id=empresa_id
                     )
             except Exception as e:
                 log.warning(

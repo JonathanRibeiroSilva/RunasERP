@@ -11,7 +11,8 @@ export interface User {
   criado_em: string;
 }
 
-export type UserRole = 'ADMIN' | 'OPERADOR';
+// SUPER_ADMIN é papel de plataforma: vem sem empresa_id e só enxerga /plataforma.
+export type UserRole = 'ADMIN' | 'OPERADOR' | 'SUPER_ADMIN';
 
 export interface LoginRequest {
   username: string; // email

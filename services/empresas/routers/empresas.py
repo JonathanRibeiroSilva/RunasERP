@@ -9,8 +9,8 @@ from database import get_db
 from schemas.empresa import (
     EmpresaCreate,
     EmpresaUpdate,
+    EmpresaPlanoUpdate,
     EmpresaResponse,
-    EmpresaListItem,
     EmpresaPublicInfo,
 )
 from services.empresa_service import EmpresaService
@@ -36,6 +36,23 @@ async def exigir_tenant(
     return int(x_empresa_id)
 
 
+async def exigir_plataforma(
+    x_plataforma: Optional[str] = Header(None, alias="X-Plataforma")
+) -> None:
+    """
+    Rotas de plataforma: só o router /plataforma do gateway injeta este header.
+
+    O serviço empresas não tem noção de papel — mesmo contrato do X-Empresa-Id:
+    confia apenas no que o gateway injeta, e o gateway só injeta depois do
+    require_super_admin.
+    """
+    if x_plataforma != "1":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Rota exclusiva da administração da plataforma"
+        )
+
+
 def validar_tenant(empresa_id: int, tenant_id: int) -> None:
     """Isolamento multi-tenant: um lojista só acessa a própria empresa."""
     if empresa_id != tenant_id:
@@ -54,6 +71,7 @@ def validar_tenant(empresa_id: int, tenant_id: int) -> None:
 )
 async def criar_empresa(
     empresa_data: EmpresaCreate,
+    _: None = Depends(exigir_plataforma),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -82,15 +100,18 @@ async def listar_empresas(
     tipo: Optional[str] = Query(None, description="Filtrar por tipo (MATRIZ ou FILIAL)"),
     status: Optional[str] = Query(None, description="Filtrar por status (ATIVA, INATIVA, SUSPENSA)"),
     uf: Optional[str] = Query(None, description="Filtrar por UF"),
+    tenant_id: int = Depends(exigir_tenant),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Lista empresas com filtros opcionais.
-    
-    Retorna apenas empresas ativas (soft delete).
+    Lista a empresa do próprio chamador.
+
+    Cada empresa tem uma única loja (sem matriz/filial), então esta rota
+    devolve no máximo um item — o do tenant autenticado.
     """
     service = EmpresaService(db)
     empresas, total = await service.listar_empresas(
+        tenant_id=tenant_id,
         skip=skip,
         limit=limit,
         busca=busca,
@@ -213,20 +234,34 @@ async def desativar_empresa(
     return await service.desativar_empresa(empresa_id)
 
 
-@router.get(
-    "/{empresa_matriz_id}/filiais",
-    response_model=list[EmpresaListItem],
-    summary="Listar filiais",
-    description="Lista todas as filiais de uma empresa matriz"
+@router.patch(
+    "/{empresa_id}/plano",
+    response_model=EmpresaResponse,
+    summary="Atualizar plano e limites",
+    description="Campos de billing — exclusivo da administração da plataforma"
 )
-async def listar_filiais(
-    empresa_matriz_id: int,
-    tenant_id: int = Depends(exigir_tenant),
+async def atualizar_plano(
+    empresa_id: int,
+    plano_data: EmpresaPlanoUpdate,
+    _: None = Depends(exigir_plataforma),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Lista todas as filiais de uma empresa matriz (apenas a própria matriz do chamador).
-    """
-    validar_tenant(empresa_matriz_id, tenant_id)
+    """Atualiza plano, limites e status. Fora do alcance do lojista."""
     service = EmpresaService(db)
-    return await service.listar_filiais(empresa_matriz_id)
+    return await service.atualizar_plano(empresa_id, plano_data)
+
+
+@router.get(
+    "/plataforma/todas",
+    response_model=dict,
+    summary="Listar todos os tenants",
+    description="Exclusivo da administração da plataforma"
+)
+async def listar_todas_plataforma(
+    _: None = Depends(exigir_plataforma),
+    db: AsyncSession = Depends(get_db)
+):
+    """Lista todas as empresas — o único ponto cross-tenant do serviço."""
+    service = EmpresaService(db)
+    empresas = await service.listar_todas_plataforma()
+    return {"items": empresas, "total": len(empresas)}

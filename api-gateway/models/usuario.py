@@ -12,6 +12,7 @@ from database import Base
 
 class RoleEnum(str, PyEnum):
     """Roles de usuário."""
+    SUPER_ADMIN = "SUPER_ADMIN"
     ADMIN = "ADMIN"
     OPERADOR = "OPERADOR"
 
@@ -28,7 +29,7 @@ class Usuario(Base):
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum), nullable=False, default=RoleEnum.OPERADOR)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    empresa_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True, comment="ID da empresa (multi-tenancy)")
+    empresa_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True, comment="ID da empresa (multi-tenancy); None = SUPER_ADMIN, sem tenant")
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     
     def __repr__(self) -> str:

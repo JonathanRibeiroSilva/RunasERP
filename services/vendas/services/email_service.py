@@ -139,7 +139,8 @@ async def enviar_email_credenciais(
     to_email: str,
     senha_temporaria: str,
     empresa_nome: str = "Loja Online",
-    empresa_slug: str | None = None
+    empresa_slug: str | None = None,
+    empresa_id: int | None = None
 ) -> bool:
     """
     Envia email com credenciais de acesso para conta recém-criada.
@@ -149,19 +150,24 @@ async def enviar_email_credenciais(
         senha_temporaria: Senha temporária gerada
         empresa_nome: Nome da empresa/loja
         empresa_slug: Slug da loja (monta o link /c/{slug}/login)
+        empresa_id: Tenant — usa o SMTP dele; sem configuração, o SMTP global
 
     Returns:
         True se enviado com sucesso, False caso contrário
     """
     login_url = _loja_login_url(empresa_slug)
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        log.warning("email.smtp_not_configured", message="SMTP não configurado, email não será enviado")
+
+    from services.configuracao_integracao_service import credenciais_smtp
+    smtp = await credenciais_smtp(empresa_id)
+    if not smtp:
+        log.warning("email.smtp_not_configured", empresa_id=empresa_id,
+                    message="SMTP não configurado, email não será enviado")
         return False
 
     # Montar mensagem
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"Conta Criada - {empresa_nome}"
-    msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_USER}>"
+    msg["From"] = f"{smtp['from_name']} <{smtp['user']}>"
     msg["To"] = to_email
 
     # Versão texto simples (fallback)
@@ -182,10 +188,10 @@ async def enviar_email_credenciais(
     try:
         await aiosmtplib.send(
             msg,
-            hostname=settings.SMTP_HOST,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USER,
-            password=settings.SMTP_PASSWORD,
+            hostname=smtp["host"],
+            port=smtp["port"],
+            username=smtp["user"],
+            password=smtp["password"],
             start_tls=True,
         )
         log.info("email.sent", to=to_email, type="welcome_credentials")

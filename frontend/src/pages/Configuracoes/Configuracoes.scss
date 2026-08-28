@@ -79,3 +79,194 @@
     }
   }
 }
+
+// ======================== FORMS DE CONFIGURACAO ========================
+// Empresa e Integracoes compartilham o mesmo esqueleto de form.
+
+.empresa-page,
+.integracoes-page {
+  max-width: 900px;
+
+  .loading {
+    padding: $spacer-6;
+    text-align: center;
+    color: $text-secondary;
+  }
+
+  .form-section {
+    background-color: $surface;
+    border: 1px solid $border-default;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+
+    h2 {
+      margin: 0 0 $spacer-4 0;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+
+    .section-hint {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin-bottom: $spacer-4;
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 1rem;
+
+    .form-group {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+      color: $text-primary;
+      font-size: 0.85rem;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1px solid $border-default;
+      border-radius: 0.5rem;
+      background-color: rgba(15, 23, 42, 0.4);
+      color: $text-primary;
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: rgba($primary, 0.5);
+      }
+    }
+  }
+
+  .field-error {
+    display: block;
+    margin-top: 0.3rem;
+    color: $danger;
+    font-size: $font-size-sm;
+  }
+
+  .plano-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: $spacer-4;
+    margin: 0;
+
+    dt {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+      margin-bottom: 0.25rem;
+    }
+
+    dd {
+      margin: 0;
+      color: $text-primary;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .empresa-page .form-row,
+  .integracoes-page .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+// ======================== INTEGRACOES ========================
+
+.integracoes-page {
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacer-2;
+    margin-bottom: $spacer-4;
+
+    h2 {
+      margin: 0;
+    }
+  }
+
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacer-4;
+    margin-bottom: 1.25rem;
+
+    label:first-child {
+      font-weight: 500;
+      color: $text-primary;
+      font-size: 0.85rem;
+    }
+  }
+
+  .form-actions {
+    gap: $spacer-2;
+  }
+
+  // Toggle switch — mesmo recipe de LojaOnline.scss, baseado em checkbox nativo
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+
+    input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+
+      &:checked + .slider {
+        background-color: $primary;
+      }
+
+      &:checked + .slider:before {
+        transform: translateX(22px);
+      }
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      transition: background-color 0.2s ease;
+
+      &:before {
+        position: absolute;
+        content: '';
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        border-radius: 50%;
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+}

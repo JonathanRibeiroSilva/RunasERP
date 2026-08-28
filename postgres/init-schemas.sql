@@ -50,3 +50,72 @@ DO $$
 BEGIN
     RAISE NOTICE 'Schemas criados com sucesso: gateway, empresas, clientes, produtos, estoque, vendas, financeiro, notificacoes, evolution';
 END $$;
+
+-- ==================== AUDITORIA (Fase 3.2) ====================
+-- Mora aqui, e não numa migration de serviço, porque a função de trigger é
+-- compartilhada: sete serviços com Alembic independente não têm ordem de boot
+-- garantida entre si, e este script roda antes de todos eles. As migrations por
+-- serviço só fazem CREATE TRIGGER apontando para esta função.
+-- Mantenha em sincronia com o db-init do docker-compose.prod.yml.
+
+-- Nível 1: trilha de intenção, gravada pelo middleware do gateway.
+CREATE TABLE IF NOT EXISTS gateway.auditoria (
+    id BIGSERIAL PRIMARY KEY,
+    usuario_id UUID,
+    empresa_id INTEGER,
+    metodo VARCHAR(10) NOT NULL,
+    rota TEXT NOT NULL,
+    payload JSONB,
+    status_resposta INTEGER,
+    criado_em TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_auditoria_empresa_data
+    ON gateway.auditoria (empresa_id, criado_em DESC);
+
+-- Nível 2: snapshot de estado. É o que torna o rollback possível — a trilha
+-- diz quem e quando, só o snapshot diz o quê.
+CREATE TABLE IF NOT EXISTS gateway.auditoria_registros (
+    id BIGSERIAL PRIMARY KEY,
+    schema_origem VARCHAR(63) NOT NULL,
+    tabela VARCHAR(63) NOT NULL,
+    registro_id TEXT,
+    empresa_id INTEGER,
+    operacao VARCHAR(10) NOT NULL,
+    dados_antes JSONB,
+    dados_depois JSONB,
+    revertido_em TIMESTAMP,
+    criado_em TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_auditoria_reg_empresa_data
+    ON gateway.auditoria_registros (empresa_id, criado_em DESC);
+CREATE INDEX IF NOT EXISTS ix_auditoria_reg_alvo
+    ON gateway.auditoria_registros (schema_origem, tabela, registro_id);
+
+CREATE OR REPLACE FUNCTION gateway.auditar_registro() RETURNS trigger AS $fn$
+DECLARE
+    antes JSONB;
+    depois JSONB;
+    ref JSONB;
+BEGIN
+    IF TG_OP <> 'INSERT' THEN antes := to_jsonb(OLD); END IF;
+    IF TG_OP <> 'DELETE' THEN depois := to_jsonb(NEW); END IF;
+    ref := COALESCE(depois, antes);
+
+    INSERT INTO gateway.auditoria_registros
+        (schema_origem, tabela, registro_id, empresa_id, operacao, dados_antes, dados_depois)
+    VALUES (
+        TG_TABLE_SCHEMA,
+        TG_TABLE_NAME,
+        ref->>'id',
+        -- empresas.empresas não tem coluna empresa_id: ela E a empresa.
+        COALESCE(
+            (ref->>'empresa_id')::INTEGER,
+            CASE WHEN TG_TABLE_SCHEMA = 'empresas' THEN (ref->>'id')::INTEGER END
+        ),
+        TG_OP,
+        antes,
+        depois
+    );
+    RETURN NULL;  -- AFTER trigger: o valor de retorno é ignorado
+END;
+$fn$ LANGUAGE plpgsql;

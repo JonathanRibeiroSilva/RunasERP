@@ -231,13 +231,6 @@ async def limpar_carrinho(
 
 # ==================== CHECKOUT ====================
 
-@router.post("/checkout/debug")
-async def debug_checkout(request: dict):
-    """Endpoint de debug para ver o payload recebido"""
-    log.info("debug_payload", payload=request)
-    return {"received": request}
-
-
 @router.post(
     "/checkout",
     response_model=CheckoutResponse,

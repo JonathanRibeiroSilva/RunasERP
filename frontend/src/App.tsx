@@ -17,6 +17,7 @@ import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPag
 import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage, ClientePerfilPage, ClienteLoginPage } from '@/pages/LojaOnlinePublico';
 import { PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
+import PlataformaPage from '@/pages/Plataforma/PlataformaPage';
 import { EstoquePage, EstoqueDetalhePage } from '@/pages/Estoque';
 import { VendasPage } from '@/pages/Vendas';
 import { FinanceiroPage } from '@/pages/Financeiro';
@@ -220,6 +221,15 @@ function App() {
                 <UsuariosPage />
               </RoleProtectedRoute>
             } 
+          />
+          {/* Painel da plataforma - Apenas SUPER_ADMIN (sem empresa_id, nenhuma tela de tenant funciona para ele) */}
+          <Route
+            path="plataforma"
+            element={
+              <RoleProtectedRoute requiredRole={['SUPER_ADMIN']}>
+                <PlataformaPage />
+              </RoleProtectedRoute>
+            }
           />
           <Route 
             path="configuracoes/integracoes" 

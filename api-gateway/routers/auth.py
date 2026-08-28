@@ -116,8 +116,14 @@ async def register(
 
 
 async def _usuario_response_com_slug(usuario: Usuario) -> UsuarioResponse:
-    """Serializa o usuário incluindo o slug da empresa (multi-tenancy)."""
-    empresa_slug = await ServiceProxy.get_empresa_slug_from_id(usuario.empresa_id)
+    """Serializa o usuário incluindo o slug da empresa (multi-tenancy).
+
+    SUPER_ADMIN não tem tenant — empresa_id nulo, e nenhum slug a resolver.
+    """
+    empresa_slug = (
+        None if usuario.empresa_id is None
+        else await ServiceProxy.get_empresa_slug_from_id(usuario.empresa_id)
+    )
     return UsuarioResponse.model_validate(usuario).model_copy(
         update={"empresa_slug": empresa_slug}
     )
