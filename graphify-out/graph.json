@@ -20301,7 +20301,7 @@
       "file_type": "code",
       "norm_label": "_check()",
       "source_file": "api-gateway/main.py",
-      "source_location": "L106"
+      "source_location": "L109"
     },
     {
       "id": "api_gateway_main_global_exception_handler",
@@ -20313,7 +20313,7 @@
       "file_type": "code",
       "norm_label": "global_exception_handler()",
       "source_file": "api-gateway/main.py",
-      "source_location": "L159"
+      "source_location": "L162"
     },
     {
       "id": "api_gateway_main_health_check",
@@ -20325,7 +20325,7 @@
       "file_type": "code",
       "norm_label": "health_check()",
       "source_file": "api-gateway/main.py",
-      "source_location": "L91"
+      "source_location": "L94"
     },
     {
       "id": "api_gateway_main_lifespan",
@@ -20349,7 +20349,7 @@
       "file_type": "code",
       "norm_label": "readiness_check()",
       "source_file": "api-gateway/main.py",
-      "source_location": "L140"
+      "source_location": "L143"
     },
     {
       "id": "api_gateway_main_sonda_postgres",
@@ -20361,7 +20361,7 @@
       "file_type": "code",
       "norm_label": "_sonda_postgres()",
       "source_file": "api-gateway/main.py",
-      "source_location": "L121"
+      "source_location": "L124"
     },
     {
       "id": "api_gateway_main_sonda_redis",
@@ -20373,7 +20373,7 @@
       "file_type": "code",
       "norm_label": "_sonda_redis()",
       "source_file": "api-gateway/main.py",
-      "source_location": "L126"
+      "source_location": "L129"
     },
     {
       "id": "api_gateway_main_sonda_servico",
@@ -20385,7 +20385,7 @@
       "file_type": "code",
       "norm_label": "_sonda_servico()",
       "source_file": "api-gateway/main.py",
-      "source_location": "L130"
+      "source_location": "L133"
     },
     {
       "id": "api_gateway_middleware_inadimplencia_middleware_inadimplenciamiddleware_dispatch",
@@ -69649,7 +69649,7 @@
       "source_location": "L1"
     },
     {
-      "id": "api_gateway_main_rationale_107",
+      "id": "api_gateway_main_rationale_110",
       "label": "Roda uma sonda e traduz qualquer falha em status \"down\". O erro real vai para o\u2026",
       "_origin": "ast",
       "community": 81,
@@ -69657,10 +69657,10 @@
       "file_type": "rationale",
       "norm_label": "roda uma sonda e traduz qualquer falha em status \"down\". o erro real vai para o...",
       "source_file": "api-gateway/main.py",
-      "source_location": "L107"
+      "source_location": "L110"
     },
     {
-      "id": "api_gateway_main_rationale_141",
+      "id": "api_gateway_main_rationale_144",
       "label": "Readiness: Postgres, Redis e os sete servi\u00e7os, sondados em paralelo. \u00c9 este que\u2026",
       "_origin": "ast",
       "community": 81,
@@ -69668,10 +69668,10 @@
       "file_type": "rationale",
       "norm_label": "readiness: postgres, redis e os sete servicos, sondados em paralelo. e este que...",
       "source_file": "api-gateway/main.py",
-      "source_location": "L141"
+      "source_location": "L144"
     },
     {
-      "id": "api_gateway_main_rationale_160",
+      "id": "api_gateway_main_rationale_163",
       "label": "Handler global de exce\u00e7\u00f5es.",
       "_origin": "ast",
       "community": 81,
@@ -69679,7 +69679,7 @@
       "file_type": "rationale",
       "norm_label": "handler global de excecoes.",
       "source_file": "api-gateway/main.py",
-      "source_location": "L160"
+      "source_location": "L163"
     },
     {
       "id": "api_gateway_main_rationale_39",
@@ -69693,7 +69693,7 @@
       "source_location": "L39"
     },
     {
-      "id": "api_gateway_main_rationale_92",
+      "id": "api_gateway_main_rationale_95",
       "label": "Liveness: prova apenas que o processo responde. Fica raso de prop\u00f3sito \u2014 \u00e9 o\u2026",
       "_origin": "ast",
       "community": 81,
@@ -69701,7 +69701,7 @@
       "file_type": "rationale",
       "norm_label": "liveness: prova apenas que o processo responde. fica raso de proposito \u2014 e o...",
       "source_file": "api-gateway/main.py",
-      "source_location": "L92"
+      "source_location": "L95"
     },
     {
       "id": "api_gateway_middleware_inadimplencia_middleware_rationale_1",
@@ -74991,7 +74991,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "api-gateway/main.py",
-      "source_location": "L147",
+      "source_location": "L150",
       "weight": 1.0
     },
     {
@@ -75003,7 +75003,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "api-gateway/main.py",
-      "source_location": "L150",
+      "source_location": "L153",
       "weight": 1.0
     },
     {
@@ -75015,7 +75015,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "api-gateway/main.py",
-      "source_location": "L154",
+      "source_location": "L157",
       "weight": 1.0
     },
     {
@@ -75027,7 +75027,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "api-gateway/main.py",
-      "source_location": "L127",
+      "source_location": "L130",
       "weight": 1.0
     },
     {
@@ -88035,7 +88035,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "api-gateway/main.py",
-      "source_location": "L158",
+      "source_location": "L161",
       "weight": 1.0
     },
     {
@@ -88047,7 +88047,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "api-gateway/main.py",
-      "source_location": "L90",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -88059,7 +88059,7 @@
       "confidence_score": 1.0,
       "context": "decorator",
       "source_file": "api-gateway/main.py",
-      "source_location": "L139",
+      "source_location": "L142",
       "weight": 1.0
     },
     {
@@ -119043,7 +119043,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "api-gateway/main.py",
-      "source_location": "L159",
+      "source_location": "L162",
       "weight": 1.0
     },
     {
@@ -119055,7 +119055,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "api-gateway/main.py",
-      "source_location": "L159",
+      "source_location": "L162",
       "weight": 1.0
     },
     {
@@ -130020,7 +130020,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L106",
+      "source_location": "L109",
       "weight": 1.0
     },
     {
@@ -130031,7 +130031,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L121",
+      "source_location": "L124",
       "weight": 1.0
     },
     {
@@ -130042,7 +130042,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L126",
+      "source_location": "L129",
       "weight": 1.0
     },
     {
@@ -130053,7 +130053,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L130",
+      "source_location": "L133",
       "weight": 1.0
     },
     {
@@ -130064,7 +130064,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L140",
+      "source_location": "L143",
       "weight": 1.0
     },
     {
@@ -130075,7 +130075,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L159",
+      "source_location": "L162",
       "weight": 1.0
     },
     {
@@ -130097,7 +130097,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L91",
+      "source_location": "L94",
       "weight": 1.0
     },
     {
@@ -178039,36 +178039,36 @@
       "weight": 1.0
     },
     {
-      "source": "api_gateway_main_rationale_107",
+      "source": "api_gateway_main_rationale_110",
       "target": "api_gateway_main_check",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L107",
+      "source_location": "L110",
       "weight": 1.0
     },
     {
-      "source": "api_gateway_main_rationale_141",
+      "source": "api_gateway_main_rationale_144",
       "target": "api_gateway_main_readiness_check",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L141",
+      "source_location": "L144",
       "weight": 1.0
     },
     {
-      "source": "api_gateway_main_rationale_160",
+      "source": "api_gateway_main_rationale_163",
       "target": "api_gateway_main_global_exception_handler",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L160",
+      "source_location": "L163",
       "weight": 1.0
     },
     {
@@ -178083,14 +178083,14 @@
       "weight": 1.0
     },
     {
-      "source": "api_gateway_main_rationale_92",
+      "source": "api_gateway_main_rationale_95",
       "target": "api_gateway_main_health_check",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "api-gateway/main.py",
-      "source_location": "L92",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -193371,7 +193371,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "api-gateway/main.py",
-      "source_location": "L147",
+      "source_location": "L150",
       "weight": 1.0
     },
     {
@@ -193383,7 +193383,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "api-gateway/main.py",
-      "source_location": "L148",
+      "source_location": "L151",
       "weight": 1.0
     },
     {
@@ -198665,5 +198665,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "6677aef4b94a4b6b9b7b0f05985ab6efd0880146"
+  "built_at_commit": "d58a4091f09913ad61c4500d89c24ef795c6c28d"
 }
