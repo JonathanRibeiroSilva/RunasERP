@@ -160,7 +160,14 @@ class ServiceProxy:
         # Copiar headers (exceto host)
         headers = dict(request.headers)
         headers.pop("host", None)
-        
+
+        # Headers de contexto sao contrato do gateway: os servicos confiam neles
+        # como identidade. O cliente nao pode fornece-los -- X-Plataforma nem era
+        # sobrescrito abaixo, e chaves de request.headers vem minusculas, entao um
+        # x-empresa-id do cliente sobreviveria ao lado do X-Empresa-Id injetado.
+        for interno in ("x-empresa-id", "x-cliente-id", "x-plataforma"):
+            headers.pop(interno, None)
+
         # Injeção centralizada de contexto multi-tenancy (empresa_id / cliente_id)
         empresa_id = await cls._inject_context_headers(headers, current_user, empresa_slug)
 
