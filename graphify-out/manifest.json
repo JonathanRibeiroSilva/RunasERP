@@ -40,8 +40,8 @@
     "semantic_hash": ""
   },
   "api-gateway/config.py": {
-    "mtime": 1787935430.1682003,
-    "ast_hash": "61114ff757a6a6672eceb249a4296e00",
+    "mtime": 1787938761.8179424,
+    "ast_hash": "c3f074aa946f8665c693cabaec7df368",
     "semantic_hash": ""
   },
   "api-gateway/database.py": {
@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "api-gateway/main.py": {
-    "mtime": 1787935486.2476964,
-    "ast_hash": "cbd79c81a967d42dbd5b9bb553fe64b4",
+    "mtime": 1787938761.8179424,
+    "ast_hash": "7a8af8c49b73c7b9215c85a2e8e56cc5",
     "semantic_hash": ""
   },
   "api-gateway/middleware/__init__.py": {
@@ -90,8 +90,8 @@
     "semantic_hash": ""
   },
   "api-gateway/proxy/service_proxy.py": {
-    "mtime": 1787934743.543096,
-    "ast_hash": "19a0a9968b44d40ea8c8706be71b7332",
+    "mtime": 1788023484.626084,
+    "ast_hash": "09ca46390fb837987cce57b45e101e79",
     "semantic_hash": ""
   },
   "api-gateway/repositories/__init__.py": {
@@ -115,8 +115,8 @@
     "semantic_hash": ""
   },
   "api-gateway/routers/auth.py": {
-    "mtime": 1787934385.4144032,
-    "ast_hash": "a822f0b41e0e8bf428d6a92fecc12350",
+    "mtime": 1788023134.1506653,
+    "ast_hash": "fa502c5af0cdece36f9ee3faf24c7cec",
     "semantic_hash": ""
   },
   "api-gateway/routers/auth_admin.py": {
@@ -125,8 +125,8 @@
     "semantic_hash": ""
   },
   "api-gateway/routers/auth_cliente.py": {
-    "mtime": 1783310549.1901104,
-    "ast_hash": "bb7692636f9a9d84852fcf8d11761d1d",
+    "mtime": 1788023134.1506653,
+    "ast_hash": "f8ba9f7fd75915391106f6b3d49736f0",
     "semantic_hash": ""
   },
   "api-gateway/routers/proxy.py": {
@@ -170,8 +170,8 @@
     "semantic_hash": ""
   },
   "frontend/src/App.tsx": {
-    "mtime": 1787935340.9147618,
-    "ast_hash": "1ac015926902951b828b4496bb51a403",
+    "mtime": 1788023134.1524057,
+    "ast_hash": "9be27e496ae06367618e59d984a1c382",
     "semantic_hash": ""
   },
   "frontend/src/components/common/ErrorBoundary/ErrorBoundary.tsx": {
@@ -282,11 +282,6 @@
   "frontend/src/pages/Auth/MicrosoftCallback.tsx": {
     "mtime": 1782817692.0281856,
     "ast_hash": "7060fb9797d45731ebfc1065806201d5",
-    "semantic_hash": ""
-  },
-  "frontend/src/pages/Auth/OAuthCallbackPage.tsx": {
-    "mtime": 1782496452.911646,
-    "ast_hash": "1fa3acd022c12f8fa628171e9e0873a5",
     "semantic_hash": ""
   },
   "frontend/src/pages/Auth/ResetPasswordPage.tsx": {
@@ -405,8 +400,8 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/CheckoutPage.tsx": {
-    "mtime": 1786557294.351484,
-    "ast_hash": "ca5176a27dcccd1dc0eba6237debb901",
+    "mtime": 1788023134.1524057,
+    "ast_hash": "c02a056d4df93a1dab4b9e100951e071",
     "semantic_hash": ""
   },
   "frontend/src/pages/LojaOnlinePublico/ClienteLoginPage.tsx": {
@@ -547,11 +542,6 @@
   "frontend/src/services/auth/authService.ts": {
     "mtime": 1782496452.9307148,
     "ast_hash": "1bd22cc67bd0e768d643d3b13813d64e",
-    "semantic_hash": ""
-  },
-  "frontend/src/services/auth/oauthService.ts": {
-    "mtime": 1786557317.4852924,
-    "ast_hash": "83f91ed22f92ed30ff6af1ca9b7d9ada",
     "semantic_hash": ""
   },
   "frontend/src/services/auth/tokenService.ts": {
@@ -2647,6 +2637,16 @@
   "tests/unit/test_tenant_guards.py": {
     "mtime": 1787934495.8344495,
     "ast_hash": "5bf7921850cb197c1086c4affe303e92",
+    "semantic_hash": ""
+  },
+  "tests/unit/test_headers_internos_nao_vem_do_cliente.py": {
+    "mtime": 1788023541.2332652,
+    "ast_hash": "7a59ee6a6b9a141002df91a44292fc24",
+    "semantic_hash": ""
+  },
+  "tests/unit/test_superficie_publica_gateway.py": {
+    "mtime": 1788022911.8059404,
+    "ast_hash": "819eb3c331fd45069cce05d38e05ef82",
     "semantic_hash": ""
   }
 }
