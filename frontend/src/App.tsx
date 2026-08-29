@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/Login/LoginPage';
 import RegisterPage from '@/pages/Register/RegisterPage';
-import OAuthCallbackPage from '@/pages/Auth/OAuthCallbackPage';
 import GoogleCallback from '@/pages/Auth/GoogleCallback';
 import MicrosoftCallback from '@/pages/Auth/MicrosoftCallback';
 import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage';
@@ -117,9 +116,6 @@ function App() {
         {/* OAuth Callback Routes - Cliente */}
         <Route path="/auth/callback/google" element={<GoogleCallback />} />
         <Route path="/auth/callback/microsoft" element={<MicrosoftCallback />} />
-
-        {/* OAuth Callback Route */}
-        <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
         {/* Password Recovery Routes */}
         <Route

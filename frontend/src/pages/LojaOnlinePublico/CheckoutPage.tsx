@@ -152,7 +152,7 @@ const CheckoutPage = () => {
 
   /**
    * Detecta retorno do OAuth flow e recarrega carrinho + dados do cliente.
-   * Flag 'reload_cart_after_oauth' é setada pelo OAuthCallbackPage após sucesso.
+   * Flag 'reload_cart_after_oauth' é setada pelo GoogleCallback/MicrosoftCallback após sucesso.
    */
   useEffect(() => {
     const detectarRetornoOAuth = async () => {

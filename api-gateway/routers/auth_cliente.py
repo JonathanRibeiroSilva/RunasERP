@@ -4,7 +4,7 @@ Separado de auth.py que é para usuários operadores do sistema.
 """
 from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
@@ -565,14 +565,24 @@ class InternalRegisterRequest(BaseModel):
 @router.post("/registrar-interno", status_code=status.HTTP_201_CREATED)
 async def registrar_cliente_interno(
     data: InternalRegisterRequest,
-    db: Annotated[AsyncSession, Depends(get_db)]
+    db: Annotated[AsyncSession, Depends(get_db)],
+    x_forwarded_for: str | None = Header(None),
 ):
     """
     Endpoint interno para registrar autenticação de cliente.
     Usado quando o cliente é criado durante o checkout.
-    
-    Não requer hash da senha - já vem hasheado do serviço chamador.
+
+    Não requer hash da senha - já vem hasheado do serviço chamador. Por isso
+    só o serviço de vendas pode chamar: quem manda a senha já hasheada define
+    a senha da conta. O nginx sempre carimba X-Forwarded-For no que vem da
+    internet; a chamada interna via rede do Docker não tem esse header.
+    # ponytail: marcador do nginx em vez de segredo compartilhado, que exigiria
+    # env nova nos dois serviços. Trocar se outro caminho interno passar pelo nginx.
     """
+    if x_forwarded_for is not None:
+        log.warning("cliente.internal_register.externo", xff=x_forwarded_for)
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not Found")
+
     repo = ClienteAuthRepository(db)
     
     # Verificar se email já existe
