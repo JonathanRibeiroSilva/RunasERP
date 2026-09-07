@@ -4,7 +4,7 @@ pytest-asyncio==1.4.0
 pytest-cov==7.1.0
 pytest-xdist==3.8.0
 httpx==0.28.1
-faker==40.36.0
+faker==40.37.0
 factory-boy==3.3.3
 freezegun==1.5.5
 # tests/unit/test_service_urls_config.py reads docker-compose.prod.yml
