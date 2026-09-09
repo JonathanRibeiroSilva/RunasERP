@@ -196,24 +196,23 @@ const CheckoutPage = () => {
   /**
    * Busca dados do cliente com retry automático em caso de falha.
    * Implementa exponential backoff: 1s, 2s, 4s.
-   * 
-   * Usa rota /clientes/me que extrai o cliente_id do token automaticamente.
-   * Cookies HTTP-only são enviados automaticamente pelo navegador (withCredentials: true).
-   * 
-   * @param empresaId - ID da empresa (header X-Empresa-Id)
+   *
+   * Usa rota /clientes/me que extrai cliente_id e empresa_id do cookie de sessão
+   * automaticamente no gateway. Não manda X-Empresa-Id do navegador: a Cloudflare
+   * bloqueia esse header vindo de fora (regra "Headers internos do gateway" — é
+   * contrato exclusivo do gateway, ver service_proxy.py) e o gateway já o
+   * re-injeta sozinho a partir do cookie, então enviá-lo era redundante e
+   * quebrava a chamada.
+   *
    * @param maxRetries - Número máximo de tentativas (padrão: 3)
    * @returns Dados do cliente
    */
   const buscarClienteComRetry = async (
-    empresaId: number,
     maxRetries = 3
   ): Promise<Cliente> => {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const response = await apiPublica.get('/clientes/me', {
-          headers: {
-            'X-Empresa-Id': empresaId.toString()
-          },
           withCredentials: true  // ✅ Envia cookies HTTP-only automaticamente
         });
         return response.data;
@@ -225,7 +224,7 @@ const CheckoutPage = () => {
           logCheckoutError(error, {
             component: 'CheckoutPage',
             action: 'buscarClienteComRetry',
-            metadata: { empresaId, attempt: attempt + 1, maxRetries }
+            metadata: { attempt: attempt + 1, maxRetries }
           });
           throw error;
         }
@@ -249,13 +248,9 @@ const CheckoutPage = () => {
 
     setCarregandoCliente(true);
     try {
-      // Buscar empresa_id
-      const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
-      const empresa_id = empresaRes.data.id;
-
       // Buscar dados do cliente usando rota /me
       // Cookies HTTP-only são enviados automaticamente pelo navegador
-      const cliente = await buscarClienteComRetry(empresa_id);
+      const cliente = await buscarClienteComRetry();
 
       setClienteAutenticado(cliente);
       preencherDadosCliente(cliente);
@@ -640,18 +635,15 @@ const CheckoutPage = () => {
       if (cpfNovo) payload.cpf = unmask(clienteNovo.cpf);
       if (telefoneNovo) payload.telefone = unmask(clienteNovo.telefone);
 
-      // ✅ Usa cookies HTTP-only automaticamente
-      const empresaRes = await apiPublica.get(`/empresas/publico/${empresaSlug}`);
-
+      // ✅ Usa cookies HTTP-only automaticamente — sem X-Empresa-Id manual:
+      // a Cloudflare bloqueia esse header vindo do navegador (é contrato
+      // exclusivo do gateway), que já o re-injeta sozinho a partir do cookie.
       const response = await apiPublica.patch(
         `/clientes/me`,  // ✅ Usa /me em vez de ID
         payload,
         {
-          withCredentials: true,  // ✅ Envia cookies HTTP-only
-          headers: {
-            'X-Empresa-Id': empresaRes.data.id.toString()
-            // ❌ NÃO enviar Authorization header - cookies são automáticos
-          }
+          withCredentials: true  // ✅ Envia cookies HTTP-only
+          // ❌ NÃO enviar Authorization header - cookies são automáticos
         }
       );
 
