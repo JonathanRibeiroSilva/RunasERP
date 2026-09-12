@@ -353,10 +353,8 @@ services:
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
       MP_ENVIRONMENT: ${MP_ENVIRONMENT:-sandbox}
       # Cifra as credenciais de integracao por tenant (Mercado Pago incluso).
-      # Vazia = vendas recusa gravar. Nome com sufixo _V2: a variável original
-      # travou ("locked") sem querer no painel da Coolify em produção — o
-      # rename mantém dev e prod com o mesmo nome de variável.
-      INTEGRACOES_SECRET_KEY_V2: ${INTEGRACOES_SECRET_KEY_V2}
+      # Vazia = vendas recusa gravar.
+      INTEGRACOES_SECRET_KEY: ${INTEGRACOES_SECRET_KEY}
       API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
