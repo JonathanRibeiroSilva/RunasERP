@@ -40,7 +40,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     # Cifra das credenciais de integração por tenant (Fernet.generate_key()).
     # Vazia = escrita de integração falha alto, nunca grava texto plano.
-    INTEGRACOES_SECRET_KEY: str = ""
+    # Nome com sufixo _V2: a variável original ficou travada ("locked") sem
+    # querer no painel da Coolify, que recusa tanto editar quanto excluir uma
+    # var referenciada no compose enquanto travada — renomear foi o jeito de
+    # sair dela sem dar de baixa manual no banco da Coolify.
+    INTEGRACOES_SECRET_KEY_V2: str = ""
     ALGORITHM: str = "HS256"
     
     # API Gateway URL

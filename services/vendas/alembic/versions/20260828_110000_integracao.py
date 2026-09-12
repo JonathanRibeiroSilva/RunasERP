@@ -62,7 +62,7 @@ def _cifrar_tokens_existentes() -> None:
     """
     Cifra as linhas que já existem.
 
-    Sem INTEGRACOES_SECRET_KEY não dá para cifrar, e seguir em frente apagaria
+    Sem INTEGRACOES_SECRET_KEY_V2 não dá para cifrar, e seguir em frente apagaria
     a coluna antiga levando junto os tokens dos lojistas — o boot falha alto em
     vez de destruir credencial de produção.
     """
@@ -74,11 +74,11 @@ def _cifrar_tokens_existentes() -> None:
     if not linhas:
         return
 
-    chave = os.getenv("INTEGRACOES_SECRET_KEY", "")
+    chave = os.getenv("INTEGRACOES_SECRET_KEY_V2", "")
     if not chave:
         raise RuntimeError(
             f"{len(linhas)} access token(s) do Mercado Pago para cifrar e "
-            "INTEGRACOES_SECRET_KEY não está definida. Defina antes do deploy."
+            "INTEGRACOES_SECRET_KEY_V2 não está definida. Defina antes do deploy."
         )
 
     from cryptography.fernet import Fernet
