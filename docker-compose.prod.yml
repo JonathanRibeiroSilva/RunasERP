@@ -368,9 +368,10 @@ services:
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
       MP_ENVIRONMENT: ${MP_ENVIRONMENT:-production}
       # Cifra as credenciais de integracao por tenant (Mercado Pago incluso).
-      # Vazia = vendas recusa gravar. Só estava ligada em notificacoes-prod;
-      # é este serviço que grava/lê configuracoes_pagamento.
-      INTEGRACOES_SECRET_KEY: ${INTEGRACOES_SECRET_KEY}
+      # Vazia = vendas recusa gravar. Nome com sufixo _V2: a variável original
+      # travou ("locked") sem querer no painel da Coolify — renomear foi o
+      # jeito de sair de uma var que a Coolify recusa editar ou excluir.
+      INTEGRACOES_SECRET_KEY_V2: ${INTEGRACOES_SECRET_KEY_V2}
       API_BASE_URL: ${API_BASE_URL:?set API_BASE_URL in .env}
       FRONTEND_URL: ${FRONTEND_URL}
       # utils/tenant.py resolves the storefront slug against empresas; without
@@ -412,8 +413,6 @@ services:
       # calls fail closed until it returns. See docker-compose.cloudflare.yml.
       EVOLUTION_URL: ${EVOLUTION_URL:-http://evolution-api:8080}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
-      # Cifra as credenciais de integracao por tenant. Vazia = vendas recusa gravar.
-      INTEGRACOES_SECRET_KEY: ${INTEGRACOES_SECRET_KEY}
       EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-runas}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
