@@ -11741,7 +11741,7 @@
       "file_type": "code",
       "norm_label": ".mercadopago_sandbox()",
       "source_file": "services/vendas/config.py",
-      "source_location": "L60"
+      "source_location": "L56"
     },
     {
       "id": "services_vendas_redis_client_close_redis",
@@ -36447,7 +36447,7 @@
       "source_location": "L1"
     },
     {
-      "id": "services_vendas_config_rationale_61",
+      "id": "services_vendas_config_rationale_57",
       "label": "True unless MP_ENVIRONMENT is explicitly 'production'.",
       "_origin": "ast",
       "community": 184,
@@ -36455,7 +36455,7 @@
       "file_type": "rationale",
       "norm_label": "true unless mp_environment is explicitly 'production'.",
       "source_file": "services/vendas/config.py",
-      "source_location": "L61"
+      "source_location": "L57"
     },
     {
       "id": "services_vendas_config_rationale_8",
@@ -49598,12 +49598,12 @@
     },
     {
       "id": "services_vendas_alembic_versions_20260828_110000_integracao_rationale_62",
-      "label": "Cifra as linhas que j\u00e1 existem. Sem INTEGRACOES_SECRET_KEY_V2 n\u00e3o d\u00e1 para\u2026",
+      "label": "Cifra as linhas que j\u00e1 existem. Sem INTEGRACOES_SECRET_KEY n\u00e3o d\u00e1 para cifrar,\u2026",
       "_origin": "ast",
       "community": 298,
       "community_name": "20260828_110000_integracao.py",
       "file_type": "rationale",
-      "norm_label": "cifra as linhas que ja existem. sem integracoes_secret_key_v2 nao da para...",
+      "norm_label": "cifra as linhas que ja existem. sem integracoes_secret_key nao da para cifrar,...",
       "source_file": "services/vendas/alembic/versions/20260828_110000_integracao.py",
       "source_location": "L62"
     },
@@ -175932,7 +175932,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "services/vendas/config.py",
-      "source_location": "L60",
+      "source_location": "L56",
       "weight": 1.0
     },
     {
@@ -187189,14 +187189,14 @@
       "weight": 1.0
     },
     {
-      "source": "services_vendas_config_rationale_61",
+      "source": "services_vendas_config_rationale_57",
       "target": "services_vendas_config_settings_mercadopago_sandbox",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "services/vendas/config.py",
-      "source_location": "L61",
+      "source_location": "L57",
       "weight": 1.0
     },
     {
@@ -200452,5 +200452,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "7b32f0a227c652052e1ed3dfd10842966ee85a7c"
+  "built_at_commit": "3fd5916f2adfeb135686216904b6e6e1fa693eb7"
 }
