@@ -368,10 +368,9 @@ services:
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
       MP_ENVIRONMENT: ${MP_ENVIRONMENT:-production}
       # Cifra as credenciais de integracao por tenant (Mercado Pago incluso).
-      # Vazia = vendas recusa gravar. Nome com sufixo _V2: a variável original
-      # travou ("locked") sem querer no painel da Coolify — renomear foi o
-      # jeito de sair de uma var que a Coolify recusa editar ou excluir.
-      INTEGRACOES_SECRET_KEY_V2: ${INTEGRACOES_SECRET_KEY_V2}
+      # Vazia = vendas recusa gravar. Só era lida em notificacoes-prod antes;
+      # é este serviço que grava/lê configuracoes_pagamento.
+      INTEGRACOES_SECRET_KEY: ${INTEGRACOES_SECRET_KEY}
       API_BASE_URL: ${API_BASE_URL:?set API_BASE_URL in .env}
       FRONTEND_URL: ${FRONTEND_URL}
       # utils/tenant.py resolves the storefront slug against empresas; without
