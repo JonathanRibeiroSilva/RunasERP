@@ -352,6 +352,10 @@ services:
       MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
       MP_ENVIRONMENT: ${MP_ENVIRONMENT:-sandbox}
+      # Cifra as credenciais de integracao por tenant (Mercado Pago incluso).
+      # Vazia = vendas recusa gravar. Só estava ligada em notificacoes; é este
+      # serviço que grava/lê configuracoes_pagamento.
+      INTEGRACOES_SECRET_KEY: ${INTEGRACOES_SECRET_KEY}
       API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       CLIENTES_URL: ${CLIENTES_URL:-http://clientes:8001}
