@@ -1,8 +1,9 @@
 # Graph Report - RunasERP  (2026-09-12)
 
 ## Corpus Check
-- 484 files · ~397,318 words
+- 484 files · ~397,442 words
 - Verdict: corpus is large enough that graph structure adds value.
+- Unclassified: 92 file(s) not represented in the graph (top: .scss 44, (none) 24, .ini 9)
 
 ## Summary
 - 6363 nodes · 11004 edges · 333 communities (264 shown, 26 thin omitted)
@@ -10,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `67d658e7`
+- Built from commit: `7b32f0a2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1357,7 +1358,7 @@ Nodes (3): __dirname, vite, @vitejs/plugin-react
 
 ### Community 298 - "20260828_110000_integracao.py"
 Cohesion: 0.50
-Nodes (3): _cifrar_tokens_existentes(), Cifra as linhas que já existem. Sem INTEGRACOES_SECRET_KEY não dá para cifrar,…, upgrade()
+Nodes (3): _cifrar_tokens_existentes(), Cifra as linhas que já existem. Sem INTEGRACOES_SECRET_KEY_V2 não dá para…, upgrade()
 
 ### Community 300 - "test_idempotencia_redis.py"
 Cohesion: 0.15
