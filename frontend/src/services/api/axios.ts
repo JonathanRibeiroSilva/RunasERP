@@ -9,6 +9,10 @@ const DEPLOY_WINDOW_STATUSES = [502, 503, 504];
 const IDEMPOTENT_METHODS = ['get', 'head', 'options'];
 const MAX_DEPLOY_RETRIES = 3;
 
+// Espelha idempotency.METODOS do gateway: só escritas ganham chave, um GET
+// repetido não duplica nada.
+const WRITE_METHODS = ['post', 'put', 'patch', 'delete'];
+
 // Criar instância do Axios
 export const api = axios.create({
   baseURL: env.apiUrl,
@@ -24,10 +28,21 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Cookies HTTP-only são enviados automaticamente pelo navegador
     // devido ao withCredentials: true
-    // 
+    //
     // O header X-Empresa-Id é adicionado pelo API Gateway
     // a partir do token JWT do usuário autenticado
-    
+
+    // O gateway reserva a chave no Redis antes de encaminhar a escrita, então um
+    // duplo-clique em "finalizar pedido" recebe a resposta da primeira venda em
+    // vez de criar a segunda (api-gateway/proxy/idempotency.py).
+    //
+    // Só é gerada se ainda não existe: no reenvio o axios passa o mesmo config,
+    // e uma chave nova a cada passagem seria uma operação nova aos olhos do
+    // gateway — exatamente o que a chave existe para impedir.
+    if (WRITE_METHODS.includes((config.method ?? 'get').toLowerCase())) {
+      config.headers['Idempotency-Key'] ??= crypto.randomUUID();
+    }
+
     return config;
   },
   (error: AxiosError) => {
@@ -74,9 +89,11 @@ api.interceptors.response.use(
     // retries every 500+, and a genuine 500 is an application bug, so retrying it
     // only triples the load and delays the error the user needs to see.
     //
-    // Writes are deliberately excluded: the API has no idempotency keys, so a
-    // retried POST /vendas is a duplicated sale. Do not widen IDEMPOTENT_METHODS
-    // without adding one.
+    // Writes are deliberately excluded. They now carry an Idempotency-Key, so a
+    // replay would no longer duplicate the sale — but a reserved key whose first
+    // attempt is still in flight answers 409, and the retry loop below would
+    // surface that instead of the real outcome. Widening this needs the 409 to be
+    // awaited and unwrapped first, which is a behaviour change, not a wider list.
     const retryable = error.config as InternalAxiosRequestConfig & { _deployRetries?: number };
     const method = (retryable?.method ?? 'get').toLowerCase();
     const attempt = (retryable?._deployRetries ?? 0) + 1;
