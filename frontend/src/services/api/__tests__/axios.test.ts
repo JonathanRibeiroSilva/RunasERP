@@ -1,9 +1,10 @@
 /**
- * Testes Unitários - retry da janela de deploy
+ * Testes Unitários - retry da janela de deploy e Idempotency-Key
  *
  * O interceptor reenvia leituras idempotentes quando o gateway está sendo
- * trocado (502/503/504). Escritas nunca são reenviadas: a API não tem
- * idempotency key, então um POST repetido é uma venda duplicada.
+ * trocado (502/503/504). Escritas não são reenviadas aqui, mas carregam uma
+ * Idempotency-Key: o gateway reserva a chave antes de encaminhar, então o
+ * duplo-clique do usuário recebe a primeira venda em vez de criar a segunda.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -11,12 +12,14 @@ import { AxiosError, type AxiosAdapter, type AxiosResponse } from 'axios';
 import { api } from '../axios';
 
 /** Adapter de teste: responde a fila de status, repetindo o último. */
-function stubAdapter(statuses: number[]): { calls: string[] } {
+function stubAdapter(statuses: number[]): { calls: string[]; chaves: (string | undefined)[] } {
   const queue = [...statuses];
   const calls: string[] = [];
+  const chaves: (string | undefined)[] = [];
 
   api.defaults.adapter = (async (config) => {
     calls.push(`${config.method}`);
+    chaves.push(config.headers?.['Idempotency-Key'] as string | undefined);
     const status = queue.length > 1 ? (queue.shift() as number) : queue[0];
     const response = {
       data: {},
@@ -33,7 +36,7 @@ function stubAdapter(statuses: number[]): { calls: string[] } {
     return response;
   }) as AxiosAdapter;
 
-  return { calls };
+  return { calls, chaves };
 }
 
 describe('api - retry da janela de deploy', () => {
@@ -86,5 +89,46 @@ describe('api - retry da janela de deploy', () => {
       response: { status: 500 },
     });
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe('api - Idempotency-Key', () => {
+  const originalAdapter = api.defaults.adapter;
+
+  afterEach(() => {
+    api.defaults.adapter = originalAdapter;
+  });
+
+  it('deve mandar Idempotency-Key em escrita - sem ela o duplo-clique vira 2 vendas', async () => {
+    const { chaves } = stubAdapter([201]);
+
+    await api.post('/vendas', { total: 100 });
+
+    expect(chaves[0]).toBeTruthy();
+  });
+
+  it('NAO deve mandar Idempotency-Key em leitura - GET repetido nao duplica nada', async () => {
+    const { chaves } = stubAdapter([200]);
+
+    await api.get('/clientes');
+
+    expect(chaves[0]).toBeUndefined();
+  });
+
+  it('deve usar chave diferente por venda - senao a 2a venda legitima vira replay da 1a', async () => {
+    const { chaves } = stubAdapter([201]);
+
+    await api.post('/vendas', { total: 100 });
+    await api.post('/vendas', { total: 200 });
+
+    expect(chaves[0]).not.toBe(chaves[1]);
+  });
+
+  it('NAO deve sobrescrever chave existente - e o que mantem o reenvio sendo o mesmo pedido', async () => {
+    const { chaves } = stubAdapter([201]);
+
+    await api.post('/vendas', { total: 100 }, { headers: { 'Idempotency-Key': 'chave-fixa' } });
+
+    expect(chaves[0]).toBe('chave-fixa');
   });
 });
