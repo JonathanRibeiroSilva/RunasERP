@@ -12,6 +12,7 @@ import httpx
 import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -155,10 +156,33 @@ async def reativar_tenant(empresa_id: int, db: Annotated[AsyncSession, Depends(g
     return await _definir_acesso(db, empresa_id, ativo=True, status_empresa="ATIVA")
 
 
+class PlanoUpdate(BaseModel):
+    """Espelha EmpresaPlanoUpdate do serviço empresas.
+
+    `status` fica como str em vez de enum: quem é dono do domínio é o empresas,
+    que valida contra StatusEmpresa e devolve 422 — duplicar a lista aqui só
+    criaria drift. O que o schema acrescenta é recusar campo desconhecido antes
+    de repassar, em vez de encaminhar dict arbitrário para uma rota de billing.
+    """
+    plano: str | None = None
+    max_usuarios: int | None = None
+    max_produtos: int | None = None
+    status: str | None = None
+    ativo: bool | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
 @router.patch("/tenants/{empresa_id}/plano", summary="Alterar plano e limites")
-async def alterar_plano(empresa_id: int, plano: dict):
+async def alterar_plano(empresa_id: int, plano: PlanoUpdate):
     """Plano e limites — os campos que EmpresaUpdate deixou de aceitar."""
-    return _repassar(await _empresas("PATCH", f"/empresas/{empresa_id}/plano", json=plano))
+    # exclude_unset, não model_dump() puro: do outro lado, atualizar_plano faz
+    # setattr de tudo que chega (empresa_service.py). Mandar os cinco campos com
+    # null marcaria todos como informados e zeraria plano e limites de quem só
+    # queria mudar o status.
+    return _repassar(await _empresas(
+        "PATCH", f"/empresas/{empresa_id}/plano", json=plano.model_dump(exclude_unset=True)
+    ))
 
 
 # ==================== AUDITORIA E REVERSÃO (Fase 3.3) ====================
