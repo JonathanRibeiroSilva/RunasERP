@@ -243,8 +243,14 @@ services:
       context: ./services/clientes
       dockerfile: Dockerfile
     container_name: erp-clientes-dev
+    # Serviço interno: 127.0.0.1 em vez de 0.0.0.0. Nenhum serviço valida JWT --
+    # todos tratam X-Empresa-Id como identidade confiável, e o gateway é quem
+    # descarta o header vindo do cliente (proxy/service_proxy.py). Publicado em
+    # todas as interfaces, qualquer máquina da rede vira qualquer tenant; o
+    # 8007 do empresas ainda aceita X-Plataforma e vira super-admin.
+    # localhost:PORTA/docs continua funcionando para debug. Mesma regra em 8001-8007.
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     environment:
       DATABASE_URL: ${DATABASE_URL_CLIENTES}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
@@ -276,7 +282,7 @@ services:
       dockerfile: Dockerfile
     container_name: erp-produtos-dev
     ports:
-      - "8002:8002"
+      - "127.0.0.1:8002:8002"
     environment:
       DATABASE_URL: ${DATABASE_URL_PRODUTOS}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
@@ -308,7 +314,7 @@ services:
       dockerfile: Dockerfile
     container_name: erp-estoque-dev
     ports:
-      - "8003:8003"
+      - "127.0.0.1:8003:8003"
     environment:
       DATABASE_URL: ${DATABASE_URL_ESTOQUE}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
@@ -340,7 +346,7 @@ services:
       dockerfile: Dockerfile
     container_name: erp-vendas-dev
     ports:
-      - "8004:8004"
+      - "127.0.0.1:8004:8004"
     environment:
       DATABASE_URL: ${DATABASE_URL_VENDAS}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
@@ -389,7 +395,7 @@ services:
       dockerfile: Dockerfile
     container_name: erp-financeiro-dev
     ports:
-      - "8005:8005"
+      - "127.0.0.1:8005:8005"
     environment:
       DATABASE_URL: ${DATABASE_URL_FINANCEIRO}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
@@ -421,7 +427,7 @@ services:
       dockerfile: Dockerfile
     container_name: erp-notificacoes-dev
     ports:
-      - "8006:8006"
+      - "127.0.0.1:8006:8006"
     environment:
       DATABASE_URL: ${DATABASE_URL_NOTIFICACOES}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
@@ -456,7 +462,7 @@ services:
       dockerfile: Dockerfile
     container_name: erp-empresas-dev
     ports:
-      - "8007:8007"
+      - "127.0.0.1:8007:8007"
     environment:
       DATABASE_URL: ${DATABASE_URL_EMPRESAS}
       RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
