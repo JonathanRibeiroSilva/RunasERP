@@ -25,12 +25,26 @@ CREATE_TABLE = re.compile(r"op\.create_table\(\s*['\"]([a-z_]+)['\"]")
 SCHEMALESS = re.compile(r"op\.(create_table|create_index)\(")
 
 
+def _alembic_dirs():
+    """Every service wired for Alembic, whether or not it ships revisions."""
+    return sorted(REPO.glob("*/alembic")) + sorted(REPO.glob("services/*/alembic"))
+
+
 def _versions_dirs():
     """Every service that ships Alembic revisions, as (name, list-of-files)."""
-    for alembic_dir in sorted(REPO.glob("*/alembic")) + sorted(REPO.glob("services/*/alembic")):
+    for alembic_dir in _alembic_dirs():
         files = [p for p in sorted(alembic_dir.glob("versions/*.py")) if p.stem != "__init__"]
         if files:
             yield alembic_dir.parent.name, files
+
+
+# financeiro e notificacoes sobem hoje com o schema vazio e /health em 200:
+# `alembic upgrade head` sai 0 quando não acha revision nenhuma, indistinguível
+# de "já está no head". Enquanto estiverem aqui, os testes desta suíte não olham
+# para eles — não há chain para validar. Sair desta lista é o PR das baselines,
+# que precisa entrar junto com a guarda em database.py: a guarda derruba o
+# serviço no boot, e sem baseline os dois entram em crashloop.
+SEM_REVISIONS_AINDA = {"financeiro", "notificacoes"}
 
 
 def _balanced_call(source: str, open_paren: int) -> str:
@@ -40,6 +54,39 @@ def _balanced_call(source: str, open_paren: int) -> str:
         depth += (source[i] == "(") - (source[i] == ")")
         i += 1
     return source[open_paren:i]
+
+
+def test_every_alembic_service_ships_revisions():
+    """Zero revisions is the one failure mode `alembic upgrade head` reports as success.
+
+    Every other test here reads the chain, so a service with no chain is skipped
+    by all of them — the empty case is exactly the one nobody was watching.
+    """
+    vazios = [
+        d.parent.name
+        for d in _alembic_dirs()
+        if d.parent.name not in SEM_REVISIONS_AINDA
+        and not [p for p in d.glob("versions/*.py") if p.stem != "__init__"]
+    ]
+    assert not vazios, (
+        f"alembic/ sem revisions: {vazios} — `alembic upgrade head` sai 0 e o "
+        "serviço sobe saudável com zero tabelas"
+    )
+
+
+def test_lista_de_pendentes_encolhe():
+    """Ganhou revisions? Sai da lista, senão a exceção vira permanente."""
+    resolvidos = [
+        nome
+        for nome in sorted(SEM_REVISIONS_AINDA)
+        for d in _alembic_dirs()
+        if d.parent.name == nome
+        and [p for p in d.glob("versions/*.py") if p.stem != "__init__"]
+    ]
+    assert not resolvidos, (
+        f"{resolvidos} já tem revisions: remova de SEM_REVISIONS_AINDA para o "
+        "serviço passar a ser guardado pelos outros testes deste arquivo"
+    )
 
 
 def test_every_service_has_exactly_one_head():
