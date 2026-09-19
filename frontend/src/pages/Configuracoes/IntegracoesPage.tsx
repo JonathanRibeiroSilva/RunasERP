@@ -94,10 +94,16 @@ const IntegracoesPage = () => {
   const onSubmitPagamento = async (data: PagamentoFormData) => {
     try {
       await salvarPagamento.mutateAsync({
-        data,
+        // Segredo em branco = "mantém o gravado"; o backend recusa string vazia.
+        data: { ...data, mercadopago_webhook_secret: segredo(data.mercadopago_webhook_secret) },
         jaConfigurado: !!pagamento?.configurado,
       });
-      formPagamento.reset({ ...data, mercadopago_access_token: '', mercadopago_public_key: '' });
+      formPagamento.reset({
+        ...data,
+        mercadopago_access_token: '',
+        mercadopago_public_key: '',
+        mercadopago_webhook_secret: '',
+      });
       toast.success('Credenciais do Mercado Pago salvas');
     } catch (error) {
       toast.error(getErrorMessage(error, 'Erro ao salvar credenciais do Mercado Pago'));
@@ -165,6 +171,26 @@ const IntegracoesPage = () => {
               {formPagamento.formState.errors.mercadopago_public_key.message}
             </span>
           )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="mercadopago_webhook_secret">
+            Assinatura secreta do webhook
+            {pagamento?.webhook_assinatura_configurada ? '' : ' — webhook aceito sem assinatura'}
+          </label>
+          <input
+            id="mercadopago_webhook_secret"
+            type="password"
+            autoComplete="off"
+            placeholder={
+              pagamento?.webhook_assinatura_configurada ? SEGREDO_PLACEHOLDER : 'Painel do MP → Webhooks'
+            }
+            {...formPagamento.register('mercadopago_webhook_secret')}
+          />
+          <span className="section-hint">
+            Sem ela, qualquer um que saiba o endereço da sua loja pode postar notificação de
+            pagamento. Em branco mantém a que já está gravada.
+          </span>
         </div>
 
         <div className="switch-row">

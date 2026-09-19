@@ -42,23 +42,29 @@ class ConfiguracaoPagamentoService:
         empresa_id: int,
         access_token: str,
         public_key: str,
-        ativo: bool = True
+        ativo: bool = True,
+        webhook_secret: str | None = None
     ) -> ConfiguracaoPagamento:
         """
         Cria ou atualiza configuração de pagamento.
-        
+
+        `webhook_secret` vazio significa "mantém o que está gravado" — o form
+        não devolve segredo já salvo. Para remover, apague a configuração.
+
         Returns:
             ConfiguracaoPagamento: Configuração criada/atualizada
         """
         # Verificar se já existe
         config = await ConfiguracaoPagamentoService.obter_por_empresa(db, empresa_id)
-        
+
         if config:
             # Atualizar
             config.mercadopago_access_token = access_token
             config.mercadopago_public_key = public_key
             config.ativo = ativo
-            
+            if webhook_secret:
+                config.mercadopago_webhook_secret = webhook_secret
+
             log.info(
                 "config_pagamento_atualizada",
                 empresa_id=empresa_id
@@ -69,6 +75,7 @@ class ConfiguracaoPagamentoService:
                 empresa_id=empresa_id,
                 mercadopago_access_token=access_token,
                 mercadopago_public_key=public_key,
+                mercadopago_webhook_secret=webhook_secret,
                 ativo=ativo
             )
             db.add(config)

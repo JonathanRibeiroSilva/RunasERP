@@ -31,6 +31,8 @@ DEFAULT_EMPRESA_IDS = [4]
 async def aplicar_credenciais(empresa_ids: list[int]) -> None:
     access_token = os.environ.get("MP_ACCESS_TOKEN", "").strip()
     public_key = os.environ.get("MP_PUBLIC_KEY", "").strip()
+    # Opcional: sem ele a rota do webhook segue aceitando não assinado.
+    webhook_secret = os.environ.get("MP_WEBHOOK_SECRET", "").strip()
 
     if not access_token or not public_key:
         raise SystemExit(
@@ -53,10 +55,12 @@ async def aplicar_credenciais(empresa_ids: list[int]) -> None:
                 access_token=access_token,
                 public_key=public_key,
                 ativo=True,
+                webhook_secret=webhook_secret or None,
             )
             print(
                 f"[ok] empresa_id={empresa_id} -> public_key={public_key[:16]}... "
-                f"(sandbox={settings.mercadopago_sandbox})"
+                f"(sandbox={settings.mercadopago_sandbox}, "
+                f"webhook_assinado={'sim' if webhook_secret else 'não'})"
             )
 
     await engine.dispose()
