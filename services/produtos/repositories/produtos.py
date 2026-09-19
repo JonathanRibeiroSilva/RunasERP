@@ -558,8 +558,25 @@ class LojaOnlineConfigRepository:
         )
         return result.scalars().all(), total
 
+    async def obter_por_id(self, empresa_id: int, loja_online_id: UUID) -> LojaOnlineConfig | None:
+        """
+        Obtém uma configuração por ID, dentro da empresa.
+
+        loja_online_config não tem coluna empresa_id — o dono é o produto. Daí o
+        JOIN: sem ele, um id de outro tenant volta normalmente, e `atualizar`
+        publica na loja de quem não pediu.
+        """
+        result = await self.session.execute(
+            select(LojaOnlineConfig)
+            .join(Produto, Produto.id == LojaOnlineConfig.produto_id)
+            .where(LojaOnlineConfig.id == loja_online_id)
+            .where(Produto.empresa_id == empresa_id)
+        )
+        return result.scalars().first()
+
     async def atualizar(
         self,
+        empresa_id: int,
         loja_online_id: UUID,
         visivel: bool | None = None,
         destaque: bool | None = None,
@@ -567,10 +584,7 @@ class LojaOnlineConfigRepository:
         descricao_publica: str | None = None,
     ) -> LojaOnlineConfig | None:
         """Atualiza uma configuração de loja online."""
-        result = await self.session.execute(
-            select(LojaOnlineConfig).where(LojaOnlineConfig.id == loja_online_id)
-        )
-        loja_online = result.scalars().first()
+        loja_online = await self.obter_por_id(empresa_id, loja_online_id)
         if not loja_online:
             return None
 
@@ -586,19 +600,6 @@ class LojaOnlineConfigRepository:
         await self.session.flush()
         return loja_online
 
-    async def deletar(self, loja_online_id: UUID) -> bool:
-        """Deleta uma configuração de loja online."""
-        result = await self.session.execute(
-            select(LojaOnlineConfig).where(LojaOnlineConfig.id == loja_online_id)
-        )
-        loja_online = result.scalars().first()
-        if not loja_online:
-            return False
-
-        await self.session.delete(loja_online)
-        await self.session.flush()
-        return True
-
 
 class LojaOnlineFotoRepository:
     """Repository para LojaOnlineFoto."""
@@ -613,10 +614,18 @@ class LojaOnlineFotoRepository:
         await self.session.flush()
         return foto
 
-    async def obter_por_id(self, foto_id: UUID) -> LojaOnlineFoto | None:
-        """Obtém uma foto por ID."""
+    async def obter_por_id(self, empresa_id: int, foto_id: UUID) -> LojaOnlineFoto | None:
+        """
+        Obtém uma foto por ID, dentro da empresa.
+
+        Mesma história da config: a foto não tem empresa_id, o dono é o produto.
+        `atualizar` e `deletar` saem daqui — a guarda fica num lugar só.
+        """
         result = await self.session.execute(
-            select(LojaOnlineFoto).where(LojaOnlineFoto.id == foto_id)
+            select(LojaOnlineFoto)
+            .join(Produto, Produto.id == LojaOnlineFoto.produto_id)
+            .where(LojaOnlineFoto.id == foto_id)
+            .where(Produto.empresa_id == empresa_id)
         )
         return result.scalars().first()
 
@@ -630,10 +639,10 @@ class LojaOnlineFotoRepository:
         return result.scalars().all()
 
     async def atualizar(
-        self, foto_id: UUID, url: str | None = None, ordem: int | None = None
+        self, empresa_id: int, foto_id: UUID, url: str | None = None, ordem: int | None = None
     ) -> LojaOnlineFoto | None:
         """Atualiza uma foto."""
-        foto = await self.obter_por_id(foto_id)
+        foto = await self.obter_por_id(empresa_id, foto_id)
         if not foto:
             return None
 
@@ -645,9 +654,9 @@ class LojaOnlineFotoRepository:
         await self.session.flush()
         return foto
 
-    async def deletar(self, foto_id: UUID) -> bool:
+    async def deletar(self, empresa_id: int, foto_id: UUID) -> bool:
         """Deleta uma foto."""
-        foto = await self.obter_por_id(foto_id)
+        foto = await self.obter_por_id(empresa_id, foto_id)
         if not foto:
             return False
 
@@ -802,10 +811,21 @@ class FornecedorProdutoRepository:
         await self.session.flush()
         return fornecedor_produto
 
-    async def obter_por_id(self, fornecedor_produto_id: UUID) -> FornecedorProduto | None:
-        """Obtém uma associação por ID."""
+    async def obter_por_id(
+        self, empresa_id: int, fornecedor_produto_id: UUID
+    ) -> FornecedorProduto | None:
+        """
+        Obtém uma associação por ID, dentro da empresa.
+
+        fornecedor_produto também não tem empresa_id; o dono é o produto. Como
+        `atualizar` e `deletar` derivam deste método, a guarda aqui fecha os
+        três de uma vez — e é por isso que ela não vive nos chamadores.
+        """
         result = await self.session.execute(
-            select(FornecedorProduto).where(FornecedorProduto.id == fornecedor_produto_id)
+            select(FornecedorProduto)
+            .join(Produto, Produto.id == FornecedorProduto.produto_id)
+            .where(FornecedorProduto.id == fornecedor_produto_id)
+            .where(Produto.empresa_id == empresa_id)
         )
         return result.scalars().first()
 
@@ -829,6 +849,7 @@ class FornecedorProdutoRepository:
 
     async def atualizar(
         self,
+        empresa_id: int,
         fornecedor_produto_id: UUID,
         codigo_fornecedor: str | None = None,
         preco_fornecedor: float | None = None,
@@ -837,7 +858,7 @@ class FornecedorProdutoRepository:
         ativo: bool | None = None,
     ) -> FornecedorProduto | None:
         """Atualiza uma associação."""
-        fp = await self.obter_por_id(fornecedor_produto_id)
+        fp = await self.obter_por_id(empresa_id, fornecedor_produto_id)
         if not fp:
             return None
 
@@ -855,9 +876,9 @@ class FornecedorProdutoRepository:
         await self.session.flush()
         return fp
 
-    async def deletar(self, fornecedor_produto_id: UUID) -> bool:
+    async def deletar(self, empresa_id: int, fornecedor_produto_id: UUID) -> bool:
         """Deleta uma associação."""
-        fp = await self.obter_por_id(fornecedor_produto_id)
+        fp = await self.obter_por_id(empresa_id, fornecedor_produto_id)
         if not fp:
             return False
 
