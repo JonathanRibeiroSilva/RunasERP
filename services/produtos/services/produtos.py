@@ -365,6 +365,7 @@ class LojaOnlineService:
     async def atualizar_config(self, empresa_id: int, loja_online_id: UUID, dados: LojaOnlineConfigUpdate):
         """Atualiza configuração de loja online."""
         config = await self.loja_online_config_repo.atualizar(
+            empresa_id,
             loja_online_id,
             visivel=dados.visivel,
             destaque=dados.destaque,
@@ -410,7 +411,7 @@ class LojaOnlineService:
         config = await self.loja_online_config_repo.obter_por_produto(produto_id)
         if config:
             return await self.loja_online_config_repo.atualizar(
-                config.id, visivel=dados.visivel, destaque=dados.destaque
+                empresa_id, config.id, visivel=dados.visivel, destaque=dados.destaque
             )
         return await self.loja_online_config_repo.criar(
             produto_id=produto_id, visivel=dados.visivel, destaque=dados.destaque
@@ -441,6 +442,7 @@ class LojaOnlineService:
     async def atualizar_foto(self, empresa_id: int, foto_id: UUID, dados: LojaOnlineFotoUpdate):
         """Atualiza uma foto."""
         foto = await self.loja_online_foto_repo.atualizar(
+            empresa_id,
             foto_id,
             url=dados.url,
             ordem=dados.ordem,
@@ -451,7 +453,7 @@ class LojaOnlineService:
 
     async def deletar_foto(self, empresa_id: int, foto_id: UUID):
         """Deleta uma foto."""
-        return await self.loja_online_foto_repo.deletar(foto_id)
+        return await self.loja_online_foto_repo.deletar(empresa_id, foto_id)
 
 
 class FornecedorService:
@@ -561,7 +563,7 @@ class FornecedorProdutoService:
 
     async def obter_vinculo(self, empresa_id: int, vinculo_id: UUID):
         """Obtém um vínculo fornecedor-produto."""
-        vinculo = await self.repo.obter_por_id(vinculo_id)
+        vinculo = await self.repo.obter_por_id(empresa_id, vinculo_id)
         if not vinculo:
             raise ValueError(f"Vínculo com ID {vinculo_id} não encontrada")
         return vinculo
@@ -586,7 +588,7 @@ class FornecedorProdutoService:
 
     async def atualizar_vinculo(self, empresa_id: int, vinculo_id: UUID, dados: FornecedorProdutoUpdate):
         """Atualiza um vínculo fornecedor-produto."""
-        vinculo = await self.repo.obter_por_id(vinculo_id)
+        vinculo = await self.repo.obter_por_id(empresa_id, vinculo_id)
         if not vinculo:
             raise ValueError(f"Vínculo com ID {vinculo_id} não encontrada")
 
@@ -596,6 +598,7 @@ class FornecedorProdutoService:
             raise ValueError("Preço do fornecedor deve ser maior que zero")
 
         return await self.repo.atualizar(
+            empresa_id,
             vinculo_id,
             codigo_fornecedor=dados.codigo_fornecedor,
             preco_fornecedor=dados.preco_fornecedor,
@@ -606,8 +609,8 @@ class FornecedorProdutoService:
 
     async def deletar_vinculo(self, empresa_id: int, vinculo_id: UUID):
         """Deleta um vínculo fornecedor-produto."""
-        vinculo = await self.repo.obter_por_id(vinculo_id)
+        vinculo = await self.repo.obter_por_id(empresa_id, vinculo_id)
         if not vinculo:
             raise ValueError(f"Vínculo com ID {vinculo_id} não encontrada")
 
-        return await self.repo.deletar(vinculo_id)
+        return await self.repo.deletar(empresa_id, vinculo_id)
