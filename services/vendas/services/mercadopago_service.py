@@ -3,6 +3,7 @@ Service de integração com Mercado Pago.
 Gerencia criação de preferências, links de pagamento e processamento de webhooks.
 """
 from typing import Optional, Dict, Any
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from decimal import Decimal
 import httpx
@@ -14,6 +15,22 @@ from models.venda import Venda, ConfiguracaoPagamento, WebhookProcessado, Status
 from config import settings
 
 log = structlog.get_logger()
+
+# Prazo de vida de um pagamento online. Mora aqui, e não no job, porque quem
+# monta a preferência precisa dele e o job já importa este módulo (o contrário
+# seria import circular). jobs/verificar_pagamentos_pendentes.py cancela a venda
+# exatamente com este prazo: os dois números têm que ser o mesmo, senão sobra
+# link pagável de venda já cancelada.
+TIMEOUT_PAGAMENTO = timedelta(minutes=5)
+
+
+def _agora_mp(daqui: timedelta = timedelta(0)) -> str:
+    """
+    Data no formato que o Mercado Pago exige: ISO-8601 com milissegundos e
+    offset (`2026-09-19T21:00:00.000+00:00`). Sem os milissegundos o MP recusa
+    a preferência inteira, e `isoformat()` sozinho os omite quando dão zero.
+    """
+    return (datetime.now(timezone.utc) + daqui).isoformat(timespec="milliseconds")
 
 
 class MercadoPagoService:
@@ -155,9 +172,12 @@ class MercadoPagoService:
             "external_reference": str(venda.id),  # Vincular com venda
             "notification_url": webhook_url,
             "statement_descriptor": f"Pedido {venda.numero_venda}",
+            # `expires: True` com as duas datas em None é o mesmo que não expirar:
+            # o link seguia pagável para sempre, inclusive depois de o job ter
+            # cancelado a venda e devolvido o estoque.
             "expires": True,
-            "expiration_date_from": None,  # Agora
-            "expiration_date_to": None,     # 5 minutos (calculado no momento)
+            "expiration_date_from": _agora_mp(),
+            "expiration_date_to": _agora_mp(TIMEOUT_PAGAMENTO),
             # Métodos de pagamento permitidos - incluindo PIX explicitamente
             "payment_methods": {
                 "excluded_payment_methods": [],  # Não excluir nenhum método

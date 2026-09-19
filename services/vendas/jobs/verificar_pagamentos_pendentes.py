@@ -12,7 +12,7 @@ Deve rodar a cada ~1 minuto (loop no lifespan do serviço; ver main.py).
 import asyncio
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Adicionar path do projeto
 sys.path.append(str(Path(__file__).parent.parent))
@@ -27,13 +27,15 @@ from models.venda import Venda, StatusVenda, StatusReserva
 from schemas.venda import ConfirmarVendaRequest, PagamentoVendaCreate
 from services.historico_status_service import HistoricoStatusService
 from services.notificacao_service import NotificacaoService
-from services.mercadopago_service import MercadoPagoService
+from services.mercadopago_service import TIMEOUT_PAGAMENTO, MercadoPagoService
 from services.venda_service import VendaService, EstoqueIndeterminadoError
 from repositories.venda_repository import VendaRepository, ReservaEstoqueVendaRepository
 
 log = structlog.get_logger()
 
-TIMEOUT_PAGAMENTO = timedelta(minutes=5)
+# TIMEOUT_PAGAMENTO vem de services.mercadopago_service: é o mesmo prazo que a
+# preferência do MP carrega em expiration_date_to. Duas cópias do número
+# deixariam link pagável de venda já cancelada aqui.
 
 
 async def _restaurar_carrinho_se_necessario(session: AsyncSession, venda) -> None:
