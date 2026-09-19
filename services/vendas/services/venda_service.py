@@ -34,7 +34,11 @@ from schemas.venda import (
 )
 from config import settings
 from utils.numero_venda import gerar_numero_venda
-from services.estoque_resultado import ResultadoBaixaEstoque, classificar_status_http
+from services.estoque_resultado import (
+    ResultadoBaixaEstoque,
+    classificar_reserva_http,
+    classificar_status_http,
+)
 
 log = structlog.get_logger()
 
@@ -140,8 +144,12 @@ class VendaService:
         variante_id: Optional[UUID],
         quantidade: Decimal,
         documento: str
-    ) -> bool:
-        """Reserva estoque no serviço de estoque."""
+    ) -> ResultadoBaixaEstoque:
+        """Reserva estoque no serviço de estoque.
+
+        Três resultados, não dois: um bool juntava "o estoque disse que não tem" com
+        "o estoque não respondeu", e só o primeiro autoriza recusar a venda.
+        """
         try:
             async with httpx.AsyncClient() as client:
                 url = f"{settings.ESTOQUE_URL}/estoque/reservar"
@@ -153,12 +161,22 @@ class VendaService:
                     "quantidade": float(quantidade),
                     "documento": documento
                 }
-                
+
                 response = await client.post(url, json=payload, headers=headers, timeout=5.0)
-                return response.status_code in [200, 201]
         except Exception as e:
             log.error("erro_reservar_estoque", error=str(e), produto_id=str(produto_id))
-            return False
+            return ResultadoBaixaEstoque.INDETERMINADO
+
+        resultado = classificar_reserva_http(response.status_code)
+        if resultado != ResultadoBaixaEstoque.SUCESSO:
+            log.warning(
+                "estoque_reserva_nao_confirmada",
+                resultado=resultado.value,
+                status=response.status_code,
+                detalhe=response.text[:200],
+                produto_id=str(produto_id),
+            )
+        return resultado
 
     @staticmethod
     async def liberar_reserva_estoque(
@@ -186,6 +204,27 @@ class VendaService:
         except Exception as e:
             log.error("erro_liberar_reserva", error=str(e), produto_id=str(produto_id))
             return False
+
+    @staticmethod
+    async def _desfazer_reservas(empresa_id: int, itens: list, documento: str) -> None:
+        """Solta as reservas que o estoque confirmou para esta venda, antes de recusá-la.
+
+        Só itens com resposta 2xx — nunca um indeterminado. Se a liberação falhar, a
+        reserva fica órfã: o produto parece menos disponível do que é (nunca mais).
+        Não bloqueia a recusa da venda; vira alerta para soltar à mão.
+        """
+        for item in itens:
+            liberou = await VendaService.liberar_reserva_estoque(
+                empresa_id, item.produto_id, item.variante_id, item.quantidade, documento
+            )
+            if not liberou:
+                log.critical(
+                    "reserva_orfa_liberar_manual",
+                    empresa_id=empresa_id,
+                    documento=documento,
+                    produto_id=str(item.produto_id),
+                    quantidade=float(item.quantidade),
+                )
 
     @staticmethod
     async def baixar_estoque(
@@ -542,24 +581,44 @@ class VendaService:
                         'status': StatusReserva.RESERVADA.value
                     })
                 
-                # 7. RESERVAR ESTOQUE (TODO: Integração com serviço de estoque)
-                # Por enquanto, apenas registramos a tentativa mas não bloqueamos
+                # 7. Reservar no serviço de estoque. Cada item é uma chamada HTTP, e o
+                # rollback desta transação não desfaz uma reserva já feita lá.
+                #
+                # SEM_ESTOQUE: o estoque respondeu que não reservou. A venda não é
+                #   criada, e só as reservas que ele confirmou para ela são desfeitas.
+                # INDETERMINADO (timeout, 5xx): pode ter reservado ou não. Nada é
+                #   desfeito — a reserva é um contador por produto, e soltar às cegas
+                #   pode soltar a de outro pedido. O item fica estoque_reservado=False
+                #   (a verdade que se sabe) e a venda vai para reconciliação. Quem
+                #   decide de fato é a baixa na confirmação, que tem lock e ledger.
+                reservados = []
+                indeterminados = []
                 for item in itens_criados:
-                    sucesso = await VendaService.reservar_estoque(
+                    resultado = await VendaService.reservar_estoque(
                         empresa_id,
                         item.produto_id,
                         item.variante_id,
                         item.quantidade,
                         numero_venda
                     )
-                    if not sucesso:
-                        # Log warning mas não bloqueia (estoque já foi validado nas reservas temporárias)
-                        log.warning("estoque_reserva_falhou", 
-                                   produto=item.descricao_produto,
-                                   produto_id=str(item.produto_id))
-                    
-                    # Marcar item como reservado
-                    await ItemVendaRepository.atualizar(db, item.id, estoque_reservado=True)
+                    if resultado == ResultadoBaixaEstoque.SEM_ESTOQUE:
+                        await VendaService._desfazer_reservas(empresa_id, reservados, numero_venda)
+                        raise ValueError(f"Estoque insuficiente para {item.descricao_produto}")
+                    if resultado == ResultadoBaixaEstoque.SUCESSO:
+                        reservados.append(item)
+                        await ItemVendaRepository.atualizar(db, item.id, estoque_reservado=True)
+                    else:
+                        indeterminados.append(item.descricao_produto)
+
+                if indeterminados:
+                    motivo = (
+                        "Reserva de estoque indeterminada (timeout ou erro do estoque): "
+                        + ", ".join(indeterminados)
+                    )
+                    await VendaService._marcar_reconciliacao_estoque(
+                        db, empresa_id, venda, StatusVenda.PEDIDO.value, motivo,
+                        observacao=f"Venda criada; {motivo[0].lower()}{motivo[1:]}",
+                    )
                 
                 # 8. Criar reservas no banco
                 await ReservaEstoqueVendaRepository.criar_varias(db, reservas_dados)
@@ -876,12 +935,18 @@ class VendaService:
         empresa_id: int,
         venda,
         status_anterior: str,
-        motivo: Optional[str]
+        motivo: Optional[str],
+        observacao: Optional[str] = None
     ) -> None:
         """
-        Marca uma venda paga com resultado de baixa de estoque indeterminado para
-        reconciliação assíncrona. Não cancela nem confirma — preserva o status atual e
-        sinaliza o retry idempotente. Não faz commit (o chamador controla a transação).
+        Marca uma venda com resultado de estoque indeterminado para reconciliação
+        assíncrona. Não cancela nem confirma — preserva o status atual e sinaliza o
+        retry idempotente. Não faz commit (o chamador controla a transação).
+
+        Nasceu para a baixa de uma venda paga; a criação da venda também usa, para a
+        reserva indeterminada. `observacao` é o texto do histórico — o padrão fala em
+        pagamento aprovado, e passar o próprio evita que a auditoria de uma venda não
+        paga diga que ela foi.
         """
         from services.historico_status_service import HistoricoStatusService
 
@@ -894,7 +959,7 @@ class VendaService:
             status_anterior,
             status_anterior,  # sem transição de status; entrada de auditoria
             None,  # Sistema
-            f"Pagamento aprovado; baixa de estoque indeterminada — pendente de "
+            observacao or f"Pagamento aprovado; baixa de estoque indeterminada — pendente de "
             f"reconciliação. {motivo or ''}".strip()
         )
 
