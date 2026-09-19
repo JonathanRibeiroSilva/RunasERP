@@ -19,7 +19,7 @@ _RAIZ = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_RAIZ / "services" / "vendas" / "services"))
 sys.path.insert(0, str(_RAIZ / "services" / "estoque" / "utils"))
 
-from webhook_politica import AcaoWebhook, decidir_acao_webhook  # noqa: E402
+from webhook_politica import AcaoWebhook, decidir_acao_webhook, eh_cobranca_duplicada  # noqa: E402
 from estoque_resultado import ResultadoBaixaEstoque, classificar_status_http  # noqa: E402
 import concorrencia  # noqa: E402
 
@@ -134,6 +134,39 @@ def test_ordenacao_deterministica_de_itens():
 def test_chave_ordenacao_variante_none_e_estavel():
     assert concorrencia.chave_ordenacao_item("p", None) == ("p", "")
     assert concorrencia.chave_ordenacao_item("p", "v") == ("p", "v")
+
+
+# ----------------------- V4: cobrança em duplicidade -----------------------
+# IGNORAR junta o replay inofensivo com um segundo pagamento real. Só o
+# payment_id separa os dois.
+
+@pytest.mark.parametrize("status_venda", STATUS_CONFIRMADA_OU_ALEM)
+def test_outro_pagamento_aprovado_em_venda_confirmada_e_cobranca_duplicada(status_venda):
+    assert eh_cobranca_duplicada(status_venda, "approved", "P2", "P1") is True
+
+
+def test_replay_do_mesmo_pagamento_nao_e_cobranca_duplicada():
+    assert eh_cobranca_duplicada("CONFIRMADA", "approved", "P1", "P1") is False
+
+
+def test_payment_id_numerico_e_o_mesmo_que_o_varchar_da_venda():
+    """O webhook pode mandar número; o banco guarda varchar. Sem str(), todo replay alarma."""
+    assert eh_cobranca_duplicada("CONFIRMADA", "approved", 123456789, "123456789") is False
+
+
+def test_aprovacao_online_em_venda_confirmada_no_balcao_e_cobranca_duplicada():
+    assert eh_cobranca_duplicada("CONFIRMADA", "approved", "P1", None) is True
+
+
+@pytest.mark.parametrize("status_venda", STATUS_NOVA_TENTATIVA + ["CANCELADA", "REEMBOLSADA"])
+def test_fora_de_venda_confirmada_nao_e_esta_regra(status_venda):
+    """PEDIDO confirma; CANCELADA/REEMBOLSADA já têm o próprio alerta."""
+    assert eh_cobranca_duplicada(status_venda, "approved", "P2", "P1") is False
+
+
+@pytest.mark.parametrize("status_pagamento", ["rejected", "cancelled", "pending", "refunded", None])
+def test_so_aprovacao_conta_como_cobranca(status_pagamento):
+    assert eh_cobranca_duplicada("CONFIRMADA", status_pagamento, "P2", "P1") is False
 
 
 def test_backoff_cresce_exponencialmente():

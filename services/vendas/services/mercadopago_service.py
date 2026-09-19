@@ -536,7 +536,7 @@ class MercadoPagoService:
         from services.historico_status_service import HistoricoStatusService
         from schemas.venda import ConfirmarVendaRequest, PagamentoVendaCreate
         from repositories.venda_repository import VendaRepository
-        from services.webhook_politica import AcaoWebhook, decidir_acao_webhook
+        from services.webhook_politica import AcaoWebhook, decidir_acao_webhook, eh_cobranca_duplicada
 
         # 1. Obter detalhes do pagamento (o status real está aqui, não no action do webhook).
         payment_data = await MercadoPagoService.obter_detalhes_pagamento(
@@ -600,6 +600,25 @@ class MercadoPagoService:
                     log.critical(
                         "webhook_pago_apos_cancelamento_revisar_manual",
                         venda_id=str(venda_id), payment_id=payment_id, status_venda=venda.status
+                    )
+                elif eh_cobranca_duplicada(
+                    venda.status, status_pagamento, payment_id, venda.mercadopago_payment_id
+                ):
+                    # Não sobrescreve o payment_id da venda: ele é o pagamento que a
+                    # confirmou. Este é o que precisa ser devolvido.
+                    log.critical(
+                        "pagamento_duplicado_reembolso_necessario",
+                        venda_id=str(venda_id),
+                        empresa_id=empresa_id,
+                        payment_id=str(payment_id),
+                        payment_id_da_venda=venda.mercadopago_payment_id,
+                        valor=payment_data.get("transaction_amount"),
+                    )
+                    await HistoricoStatusService.registrar_mudanca(
+                        db, venda.id, venda.status, venda.status, None,
+                        f"Segundo pagamento aprovado ({payment_id}) para venda já confirmada "
+                        f"pelo pagamento {venda.mercadopago_payment_id or 'fora do Mercado Pago'}"
+                        " — cobrança em duplicidade, reembolso manual necessário.",
                     )
                 else:
                     log.info(
