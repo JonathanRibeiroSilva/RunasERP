@@ -1,8 +1,10 @@
 """Every service's Alembic chain must build its schema from an empty database.
 
-Production predates Alembic: every schema was stamped, so `alembic upgrade head`
-is a no-op there and no boot ever replayed the chain. The bugs only surfaced on
-a fresh database — a `docker-compose down -v`, or a new VPS:
+Production predates Alembic: every schema was stamped at a baseline. Revisions
+added after that do run there on boot (the trg_auditoria triggers of 2026-08-28
+exist in prod, and only the migrations create them), but no boot ever replayed
+a chain from an empty database. The bugs only surfaced on a fresh one — a
+`docker-compose down -v`, or a new VPS:
 
 - vendas created `historico_status_venda` in two revisions, so the second one
   died on DuplicateTable and took the container down with it;
@@ -12,6 +14,7 @@ a fresh database — a `docker-compose down -v`, or a new VPS:
 
 This guards the class, not the three bugs.
 """
+import ast
 import re
 from pathlib import Path
 
@@ -38,15 +41,6 @@ def _versions_dirs():
             yield alembic_dir.parent.name, files
 
 
-# financeiro e notificacoes sobem hoje com o schema vazio e /health em 200:
-# `alembic upgrade head` sai 0 quando não acha revision nenhuma, indistinguível
-# de "já está no head". Enquanto estiverem aqui, os testes desta suíte não olham
-# para eles — não há chain para validar. Sair desta lista é o PR das baselines,
-# que precisa entrar junto com a guarda em database.py: a guarda derruba o
-# serviço no boot, e sem baseline os dois entram em crashloop.
-SEM_REVISIONS_AINDA = {"financeiro", "notificacoes"}
-
-
 def _balanced_call(source: str, open_paren: int) -> str:
     """The text of the call whose opening parenthesis sits at `open_paren`."""
     depth, i = 1, open_paren + 1
@@ -65,8 +59,7 @@ def test_every_alembic_service_ships_revisions():
     vazios = [
         d.parent.name
         for d in _alembic_dirs()
-        if d.parent.name not in SEM_REVISIONS_AINDA
-        and not [p for p in d.glob("versions/*.py") if p.stem != "__init__"]
+        if not [p for p in d.glob("versions/*.py") if p.stem != "__init__"]
     ]
     assert not vazios, (
         f"alembic/ sem revisions: {vazios} — `alembic upgrade head` sai 0 e o "
@@ -74,18 +67,35 @@ def test_every_alembic_service_ships_revisions():
     )
 
 
-def test_lista_de_pendentes_encolhe():
-    """Ganhou revisions? Sai da lista, senão a exceção vira permanente."""
-    resolvidos = [
-        nome
-        for nome in sorted(SEM_REVISIONS_AINDA)
-        for d in _alembic_dirs()
-        if d.parent.name == nome
-        and [p for p in d.glob("versions/*.py") if p.stem != "__init__"]
-    ]
-    assert not resolvidos, (
-        f"{resolvidos} já tem revisions: remova de SEM_REVISIONS_AINDA para o "
-        "serviço passar a ser guardado pelos outros testes deste arquivo"
+def _init_db(service_dir: Path) -> ast.AsyncFunctionDef:
+    tree = ast.parse((service_dir / "database.py").read_text(encoding="utf-8"))
+    return next(
+        n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name == "init_db"
+    )
+
+
+def test_every_init_db_refuses_an_image_without_revisions():
+    """The test above guards the repo; this guards the image.
+
+    A .dockerignore line once dropped alembic/versions/*.py from the empresas
+    image: the repo had revisions, the container had none, and it booted healthy
+    on an empty schema. Only a check at boot sees the image. It must run before
+    the upgrade — after it, the silent exit 0 already happened.
+    """
+    sem_guarda = []
+    for d in _alembic_dirs():
+        passos = [ast.unparse(s) for s in _init_db(d.parent).body]
+        guarda = next(
+            (i for i, s in enumerate(passos) if "alembic/versions" in s and "raise RuntimeError" in s),
+            None,
+        )
+        upgrade = next(i for i, s in enumerate(passos) if "'alembic', 'upgrade'" in s)
+        if guarda is None or guarda > upgrade:
+            sem_guarda.append(d.parent.name)
+
+    assert not sem_guarda, (
+        f"init_db sem guarda antes do upgrade: {sem_guarda} — imagem sem migrations "
+        "sobe healthy com o schema vazio"
     )
 
 
