@@ -132,11 +132,14 @@ async def test_estorno_indeterminado_nao_cancela_nem_mexe_em_nada(db, estoque):
     chamadas, config = estoque
     config["estorno_ok"] = False
     venda, _ = await _venda(db, StatusVenda.SEPARADA.value, [(True, True)])
+    # O id sai antes: o rollback do serviço expira as instâncias da sessão, e ler um
+    # atributo expirado fora de await é um lazy-load síncrono (MissingGreenlet).
+    venda_id = venda.id
 
     with pytest.raises(EstoqueIndeterminadoError):
-        await VendaService.cancelar_venda(db, EMPRESA, venda.id, CancelarVendaRequest(motivo=MOTIVO))
+        await VendaService.cancelar_venda(db, EMPRESA, venda_id, CancelarVendaRequest(motivo=MOTIVO))
 
-    venda, itens = await _recarregar(db, venda.id)
+    venda, itens = await _recarregar(db, venda_id)
     assert venda.status == StatusVenda.SEPARADA.value, "cancelou sem saber se o estoque voltou"
     assert itens[0].estoque_baixado is True
     assert chamadas["liberados"] == [], "liberou reserva antes de saber do estorno"
