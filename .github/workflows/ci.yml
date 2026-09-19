@@ -107,3 +107,66 @@ jobs:
       # No exit-5 tolerance: an empty tests/unit means the gate is not a gate.
       - name: Unit tests
         run: pytest -c tests/pytest.ini tests/unit
+
+  # The job above reads source; this one runs it. One leg per service, each from
+  # its own directory: the services import flat (`from main import app`,
+  # `from config import settings`), so two of them in one pytest process fight
+  # over which `main` sits on sys.path first.
+  services:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        svc:
+          - api-gateway
+          - services/clientes
+          - services/empresas
+          - services/estoque
+          - services/financeiro
+          - services/notificacoes
+          - services/produtos
+          - services/vendas
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env: {POSTGRES_USER: erp, POSTGRES_PASSWORD: erp, POSTGRES_DB: erp}
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U erp -d erp"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://erp:erp@localhost:5432/erp
+      REDIS_URL: redis://localhost:6379/15
+      RABBITMQ_URL: amqp://guest:guest@localhost:5672/
+      SECRET_KEY: ci-only-secret-key-for-tests-min-32-chars
+      PGPASSWORD: erp
+    defaults:
+      run: {working-directory: '${{ matrix.svc }}'}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: {python-version: '3.12'}
+
+      # The service's own pins, not a test-only list: the point is to run the code
+      # against the versions the image ships.
+      - run: pip install -r requirements.txt -r "$GITHUB_WORKSPACE/tests/requirements.txt"
+
+      # What db-init does in production before any service boots: schemas, grants,
+      # and the shared audit function the 2026-08-28 revisions attach triggers to.
+      - name: Schemas (db-init)
+        run: psql -h localhost -U erp -d erp -v ON_ERROR_STOP=1 -q -f "$GITHUB_WORKSPACE/postgres/init-schemas.sql"
+
+      # The whole chain against an empty database. Production was stamped at a
+      # baseline and never did this; without this step the first to try would be
+      # a new VPS, with the container dying on boot.
+      - name: Migrations from an empty database
+        run: alembic upgrade head
+
+      - name: Tests
+        run: pytest tests -p no:cacheprovider
