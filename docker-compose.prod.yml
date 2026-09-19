@@ -82,6 +82,51 @@ services:
         # to start on the 1 vCPU production VPS. Raise this only alongside the host.
         limits: {cpus: '1.0', memory: 1G}
 
+  # A dump of the database before anything in this deploy can change it. Every
+  # service runs `alembic upgrade head` on boot, and the deploy workflow's
+  # rollback only swaps images back — it never undoes DDL. Until this existed
+  # there was no backup of any kind: /data/coolify/backups was empty.
+  #
+  # It runs on every deploy because Coolify 4.3 stops and removes every container
+  # of the app before `up -d`, so this one-shot always starts again.
+  #
+  # Fail-closed: db-init waits for it to exit 0, and every service waits for
+  # db-init. A deploy that cannot back up does not migrate. The dump is written to
+  # a temp name, checked with pg_restore --list, and only then renamed, so a
+  # half-written file never looks like a good one.
+  #
+  # Absolute bind mount, not a named volume: Coolify rewrites the volumes section
+  # and drops `external:` (db_data below is not protected the way it looks), but
+  # passes bind mounts through untouched. Same disk as the database, so this
+  # covers a bad migration or a bad write — NOT losing the VPS. Off-site is still
+  # open.
+  db-backup:
+    image: postgres:15-alpine
+    container_name: erp-db-backup-prod
+    networks: [erp-network]
+    restart: "no"
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      PGDATABASE: ${POSTGRES_DB:-erp}
+    volumes:
+      - /data/erp/backups:/backups
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        nome="/backups/erp-$$(date -u +%Y%m%dT%H%M%SZ).dump"
+        pg_dump -Fc -f /backups/.parcial.dump
+        pg_restore --list /backups/.parcial.dump >/dev/null
+        mv /backups/.parcial.dump "$$nome"
+        # ponytail: keeps the 14 most recent dumps. The database is 11 MB today;
+        # revisit the count when a dump stops being small next to 30 GB free.
+        ls -1t /backups/erp-*.dump | tail -n +15 | xargs -r rm -f
+        echo "backup ok: $$nome ($$(du -h "$$nome" | cut -f1))"
+
   # Creates the per-service schemas. SQLAlchemy's create_all emits
   # CREATE TABLE <schema>.<table> but never CREATE SCHEMA, so without this every
   # service dies on first boot with `schema "vendas" does not exist`.
@@ -99,6 +144,8 @@ services:
     restart: "no"
     depends_on:
       db: {condition: service_healthy}
+      # Nothing that can change the schema starts before the dump exists.
+      db-backup: {condition: service_completed_successfully}
     environment:
       PGHOST: db
       PGUSER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
