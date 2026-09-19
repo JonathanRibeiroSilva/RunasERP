@@ -462,6 +462,18 @@ class VendaService:
             raise
 
     @staticmethod
+    def _validar_desconto(tipo: Optional[TipoDesconto], valor: Decimal) -> None:
+        """A regra do VendaCreate, aplicada ao desconto já mesclado com o gravado.
+
+        Não cabe no VendaUpdate: lá só se vê o que veio no PATCH, e "valor sem tipo"
+        pode ser um valor novo sobre um tipo que já estava gravado.
+        """
+        if valor > 0 and not tipo:
+            raise ValueError("desconto_tipo é obrigatório quando desconto_valor > 0")
+        if tipo == TipoDesconto.PERCENTUAL and valor > 100:
+            raise ValueError("desconto_percentual não pode ser maior que 100%")
+
+    @staticmethod
     def calcular_totais(
         itens: List[dict],
         desconto_tipo: Optional[TipoDesconto],
@@ -708,24 +720,49 @@ class VendaService:
         """Atualiza venda (apenas se status=PEDIDO)."""
         try:
             async with db.begin_nested():
-                venda = await VendaRepository.buscar_por_id(db, empresa_id, venda_id)
+                # Itens para recalcular o total; lock porque a confirmação lê o
+                # valor_total desta mesma linha para validar o pagamento.
+                venda = await VendaRepository.buscar_por_id(
+                    db, empresa_id, venda_id, com_relacionamentos=True, com_lock=True
+                )
                 if not venda:
                     return None
-                
+
                 if venda.status != StatusVenda.PEDIDO.value:
                     raise ValueError("Só é possível editar vendas com status PEDIDO")
-                
+
                 # Validar cliente se alterado
                 if data.cliente_id:
                     cliente = await VendaService.verificar_cliente_existe(empresa_id, data.cliente_id)
                     if not cliente:
                         raise ValueError("Cliente não encontrado ou inválido")
-                
+
+                dados = data.model_dump(exclude_unset=True)
+
+                # Desconto mexe no total. Antes era gravado e só: subtotal e
+                # valor_total ficavam os da criação, e a confirmação cobrava o valor
+                # cheio com o desconto aparecendo na tela. Recalcula com os itens
+                # gravados, pela mesma calcular_totais da criação.
+                if "desconto_tipo" in dados or "desconto_valor" in dados:
+                    tipo = dados.get("desconto_tipo", venda.desconto_tipo)
+                    tipo = TipoDesconto(tipo) if tipo else None
+                    valor = dados.get("desconto_valor", venda.desconto_valor) or Decimal("0")
+                    VendaService._validar_desconto(tipo, valor)
+                    dados["subtotal"], dados["valor_total"] = VendaService.calcular_totais(
+                        [{"subtotal": item.subtotal} for item in venda.itens], tipo, valor
+                    )
+                    dados["desconto_valor"] = valor
+                    # VendaRepository.atualizar pula None, então remover o desconto
+                    # nunca chegaria ao banco pelo **dados: vai direto na instância
+                    # (a mesma que o atualizar busca, já travada acima).
+                    dados.pop("desconto_tipo", None)
+                    venda.desconto_tipo = tipo.value if tipo else None
+
                 venda = await VendaRepository.atualizar(
                     db,
                     empresa_id,
                     venda_id,
-                    **data.model_dump(exclude_unset=True)
+                    **dados
                 )
             
             await db.commit()
