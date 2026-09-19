@@ -19,7 +19,7 @@ from schemas.venda import (
     AdicionarPagamentoRequest,
     PagamentoVendaResponse
 )
-from services.venda_service import VendaService
+from services.venda_service import EstoqueIndeterminadoError, VendaService
 from repositories.venda_repository import PagamentoVendaRepository
 from models.venda import StatusVenda, FormaPagamento
 
@@ -238,6 +238,13 @@ async def cancelar_venda(
         return await VendaService.cancelar_venda(db, empresa_id, venda_id, data)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except EstoqueIndeterminadoError as e:
+        # Nada foi cancelado e o estorno é idempotente: é seguro repetir. 503, não
+        # 400 — o pedido estava certo, o estoque é que não respondeu.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Cancelamento não concluído: {e}. Tente novamente.",
+        )
 
 
 # ==================== PAGAMENTOS ====================
