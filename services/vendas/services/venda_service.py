@@ -1260,16 +1260,27 @@ class VendaService:
         data: CancelarVendaRequest
     ) -> VendaDetalhada:
         """
-        Cancela venda e LIBERA RESERVAS de estoque.
+        Cancela venda, devolve o estoque já baixado e libera as reservas.
         Permitido apenas nos status: PEDIDO, CONFIRMADA, SEPARADA
+
+        CONFIRMADA e SEPARADA já passaram pela baixa definitiva, e em venda online o
+        dinheiro já foi capturado. Antes, o cancelamento só liberava reserva de item
+        não baixado: o estoque dos baixados sumia do sistema e o pagamento ficava
+        retido sem nada que avisasse. Agora o estoque volta pelo mesmo estorno
+        idempotente do reembolso, e pagamento capturado vira alerta de reembolso.
         """
+        from services.historico_status_service import HistoricoStatusService
+
         try:
             async with db.begin_nested():
+                # Lock como em confirmar/reembolsar: sem ele, o webhook de pagamento
+                # pode confirmar (e baixar) esta venda enquanto ela é cancelada.
                 venda = await VendaRepository.buscar_por_id(
                     db,
                     empresa_id,
                     venda_id,
-                    com_relacionamentos=True
+                    com_relacionamentos=True,
+                    com_lock=True
                 )
                 if not venda:
                     raise ValueError("Venda não encontrada")
@@ -1285,8 +1296,24 @@ class VendaService:
                         f"Não é possível cancelar venda com status {venda.status}. "
                         "Use devolução para vendas ENTREGUE ou FINALIZADA."
                     )
-                
-                # LIBERAR RESERVAS de estoque
+
+                status_anterior = venda.status
+
+                # Devolver o que já foi baixado. Idempotente por numero_venda no
+                # estoque (ledger de estorno): repetir o cancelamento não devolve em
+                # dobro. Resultado incerto não cancela — cancelar com o estoque
+                # talvez não devolvido faria a mercadoria sumir de vez.
+                # Vem antes de liberar reservas: se falhar, nada saiu desta função
+                # ainda, e a nova tentativa começa do zero.
+                sucesso, erro = await VendaService.estornar_estoque_venda(empresa_id, venda)
+                if not sucesso:
+                    raise EstoqueIndeterminadoError(
+                        erro or "Não foi possível confirmar a devolução do estoque"
+                    )
+
+                # LIBERAR RESERVAS — só de item que não foi baixado. A reserva do
+                # baixado já foi consumida pela baixa; liberá-la de novo soltaria a
+                # de outro pedido. Por isso estoque_baixado só muda depois deste loop.
                 for item in venda.itens:
                     if item.estoque_reservado and not item.estoque_baixado:
                         sucesso = await VendaService.liberar_reserva_estoque(
@@ -1302,7 +1329,10 @@ class VendaService:
                                 produto_id=str(item.produto_id),
                                 venda_id=str(venda_id)
                             )
-                
+
+                for item in venda.itens:
+                    item.estoque_baixado = False  # estornado acima
+
                 # Atualizar reservas
                 reservas = await ReservaEstoqueVendaRepository.listar_por_venda(db, venda_id)
                 for reserva in reservas:
@@ -1324,19 +1354,42 @@ class VendaService:
                     motivo_cancelamento=data.motivo,
                     cancelada_por=data.usuario_id
                 )
-            
+
+                observacao = f"Venda cancelada: {data.motivo}"
+                if venda.mercadopago_payment_id:
+                    observacao += (
+                        f" | Pagamento {venda.mercadopago_payment_id} já capturado — "
+                        "reembolso manual necessário."
+                    )
+                await HistoricoStatusService.registrar_mudanca(
+                    db, venda.id, status_anterior, StatusVenda.CANCELADA.value,
+                    data.usuario_id, observacao,
+                )
+
             await db.commit()
-            
+
+            # O serviço não chama a API de reembolso do Mercado Pago. Mesmo evento
+            # que _cancelar_por_falta_estoque emite: a loja fica com o dinheiro até
+            # alguém devolver à mão.
+            if venda.mercadopago_payment_id:
+                log.critical(
+                    "venda_cancelada_paga_reembolso_necessario",
+                    venda_id=str(venda_id),
+                    numero_venda=venda.numero_venda,
+                    empresa_id=empresa_id,
+                    payment_id=venda.mercadopago_payment_id,
+                )
+
             log.info(
                 "venda_cancelada",
                 venda_id=str(venda_id),
                 empresa_id=empresa_id,
                 motivo=data.motivo
             )
-            
+
             return await VendaService.buscar_venda(db, empresa_id, venda_id)
-            
-        except ValueError:
+
+        except (ValueError, EstoqueIndeterminadoError):
             await db.rollback()
             raise
         except Exception as e:
