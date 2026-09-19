@@ -74,3 +74,32 @@ def decidir_acao_webhook(status_venda: str, status_pagamento: Optional[str]) -> 
         return AcaoWebhook.REEMBOLSO
 
     return AcaoWebhook.IGNORAR
+
+
+def eh_cobranca_duplicada(
+    status_venda: str,
+    status_pagamento: Optional[str],
+    payment_id,
+    payment_id_da_venda: Optional[str],
+) -> bool:
+    """
+    Pagamento aprovado DIFERENTE do que confirmou a venda: o cliente pagou duas vezes.
+
+    decidir_acao_webhook devolve IGNORAR para "aprovado em venda já confirmada" — e
+    está certo, a venda não deve ser reconfirmada. Mas IGNORAR junta dois casos que
+    só o payment_id separa:
+    - o mesmo pagamento chegando de novo (replay): inofensivo;
+    - outro pagamento aprovado (dois links de pagamento pagos, aba antiga): dinheiro
+      real capturado a mais, que ninguém devolve se ninguém souber.
+
+    Venda confirmada sem payment_id foi confirmada fora do Mercado Pago (balcão):
+    qualquer aprovação online para ela também é cobrança a mais.
+
+    O payment_id do webhook pode chegar como número e o da venda é varchar — a
+    comparação é em str, senão todo replay viraria falso alarme.
+    """
+    return (
+        status_pagamento == "approved"
+        and status_venda in _CONFIRMADA_OU_ALEM
+        and str(payment_id) != str(payment_id_da_venda or "")
+    )
