@@ -38,11 +38,15 @@ export interface IntegracaoUpdate {
 export interface PagamentoStatus {
   configurado: boolean;
   ativo: boolean;
+  /** False = a rota de webhook aceita notificação não assinada. */
+  webhook_assinatura_configurada: boolean;
   ultima_atualizacao?: string | null;
 }
 
 export interface PagamentoUpsert {
   mercadopago_access_token: string;
   mercadopago_public_key: string;
+  /** Ausente = "mantém o gravado"; o backend recusa string vazia. */
+  mercadopago_webhook_secret?: string;
   ativo: boolean;
 }

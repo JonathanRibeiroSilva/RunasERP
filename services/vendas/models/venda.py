@@ -342,9 +342,13 @@ class ConfiguracaoPagamento(Base):
     # Multi-tenancy
     empresa_id = Column(Integer, unique=True, nullable=False, index=True)
     
-    # Credenciais Mercado Pago (access token cifrado — ver utils/crypto.py)
+    # Credenciais Mercado Pago (segredos cifrados — ver utils/crypto.py)
     mercadopago_access_token_enc = Column(Text, nullable=True)
     mercadopago_public_key = Column(String(255), nullable=True)
+    # Segredo de assinatura do webhook, do painel do MP. Vazio = rota aberta
+    # (ver routers/webhook.py): é o que mantém o lojista que ainda não colou o
+    # segredo recebendo pagamento.
+    mercadopago_webhook_secret_enc = Column(Text, nullable=True)
     
     # Status
     ativo = Column(Boolean, default=True, nullable=False)
@@ -371,6 +375,19 @@ class ConfiguracaoPagamento(Base):
     def mercadopago_access_token(self, valor: str | None) -> None:
         from utils.crypto import encrypt
         self.mercadopago_access_token_enc = encrypt(valor) if valor else None
+
+    @property
+    def mercadopago_webhook_secret(self) -> str | None:
+        """Segredo de assinatura em claro, decifrado sob demanda."""
+        if not self.mercadopago_webhook_secret_enc:
+            return None
+        from utils.crypto import decrypt
+        return decrypt(self.mercadopago_webhook_secret_enc)
+
+    @mercadopago_webhook_secret.setter
+    def mercadopago_webhook_secret(self, valor: str | None) -> None:
+        from utils.crypto import encrypt
+        self.mercadopago_webhook_secret_enc = encrypt(valor) if valor else None
 
 
 class ConfiguracaoIntegracao(Base):

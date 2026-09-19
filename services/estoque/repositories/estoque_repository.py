@@ -42,13 +42,18 @@ class EstoqueRepository:
         return estoque
 
     @staticmethod
-    async def buscar_por_id(db: AsyncSession, empresa_id: int, estoque_id: UUID) -> Optional[Estoque]:
-        """Busca estoque por ID."""
-        result = await db.execute(
+    async def buscar_por_id(
+        db: AsyncSession, empresa_id: int, estoque_id: UUID, for_update: bool = False
+    ) -> Optional[Estoque]:
+        """Busca estoque por ID. for_update: mesmo lock de linha de buscar_por_produto."""
+        query = (
             select(Estoque)
             .where(Estoque.empresa_id == empresa_id)
             .where(Estoque.id == estoque_id)
         )
+        if for_update:
+            query = query.with_for_update()
+        result = await db.execute(query)
         return result.scalar_one_or_none()
 
     @staticmethod

@@ -205,8 +205,13 @@ class EstoqueService:
         """Registra entrada de estoque com transação atômica."""
         try:
             async with db.begin_nested():
-                # Buscar ou criar estoque
-                estoque = await EstoqueRepository.buscar_por_produto(db, empresa_id, data.produto_id, data.variante_id)
+                # Buscar ou criar estoque. Toda escrita nesta classe lê a linha
+                # com FOR UPDATE: a quantidade nova é calculada em Python a partir
+                # dessa leitura, e sem o lock duas requisições simultâneas partem
+                # do mesmo valor e a segunda apaga a primeira (lost update).
+                estoque = await EstoqueRepository.buscar_por_produto(
+                    db, empresa_id, data.produto_id, data.variante_id, for_update=True
+                )
                 
                 if not estoque:
                     # Verificar se produto existe (no tenant correto)
@@ -294,11 +299,14 @@ class EstoqueService:
         """Registra saída de estoque com transação atômica."""
         try:
             async with db.begin_nested():
-                # Buscar estoque
-                estoque = await EstoqueRepository.buscar_por_produto(db, empresa_id, data.produto_id, data.variante_id)
+                # Lock também serializa o lote: ele só é tocado depois de conferir
+                # que pertence a esta linha de estoque.
+                estoque = await EstoqueRepository.buscar_por_produto(
+                    db, empresa_id, data.produto_id, data.variante_id, for_update=True
+                )
                 if not estoque:
                     raise ValueError("Estoque não encontrado para este produto/variante")
-                
+
                 # Verificar disponibilidade
                 if estoque.quantidade_disponivel < data.quantidade:
                     raise ValueError(
@@ -311,7 +319,14 @@ class EstoqueService:
                     lote = await LoteRepository.buscar_por_id(db, empresa_id, data.lote_id)
                     if not lote or lote.estoque_id != estoque.id:
                         raise ValueError("Lote não encontrado ou não pertence a este estoque")
-                    
+
+                    # Só BLOQUEADO para aqui — é quarentena, não se mexe. VENCIDO
+                    # sai de propósito: esta saída manual é como se registra o
+                    # descarte de um lote vencido, e a venda não passa por lote
+                    # nenhum (a baixa de venda nem lê esta tabela).
+                    if lote.status == StatusLote.BLOQUEADO.value:
+                        raise ValueError(f"Lote {lote.codigo} está bloqueado e não pode sair do estoque")
+
                     if lote.quantidade < data.quantidade:
                         raise ValueError(f"Quantidade insuficiente no lote. Disponível: {lote.quantidade}")
                     
@@ -369,10 +384,14 @@ class EstoqueService:
         """Ajusta estoque (inventário) com transação atômica."""
         try:
             async with db.begin_nested():
-                estoque = await EstoqueRepository.buscar_por_id(db, empresa_id, data.estoque_id)
+                # Sem o lock, dois ajustes gravam movimentações com o mesmo
+                # quantidade_anterior e a trilha de auditoria deixa de fechar.
+                estoque = await EstoqueRepository.buscar_por_id(
+                    db, empresa_id, data.estoque_id, for_update=True
+                )
                 if not estoque:
                     raise ValueError("Estoque não encontrado")
-                
+
                 quantidade_anterior = estoque.quantidade
                 quantidade_posterior = data.quantidade_nova
                 quantidade_ajuste = quantidade_posterior - quantidade_anterior
@@ -422,10 +441,14 @@ class EstoqueService:
         """Reserva estoque para venda com transação atômica."""
         try:
             async with db.begin_nested():
-                estoque = await EstoqueRepository.buscar_por_produto(db, empresa_id, data.produto_id, data.variante_id)
+                # O checkout reserva por aqui: sem o lock, dois pedidos pelo último
+                # item passam na checagem de disponível e os dois ficam reservados.
+                estoque = await EstoqueRepository.buscar_por_produto(
+                    db, empresa_id, data.produto_id, data.variante_id, for_update=True
+                )
                 if not estoque:
                     raise ValueError("Estoque não encontrado para este produto/variante")
-                
+
                 estoque = await EstoqueRepository.reservar(db, empresa_id, estoque.id, data.quantidade)
             
             # Commit da transação principal
@@ -457,10 +480,12 @@ class EstoqueService:
         """Libera reserva de estoque com transação atômica."""
         try:
             async with db.begin_nested():
-                estoque = await EstoqueRepository.buscar_por_produto(db, empresa_id, data.produto_id, data.variante_id)
+                estoque = await EstoqueRepository.buscar_por_produto(
+                    db, empresa_id, data.produto_id, data.variante_id, for_update=True
+                )
                 if not estoque:
                     raise ValueError("Estoque não encontrado para este produto/variante")
-                
+
                 estoque = await EstoqueRepository.liberar_reserva(db, empresa_id, estoque.id, data.quantidade)
             
             # Commit da transação principal

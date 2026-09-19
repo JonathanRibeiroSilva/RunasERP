@@ -33,3 +33,24 @@ def classificar_status_http(status_code: int) -> ResultadoBaixaEstoque:
     if status_code == 409:
         return ResultadoBaixaEstoque.SEM_ESTOQUE
     return ResultadoBaixaEstoque.INDETERMINADO
+
+
+def classificar_reserva_http(status_code: int) -> ResultadoBaixaEstoque:
+    """
+    Classifica a resposta de POST /estoque/reservar.
+
+    Não é a mesma tabela da baixa: /reservar devolve 400 quando falta estoque
+    (ValueError no router), não 409. Qualquer 4xx aqui significa que o estoque
+    respondeu e NÃO reservou — insuficiente, produto sem linha de estoque, tenant
+    divergente, payload inválido. É definitivo: a venda pode ser recusada sem
+    nada a desfazer por este item.
+
+    - 200/201 → SUCESSO
+    - 4xx     → SEM_ESTOQUE
+    - demais  → INDETERMINADO (5xx: pode ter reservado antes de falhar)
+    """
+    if status_code in (200, 201):
+        return ResultadoBaixaEstoque.SUCESSO
+    if 400 <= status_code < 500:
+        return ResultadoBaixaEstoque.SEM_ESTOQUE
+    return ResultadoBaixaEstoque.INDETERMINADO
