@@ -55,11 +55,13 @@ export type IntegracoesFormData = z.infer<typeof integracoesSchema>;
 /**
  * Mercado Pago. Espelha ConfiguracaoPagamentoCreate/Update: o backend exige as
  * duas credenciais inteiras em toda escrita — não existe "manter o atual" aqui,
- * trocar uma é reenviar as duas.
+ * trocar uma é reenviar as duas. A assinatura do webhook é a exceção: é
+ * opcional e, em branco, o backend mantém a que já está gravada.
  */
 export const pagamentoSchema = z.object({
   mercadopago_access_token: z.string().trim().min(20, 'Access Token deve ter no mínimo 20 caracteres'),
   mercadopago_public_key: z.string().trim().min(20, 'Public Key deve ter no mínimo 20 caracteres'),
+  mercadopago_webhook_secret: opcional,
   ativo: z.boolean(),
 });
 

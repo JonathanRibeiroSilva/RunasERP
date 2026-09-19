@@ -98,4 +98,10 @@ describe('pagamentoSchema', () => {
       pagamentoSchema.safeParse({ ...valido, mercadopago_access_token: SEGREDO_PLACEHOLDER }).success
     ).toBe(false);
   });
+
+  it('aceita a assinatura do webhook em branco — significa "mantém a gravada"', () => {
+    // Exigir o campo obrigaria a redigitar o segredo a cada troca de credencial.
+    expect(pagamentoSchema.safeParse({ ...valido, mercadopago_webhook_secret: '' }).success).toBe(true);
+    expect(pagamentoSchema.safeParse(valido).success).toBe(true);
+  });
 });

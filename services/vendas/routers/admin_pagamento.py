@@ -30,22 +30,20 @@ class ConfiguracaoPagamentoCreate(BaseModel):
         min_length=20,
         description="Public Key do Mercado Pago"
     )
+    mercadopago_webhook_secret: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Segredo de assinatura do webhook (painel do MP → Webhooks). "
+            "Vazio mantém o que já está gravado; enquanto não houver segredo, "
+            "a rota de webhook aceita notificação não assinada."
+        )
+    )
     ativo: bool = Field(default=True, description="Configuração ativa?")
 
 
-class ConfiguracaoPagamentoUpdate(BaseModel):
-    """Schema para atualizar configuração de pagamento."""
-    mercadopago_access_token: str = Field(
-        ...,
-        min_length=20,
-        description="Access Token do Mercado Pago"
-    )
-    mercadopago_public_key: str = Field(
-        ...,
-        min_length=20,
-        description="Public Key do Mercado Pago"
-    )
-    ativo: bool = Field(default=True, description="Configuração ativa?")
+class ConfiguracaoPagamentoUpdate(ConfiguracaoPagamentoCreate):
+    """Schema para atualizar configuração de pagamento (mesmos campos)."""
 
 
 class ConfiguracaoPagamentoResponse(BaseModel):
@@ -64,6 +62,10 @@ class ConfiguracaoPagamentoStatusResponse(BaseModel):
     """Schema de status da configuração (sem credenciais)."""
     configurado: bool = Field(..., description="Se tem configuração ativa")
     ativo: bool = Field(default=False, description="Se configuração está ativa")
+    webhook_assinatura_configurada: bool = Field(
+        default=False,
+        description="Se o segredo do webhook está gravado (sem ele a rota aceita não assinado)"
+    )
     ultima_atualizacao: datetime | None = Field(None, description="Data da última atualização")
 
 
@@ -102,6 +104,7 @@ async def verificar_status_configuracao(
         return ConfiguracaoPagamentoStatusResponse(
             configurado=True,
             ativo=config.ativo,
+            webhook_assinatura_configurada=bool(config.mercadopago_webhook_secret_enc),
             ultima_atualizacao=config.updated_at
         )
         
@@ -192,7 +195,8 @@ async def criar_configuracao_pagamento(
             empresa_id=empresa_id,
             access_token=data.mercadopago_access_token,
             public_key=data.mercadopago_public_key,
-            ativo=data.ativo
+            ativo=data.ativo,
+            webhook_secret=data.mercadopago_webhook_secret
         )
 
         return config
@@ -246,7 +250,8 @@ async def atualizar_configuracao_pagamento(
             empresa_id=empresa_id,
             access_token=data.mercadopago_access_token,
             public_key=data.mercadopago_public_key,
-            ativo=data.ativo
+            ativo=data.ativo,
+            webhook_secret=data.mercadopago_webhook_secret
         )
 
         return config

@@ -9,10 +9,53 @@ import structlog
 
 from database import get_db
 from services.mercadopago_service import MercadoPagoService
+from services.webhook_assinatura import assinatura_valida
 from utils.tenant import get_empresa_id_by_slug
 
 router = APIRouter(prefix="/loja", tags=["Webhooks"])
 log = structlog.get_logger()
+
+
+async def _conferir_assinatura(
+    db: AsyncSession, empresa_id: int, empresa_slug: str, request: Request, recurso_id
+) -> None:
+    """
+    Recusa a notificação se ela vier assinada errado.
+
+    Duas janelas deliberadamente abertas, ambas com warning para medir antes de
+    fechar (uma linha cada, quando o log de prod mostrar que não há tráfego
+    legítimo passando por elas):
+
+    - lojista sem segredo gravado: era assim para todo mundo até agora, e
+      fechar de imediato pararia o pagamento de quem não colou o segredo;
+    - notificação sem cabeçalho `x-signature`: o IPN legado (`?topic=`), que é
+      como o cartão com 3DS chega, não assina. Até saber que ninguém depende
+      dele, negar aqui é perder venda.
+    """
+    config = await MercadoPagoService.obter_credenciais(db, empresa_id)
+    segredo = config.mercadopago_webhook_secret if config else None
+    if not segredo:
+        log.warning("webhook_sem_segredo_configurado", empresa_slug=empresa_slug)
+        return
+
+    x_signature = request.headers.get("x-signature")
+    if not x_signature:
+        log.warning("webhook_sem_assinatura", empresa_slug=empresa_slug, recurso_id=recurso_id)
+        return
+
+    if not assinatura_valida(
+        x_signature, request.headers.get("x-request-id"), str(recurso_id), segredo
+    ):
+        log.error(
+            "webhook_assinatura_invalida",
+            empresa_slug=empresa_slug,
+            recurso_id=recurso_id,
+            client_host=request.client.host if request.client else None,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Assinatura do webhook inválida"
+        )
 
 
 @router.post("/{empresa_slug}/webhook/mercadopago")
@@ -104,7 +147,10 @@ async def webhook_mercadopago(
                 detail=f"Empresa com slug '{empresa_slug}' não encontrada"
             )
 
-        # 4. Resolver o(s) payment_id(s) a processar.
+        # 4. Conferir a assinatura antes de gastar qualquer chamada à API do MP.
+        await _conferir_assinatura(db, empresa_id, empresa_slug, request, recurso_id)
+
+        # 5. Resolver o(s) payment_id(s) a processar.
         #    payment        -> o próprio id já é o pagamento.
         #    merchant_order -> buscar a ordem e extrair os pagamentos vinculados (cartão 3DS).
         if topic == "payment":
@@ -122,7 +168,7 @@ async def webhook_mercadopago(
             )
             return {"status": "ok", "reason": "Sem pagamentos para processar"}
 
-        # 5. Processar cada pagamento com idempotência.
+        # 6. Processar cada pagamento com idempotência.
         #    obter_payment_ids_de_merchant_order já ordena aprovados primeiro, evitando que
         #    uma tentativa rejeitada sobrescreva uma aprovada da mesma ordem.
         tipo_evento = action or f"{topic}.notification"
