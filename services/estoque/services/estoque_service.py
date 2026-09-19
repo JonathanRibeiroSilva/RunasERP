@@ -319,7 +319,14 @@ class EstoqueService:
                     lote = await LoteRepository.buscar_por_id(db, empresa_id, data.lote_id)
                     if not lote or lote.estoque_id != estoque.id:
                         raise ValueError("Lote não encontrado ou não pertence a este estoque")
-                    
+
+                    # Só BLOQUEADO para aqui — é quarentena, não se mexe. VENCIDO
+                    # sai de propósito: esta saída manual é como se registra o
+                    # descarte de um lote vencido, e a venda não passa por lote
+                    # nenhum (a baixa de venda nem lê esta tabela).
+                    if lote.status == StatusLote.BLOQUEADO.value:
+                        raise ValueError(f"Lote {lote.codigo} está bloqueado e não pode sair do estoque")
+
                     if lote.quantidade < data.quantidade:
                         raise ValueError(f"Quantidade insuficiente no lote. Disponível: {lote.quantidade}")
                     
