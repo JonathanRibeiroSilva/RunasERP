@@ -146,6 +146,15 @@ jobs:
       RABBITMQ_URL: amqp://guest:guest@localhost:5672/
       SECRET_KEY: ci-only-secret-key-for-tests-min-32-chars
       PGPASSWORD: erp
+      # Only the gateway reads these, but its alembic/env.py imports the settings,
+      # so they must exist before the migration step, not just inside pytest.
+      CLIENTES_URL: http://localhost:8001
+      PRODUTOS_URL: http://localhost:8002
+      ESTOQUE_URL: http://localhost:8003
+      VENDAS_URL: http://localhost:8004
+      FINANCEIRO_URL: http://localhost:8005
+      NOTIFICACOES_URL: http://localhost:8006
+      EMPRESAS_URL: http://localhost:8007
     defaults:
       run: {working-directory: '${{ matrix.svc }}'}
     steps:
