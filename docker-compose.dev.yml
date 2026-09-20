@@ -210,6 +210,8 @@ services:
       # Cobranca da plataforma: conta MP do dono, nao a do lojista.
       PLATAFORMA_MP_ACCESS_TOKEN: ${PLATAFORMA_MP_ACCESS_TOKEN}
       PLATAFORMA_JOB_TOKEN: ${PLATAFORMA_JOB_TOKEN}
+      # Mesmo valor no vendas: e o par que fecha /auth/cliente/registrar-interno.
+      REGISTRO_INTERNO_TOKEN: ${REGISTRO_INTERNO_TOKEN}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
@@ -367,6 +369,8 @@ services:
       PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos:8002}
       ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque:8003}
       FINANCEIRO_URL: ${FINANCEIRO_URL:-http://financeiro:8005}
+      # Mesmo valor no api-gateway: prova que o registrar-interno saiu daqui.
+      REGISTRO_INTERNO_TOKEN: ${REGISTRO_INTERNO_TOKEN}
     depends_on:
       db:
         condition: service_healthy

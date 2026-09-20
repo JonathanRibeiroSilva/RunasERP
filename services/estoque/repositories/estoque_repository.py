@@ -143,11 +143,26 @@ class EstoqueRepository:
         estoque_id: UUID,
         quantidade: float
     ) -> Optional[Estoque]:
-        """Atualiza a quantidade de estoque."""
+        """Atualiza a quantidade de estoque.
+
+        Entrada, saída e ajuste passam todos por aqui, e só o ajuste escrevia uma
+        quantidade que não vem de uma conta sobre a anterior: ele grava a contagem
+        do inventário. Contar 2 com 4 unidades reservadas deixava
+        quantidade_disponivel = -2 — o estoque passava a prometer o que não tinha,
+        e agora seria o CHECK derrubando a requisição com um 500 sem explicação.
+        A recusa mora aqui, no ponto por onde os três caminhos passam, e vira 400
+        com o motivo: as reservas precisam ser liberadas antes de baixar a contagem.
+        """
         estoque = await EstoqueRepository.buscar_por_id(db, empresa_id, estoque_id)
         if not estoque:
             return None
-        
+
+        if quantidade < estoque.quantidade_reservada:
+            raise ValueError(
+                f"Quantidade ({quantidade}) menor que a reservada "
+                f"({estoque.quantidade_reservada}). Libere as reservas antes."
+            )
+
         estoque.quantidade = quantidade
         estoque.quantidade_disponivel = quantidade - estoque.quantidade_reservada
         estoque.updated_at = datetime.utcnow()
@@ -168,11 +183,17 @@ class EstoqueRepository:
         if not estoque:
             return None
         
-        if estoque.quantidade_disponivel < quantidade:
+        # A checagem é sobre a reserva que vai ser gravada, não sobre o
+        # quantidade_disponivel lido. Os dois só diferem por um ulp de Float, mas
+        # é esse ulp que faria o CHECK recusar uma reserva legítima com um 500:
+        # comparando o valor que de fato vai para a coluna, a subtração abaixo
+        # nunca sai negativa (IEEE 754 preserva o sinal de a - b com a >= b).
+        reservada = estoque.quantidade_reservada + quantidade
+        if reservada > estoque.quantidade:
             raise ValueError("Quantidade disponível insuficiente para reserva")
-        
-        estoque.quantidade_reservada += quantidade
-        estoque.quantidade_disponivel = estoque.quantidade - estoque.quantidade_reservada
+
+        estoque.quantidade_reservada = reservada
+        estoque.quantidade_disponivel = estoque.quantidade - reservada
         estoque.updated_at = datetime.utcnow()
 
         # flush only — the calling service owns the transaction (begin_nested + commit).

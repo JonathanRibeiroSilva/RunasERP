@@ -4,7 +4,7 @@ Modelos de Estoque.
 from datetime import datetime, date
 from enum import Enum
 from uuid import uuid4
-from sqlalchemy import Column, String, Float, Boolean, DateTime, Date, ForeignKey, Text, Integer, Index, UniqueConstraint
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Date, ForeignKey, Text, Integer, Index, UniqueConstraint, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base
@@ -35,6 +35,16 @@ class Estoque(Base):
     __tablename__ = "estoque"
     __table_args__ = (
         UniqueConstraint('empresa_id', 'produto_id', 'variante_id', name='uq_estoque_empresa_produto_variante'),
+        # Estoque negativo é vender o que não existe. Toda quantidade nova é
+        # calculada em Python a partir de uma leitura da linha; uma conta errada
+        # em qualquer desses caminhos gravava -3 em silêncio e o sistema passava
+        # a vender mercadoria que já saiu. O CHECK é a última linha de defesa:
+        # vale para todo caminho, inclusive os que ainda não existem e o UPDATE
+        # feito à mão no psql.
+        CheckConstraint(
+            'quantidade >= 0 AND quantidade_reservada >= 0 AND quantidade_disponivel >= 0',
+            name='ck_estoque_quantidades_nao_negativas',
+        ),
         Index('ix_estoque_empresa_id', 'empresa_id'),
         Index('ix_estoque_empresa_id_ativo', 'empresa_id', 'ativo'),
         {"schema": "estoque"}

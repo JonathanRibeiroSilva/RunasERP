@@ -572,6 +572,7 @@ async def registrar_cliente_interno(
     data: InternalRegisterRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
     x_forwarded_for: str | None = Header(None),
+    x_registro_interno_token: str | None = Header(None, alias="X-Registro-Interno-Token"),
 ):
     """
     Endpoint interno para registrar autenticação de cliente.
@@ -579,13 +580,36 @@ async def registrar_cliente_interno(
 
     Não requer hash da senha - já vem hasheado do serviço chamador. Por isso
     só o serviço de vendas pode chamar: quem manda a senha já hasheada define
-    a senha da conta. O nginx sempre carimba X-Forwarded-For no que vem da
-    internet; a chamada interna via rede do Docker não tem esse header.
-    # ponytail: marcador do nginx em vez de segredo compartilhado, que exigiria
-    # env nova nos dois serviços. Trocar se outro caminho interno passar pelo nginx.
+    a senha da conta.
+
+    A porta é o segredo compartilhado REGISTRO_INTERNO_TOKEN, no mesmo molde do
+    PLATAFORMA_JOB_TOKEN. Antes era só a ausência do X-Forwarded-For — que o
+    nginx carimba no que vem da internet. Funcionava, mas dependia de o nginx
+    continuar configurado assim para sempre, e de nenhum caminho interno novo
+    passar por ele.
     """
+    # A guarda antiga fica enquanto a janela do fail-open estiver aberta: é ela
+    # que protege quem ainda não carimba o segredo.
     if x_forwarded_for is not None:
         log.warning("cliente.internal_register.externo", xff=x_forwarded_for)
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not Found")
+
+    # ponytail: fail-open enquanto o segredo não estiver nos dois containers em
+    # prod. Fechar o validador junto com o deploy pararia o checkout que cria
+    # conta, porque o vendas só carimba o header depois que a env nova chegar.
+    # Medir cliente.internal_register.sem_segredo; zerado, fecha-se trocando o
+    # log.warning abaixo pelo mesmo raise do bloco acima — uma linha.
+    esperado = settings.REGISTRO_INTERNO_TOKEN
+    if not esperado or not x_registro_interno_token:
+        log.warning(
+            "cliente.internal_register.sem_segredo",
+            gateway_configurado=bool(esperado),
+            token_recebido=bool(x_registro_interno_token),
+        )
+    # encode(): compare_digest recusa str não-ASCII com TypeError, e o header
+    # vem de fora — um byte acentuado viraria 500 em vez de 404.
+    elif not secrets.compare_digest(x_registro_interno_token.encode(), esperado.encode()):
+        log.warning("cliente.internal_register.segredo_invalido")
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not Found")
 
     repo = ClienteAuthRepository(db)

@@ -53,6 +53,9 @@ export interface Produto {
   preco?: string | number;
   custo?: string | number;
   preco_promocional?: string | number | null;
+  /** O preco que vale hoje, com a promocao ja resolvida pelo backend. */
+  preco_efetivo?: string | number | null;
+  promocao_fim?: string | null;
   // Campos presentes apenas no payload completo (GET /produtos/{id}); ausentes na listagem simples.
   sku?: string | null;
   codigo_barras?: string | null;

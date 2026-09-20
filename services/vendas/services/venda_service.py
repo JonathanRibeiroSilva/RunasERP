@@ -34,6 +34,7 @@ from schemas.venda import (
 )
 from config import settings
 from utils.numero_venda import gerar_numero_venda
+from services.preco_catalogo import preco_do_catalogo
 from services.estoque_resultado import (
     ResultadoBaixaEstoque,
     classificar_reserva_http,
@@ -529,8 +530,18 @@ class VendaService:
                     if not produto:
                         raise ValueError(f"Produto {item.produto_id} não encontrado")
                     
-                    # Usar preço do produto se não fornecido
-                    preco_unitario = item.preco_unitario if item.preco_unitario else Decimal(str(produto.get('preco', produto.get('preco_venda', 0))))
+                    # O preço é o do catálogo, sempre. Aceitá-lo do pedido dava ao
+                    # chamador o poder de dizer quanto a venda custa, por fora de
+                    # desconto_tipo/desconto_valor: o relatório lia "vendido a R$ 3"
+                    # como preço normal, sem dizer que houve desconto nem de quanto.
+                    # A leitura é a mesma do carrinho — literalmente a mesma
+                    # função, porque era a duplicata dela que deixava a promoção
+                    # valer numa ponta e não na outra.
+                    preco_unitario = preco_do_catalogo(produto)
+                    if preco_unitario <= 0:
+                        # Sem o preço do pedido como rede, catálogo sem preço viraria
+                        # venda de graça em silêncio. O carrinho já recusa igual.
+                        raise ValueError(f"Produto {item.produto_id} está sem preço de venda definido")
                     subtotal = item.quantidade * preco_unitario
                     
                     # 🔧 CORREÇÃO: Se item já vem com codigo/descricao (do carrinho), usar eles

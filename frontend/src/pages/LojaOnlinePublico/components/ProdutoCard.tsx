@@ -8,6 +8,8 @@ interface Produto {
   ativo: boolean;
   preco?: string | number;
   preco_promocional?: string | number | null;
+  /** O preco que vale hoje, ja com a promocao resolvida pelo backend. */
+  preco_efetivo?: string | number | null;
 }
 
 const formatarPreco = (valor: number) =>
@@ -20,9 +22,12 @@ interface ProdutoCardProps {
 }
 
 const ProdutoCard: React.FC<ProdutoCardProps> = ({ produto, onClick, onAddToCart }) => {
+  // Quem decide se a promocao vale e o backend, em preco_efetivo: a regra
+  // morava aqui e no carrinho ao mesmo tempo, e as duas se desencontraram —
+  // a vitrine anunciava a promocao e o carrinho cobrava o preco cheio.
+  // O fallback existe para a loja nao ficar sem preco se a API vier antiga.
   const precoBase = Number(produto.preco) || 0;
-  const precoPromocional = Number(produto.preco_promocional) || 0;
-  const precoExibido = precoPromocional > 0 ? precoPromocional : precoBase;
+  const precoExibido = Number(produto.preco_efetivo) || precoBase;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); // Evita abrir detalhes ao clicar em adicionar
@@ -41,7 +46,7 @@ const ProdutoCard: React.FC<ProdutoCardProps> = ({ produto, onClick, onAddToCart
         )}
         {precoExibido > 0 && (
           <div className="produto-preco" onClick={onClick}>
-            {precoPromocional > 0 && precoPromocional < precoBase && (
+            {precoExibido < precoBase && (
               <span className="preco-antigo">{formatarPreco(precoBase)}</span>
             )}
             <span className="preco-atual">{formatarPreco(precoExibido)}</span>
