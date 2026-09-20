@@ -1,7 +1,7 @@
 """
 Modelos de Variante e AtributoVariante.
 """
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from uuid import uuid4
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
@@ -50,8 +50,22 @@ class Variante(Base):
     )
     
     def calcular_preco_venda(self) -> Decimal:
-        """Calcula o preço de venda baseado no custo e markup."""
-        return self.preco_custo * (1 + self.markup_pct / 100)
+        """
+        Preço de venda derivado do custo e do markup, já na precisão da coluna.
+
+        O `quantize` não é cosmético. Sem ele a instância carrega 13.3333
+        enquanto a coluna `Numeric(10, 2)` guarda 13.33 — e é a instância que a
+        rota devolve logo depois do POST, antes de qualquer SELECT novo. Dois
+        números para o mesmo preço é exatamente o que este cálculo existe para
+        não ter.
+
+        `ROUND_HALF_UP` porque é o que o Postgres faz ao gravar em
+        `Numeric(10, 2)`; o padrão do Python é `ROUND_HALF_EVEN`, que na metade
+        do centavo (R$ 1,125) daria 1,12 aqui e 1,13 no disco.
+        """
+        return (self.preco_custo * (1 + self.markup_pct / 100)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
     
     def __repr__(self) -> str:
         return f"<Variante(id={self.id}, sku={self.sku})>"

@@ -274,16 +274,17 @@ class VarianteService:
         if existente:
             raise ValueError(f"SKU '{dados.sku}' já existe")
 
-        if dados.preco_venda < dados.preco_custo:
-            raise ValueError("Preço de venda não pode ser menor que preço de custo")
-
+        # `preco_venda` do corpo é ignorado: quem calcula é o repositório, com
+        # `Variante.calcular_preco_venda()`. A checagem que existia aqui
+        # (`preco_venda < preco_custo`) saiu porque virou impossível de falhar —
+        # `markup_pct` é `ge=0`, então custo * (1 + markup/100) nunca fica abaixo
+        # do custo. Guarda que não pode disparar mente sobre o que protege.
         variante = await self.variante_repo.criar(
             empresa_id=empresa_id,
             produto_id=dados.produto_id,
             sku=dados.sku,
             preco_custo=dados.preco_custo,
             markup_pct=dados.markup_pct,
-            preco_venda=dados.preco_venda,
         )
 
         for atributo in dados.atributos:
@@ -323,19 +324,16 @@ class VarianteService:
             if existente:
                 raise ValueError(f"SKU '{dados.sku}' já existe")
 
-        # Validar preço
-        preco_custo = dados.preco_custo or variante.preco_custo
-        preco_venda = dados.preco_venda or variante.preco_venda
-        if preco_venda < preco_custo:
-            raise ValueError("Preço de venda não pode ser menor que preço de custo")
-
+        # Nada de mesclar preço à mão aqui: o repositório recalcula em cima da
+        # instância, que já tem o que o PATCH não trouxe. O merge que existia
+        # usava `or`, e `markup_pct` é `ge=0` — um markup de 0 é falsy e cairia
+        # no valor antigo sem ninguém ver.
         return await self.variante_repo.atualizar(
             empresa_id,
             variante_id,
             sku=dados.sku,
             preco_custo=dados.preco_custo,
             markup_pct=dados.markup_pct,
-            preco_venda=dados.preco_venda,
             ativo=dados.ativo,
         )
 

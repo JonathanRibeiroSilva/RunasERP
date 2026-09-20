@@ -367,19 +367,18 @@ class VarianteRepository:
         empresa_id: int,
         produto_id: UUID,
         sku: str,
-        preco_custo: float,
-        markup_pct: float,
-        preco_venda: float,
+        preco_custo: Decimal,
+        markup_pct: Decimal,
     ) -> Variante:
-        """Cria uma nova variante."""
+        """Cria uma nova variante. `preco_venda` é derivado, não recebido."""
         variante = Variante(
             empresa_id=empresa_id,
             produto_id=produto_id,
             sku=sku,
             preco_custo=preco_custo,
             markup_pct=markup_pct,
-            preco_venda=preco_venda,
         )
+        variante.preco_venda = variante.calcular_preco_venda()
         self.session.add(variante)
         await self.session.flush()
         return variante
@@ -419,12 +418,11 @@ class VarianteRepository:
         empresa_id: int,
         variante_id: UUID,
         sku: str | None = None,
-        preco_custo: float | None = None,
-        markup_pct: float | None = None,
-        preco_venda: float | None = None,
+        preco_custo: Decimal | None = None,
+        markup_pct: Decimal | None = None,
         ativo: bool | None = None,
     ) -> Variante | None:
-        """Atualiza uma variante."""
+        """Atualiza uma variante. `preco_venda` é derivado, não recebido."""
         variante = await self.obter_por_id(empresa_id, variante_id)
         if not variante:
             return None
@@ -435,8 +433,12 @@ class VarianteRepository:
             variante.preco_custo = preco_custo
         if markup_pct is not None:
             variante.markup_pct = markup_pct
-        if preco_venda is not None:
-            variante.preco_venda = preco_venda
+        # A instância já traz o que não veio no PATCH, então recalcular aqui é o
+        # merge — um PATCH só de markup usa o custo gravado sem código nenhum de
+        # mesclagem. Condicionado às duas entradas porque desativar uma variante
+        # não é motivo para o preço dela mudar.
+        if preco_custo is not None or markup_pct is not None:
+            variante.preco_venda = variante.calcular_preco_venda()
         if ativo is not None:
             variante.ativo = ativo
 
