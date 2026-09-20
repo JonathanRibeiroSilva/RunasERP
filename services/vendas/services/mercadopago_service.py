@@ -216,15 +216,6 @@ class MercadoPagoService:
             auto_return=preference_data.get("auto_return")
         )
         
-        # Log do payload COMPLETO que será enviado
-        log.info(
-            "mercadopago_payload_completo",
-            venda_id=str(venda.id),
-            payload=preference_data,  # Payload completo para debug
-            access_token_length=len(config.mercadopago_access_token),
-            access_token_inicio=config.mercadopago_access_token[:20]
-        )
-        
         try:
             # Log ANTES de fazer a requisição
             log.info(
