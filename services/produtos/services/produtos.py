@@ -1,6 +1,7 @@
 """
 Services com lógica de negócio para Produtos.
 """
+from decimal import Decimal
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.produtos import (
@@ -32,6 +33,41 @@ from repositories.produtos import (
     FornecedorRepository,
     FornecedorProdutoRepository,
 )
+
+
+def _exigir_preco_cobrindo_fornecedor(preco_venda: Decimal, preco_fornecedor: Decimal) -> None:
+    """
+    Recusa vender por menos do que se paga ao fornecedor.
+
+    Mesma regra que `preco < custo` já barra no cadastro do produto, só que
+    olhando para o preço que se paga de verdade: `Produto.custo` é digitado à
+    mão e nada o sincroniza com o vínculo do fornecedor, então a guarda de lá
+    não cobria esta. Vale nas duas direções — cadastrar fornecedor caro demais
+    e baixar o preço de venda abaixo do fornecedor dão o mesmo prejuízo por
+    unidade vendida.
+    """
+    if preco_fornecedor > preco_venda:
+        raise ValueError(
+            f"Preço do fornecedor (R$ {preco_fornecedor}) não pode ser maior que "
+            f"o preço de venda (R$ {preco_venda})"
+        )
+
+
+def _exigir_promocao_nao_maior_que_preco(preco: Decimal, preco_promocional: Decimal | None) -> None:
+    """
+    Recusa promoção que cobra mais caro que o preço normal.
+
+    Igual ao preço normal passa: é o lojista decidindo não dar desconto neste
+    item, e nenhuma tela mente por isso — o card da loja só risca o preço antigo
+    quando a promoção é estritamente menor. Acima é que não existe: o campo se
+    chama "promocional", a vitrine exibe esse número no lugar do preço, e o
+    cliente lê como desconto o que é aumento.
+    """
+    if preco_promocional is not None and preco_promocional > preco:
+        raise ValueError(
+            f"Preço promocional (R$ {preco_promocional}) não pode ser maior que "
+            f"o preço de venda (R$ {preco})"
+        )
 
 
 class CategoriaService:
@@ -87,6 +123,7 @@ class ProdutoService:
         self.session = session
         self.produto_repo = ProdutoRepository(session)
         self.categoria_repo = CategoriaRepository(session)
+        self.fornecedor_produto_repo = FornecedorProdutoRepository(session)
 
     async def criar_produto(self, empresa_id: int, dados: ProdutoCreate):
         """Cria um novo produto."""
@@ -96,6 +133,8 @@ class ProdutoService:
 
         if dados.preco < dados.custo:
             raise ValueError("Preço de venda não pode ser menor que o custo")
+
+        _exigir_promocao_nao_maior_que_preco(dados.preco, dados.preco_promocional)
 
         return await self.produto_repo.criar(
             empresa_id=empresa_id,
@@ -196,6 +235,24 @@ class ProdutoService:
         if preco_efetivo < custo_efetivo:
             raise ValueError("Preço de venda não pode ser menor que o custo")
 
+        # Valores mesclados como os de cima, e pelo mesmo motivo: o PATCH só
+        # enxerga o que veio. As duas direções levam ao mesmo absurdo — subir a
+        # promoção acima do preço, ou baixar o preço abaixo de uma promoção já
+        # gravada — e olhar só o que o request trouxe fecharia uma e deixaria a
+        # outra aberta.
+        promocional_efetivo = (
+            dados.preco_promocional if dados.preco_promocional is not None
+            else produto.preco_promocional
+        )
+        _exigir_promocao_nao_maior_que_preco(preco_efetivo, promocional_efetivo)
+
+        # A outra direção do mesmo prejuízo: guardar o vínculo do fornecedor não
+        # adianta se depois dá para baixar o preço de venda abaixo dele. Só
+        # consulta quando o preço está mudando — não é para pesar num PATCH de nome.
+        if dados.preco is not None:
+            for vinculo in await self.fornecedor_produto_repo.listar_fornecedores_produto(produto_id):
+                _exigir_preco_cobrindo_fornecedor(preco_efetivo, vinculo.preco_fornecedor)
+
         return await self.produto_repo.atualizar(
             empresa_id,
             produto_id,
@@ -247,16 +304,17 @@ class VarianteService:
         if existente:
             raise ValueError(f"SKU '{dados.sku}' já existe")
 
-        if dados.preco_venda < dados.preco_custo:
-            raise ValueError("Preço de venda não pode ser menor que preço de custo")
-
+        # `preco_venda` do corpo é ignorado: quem calcula é o repositório, com
+        # `Variante.calcular_preco_venda()`. A checagem que existia aqui
+        # (`preco_venda < preco_custo`) saiu porque virou impossível de falhar —
+        # `markup_pct` é `ge=0`, então custo * (1 + markup/100) nunca fica abaixo
+        # do custo. Guarda que não pode disparar mente sobre o que protege.
         variante = await self.variante_repo.criar(
             empresa_id=empresa_id,
             produto_id=dados.produto_id,
             sku=dados.sku,
             preco_custo=dados.preco_custo,
             markup_pct=dados.markup_pct,
-            preco_venda=dados.preco_venda,
         )
 
         for atributo in dados.atributos:
@@ -296,19 +354,16 @@ class VarianteService:
             if existente:
                 raise ValueError(f"SKU '{dados.sku}' já existe")
 
-        # Validar preço
-        preco_custo = dados.preco_custo or variante.preco_custo
-        preco_venda = dados.preco_venda or variante.preco_venda
-        if preco_venda < preco_custo:
-            raise ValueError("Preço de venda não pode ser menor que preço de custo")
-
+        # Nada de mesclar preço à mão aqui: o repositório recalcula em cima da
+        # instância, que já tem o que o PATCH não trouxe. O merge que existia
+        # usava `or`, e `markup_pct` é `ge=0` — um markup de 0 é falsy e cairia
+        # no valor antigo sem ninguém ver.
         return await self.variante_repo.atualizar(
             empresa_id,
             variante_id,
             sku=dados.sku,
             preco_custo=dados.preco_custo,
             markup_pct=dados.markup_pct,
-            preco_venda=dados.preco_venda,
             ativo=dados.ativo,
         )
 
@@ -551,6 +606,7 @@ class FornecedorProdutoService:
         # Validar preço
         if dados.preco_fornecedor <= 0:
             raise ValueError("Preço do fornecedor deve ser maior que zero")
+        _exigir_preco_cobrindo_fornecedor(produto.preco, dados.preco_fornecedor)
 
         return await self.repo.criar(
             fornecedor_id=dados.fornecedor_id,
@@ -596,6 +652,12 @@ class FornecedorProdutoService:
         preco = dados.preco_fornecedor or vinculo.preco_fornecedor
         if preco <= 0:
             raise ValueError("Preço do fornecedor deve ser maior que zero")
+
+        # O produto vem pelo vínculo já conferido acima, então continua sendo
+        # da empresa — obter_por_id não devolveria produto de outro tenant.
+        produto = await self.produto_repo.obter_por_id(empresa_id, vinculo.produto_id)
+        if produto:
+            _exigir_preco_cobrindo_fornecedor(produto.preco, preco)
 
         return await self.repo.atualizar(
             empresa_id,

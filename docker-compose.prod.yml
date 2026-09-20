@@ -309,6 +309,10 @@ services:
       # Cobranca da plataforma: conta MP do dono, nao a do lojista.
       PLATAFORMA_MP_ACCESS_TOKEN: ${PLATAFORMA_MP_ACCESS_TOKEN}
       PLATAFORMA_JOB_TOKEN: ${PLATAFORMA_JOB_TOKEN}
+      # Mesmo valor no vendas-prod: e o par que fecha
+      # /auth/cliente/registrar-interno. Vazio dos dois lados = janela aberta,
+      # so o X-Forwarded-For protegendo.
+      REGISTRO_INTERNO_TOKEN: ${REGISTRO_INTERNO_TOKEN}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER}
@@ -429,6 +433,8 @@ services:
       ESTOQUE_URL: ${ESTOQUE_URL:-http://estoque-prod:8003}
       FINANCEIRO_URL: ${FINANCEIRO_URL:-http://financeiro-prod:8005}
       API_GATEWAY_URL: ${API_GATEWAY_URL:-http://api-gateway-prod:8000}
+      # Mesmo valor no api-gateway-prod: prova que o registrar-interno saiu daqui.
+      REGISTRO_INTERNO_TOKEN: ${REGISTRO_INTERNO_TOKEN}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
       interval: 60s
