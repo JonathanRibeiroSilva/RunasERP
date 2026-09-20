@@ -1,44 +1,44 @@
-# Graph Report - RunasERP  (2026-09-19)
+# Graph Report - RunasERP  (2026-09-20)
 
 ## Corpus Check
-- 508 files · ~410,781 words
+- 510 files · ~412,047 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 92 file(s) not represented in the graph (top: .scss 44, (none) 24, .ini 9)
 
 ## Summary
-- 6712 nodes · 12647 edges · 370 communities (307 shown, 63 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 771 edges (avg confidence: 0.94)
+- 6744 nodes · 12786 edges · 356 communities (299 shown, 57 thin omitted)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 799 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1a65c7c2`
+- Built from commit: `1076c1ea`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- admin_entrega.py
-- schemas/estoque.py
+- AsyncSession
+- estoque_service.py
 - AsyncSession
 - App.tsx
 - UsuarioRepository
 - schemas/produtos.py
 - Usuario
-- estoque_service.py
-- client
-- auth_cliente.py
+- .gerar_relatorio_movimentacoes
+- sqlalchemy_ext_asyncio
+- post
 - TenantDetalhe.tsx
 - shared/exceptions.py
 - EstoqueDetalhePage.tsx
 - routers/produtos.py
 - EstoqueService
-- get_empresa_id
+- vendas/utils/tenant.py
 - support.js
-- getErrorMessage
+- react
 - routers/estoque.py
 - Cliente
-- LojaOnlineService
+- ProdutoService
 - admin_pagamento.py
-- recuperar_carrinho
+- loja_service.py
 - plataforma.py
 - Configuração de Provedores OAuth2 (Google Cloud e Microsoft Azure)
 - 🏷️ Interface de Categorias - Documentação
@@ -52,18 +52,18 @@
 - MercadoPagoService
 - Docker - Frontend ERP Runas
 - 📋 Política de Documentação - RunasERP
-- EmpresaService
+- NotFoundError
 - 🎨 Documentação do Frontend - Runas
 - ClienteService
-- loja_service.py
+- models/venda.py
 - test_hardening_consistencia.py
 - 📱 Configuração da Evolution API (WhatsApp)
-- concorrencia.py
+- vendas.py
 - CategoriaService
-- Base
+- uuid
 - Detalhamento dos Microsserviços - Runas
 - 📡 Referência de APIs - Runas
-- sqlalchemy
+- database
 - financeiro/main.py
 - notificacoes/main.py
 - 📦 Passo 4: Testar Endpoints de Estoque
@@ -76,10 +76,10 @@
 - ImageSlot
 - clientes/main.py
 - Exemplos de API - Frontend
-- ClienteFormPage.tsx
+- LojaOnlineService
 - cliente_service.py
 - Troubleshooting - Runas
-- login
+- auth.py
 - ProdutoRepository
 - 📋 Sumário do Projeto Runas
 - RunasERP — Development Conventions
@@ -91,7 +91,7 @@
 - Graphify - Grafo de Conhecimento Automático
 - 🔒 Security Hooks - Prevenção de Vazamento de Secrets
 - Resumo da Implementação OAuth
-- empresas.py
+- EmpresaService
 - produtos/main.py
 - devDependencies
 - OAuth - Fluxo Completo de E-commerce
@@ -108,7 +108,7 @@
 - Configuração do Mercado Pago
 - 💡 Casos de Uso
 - common.ts
-- ReservaTemporariaService
+- .processar_checkout
 - 🏗️ Arquitetura do Sistema
 - Clientes
 - 📦 Regras de Negócio - Produtos
@@ -117,7 +117,7 @@
 - 🗂️ Índice da Documentação
 - 📍 Endpoints
 - 🛒 Regras de Negócio - Vendas
-- get_current_user
+- useAuth.ts
 - CacheService
 - 🎯 Visão Geral - Runas
 - Visão Geral dos Microsserviços
@@ -133,12 +133,12 @@
 - test_idempotencia.py
 - AUD-2026-06-29 — Frontend Architectural Audit
 - estoque/main.py
-- seed_clientes.py
+- test_concorrencia_estoque.py
 - GUIA_TESTES_AUTOMATIZADOS.md
 - frontend/README.md
 - ⚡ Guia de Performance e Otimização - Runas ERP
 - `setup-graphify-hook.ps1`
-- fixture
+- tests/conftest.py
 - test_produtos_api.py
 - Glossário - Runas
 - 🎯 Cenários Comuns
@@ -148,7 +148,7 @@
 - api-gateway/tests/test_base.py
 - IntegracoesPage.tsx
 - Frontend — Architectural Debt Log
-- ClienteCreateOAuth
+- clientes/utils/validators.py
 - UsuariosPage.tsx
 - test_estoque.py
 - test_produtos.py
@@ -177,8 +177,8 @@
 - Setup do Graphify - Knowledge Graph Automation
 - Runas — Landing Page
 - Test Strategy - Runas ERP MVP
-- CarrinhoService
-- client
+- test_expiracao_preferencia.py
+- Categoria
 - TestEmpresasCRUD
 - pytest
 - TestVendasPedidos
@@ -187,17 +187,17 @@
 - common/index.ts
 - compilerOptions
 - 🎯 Acesso Rápido
-- tests/test_webhook_assinatura.py
+- assinatura_valida
 - validar_cnpj
 - 📝 Changelog - Documentação Frontend Atualizada
 - R
 - S
 - Dados que serão criados
 - test_migrations_replayable.py
-- StatusLote
+- .validar_data_validade
 - 🔄 `graphify-update.yml` - Auto-Update Graphify Knowledge Graph
 - UUID
-- EstoqueOperacaoModal.tsx
+- ConfiguracaoPagamento
 - vendas/redis_client.py
 - 3. Implementação
 - C
@@ -207,8 +207,8 @@
 - 🐳 Performance Docker
 - scripts
 - VendaService
-- EstoquePage.tsx
-- test_requisicao_em_voo_responde_409
+- Produto
+- idempotency.py
 - Entregas Planejadas
 - Entregas Planejadas
 - setup.ts
@@ -218,15 +218,15 @@
 - Tech Stack
 - 🎯 Checklist de Performance
 - vite.config.ts
-- estoqueApi.ts
+- tests/test_webhook_assinatura.py
 - P
 - Visão de Longo Prazo
 - Entregas
 - 🔔 Sistema de Notificações (Toast)
-- 3. Microsserviços — roteamento, isolamento e comunicação
+- typing
 - get_empresa_id
-- .validar_valor_recebido
-- 20260611_initial_gateway.py
+- schemas/venda.py
+- sqlalchemy
 - clientes/config.py
 - global_exception_handler
 - Persistência e Durabilidade dos Dados
@@ -244,33 +244,33 @@
 - 🎯 Desenvolvimento Backend
 - 🎨 Desenvolvimento Frontend
 - ✅ Checklist Rápido (TL;DR)
-- get_empresa_id
+- FornecedorService
 - GlitterWarp
 - clean_products.py
-- ResultadoBaixaEstoque
-- vendas/services/email_service.py
-- salvar_integracoes
-- auth.py
-- schemas/usuario.py
-- TestLojaOnlinePublica
+- check_faq.py
+- 🆘 Problemas Comuns
+- admin_integracao.py
+- oauth2.py
+- .validate_nova_senha
+- clientes/tests/test_base.py
 - global_exception_handler
 - Como Rodar os Testes - Runas ERP MVP
-- .rastrear_pedido
+- vendas/tests/test_base.py
 - TestUsuariosAdmin
-- InadimplenciaMiddleware
-- test_webhook
+- loja
+- 🔧 Configuração do Nginx
 - estoque
 - global_exception_handler
-- venda_paga
+- 🐛 Troubleshooting
 - global_exception_handler
 - global_exception_handler
-- schemas/loja.py
+- .validar_cliente_convidado
 - TestIntegracoes
 - global_exception_handler
 - Engineering Standards
-- AuditoriaMiddleware
+- 📊 Comandos Úteis
 - 2. Otimização de Queries SQL
-- 🎯 Checklist por Feature
+- .mercadopago_access_token
 - vendas/config.py
 - EstoqueHttp
 - A
@@ -288,14 +288,14 @@
 - Security
 - frontend-phase-1-stability.md
 - pydantic_settings
-- 🎯 Prioridades de Desenvolvimento
+- Comandos Úteis
 - Test Implementation Status - 23/06/2026
 - ✅ Tests Ready to Run!
-- client
+- 🔐 Fluxo OAuth Implementado
 - frontend-phase-2-architecture.md
 - frontend-phase-3-consolidation.md
 - G
-- client
+- 📈 Próximas Melhorias
 - L
 - frontend-phase-4-completion.md
 - 🧪 Fase 3: Testes e Qualidade (Agosto 2026)
@@ -303,12 +303,10 @@
 - 🚀 Fase 4: Deploy e Lançamento (Setembro 2026)
 - 📚 Arquitetura Implementada
 - 🎯 Guias Rápidos
-- client
+- estoque/utils/tenant.py
 - vite-env.d.ts
-- client
-- client
-- atualizar_quantidade_item
-- client
+- .__init__
+- get_db
 - estoque_responde
 - 20260828_100000_super_admin.py
 - 🏗️ Arquitetura
@@ -318,11 +316,9 @@
 - empresas/config.py
 - estoque/config.py
 - financeiro/config.py
-- financeiro/seed.py
+- asyncio
 - notificacoes/config.py
-- notificacoes/seed.py
 - produtos/config.py
-- 20260828_110000_integracao.py
 - test_headers_internos_nao_vem_do_cliente.py
 - resgate-vps.sh
 - shared/__init__.py
@@ -339,140 +335,136 @@
 - 📊 Status Atual (Agosto 2026)
 - medir-downtime.sh
 - 📚 Documentação Essencial
-- Registro
-- Registro
 - H
 - test-check-secrets.sh
 - check-secrets.sh
-- numero_venda.py
-- health_check
 - .buscar_por_cpf
 - re
 
 ## God Nodes (most connected - your core abstractions)
 1. `VendaService` - 87 edges
 2. `EstoqueService` - 73 edges
-3. `Usuario` - 60 edges
-4. `getErrorMessage()` - 53 edges
-5. `Base` - 46 edges
-6. `react` - 44 edges
-7. `MercadoPagoService` - 44 edges
-8. `ClienteService` - 43 edges
-9. `StatusVenda` - 42 edges
-10. `ServiceProxy` - 40 edges
+3. `post()` - 62 edges
+4. `Usuario` - 60 edges
+5. `getErrorMessage()` - 53 edges
+6. `Base` - 46 edges
+7. `MercadoPagoService` - 46 edges
+8. `react` - 44 edges
+9. `StatusVenda` - 44 edges
+10. `ClienteService` - 43 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Página` --references--> `RoleProtectedRoute()`  [INFERRED]
   CHECKLIST_DESENVOLVIMENTO.md → frontend/src/components/common/RoleProtectedRoute.tsx
+- `H7 — Stub feature routes have no permission protection — High (security) · Manual` --references--> `RoleProtectedRoute()`  [INFERRED]
+  docs/05-frontend/audits/AUD-2026-06-29.md → frontend/src/components/common/RoleProtectedRoute.tsx
+- `H7 — Stub feature routes have no permission protection — High (security) · Manual` --references--> `RoleProtectedRoute()`  [INFERRED]
+  docs/05-frontend/frontend-architectural-debt-log.md → frontend/src/components/common/RoleProtectedRoute.tsx
 - `Graphify vs. implementation — documented discrepancies` --references--> `useCarrinho()`  [INFERRED]
   docs/05-frontend/audits/AUD-2026-06-29.md → frontend/src/hooks/useCarrinho.ts
 - `Regras de Negócio` --references--> `FornecedorProduto`  [INFERRED]
   docs/01-visao-geral/arquitetura/microsservicos.md → services/produtos/models/fornecedor.py
-- `3. Drift do `create_all`` --references--> `estoque()`  [INFERRED]
-  docs/03-arquitetura/persistencia-e-durabilidade.md → services/vendas/tests/test_cancelar_venda.py
-- `2. O stack — 14 containers em uma rede bridge` --references--> `estoque()`  [INFERRED]
-  README.md → services/vendas/tests/test_cancelar_venda.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (370 total, 63 thin omitted)
+## Communities (356 total, 57 thin omitted)
 
-### Community 0 - "admin_entrega.py"
+### Community 0 - "AsyncSession"
 Cohesion: 0.05
-Nodes (67): ConfiguracaoLoja, FaixaEntrega, Modelo de Faixa de Entrega (taxa por bairro). Permite configurar taxa diferente…, Modelo de Configuração da Loja (taxa padrão de entrega, etc)., ConfiguracaoLojaRepository, FaixaEntregaRepository, Repository para operações de ConfiguracaoLoja., Cria uma nova configuração de loja. (+59 more)
+Nodes (69): ConfiguracaoLoja, FaixaEntrega, Modelo de Faixa de Entrega (taxa por bairro). Permite configurar taxa diferente…, Modelo de Configuração da Loja (taxa padrão de entrega, etc)., ConfiguracaoLojaRepository, FaixaEntregaRepository, AsyncSession, Conta total de vendas da empresa. (+61 more)
 
-### Community 1 - "schemas/estoque.py"
-Cohesion: 0.07
-Nodes (40): BaixaVendaItem, BaixaVendaRequest, Config, DisponibilidadeResponse, EstoqueBase, EstoqueCreate, EstoqueUpdate, EstornoVendaRequest (+32 more)
+### Community 1 - "estoque_service.py"
+Cohesion: 0.05
+Nodes (72): EstornoVendaProcessado, ItemInventario, Movimentacao, Enum, str, Tipos de movimentação de estoque., Ledger de idempotência do estorno (devolução) de estoque por venda reembolsada.…, Modelo de Item de Inventário. Registra a contagem de cada produto no inventário. (+64 more)
 
 ### Community 2 - "AsyncSession"
-Cohesion: 0.08
-Nodes (29): Estoque, Lote, Modelo de Lote. Controla lotes de produtos com data de validade., Modelo de Estoque. Controla a quantidade disponível de cada produto/variante., EstoqueRepository, LoteRepository, AsyncSession, UUID (+21 more)
+Cohesion: 0.06
+Nodes (39): Estoque, Inventario, Lote, Modelo de Lote. Controla lotes de produtos com data de validade., Modelo de Inventário. Registra contagens físicas de estoque., Modelo de Estoque. Controla a quantidade disponível de cada produto/variante., EstoqueRepository, InventarioRepository (+31 more)
 
 ### Community 3 - "App.tsx"
 Cohesion: 0.04
-Nodes (75): Sprint 1 (Vendas/PDV), H7 — Stub feature routes have no permission protection — High (security) · Manual, H7 — Stub feature routes have no permission protection — High (security) · Manual, ProtectedRoute(), ProtectedRouteProps, PublicRoute(), RoleProtectedRoute(), RoleProtectedRouteProps (+67 more)
+Nodes (73): Sprint 1 (Vendas/PDV), ProtectedRouteProps, useClientes(), useDesativarCliente(), useReativarCliente(), GoogleCallback(), MicrosoftCallback(), Cliente (+65 more)
 
 ### Community 4 - "UsuarioRepository"
-Cohesion: 0.06
-Nodes (48): Verifica se o usuário tem role ADMIN. Args: current_user: Usuário atual…, require_admin(), str, RoleEnum, AsyncSession, UUID, Repository para operações de usuário no banco de dados., Atualiza a senha de um usuário. (+40 more)
+Cohesion: 0.07
+Nodes (41): AsyncSession, UUID, Repository para operações de usuário no banco de dados., Atualiza a senha de um usuário., Repository de usuário., Hash de senha usando bcrypt., Verifica se a senha corresponde ao hash., Cria um novo usuário. (+33 more)
 
 ### Community 5 - "schemas/produtos.py"
-Cohesion: 0.05
-Nodes (75): AtributoVarianteBase, AtributoVarianteCreate, AtributoVarianteRead, CategoriaBase, CategoriaCreate, CategoriaRead, CategoriaUpdate, FornecedorBase (+67 more)
+Cohesion: 0.06
+Nodes (65): AtributoVarianteBase, AtributoVarianteCreate, AtributoVarianteRead, CategoriaBase, CategoriaCreate, CategoriaRead, CategoriaUpdate, FornecedorBase (+57 more)
 
 ### Community 6 - "Usuario"
 Cohesion: 0.09
-Nodes (71): get_current_active_cliente(), get_current_active_user(), Verifica se o usuário está ativo. Args: current_user: Usuário atual Returns:…, Verifica se o usuário tem role ADMIN ou OPERADOR. Args: current_user: Usuário…, Verifica se o cliente está ativo. Args: current_cliente: Cliente atual Returns:…, require_admin_or_operador(), Usuario, Request (+63 more)
+Nodes (73): get_current_active_cliente(), get_current_active_user(), Depends, Verifica se o usuário está ativo. Args: current_user: Usuário atual Returns:…, Verifica se o usuário tem role ADMIN. Args: current_user: Usuário atual…, Verifica se o usuário tem role ADMIN ou OPERADOR. Args: current_user: Usuário…, Verifica se o cliente está ativo. Args: current_cliente: Cliente atual Returns:…, require_admin() (+65 more)
 
-### Community 7 - "estoque_service.py"
-Cohesion: 0.07
-Nodes (33): BaixaVendaProcessada, EstornoVendaProcessado, Inventario, ItemInventario, Movimentacao, Enum, Tipos de movimentação de estoque., Ledger de idempotência da baixa de estoque por venda. Garante que a dedução de… (+25 more)
+### Community 7 - ".gerar_relatorio_movimentacoes"
+Cohesion: 0.29
+Nodes (5): datetime, Conta movimentações por tipo., Soma quantidade movimentada por tipo., datetime, Gera relatório de movimentações.
 
-### Community 8 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste.
+### Community 8 - "sqlalchemy_ext_asyncio"
+Cohesion: 0.03
+Nodes (70): Seed para criar o usuário administrador padrão. Executado automaticamente no…, client(), db(), fixture, Fixtures dos testes do gateway: Postgres de verdade, schema das migrations.…, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste., httpx (+62 more)
 
-### Community 9 - "auth_cliente.py"
+### Community 9 - "post"
 Cohesion: 0.05
-Nodes (71): create_access_token(), Cria um access token JWT. Args: user_id: ID do usuário ou cliente_auth role:…, ClienteAuth, Modelo de autenticação para clientes compradores. Este modelo armazena apenas…, Modelos do API Gateway., ClienteAuthRepository, AsyncSession, UUID (+63 more)
+Nodes (71): ClienteAuth, Modelo de autenticação de clientes (compradores). Separado de Usuario…, Modelo de autenticação para clientes compradores. Este modelo armazena apenas…, ClienteAuthRepository, AsyncSession, UUID, Repository para ClienteAuth (autenticação de clientes compradores)., Repository para gerenciar autenticação de clientes. (+63 more)
 
 ### Community 10 - "TenantDetalhe.tsx"
-Cohesion: 0.07
-Nodes (50): Modal(), ModalProps, env, useAlterarPlano(), useAuditoria(), useCancelarAssinatura(), useCriarAssinatura(), useCriarTenant() (+42 more)
+Cohesion: 0.10
+Nodes (39): Modal(), ModalProps, useAlterarPlano(), useAuditoria(), useCancelarAssinatura(), useCriarAssinatura(), useCriarTenant(), useDefinirAcessoTenant() (+31 more)
 
 ### Community 11 - "shared/exceptions.py"
 Cohesion: 0.11
 Nodes (26): ClientBlockedError, ConflictError, ExpiredCartError, ForbiddenError, InsufficientCreditError, InsufficientStockError, InvalidCNPJError, InvalidCPFError (+18 more)
 
 ### Community 12 - "EstoqueDetalhePage.tsx"
-Cohesion: 0.18
-Nodes (18): useEstoque(), useLotes(), useMovimentacoes(), useProduto(), MOV_INFO, MovimentacaoBadge(), MovInfo, MovimentacaoTimeline() (+10 more)
+Cohesion: 0.07
+Nodes (58): ESTOQUE_KEY, useAjusteEstoque(), useEntradaEstoque(), useEstoque(), useEstoqueMutation(), useEstoques(), useLiberarReserva(), useLotes() (+50 more)
 
 ### Community 13 - "routers/produtos.py"
 Cohesion: 0.06
-Nodes (92): adicionar_foto_loja_online(), atualizar_categoria(), atualizar_config_loja_online(), atualizar_fornecedor(), atualizar_foto_loja_online(), atualizar_produto(), atualizar_variante(), atualizar_vinculo() (+84 more)
+Nodes (91): adicionar_foto_loja_online(), atualizar_categoria(), atualizar_config_loja_online(), atualizar_fornecedor(), atualizar_foto_loja_online(), atualizar_produto(), atualizar_variante(), atualizar_vinculo() (+83 more)
 
 ### Community 14 - "EstoqueService"
 Cohesion: 0.06
-Nodes (56): Cria uma nova movimentação., Busca estoque por produto e variante. for_update=True adquire um lock de linha…, AjusteEstoqueRequest, EntradaEstoqueRequest, EstoqueComAlerta, EstoqueResponse, LiberarReservaRequest, Schema para entrada de estoque. (+48 more)
+Nodes (44): BaseException, BaixaVendaProcessada, Ledger de idempotência da baixa de estoque por venda. Garante que a dedução de…, Cria uma nova movimentação., Busca estoque por produto e variante. for_update=True adquire um lock de linha…, BaixaVendaRequest, EstoqueComAlerta, EstoqueResponse (+36 more)
 
-### Community 15 - "get_empresa_id"
-Cohesion: 0.40
-Nodes (6): Header, get_cliente_id(), get_empresa_id(), alias, Extrai cliente_id do header X-Cliente-Id (enviado pelo API Gateway quando…, Extrai empresa_id do header X-Empresa-Id. Args: x_empresa_id: ID da empresa…
+### Community 15 - "vendas/utils/tenant.py"
+Cohesion: 0.22
+Nodes (10): Header, Query, get_cliente_id(), get_empresa_id(), get_empresa_id_from_slug(), alias, Utilidades para Multi-Tenancy., Obtém empresa_id a partir do slug. Args: empresaSlug: Slug da empresa (query… (+2 more)
 
 ### Community 16 - "support.js"
 Cohesion: 0.06
 Nodes (72): boot(), bundledBlob(), cdnScriptFor(), collectProps(), compileAttr(), compileTemplate(), contentKey(), createComponentFactory() (+64 more)
 
-### Community 17 - "getErrorMessage"
-Cohesion: 0.07
-Nodes (42): Carrinho, ItemCarrinho, useCarrinho(), UseCarrinhoProps, UseCarrinhoReturn, frontend_src_pages_auth_authcallback, GoogleCallback(), MicrosoftCallback() (+34 more)
+### Community 17 - "react"
+Cohesion: 0.09
+Nodes (39): Carrinho, ItemCarrinho, useCarrinho(), UseCarrinhoProps, UseCarrinhoReturn, frontend_src_pages_auth_authcallback, CarrinhoPage(), ClienteInfo (+31 more)
 
 ### Community 18 - "routers/estoque.py"
-Cohesion: 0.10
-Nodes (51): ajustar_estoque(), atualizar_estoque(), baixar_venda(), buscar_estoque(), consultar_disponibilidade(), criar_estoque(), entrada_estoque(), estornar_venda() (+43 more)
+Cohesion: 0.09
+Nodes (50): ajustar_estoque(), atualizar_estoque(), baixar_venda(), buscar_estoque(), consultar_disponibilidade(), criar_estoque(), entrada_estoque(), estornar_venda() (+42 more)
 
 ### Community 19 - "Cliente"
-Cohesion: 0.07
-Nodes (31): Cliente, Endereco, Modelos de Cliente e Endereco., ClienteRepository, EnderecoRepository, AsyncSession, Decimal, UUID (+23 more)
+Cohesion: 0.06
+Nodes (31): Cliente, Endereco, ClienteRepository, EnderecoRepository, AsyncSession, Decimal, UUID, Repository para operações de Cliente no banco de dados. (+23 more)
 
-### Community 20 - "LojaOnlineService"
-Cohesion: 0.04
-Nodes (36): Services (lógica de negócio)., FornecedorService, LojaOnlineService, ProdutoService, UUID, Obtém um produto por ID., Lista produtos. Args: empresa_id: ID da empresa (multi-tenancy) skip: Offset…, Lista produtos de uma categoria. (+28 more)
+### Community 20 - "ProdutoService"
+Cohesion: 0.05
+Nodes (30): ProdutoCreate, ProdutoUpdate, Schema para criar Produto., Schema para atualizar Produto., Services (lógica de negócio)., ProdutoService, UUID, Obtém um produto por ID. (+22 more)
 
 ### Community 21 - "admin_pagamento.py"
-Cohesion: 0.10
-Nodes (40): ativar_configuracao_pagamento(), atualizar_configuracao_pagamento(), ConfiguracaoPagamentoCreate, ConfiguracaoPagamentoResponse, ConfiguracaoPagamentoStatusResponse, ConfiguracaoPagamentoUpdate, criar_configuracao_pagamento(), deletar_configuracao_pagamento() (+32 more)
+Cohesion: 0.13
+Nodes (28): ativar_configuracao_pagamento(), atualizar_configuracao_pagamento(), ConfiguracaoPagamentoCreate, ConfiguracaoPagamentoResponse, ConfiguracaoPagamentoStatusResponse, ConfiguracaoPagamentoUpdate, criar_configuracao_pagamento(), desativar_configuracao_pagamento() (+20 more)
 
-### Community 22 - "recuperar_carrinho"
-Cohesion: 0.14
-Nodes (30): Cookie, get_empresa_id_from_slug, adicionar_item_carrinho(), definir_cookie_carrinho(), limpar_carrinho(), listar_meus_pedidos(), obter_carrinho(), processar_checkout() (+22 more)
+### Community 22 - "loja_service.py"
+Cohesion: 0.04
+Nodes (98): Cookie, get_empresa_id_from_slug, adicionar_item_carrinho(), atualizar_quantidade_item(), definir_cookie_carrinho(), limpar_carrinho(), listar_meus_pedidos(), obter_carrinho() (+90 more)
 
 ### Community 23 - "plataforma.py"
 Cohesion: 0.07
-Nodes (54): alterar_plano(), auditoria_do_tenant(), cancelar_assinatura(), criar_tenant(), _definir_acesso(), _empresas(), exportar_tenant(), gerar_assinatura() (+46 more)
+Nodes (55): Dono da plataforma. Papel disjunto de ADMIN, sem herança: o super admin não tem…, require_super_admin(), alterar_plano(), auditoria_do_tenant(), cancelar_assinatura(), criar_tenant(), _definir_acesso(), _empresas() (+47 more)
 
 ### Community 24 - "Configuração de Provedores OAuth2 (Google Cloud e Microsoft Azure)"
 Cohesion: 0.04
@@ -503,60 +495,60 @@ Cohesion: 0.10
 Nodes (32): enum, exceptions, str, Modelos do domínio de Empresas (Multi-tenancy)., Regime tributário da empresa., RegimeTributario, StatusEmpresa, TipoEmpresa (+24 more)
 
 ### Community 31 - "🎨 Guia de Implementação Frontend - Runas ERP"
-Cohesion: 0.07
-Nodes (28): 1. Setup do Ambiente, 2. Escolher uma Feature, 3. Seguir o Padrão, 4. Implementar, 5. Testar, 6. Commitar, 🚀 Como Começar, 🎨 Componentes Reutilizáveis (+20 more)
+Cohesion: 0.05
+Nodes (41): 1. Setup do Ambiente, 2. Escolher uma Feature, 3. Seguir o Padrão, 4. Implementar, 5. Testar, 6. Commitar, Backend (✅ 90% completo), Backend (✅ 95% completo) (+33 more)
 
 ### Community 32 - "CheckoutPage.tsx"
 Cohesion: 0.08
 Nodes (25): M4 — Observability is console-only; resilience utils wired to one screen — Medium · Manual, apiPublica, CheckoutPage(), Cliente, ClienteNovo, Endereco, ModoCheckout, Pagamento (+17 more)
 
 ### Community 33 - "MercadoPagoService"
-Cohesion: 0.10
-Nodes (27): _conferir_assinatura(), AsyncSession, post, Request, Recusa a notificação se ela vier assinada errado. Duas janelas deliberadamente…, Webhook do Mercado Pago. Recebe notificações de mudança de status de pagamento.…, webhook_mercadopago(), MercadoPagoService (+19 more)
+Cohesion: 0.05
+Nodes (53): services, AsyncSession, Job de reconciliação de estoque (cross-service consistency — C4). Trata vendas…, Reconcilia uma venda marcada, sob lock de linha. Retorna rótulo do resultado., _reconciliar_venda(), _confirmar_venda_revalidada(), Venda expirada mas com pagamento APROVADO no Mercado Pago → confirmar em vez de…, _conferir_assinatura() (+45 more)
 
 ### Community 34 - "Docker - Frontend ERP Runas"
-Cohesion: 0.05
-Nodes (43): 1. Compressão Gzip, 1. HTTPS, 2. Secrets, 2. Security Headers, 3. Cache de Assets, 3. Health Checks, 4. SPA Fallback, 5. Proxy para API (opcional) (+35 more)
+Cohesion: 0.08
+Nodes (25): 1. HTTPS, 2. Secrets, 3. Health Checks, 📦 Arquivos Docker, Build Time, ✅ Checklist de Deploy, 🚀 Deploy em Produção, Desenvolvimento (+17 more)
 
 ### Community 35 - "📋 Política de Documentação - RunasERP"
 Cohesion: 0.05
 Nodes (38): 1. Changelogs Manuais, 1. Documentação Principal, 1. **Git como Fonte da Verdade**, 2. Documentos Temporários, 2. Guias Técnicos, 2. **Zero Redundância**, 3. Arquitetura, 3. Documentos de Debugging (+30 more)
 
-### Community 36 - "EmpresaService"
-Cohesion: 0.07
-Nodes (31): BaseServiceError, ConflictError, ForbiddenError, NotFoundError, Any, Exception, Exceções customizadas do serviço de empresas., Erro de validação de dados. (+23 more)
+### Community 36 - "NotFoundError"
+Cohesion: 0.08
+Nodes (25): BaseServiceError, ConflictError, ForbiddenError, NotFoundError, Any, Exception, Exceções customizadas do serviço de empresas., Erro de validação de dados. (+17 more)
 
 ### Community 37 - "🎨 Documentação do Frontend - Runas"
 Cohesion: 0.05
 Nodes (40): Armazenamento de Tokens, 🏗️ Arquitetura do Frontend, 🔐 Autenticação, 🚀 Build e Deploy, Build para Produção, Com Docker, Componentes de Dados, Componentes de Feedback (+32 more)
 
 ### Community 38 - "ClienteService"
-Cohesion: 0.13
-Nodes (40): ajustar_credito(), atualizar_cliente(), bloquear_cliente(), buscar_cliente(), buscar_cliente_completo(), buscar_por_cpf(), criar_cliente(), criar_cliente_oauth() (+32 more)
+Cohesion: 0.14
+Nodes (38): ajustar_credito(), atualizar_cliente(), bloquear_cliente(), buscar_cliente(), buscar_cliente_completo(), buscar_por_cpf(), criar_cliente(), criar_cliente_oauth() (+30 more)
 
-### Community 39 - "loja_service.py"
-Cohesion: 0.04
-Nodes (105): decimal, services, AsyncSession, Job de reconciliação de estoque (cross-service consistency — C4). Trata vendas…, Reconcilia uma venda marcada, sob lock de linha. Retorna rótulo do resultado., Reconcilia todas as vendas pagas com baixa de estoque indeterminada., reconciliar_estoque_vendas(), _reconciliar_venda() (+97 more)
+### Community 39 - "models/venda.py"
+Cohesion: 0.07
+Nodes (40): Base, DeclarativeBase, Classe base para os modelos., FormaPagamento, HistoricoStatusVenda, ItemVenda, PagamentoVenda, Enum (+32 more)
 
 ### Community 40 - "test_hardening_consistencia.py"
-Cohesion: 0.09
-Nodes (35): AcaoWebhook, decidir_acao_webhook(), eh_cobranca_duplicada(), Enum, str, Política de decisão de webhooks de pagamento (anti-downgrade de status — C2).…, Ação a executar para um evento de webhook de pagamento., Decide a ação para um evento de pagamento, preservando a monotonicidade do… (+27 more)
+Cohesion: 0.07
+Nodes (46): classificar_reserva_http(), classificar_status_http(), Enum, str, Classificação do resultado da baixa de estoque (cross-service consistency —…, Resultado de uma tentativa de baixar o estoque de uma venda., Classifica a resposta HTTP do serviço de estoque. - 200/201 → SUCESSO - 409 →…, Classifica a resposta de POST /estoque/reservar. Não é a mesma tabela da baixa:… (+38 more)
 
 ### Community 41 - "📱 Configuração da Evolution API (WhatsApp)"
 Cohesion: 0.05
 Nodes (38): 1. A Evolution API já está no Docker Compose, 1. Configurar Webhook, 2. Configurar API Key, 2. Criar Endpoint no Gateway, 3. Subir a Evolution API, 4. Acessar a Interface, Boas Práticas, Cobrança Vencida (+30 more)
 
-### Community 42 - "concorrencia.py"
-Cohesion: 0.24
-Nodes (9): BaseException, chave_ordenacao_item(), eh_erro_transitorio(), extrair_sqlstate(), Any, Helpers de concorrência para baixa de estoque. Sem dependências de banco/ORM…, Extrai o SQLSTATE de uma exceção do driver (asyncpg) ou do wrapper SQLAlchemy., True se a exceção é um deadlock/serialization failure recuperável por retry. (+1 more)
+### Community 42 - "vendas.py"
+Cohesion: 0.11
+Nodes (36): PagamentoVendaRepository, Repository para operações de Pagamento de Venda., Cria um novo pagamento de venda., Cria múltiplos pagamentos de venda., Lista pagamentos de uma venda., adicionar_pagamento(), atualizar_venda(), buscar_venda() (+28 more)
 
 ### Community 43 - "CategoriaService"
-Cohesion: 0.09
-Nodes (13): CategoriaRepository, Repository para Categoria., Cria uma nova categoria., Obtém uma categoria por ID., Obtém uma categoria por nome., Lista todas as categorias com paginação., CategoriaService, Service para Categoria. (+5 more)
+Cohesion: 0.17
+Nodes (7): CategoriaService, Service para Categoria., Cria uma nova categoria com transação atômica., Obtém uma categoria por ID., Lista todas as categorias., Atualiza uma categoria., Deleta uma categoria.
 
-### Community 44 - "Base"
-Cohesion: 0.07
-Nodes (43): Base, DeclarativeBase, Classe base para os modelos., Modelo de autenticação de clientes (compradores). Separado de Usuario…, Schemas Pydantic para autenticação de clientes compradores., datetime, pydantic, Base (+35 more)
+### Community 44 - "uuid"
+Cohesion: 0.08
+Nodes (34): decimal, Base, DeclarativeBase, Configuração do banco de dados., Classe base para os modelos., Fornecedor, FornecedorProduto, Modelos de Fornecedor e FornecedorProduto. (+26 more)
 
 ### Community 45 - "Detalhamento dos Microsserviços - Runas"
 Cohesion: 0.05
@@ -566,17 +558,17 @@ Nodes (37): 1. API Gateway (`api-gateway/` — porta 8000), 2. Serviço de Empre
 Cohesion: 0.05
 Nodes (37): APIs por Serviço, Arquitetura de APIs, 🔐 Autenticação, Base URL, 📝 Convenções, cURL, 🔢 Códigos HTTP, 📚 Documentação Interativa (+29 more)
 
-### Community 47 - "sqlalchemy"
-Cohesion: 0.02
-Nodes (167): aio_pika, alembic, do_run_migrations(), Configuração do Alembic para migrations do API Gateway., Run migrations in 'offline' mode. This configures the context with just a URL…, Run migrations in 'online' mode. In this scenario we need to create an Engine…, run_migrations_offline(), run_migrations_online() (+159 more)
+### Community 47 - "database"
+Cohesion: 0.04
+Nodes (59): do_run_migrations(), Configuração do Alembic para migrations do API Gateway., Run migrations in 'offline' mode. This configures the context with just a URL…, Run migrations in 'online' mode. In this scenario we need to create an Engine…, run_migrations_offline(), run_migrations_online(), database, logging_config (+51 more)
 
 ### Community 48 - "financeiro/main.py"
-Cohesion: 0.24
-Nodes (9): init_db(), Applies pending Alembic migrations before the app serves traffic. Replaces…, health_check(), lifespan(), FastAPI, get, Serviço Financeiro - Runas, Gerencia o ciclo de vida da aplicação. (+1 more)
+Cohesion: 0.22
+Nodes (10): fastapi_responses, init_db(), Applies pending Alembic migrations before the app serves traffic. Replaces…, health_check(), lifespan(), FastAPI, get, Serviço Financeiro - Runas (+2 more)
 
 ### Community 49 - "notificacoes/main.py"
 Cohesion: 0.22
-Nodes (10): contextlib, init_db(), Applies pending Alembic migrations before the app serves traffic. Replaces…, health_check(), lifespan(), FastAPI, get, Serviço Notificacoes - Runas (+2 more)
+Nodes (10): fastapi_middleware_cors, init_db(), Applies pending Alembic migrations before the app serves traffic. Replaces…, health_check(), lifespan(), FastAPI, get, Serviço Notificacoes - Runas (+2 more)
 
 ### Community 50 - "📦 Passo 4: Testar Endpoints de Estoque"
 Cohesion: 0.06
@@ -603,40 +595,40 @@ Cohesion: 0.06
 Nodes (34): 1. Testar Autenticação, 2. Testar Rota Pública, 3. Testar Rota Protegida, 4. Testar Rota Admin, Carrinho de Compras, Catálogo de Produtos, ✅ Checklist de Verificação, Clientes (+26 more)
 
 ### Community 56 - "EmpresaPage.tsx"
-Cohesion: 0.09
-Nodes (27): MaskedInputProps, MaskType, useAtualizarEmpresaCadastro(), useEmpresaCadastro(), useAtualizarEmpresa(), useEmpresa(), useProdutosLoja(), usePublicarProduto() (+19 more)
+Cohesion: 0.10
+Nodes (20): MaskedInputProps, MaskType, useAtualizarEmpresaCadastro(), useEmpresaCadastro(), frontend_src_pages_configuracoes_configuracoes, EmpresaPage(), REGIMES, semVazios() (+12 more)
 
 ### Community 57 - "ImageSlot"
 Cohesion: 0.13
 Nodes (7): flushNow(), getSlot(), ImageSlot, load(), save(), setSlot(), toDataUrl()
 
 ### Community 58 - "clientes/main.py"
-Cohesion: 0.24
-Nodes (9): init_db(), Applies pending Alembic migrations before the app serves traffic. Runs as a…, health_check(), lifespan(), FastAPI, get, Serviço Clientes - Runas, Gerencia o ciclo de vida da aplicação. (+1 more)
+Cohesion: 0.22
+Nodes (10): contextlib, init_db(), Applies pending Alembic migrations before the app serves traffic. Runs as a…, health_check(), lifespan(), FastAPI, get, Serviço Clientes - Runas (+2 more)
 
 ### Community 59 - "Exemplos de API - Frontend"
 Cohesion: 0.06
 Nodes (32): 400 - Bad Request, 401 - Unauthorized, 403 - Forbidden, 404 - Not Found, 409 - Conflict, 422 - Validation Error, 500 - Internal Server Error, Adicionar Endereço (+24 more)
 
-### Community 60 - "ClienteFormPage.tsx"
+### Community 60 - "LojaOnlineService"
 Cohesion: 0.09
-Nodes (28): useClientes(), useDesativarCliente(), useReativarCliente(), Cliente, ClienteCreditoPage(), CreditoFormData, CreditoFormInput, creditoSchema (+20 more)
+Nodes (33): LojaOnlineConfigUpdate, LojaOnlineFotoCreate, LojaOnlineFotoUpdate, Schema para criar LojaOnlineFoto., Schema para atualizar LojaOnlineFoto., Schema para atualizar LojaOnlineConfig., FornecedorProdutoService, LojaOnlineService (+25 more)
 
 ### Community 61 - "cliente_service.py"
-Cohesion: 0.10
-Nodes (30): schemas_cliente, ClienteBase, ClienteComEnderecos, ClienteCreate, ClienteResponse, ClienteUpdate, CreditoDelta, CreditoUpdate (+22 more)
+Cohesion: 0.09
+Nodes (31): schemas_cliente, ClienteBase, ClienteComEnderecos, ClienteCreate, ClienteCreateOAuth, ClienteResponse, ClienteUpdate, CreditoDelta (+23 more)
 
 ### Community 62 - "Troubleshooting - Runas"
 Cohesion: 0.06
 Nodes (32): 🆘 Ainda com Problemas?, 🔐 Autenticação, 🔧 Backend / API, 🗄️ Banco de Dados, 🐳 Docker e Containers, 💻 Frontend, 🔌 Integrações Externas, Obter Ajuda (+24 more)
 
-### Community 63 - "login"
-Cohesion: 0.11
-Nodes (34): Resolve o slug da empresa a partir do empresa_id. Args: empresa_id: ID da…, alterar_senha(), clear_auth_cookies(), forgot_password(), get_current_user_info(), login(), logout(), AsyncSession (+26 more)
+### Community 63 - "auth.py"
+Cohesion: 0.05
+Nodes (71): create_access_token(), create_refresh_token(), UUID, Utilitários para geração e validação de tokens JWT., Cria um access token JWT. Args: user_id: ID do usuário ou cliente_auth role:…, Cria um refresh token JWT. Args: user_id: ID do usuário Returns: Refresh token…, get_db(), AsyncSession (+63 more)
 
 ### Community 64 - "ProdutoRepository"
-Cohesion: 0.06
-Nodes (20): FornecedorRepository, ProdutoRepository, Obtém um produto por ID (incluindo deletados)., Obtém produtos por nome (busca parcial)., Lista produtos de uma categoria., Lista todos os produtos com filtros opcionais. Args: empresa_id: ID da empresa…, Lista produtos publicados na loja online (ativo=True e…, Restaura um produto deletado. (+12 more)
+Cohesion: 0.05
+Nodes (23): AtributoVarianteRepository, FornecedorRepository, LojaOnlineConfigRepository, ProdutoRepository, AsyncSession, Restaura um produto deletado., Repository para AtributoVariante., Cria um novo atributo de variante. (+15 more)
 
 ### Community 65 - "📋 Sumário do Projeto Runas"
 Cohesion: 0.06
@@ -655,8 +647,8 @@ Cohesion: 0.07
 Nodes (30): ♿ Acessibilidade, 🏷️ Badges, 🔲 Botões, 📇 Cards, Componentes - Design System Runas, Contraste Mínimo (WCAG AA) - Dark Mode, Empty, Error (+22 more)
 
 ### Community 69 - "Pré-requisitos para Testar Autenticação Frontend"
-Cohesion: 0.07
-Nodes (30): Backend (.env), 🗄️ Banco de Dados, "Cannot connect to Docker daemon", ✅ Checklist de Pré-requisitos, 📋 Checklist Final, Com Docker (Recomendado), 🔧 Configuração de Variáveis de Ambiente, Configuração Geral (+22 more)
+Cohesion: 0.10
+Nodes (21): Backend (.env), 🗄️ Banco de Dados, ✅ Checklist de Pré-requisitos, 📋 Checklist Final, Com Docker (Recomendado), 🔧 Configuração de Variáveis de Ambiente, Configuração Geral, 🔐 Credenciais de Teste (+13 more)
 
 ### Community 70 - "� Casos de Uso"
 Cohesion: 0.07
@@ -675,16 +667,16 @@ Cohesion: 0.07
 Nodes (27): 1. Pre-Commit Hook (`.git/hooks/pre-commit`), Adicionar Novo Padrão de Detecção, ❌ Arquivos `.env` Bloqueados, ✅ Arquivos `.env` Permitidos, Ações Tomadas, 📚 Boas Práticas, 🎯 Como Funciona, Como garantir que todos tenham o hook: (+19 more)
 
 ### Community 74 - "Resumo da Implementação OAuth"
-Cohesion: 0.07
-Nodes (27): 1. Iniciação (Frontend), 2. Autorização (Google), 3. Callback (Frontend + Backend), Backend (FastAPI + Python), Botões OAuth não aparecem, 🧪 Como Testar, 👥 Contribuidores, Curto Prazo (+19 more)
+Cohesion: 0.10
+Nodes (19): Backend (FastAPI + Python), Botões OAuth não aparecem, 🧪 Como Testar, 👥 Contribuidores, Desenvolvimento, Documentação, Erro: "Cannot read properties of undefined (reading 'nome')", Erro: "Failed to load resource: 404" (+11 more)
 
-### Community 75 - "empresas.py"
-Cohesion: 0.09
-Nodes (33): get_db(), AsyncSession, Dependency para obter sessão do banco de dados., atualizar_empresa(), atualizar_plano(), buscar_empresa(), buscar_empresa_por_slug(), buscar_info_publica() (+25 more)
+### Community 75 - "EmpresaService"
+Cohesion: 0.10
+Nodes (33): atualizar_empresa(), atualizar_plano(), buscar_empresa(), buscar_empresa_por_slug(), buscar_info_publica(), criar_empresa(), desativar_empresa(), exigir_plataforma() (+25 more)
 
 ### Community 76 - "produtos/main.py"
-Cohesion: 0.22
-Nodes (10): fastapi_middleware_cors, init_db(), Applies pending Alembic migrations before the app serves traffic. Runs as a…, health_check(), lifespan(), FastAPI, get, Serviço Produtos - Runas (+2 more)
+Cohesion: 0.24
+Nodes (9): init_db(), Applies pending Alembic migrations before the app serves traffic. Runs as a…, health_check(), lifespan(), FastAPI, get, Serviço Produtos - Runas, Gerencia o ciclo de vida da aplicação. (+1 more)
 
 ### Community 77 - "devDependencies"
 Cohesion: 0.10
@@ -704,7 +696,7 @@ Nodes (26): Adicionar Foto ao Catálogo (ADMIN), Adicionar Variante, API de Prod
 
 ### Community 81 - "api-gateway/main.py"
 Cohesion: 0.05
-Nodes (43): close_redis(), Fecha conexão com Redis., init_db(), Applies pending Alembic migrations before the app serves traffic. Runs as a…, Agregação do readiness check. Módulo à parte e sem imports pesados de…, Traduz a lista de sondas em (status HTTP, corpo). 503 nomeando quem caiu, não…, summarize(), _check() (+35 more)
+Nodes (48): close_redis(), get_redis(), Redis, Cliente Redis para gerenciamento de tokens., Obtém cliente Redis (singleton). Returns: Cliente Redis, Fecha conexão com Redis., init_db(), Applies pending Alembic migrations before the app serves traffic. Runs as a… (+40 more)
 
 ### Community 82 - "Runas ERP"
 Cohesion: 0.20
@@ -719,16 +711,16 @@ Cohesion: 0.08
 Nodes (25): 1. `limpar_reservas.py`, 2. `verificar_timeouts_separacao.py`, 3. `limpar_carrinhos_abandonados.py`, 4. `verificar_pagamentos_pendentes.py`, ⚙️ Configuração, Erros de conexão com banco, Erros de conexão com Redis, Job 1: Limpar Reservas (1 minuto) (+17 more)
 
 ### Community 85 - "Checklist de Produção - Frontend"
-Cohesion: 0.08
-Nodes (24): Backend (.env), ✅ Backup e Disaster Recovery, Build, Build de Produção, ✅ Build e Deploy, Checklist de Produção - Frontend, Comandos Úteis, Docker (+16 more)
+Cohesion: 0.10
+Nodes (20): Backend (.env), ✅ Backup e Disaster Recovery, Build, ✅ Build e Deploy, Checklist de Produção - Frontend, Docker, ✅ Documentação, Frontend (.env.production) (+12 more)
 
 ### Community 87 - "Guia de Autenticação - Runas API"
 Cohesion: 0.08
 Nodes (25): 1. Armazenamento Seguro, 1. Fazer Login, 2. Renovação Automática, 2. Usar o Token, 3. Interceptors (Axios), 3. Renovar Token (quando expirar), 401 Unauthorized, 403 Forbidden (+17 more)
 
 ### Community 88 - "enderecos.py"
-Cohesion: 0.12
-Nodes (24): get_db(), AsyncSession, Dependency para obter sessão do banco de dados., adicionar_endereco(), atualizar_endereco(), get_cliente_service(), listar_enderecos(), AsyncSession (+16 more)
+Cohesion: 0.10
+Nodes (28): get_db(), AsyncSession, Dependency para obter sessão do banco de dados., adicionar_endereco(), atualizar_endereco(), get_cliente_service(), listar_enderecos(), AsyncSession (+20 more)
 
 ### Community 89 - "empresas/main.py"
 Cohesion: 0.12
@@ -746,9 +738,9 @@ Nodes (24): API Financeiro - Runas, 🔐 Autenticação, Caso 1: Consultar Conta
 Cohesion: 0.22
 Nodes (8): H1 — Pervasive any and stringly-typed money; duplicated/conflicting domain & ApiError types — High · Both, H1 — Pervasive any and stringly-typed money; duplicated/conflicting domain & ApiError types — High · Both, ApiError, BaseEntity, ListParams, PaginatedResponse, SelectOption, Status
 
-### Community 93 - "ReservaTemporariaService"
-Cohesion: 0.14
-Nodes (17): limpar_reservas_expiradas(), Limpa reservas temporárias expiradas do banco de dados., AsyncSession, Decimal, Redis, UUID, Reserva estoque temporariamente (15 minutos) com Redis Lock. Returns: tuple:…, Service para gerenciar reservas temporárias de estoque (carrinho). Usa Redis… (+9 more)
+### Community 93 - ".processar_checkout"
+Cohesion: 0.07
+Nodes (33): aiosmtplib, Serviço de envio de email via SMTP (Gmail)., email_mime_multipart, email_mime_text, limpar_reservas_expiradas(), Job para limpar reservas temporárias expiradas. Deve rodar a cada 1 minuto via…, Limpa reservas temporárias expiradas do banco de dados., _build_welcome_email_html() (+25 more)
 
 ### Community 94 - "🏗️ Arquitetura do Sistema"
 Cohesion: 0.09
@@ -782,9 +774,9 @@ Nodes (21): 1. Movimentações são Imutáveis, 2. Quantidade Nunca Negativa, 3.
 Cohesion: 0.10
 Nodes (21): 1. Carrinho, 2. Pedido, 3. Venda, 4.1. Fluxo: Carrinho → Pedido → Venda (À Vista), 4.2. Fluxo: Carrinho → Pedido → Venda (Fiado), 4.3. Fluxo: Cancelamento de Pedido, 4. Fluxos Completos, 5.1. Integração com Mercado Pago (+13 more)
 
-### Community 102 - "get_current_user"
-Cohesion: 0.20
-Nodes (15): get_current_cliente(), get_current_user(), get_token_from_cookie_or_header(), AsyncSession, Depends, get_db, get_redis, Redis (+7 more)
+### Community 102 - "useAuth.ts"
+Cohesion: 0.09
+Nodes (24): RoleProtectedRoute(), RoleProtectedRouteProps, NavItem, navItems, Sidebar(), SidebarProps, SubMenuItem, AuthContext (+16 more)
 
 ### Community 103 - "CacheService"
 Cohesion: 0.18
@@ -803,8 +795,8 @@ Cohesion: 0.11
 Nodes (19): 1. Entidade: Estoque, 2. Entidade: Movimentação, 3. Entidade: Lote, 4. Entidade: Inventário, 5.1. Venda com Estoque Insuficiente, 5.2. Lote Vencido com Estoque, 5.3. Inventário com Grandes Diferenças, 5. Casos de Uso (+11 more)
 
 ### Community 107 - "Findings"
-Cohesion: 0.11
-Nodes (19): C1 — Server-state library (React Query) is configured but completely unused — Critical · Both, C2 — No API service layer; UI components call the network directly — Critical · Both, C3 — Axios client duplicated 12× (`apiPublica = axios.create`) — Critical · Both, C4 — `CheckoutPage.tsx` is a 1,381-line god component (28 useState) — Critical · Manual, C5 — No Error Boundaries anywhere — Critical · Both, C6 — Dashboard, Inventory, Sales, Financial (and Config) are placeholders, not implementations — Critical (scope) · Both, Findings, H2 — Tables: client-side filtering over a single page + no debounce — High (correctness) · Manual (+11 more)
+Cohesion: 0.10
+Nodes (20): C1 — Server-state library (React Query) is configured but completely unused — Critical · Both, C2 — No API service layer; UI components call the network directly — Critical · Both, C3 — Axios client duplicated 12× (`apiPublica = axios.create`) — Critical · Both, C4 — `CheckoutPage.tsx` is a 1,381-line god component (28 useState) — Critical · Manual, C5 — No Error Boundaries anywhere — Critical · Both, C6 — Dashboard, Inventory, Sales, Financial (and Config) are placeholders, not implementations — Critical (scope) · Both, Findings, H2 — Tables: client-side filtering over a single page + no debounce — High (correctness) · Manual (+12 more)
 
 ### Community 108 - "⚛️ Performance Frontend (React)"
 Cohesion: 0.12
@@ -831,8 +823,8 @@ Cohesion: 0.15
 Nodes (17): CobrancaLembreteEvent, CobrancaVencidaEvent, Config, ContaQuitadaEvent, DomainEvent, EstoqueMinimoEvent, PedidoCanceladoEvent, PedidoConfirmadoEvent (+9 more)
 
 ### Community 114 - "main.tsx"
-Cohesion: 0.13
-Nodes (10): App(), ErrorBoundary, ErrorBoundaryProps, ErrorBoundaryState, AuthProvider(), queryClient, frontend_src_styles_global, bootstrap (+2 more)
+Cohesion: 0.10
+Nodes (15): App(), ErrorBoundary, ErrorBoundaryProps, ErrorBoundaryState, MainLayout(), Navbar(), NavbarProps, env (+7 more)
 
 ### Community 115 - "test_idempotencia.py"
 Cohesion: 0.14
@@ -846,9 +838,9 @@ Nodes (11): Architecture Overview (reconstructed from Graphify), Architecture Sc
 Cohesion: 0.20
 Nodes (10): init_db(), Applies pending Alembic migrations before the app serves traffic. Runs as a…, health_check(), lifespan(), FastAPI, get, Serviço Estoque - Runas, Gerencia o ciclo de vida da aplicação. (+2 more)
 
-### Community 118 - "seed_clientes.py"
-Cohesion: 0.50
-Nodes (4): main(), Seed de clientes com CPFs válidos., Cria clientes de exemplo., seed_clientes()
+### Community 118 - "test_concorrencia_estoque.py"
+Cohesion: 0.21
+Nodes (21): MovimentacaoRepository, Repository para operações de Movimentação., LiberarReservaRequest, Schema para liberar reserva de estoque., ao_mesmo_tempo(), criar_estoque(), _criar(), falhas() (+13 more)
 
 ### Community 120 - "GUIA_TESTES_AUTOMATIZADOS.md"
 Cohesion: 0.05
@@ -866,9 +858,9 @@ Nodes (14): 1. Análise Inicial, 2. Implementar Otimizações, 3. Medir Resultad
 Cohesion: 0.14
 Nodes (13): 📋 Comandos Detalhados, ⚙️ Como Funciona, 🤝 Contribuindo, 💡 Dicas, 📚 Documentação Relacionada, 📊 Exemplo de Output, 🎯 Quando Usar Cada Modo, 🔧 Requisitos (+5 more)
 
-### Community 124 - "fixture"
-Cohesion: 0.15
-Nodes (14): admin_headers(), admin_token(), api_base_url(), async_client(), event_loop(), fake_cliente(), AsyncClient, fixture (+6 more)
+### Community 124 - "tests/conftest.py"
+Cohesion: 0.17
+Nodes (15): admin_headers(), admin_token(), api_base_url(), async_client(), event_loop(), fake_cliente(), AsyncClient, fixture (+7 more)
 
 ### Community 125 - "test_produtos_api.py"
 Cohesion: 0.18
@@ -895,24 +887,24 @@ Cohesion: 0.17
 Nodes (12): 1. Configuração do Uvicorn, 3. Caching com Redis, 4. Processamento Assíncrono, 5. Connection Pooling, Background Tasks (FastAPI), Cache de Queries Frequentes, Celery (Tarefas Agendadas), Configuração (+4 more)
 
 ### Community 131 - "api-gateway/tests/test_base.py"
-Cohesion: 0.04
-Nodes (51): asyncio, O mínimo que todo serviço prova antes de qualquer teste de regra de negócio. 1.…, test_app_responde_health(), test_schema_das_migrations_serve_aos_models(), Base, DeclarativeBase, Classe base para os modelos., asyncio (+43 more)
+Cohesion: 0.09
+Nodes (23): asyncio, O mínimo que todo serviço prova antes de qualquer teste de regra de negócio. 1.…, test_app_responde_health(), test_schema_das_migrations_serve_aos_models(), Base, DeclarativeBase, Classe base para os modelos., asyncio (+15 more)
 
 ### Community 132 - "IntegracoesPage.tsx"
 Cohesion: 0.14
 Nodes (24): useIntegracoes(), useRemoverIntegracoes(), useSalvarIntegracoes(), useSalvarPagamento(), useStatusPagamento(), IntegracoesPage(), paraPayload(), segredo() (+16 more)
 
 ### Community 133 - "Frontend — Architectural Debt Log"
-Cohesion: 0.17
-Nodes (11): C1 — Server-state library (React Query) is configured but completely unused — Critical · Both, C2 — No API service layer; UI components call the network directly — Critical · Both, C3 — Axios client duplicated 12× (`apiPublica = axios.create`) — Critical · Both, C4 — `CheckoutPage.tsx` is a 1,381-line god component (28 useState) — Critical · Manual, C5 — No Error Boundaries anywhere — Critical · Both, C6 — Dashboard, Inventory, Sales, Financial (and Config) are placeholders — Critical (scope) · Both, Frontend — Architectural Debt Log, H2 — Tables: client-side filtering over a single page + no debounce — High (correctness) · Manual (+3 more)
+Cohesion: 0.15
+Nodes (12): C1 — Server-state library (React Query) is configured but completely unused — Critical · Both, C2 — No API service layer; UI components call the network directly — Critical · Both, C3 — Axios client duplicated 12× (`apiPublica = axios.create`) — Critical · Both, C4 — `CheckoutPage.tsx` is a 1,381-line god component (28 useState) — Critical · Manual, C5 — No Error Boundaries anywhere — Critical · Both, C6 — Dashboard, Inventory, Sales, Financial (and Config) are placeholders — Critical (scope) · Both, Frontend — Architectural Debt Log, H2 — Tables: client-side filtering over a single page + no debounce — High (correctness) · Manual (+4 more)
 
-### Community 134 - "ClienteCreateOAuth"
-Cohesion: 0.09
-Nodes (20): Cria um novo cliente via OAuth (CPF e telefone opcionais)., ClienteCreateOAuth, field_validator, Valida e normaliza CPF., Normaliza telefone para E.164., Schema para criação de cliente via OAuth (sem CPF/telefone obrigatórios)., Valida e normaliza CPF se fornecido., Normaliza telefone para E.164 se fornecido. (+12 more)
+### Community 134 - "clientes/utils/validators.py"
+Cohesion: 0.12
+Nodes (16): field_validator, Valida e normaliza CPF., Normaliza telefone para E.164., Valida e normaliza CPF se fornecido., Normaliza telefone para E.164 se fornecido., Normaliza telefone para E.164., normalizar_cpf(), normalizar_telefone() (+8 more)
 
 ### Community 135 - "UsuariosPage.tsx"
-Cohesion: 0.23
-Nodes (16): useAtualizarUsuario(), useCriarUsuario(), useDesativarUsuario(), useUsuarioMutation(), useUsuarios(), usuarioSchema(), ROLES, UsuariosPage() (+8 more)
+Cohesion: 0.18
+Nodes (18): useAtualizarUsuario(), useCriarUsuario(), useDesativarUsuario(), useUsuarioMutation(), useUsuarios(), valido, UsuarioFormData, usuarioSchema() (+10 more)
 
 ### Community 136 - "test_estoque.py"
 Cohesion: 0.17
@@ -923,8 +915,8 @@ Cohesion: 0.17
 Nodes (11): AsyncClient, asyncio, integration, Testes de Integração - Serviço de Produtos Cobre: CRUD Produtos, Categorias,…, Suite de testes de categorias., Teste: Criar categoria com sucesso., Suite de testes de produtos., Teste: Criar produto completo com categoria. (+3 more)
 
 ### Community 138 - "TestAuth"
-Cohesion: 0.16
-Nodes (10): auth, AsyncClient, asyncio, integration, Testes de Autenticação - API Gateway Cobre: Login, OAuth, Refresh Tokens,…, Suite de testes de autenticação., Teste: Login com credenciais de admin corretas., Teste: Login com senha incorreta retorna 401. (+2 more)
+Cohesion: 0.20
+Nodes (9): auth, AsyncClient, asyncio, integration, Suite de testes de autenticação., Teste: Login com credenciais de admin corretas., Teste: Login com senha incorreta retorna 401., Teste: Acessar rota protegida com token válido retorna 200. (+1 more)
 
 ### Community 139 - "erp.ps1"
 Cohesion: 0.32
@@ -951,12 +943,12 @@ Cohesion: 0.18
 Nodes (10): CRITICAL GAPS (MVP Blockers), Current Coverage, ❌ Current State: NOT READY for MVP Presentation, Executive Summary, ✅ Minimum Required (120 tests), MVP Scope (110 endpoints total), Next Steps, 🔴 NOT TESTED - High Impact (+2 more)
 
 ### Community 145 - "test_atualizar_desconto.py"
-Cohesion: 0.17
-Nodes (24): Tipo de desconto aplicado., TipoDesconto, ItemVendaRepository, Repository para operações de Item de Venda., Cria um novo item de venda., Cria múltiplos itens de venda., Schema para atualizar venda (apenas em status PEDIDO)., VendaUpdate (+16 more)
+Cohesion: 0.22
+Nodes (21): Tipo de desconto aplicado., TipoDesconto, Schema para atualizar venda (apenas em status PEDIDO)., VendaUpdate, Decimal, A regra do VendaCreate, aplicada ao desconto já mesclado com o gravado. Não…, Calcula subtotal e total da venda. Returns: Tuple[Decimal, Decimal]: (subtotal,…, Atualiza venda (apenas se status=PEDIDO). (+13 more)
 
 ### Community 146 - "axios.ts"
-Cohesion: 0.07
-Nodes (38): useCategorias(), useExcluirProduto(), useProdutos(), useRestaurarProduto(), Categoria, CategoriasPage(), Categoria, Produto (+30 more)
+Cohesion: 0.05
+Nodes (57): ProtectedRoute(), PublicRoute(), useAuth(), useAtualizarEmpresa(), useProdutosLoja(), usePublicarProduto(), useCategorias(), useExcluirProduto() (+49 more)
 
 ### Community 147 - "✅ Checklist de Desenvolvimento - Runas ERP"
 Cohesion: 0.20
@@ -1003,8 +995,8 @@ Cohesion: 0.22
 Nodes (6): EventPublisher, get_publisher(), Any, Publisher de eventos de domínio., Publica um evento. Args: routing_key: Chave de roteamento (ex:…, Obtém instância do publisher.
 
 ### Community 158 - "NotificacaoService"
-Cohesion: 0.09
-Nodes (24): Access token em claro, decifrado sob demanda. Existe para que os pontos de uso…, Segredo de assinatura em claro, decifrado sob demanda., credenciais_whatsapp(), Evolution API efetiva do tenant, com fallback no env global. O env global é o…, NotificacaoService, Decimal, Service de Notificações via WhatsApp (Evolution API). Envia notificações para…, Envia notificação de pagamento confirmado. Args: telefone: Telefone do cliente… (+16 more)
+Cohesion: 0.18
+Nodes (11): NotificacaoService, Decimal, Envia notificação de pagamento confirmado. Args: telefone: Telefone do cliente…, Service para envio de notificações via WhatsApp., Envia notificação de pedido separado. Args: telefone: Telefone do cliente…, Formata telefone para envio (remove caracteres especiais). Args: telefone:…, Envia notificação de pedido entregue. Args: telefone: Telefone do cliente…, Envia notificação de pedido cancelado. Args: telefone: Telefone do cliente… (+3 more)
 
 ### Community 159 - "EventPublisher"
 Cohesion: 0.22
@@ -1022,21 +1014,21 @@ Nodes (11): ⚠️ A ferramenta de design reescreve a raiz, Como rodar, CSS, Cui
 Cohesion: 0.22
 Nodes (8): Comandos, Estrutura de Testes, Objetivo, ✅ Prioridade ALTA (Crítico para apresentação), 🟢 Prioridade BAIXA (Nice to have), 🟡 Prioridade MÉDIA (Importante), Prioridades para MVP, Test Strategy - Runas ERP MVP
 
-### Community 163 - "CarrinhoService"
-Cohesion: 0.17
-Nodes (15): CarrinhoResponse, Schema de resposta do carrinho completo., CarrinhoService, AsyncSession, Redis, UUID, Adiciona ou atualiza item no carrinho COM RESERVA DE ESTOQUE., Service para gerenciar carrinho de compras no Redis. Estrutura no Redis: - Key:… (+7 more)
+### Community 163 - "test_expiracao_preferencia.py"
+Cohesion: 0.11
+Nodes (18): _agora_mp(), Data no formato que o Mercado Pago exige: ISO-8601 com milissegundos e offset…, chave_de_cifra(), _data(), payload(), asyncio, datetime, fixture (+10 more)
 
-### Community 164 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste. ASGITransport…
+### Community 164 - "Categoria"
+Cohesion: 0.14
+Nodes (12): Categoria, Modelo de Categoria de Produtos., CategoriaRepository, Repository para Categoria., Cria uma nova categoria., Obtém uma categoria por ID., Obtém uma categoria por nome., Lista todas as categorias com paginação. (+4 more)
 
 ### Community 165 - "TestEmpresasCRUD"
 Cohesion: 0.15
 Nodes (11): AsyncClient, asyncio, integration, Suite de testes de CRUD de empresas., GET /empresas nunca vaza outro tenant — uma empresa, uma loja., Isolamento por id: o tenant 1 não lê a empresa 2., Escrita cross-tenant é o furo caro — bloqueada antes de tocar o banco., plano/max_* saíram de EmpresaUpdate: o lojista não muda o próprio plano. (+3 more)
 
 ### Community 166 - "pytest"
-Cohesion: 0.14
-Nodes (12): e2e, faker, pytest, slow, AsyncClient, asyncio, Teste End-to-End: Fluxo Completo de Venda Simula: Criar Produto → Adicionar…, Teste E2E: Fluxo completo de venda desde criação do produto até pagamento. (+4 more)
+Cohesion: 0.08
+Nodes (20): e2e, faker, pytest, slow, AsyncClient, asyncio, Teste End-to-End: Fluxo Completo de Venda Simula: Criar Produto → Adicionar…, Teste E2E: Fluxo completo de venda desde criação do produto até pagamento. (+12 more)
 
 ### Community 167 - "TestVendasPedidos"
 Cohesion: 0.20
@@ -1062,9 +1054,9 @@ Nodes (7): compilerOptions, allowSyntheticDefaultImports, composite, module, mod
 Cohesion: 0.25
 Nodes (8): 🎯 Acesso Rápido, 🔍 Encontre o Que Procura, 📂 Estrutura Completa, 📚 Guia de Documentação - Runas ERP, Preciso começar agora!, Preciso entender o sistema completo, Preciso implementar uma feature, Preciso ver o que fazer
 
-### Community 173 - "tests/test_webhook_assinatura.py"
-Cohesion: 0.07
-Nodes (45): cryptography_fernet, functools, hashlib, hmac, routers, assinatura_valida(), montar_manifesto(), _partes_da_assinatura() (+37 more)
+### Community 173 - "assinatura_valida"
+Cohesion: 0.12
+Nodes (23): hashlib, hmac, assinatura_valida(), montar_manifesto(), _partes_da_assinatura(), Assinatura HMAC dos webhooks do Mercado Pago (V5). A rota…, `ts=1704908010,v1=abc...` -> {'ts': '...', 'v1': '...'}., Molde do MP, omitindo o campo (e sua chave) que não veio. (+15 more)
 
 ### Community 174 - "validar_cnpj"
 Cohesion: 0.27
@@ -1090,21 +1082,17 @@ Nodes (8): Categorias (8), Clientes (20), Como executar, Dados que serão criado
 Cohesion: 0.08
 Nodes (34): AST, AsyncFunctionDef, _alvos_da_migration(), Path, As migrations de auditoria só podem ligar trigger em tabela que existe. O plano…, Todo __tablename__ declarado nos models do serviço., A lista TABELAS declarada no topo da migration de auditoria., Trigger nas tabelas de auditoria seria recursão infinita. (+26 more)
 
-### Community 180 - "StatusLote"
-Cohesion: 0.18
-Nodes (16): str, StatusLote, LoteBase, LoteCreate, LoteResponse, field_validator, Valida que data de validade é posterior à fabricação., Schema para criar lote. (+8 more)
-
 ### Community 181 - "🔄 `graphify-update.yml` - Auto-Update Graphify Knowledge Graph"
 Cohesion: 0.22
 Nodes (8): 🎯 Benefícios, ⚙️ Como Funciona, 🚀 Execução Manual, 📝 Exemplo de Uso, GitHub Actions Workflows, 🔄 `graphify-update.yml` - Auto-Update Graphify Knowledge Graph, 🔗 Integração com Kiro AI, 📋 Workflows Disponíveis
 
 ### Community 182 - "UUID"
-Cohesion: 0.03
-Nodes (47): FornecedorProduto, Modelo de Associação entre Fornecedor e Produto., Decimal, Modelo de Variante de Produto., Calcula o preço de venda baseado no custo e markup., Variante, AtributoVarianteRepository, FornecedorProdutoRepository (+39 more)
+Cohesion: 0.05
+Nodes (29): FornecedorProdutoRepository, LojaOnlineFotoRepository, Decimal, UUID, Cria um novo produto., Soft delete de um produto (marca como deletado)., Repository para Variante., Cria uma nova variante. (+21 more)
 
-### Community 183 - "EstoqueOperacaoModal.tsx"
-Cohesion: 0.26
-Nodes (14): ESTOQUE_KEY, useAjusteEstoque(), useEntradaEstoque(), useEstoqueMutation(), useLiberarReserva(), useReservarEstoque(), useSaidaEstoque(), EstoqueOperacaoModal() (+6 more)
+### Community 183 - "ConfiguracaoPagamento"
+Cohesion: 0.18
+Nodes (14): ConfiguracaoPagamento, Modelo de Configuração de Pagamento (Mercado Pago) por empresa. Multi-tenant:…, deletar_configuracao_pagamento(), delete, Deleta configuração de pagamento. ⚠️ **ATENÇÃO**: Esta ação é irreversível. As…, aplicar_credenciais(), ConfiguracaoPagamentoService, AsyncSession (+6 more)
 
 ### Community 184 - "vendas/redis_client.py"
 Cohesion: 0.25
@@ -1139,16 +1127,16 @@ Cohesion: 0.22
 Nodes (9): scripts, build, dev, format, lint, preview, test, test:coverage (+1 more)
 
 ### Community 192 - "VendaService"
-Cohesion: 0.04
-Nodes (95): _cancelar_venda_timeout(), Cancela uma venda expirada sem pagamento aprovado e libera as reservas de…, AsyncSession, Decimal, UUID, Conta total de vendas da empresa., Obtém a próxima sequência de número de venda para a empresa., Lista itens de uma venda. (+87 more)
+Cohesion: 0.06
+Nodes (50): ItemVendaRepository, UUID, Repository para operações de Item de Venda., Cria um novo item de venda., Lista itens de uma venda., Atualiza um item de venda., Lista reservas de uma venda., Atualiza uma reserva de estoque. (+42 more)
 
-### Community 193 - "EstoquePage.tsx"
-Cohesion: 0.17
-Nodes (13): useEstoques(), useRelatorioEstoque(), useProdutoResolver(), useProdutosLookup(), OperacaoEstoque, EstoqueStatusBadge(), resolverStatus(), Variant (+5 more)
+### Community 193 - "Produto"
+Cohesion: 0.12
+Nodes (10): Produto, Obtém um produto por ID (incluindo deletados)., Obtém produtos por nome (busca parcial)., Lista produtos de uma categoria., Lista todos os produtos com filtros opcionais. Args: empresa_id: ID da empresa…, Lista produtos publicados na loja online (ativo=True e…, Lista produtos ativos da empresa com sua config de loja online (se existir).…, main() (+2 more)
 
-### Community 194 - "test_requisicao_em_voo_responde_409"
-Cohesion: 0.29
-Nodes (7): montar_chave(), Response, Monta a chave Redis escopada por tenant. empresa_id fica fora do hash para a…, Devolve o que está guardado: 409 se ainda em voo, senão a resposta salva.…, responder_guardado(), Reserva feita e resposta ainda não gravada: 409, nunca uma segunda escrita., test_requisicao_em_voo_responde_409()
+### Community 194 - "idempotency.py"
+Cohesion: 0.15
+Nodes (16): concluir(), liberar(), montar_chave(), Redis, Response, Idempotência de escritas: uma reserva no Redis por Idempotency-Key. Mora no…, Apaga a reserva — usado quando a resposta não é final (erro transitório)., Monta a chave Redis escopada por tenant. empresa_id fica fora do hash para a… (+8 more)
 
 ### Community 195 - "Entregas Planejadas"
 Cohesion: 0.29
@@ -1186,9 +1174,9 @@ Nodes (6): Backend, Banco de Dados, 🎯 Checklist de Performance, Docker, Front
 Cohesion: 0.38
 Nodes (5): __dirname, ref_path, ref_url, vite, @vitejs/plugin-react
 
-### Community 204 - "estoqueApi.ts"
-Cohesion: 0.23
-Nodes (14): ListarMovimentacoesParams, AjustePayload, AtualizarEstoquePayload, CriarEstoquePayload, Disponibilidade, EntradaEstoquePayload, LiberarReservaPayload, Lote (+6 more)
+### Community 204 - "tests/test_webhook_assinatura.py"
+Cohesion: 0.30
+Nodes (14): routers, _assinar(), _config(), _postar(), asyncio, V5 — a rota do webhook confere a assinatura do Mercado Pago.…, Envelope legítimo reaproveitado para outro id — o manifesto inclui o id., Até o lojista colar o segredo do painel, a rota segue como era antes. (+6 more)
 
 ### Community 205 - "P"
 Cohesion: 0.33
@@ -1206,21 +1194,21 @@ Nodes (6): Componentes, Entregas, 📅 Fase 2: MVP Frontend (Julho 2026), Infrae
 Cohesion: 0.33
 Nodes (6): Erros da API, Importar, Loading com Atualização, Opções Avançadas, 🔔 Sistema de Notificações (Toast), Uso Básico
 
-### Community 210 - "3. Microsserviços — roteamento, isolamento e comunicação"
-Cohesion: 0.33
-Nodes (6): 3. Microsserviços — roteamento, isolamento e comunicação, _get_redis(), limpar_carrinhos_abandonados(), Redis, Retorna cliente Redis., Limpa carrinhos abandonados do Redis (>7 dias sem acesso). Critério: carrinhos…
+### Community 210 - "typing"
+Cohesion: 0.05
+Nodes (59): aio_pika, config, datetime, json, 3. Microsserviços — roteamento, isolamento e comunicação, Publisher de eventos para RabbitMQ., Eventos do serviço empresas., Publisher de eventos para o serviço de empresas. (+51 more)
 
 ### Community 211 - "get_empresa_id"
 Cohesion: 0.40
 Nodes (4): Utilitários do serviço produtos., get_empresa_id(), Utilitários para gerenciamento de multi-tenancy (tenant)., Extrai o empresa_id do header X-Empresa-Id. Args: x_empresa_id: ID da empresa…
 
-### Community 212 - ".validar_valor_recebido"
-Cohesion: 0.40
-Nodes (3): field_validator, Valida desconto conforme o tipo., Valida que valor_recebido só é usado para DINHEIRO.
+### Community 212 - "schemas/venda.py"
+Cohesion: 0.07
+Nodes (40): AdicionarPagamentoRequest, ItemVendaBase, ItemVendaCreate, ItemVendaResponse, PagamentoVendaBase, PagamentoVendaResponse, ProdutoMaisVendido, BaseModel (+32 more)
 
-### Community 213 - "20260611_initial_gateway.py"
-Cohesion: 0.18
-Nodes (9): downgrade(), Cria a tabela gateway.usuarios. Em bancos criados antes desta migration (via…, Remove a tabela gateway.usuarios (se existir)., upgrade(), downgrade(), O model SQLAlchemy declara `tipo`, `status` e `regime_tributario` como Enum…, Reverte as colunas para VARCHAR e remove os tipos enum., upgrade() (+1 more)
+### Community 213 - "sqlalchemy"
+Cohesion: 0.03
+Nodes (31): alembic, downgrade(), Cria a tabela gateway.usuarios. Em bancos criados antes desta migration (via…, Remove a tabela gateway.usuarios (se existir)., upgrade(), downgrade(), Adiciona coluna empresa_id à tabela gateway.usuarios. Define empresa_id = 1…, Remove coluna empresa_id da tabela gateway.usuarios. (+23 more)
 
 ### Community 214 - "clientes/config.py"
 Cohesion: 0.40
@@ -1290,37 +1278,37 @@ Nodes (5): 1. Planejamento, 2. Estrutura do Código, 4. Qualidade, 5. Documenta�
 Cohesion: 0.40
 Nodes (5): Backend, ✅ Checklist Rápido (TL;DR), Deploy, Frontend, Segurança
 
-### Community 231 - "get_empresa_id"
-Cohesion: 0.50
-Nodes (3): get_empresa_id(), Utilitários para gerenciamento de multi-tenancy (tenant)., Extrai o empresa_id do header X-Empresa-Id. Args: x_empresa_id: ID da empresa…
+### Community 231 - "FornecedorService"
+Cohesion: 0.18
+Nodes (6): FornecedorService, Service para Fornecedor., Cria um novo fornecedor., Obtém um fornecedor por ID., Atualiza um fornecedor., Deleta um fornecedor.
 
 ### Community 233 - "clean_products.py"
 Cohesion: 0.29
 Nodes (7): checker_colors(), clean(), Remove o xadrez de transparencia que ficou "queimado" nos pixels das fotos de…, Duas cores dominantes na moldura externa da imagem., numpy, pil, scipy
 
-### Community 234 - "ResultadoBaixaEstoque"
-Cohesion: 0.25
-Nodes (10): classificar_reserva_http(), classificar_status_http(), Enum, str, Classificação do resultado da baixa de estoque (cross-service consistency —…, Resultado de uma tentativa de baixar o estoque de uma venda., Classifica a resposta HTTP do serviço de estoque. - 200/201 → SUCESSO - 409 →…, Classifica a resposta de POST /estoque/reservar. Não é a mesma tabela da baixa:… (+2 more)
+### Community 234 - "check_faq.py"
+Cohesion: 0.22
+Nodes (6): io, Confere se o FAQ do componente e o do JSON-LD continuam iguais. As mesmas 6…, main(), Confere a escala fluida de main.css. Um clamp() errado nao quebra nada visivel:…, Mesmo calculo do navegador: clamp(min, base + slope*vw, max), em px., resolve()
 
-### Community 235 - "vendas/services/email_service.py"
-Cohesion: 0.18
-Nodes (13): aiosmtplib, Serviço de envio de email via SMTP (Gmail)., email_mime_multipart, email_mime_text, credenciais_smtp(), SMTP efetivo do tenant, mesma regra de fallback do WhatsApp., _build_welcome_email_html(), enviar_email_credenciais() (+5 more)
+### Community 235 - "🆘 Problemas Comuns"
+Cohesion: 0.22
+Nodes (9): "Cannot connect to Docker daemon", "docker: command not found", "docker-compose: command not found", "node: command not found", "npm: command not found", "Permission denied", "Port already in use", 🆘 Problemas Comuns (+1 more)
 
-### Community 236 - "salvar_integracoes"
-Cohesion: 0.11
-Nodes (25): IntegracaoResponse, IntegracaoUpsert, obter_integracoes(), _para_response(), AsyncSession, BaseModel, delete, Depends (+17 more)
-
-### Community 237 - "auth.py"
+### Community 236 - "admin_integracao.py"
 Cohesion: 0.06
-Nodes (43): create_refresh_token(), decode_token(), Any, UUID, Utilitários para geração e validação de tokens JWT., Cria um refresh token JWT. Args: user_id: ID do usuário Returns: Refresh token…, Decodifica e valida um token JWT. Args: token: Token JWT Returns: Payload do…, Verifica se um token é válido. Args: token: Token JWT Returns: Payload do token… (+35 more)
+Nodes (49): Schemas Pydantic para autenticação de clientes compradores., cryptography_fernet, functools, pydantic, get_db(), AsyncSession, Dependency para obter sessão do banco de dados., ConfiguracaoIntegracao (+41 more)
 
-### Community 238 - "schemas/usuario.py"
-Cohesion: 0.10
-Nodes (26): Schemas do API Gateway., AlterarSenhaRequest, ForgotPasswordRequest, LoginResponse, BaseModel, field_validator, Schemas Pydantic para usuário., Valida força da senha (8-20 chars, maiúscula, minúscula, número, especial). (+18 more)
+### Community 237 - "oauth2.py"
+Cohesion: 0.06
+Nodes (37): decode_token(), Any, Decodifica e valida um token JWT. Args: token: Token JWT Returns: Payload do…, Verifica se um token é válido. Args: token: Token JWT Returns: Payload do token…, verify_token(), get_current_cliente(), get_current_user(), get_token_from_cookie_or_header() (+29 more)
 
-### Community 239 - "TestLojaOnlinePublica"
-Cohesion: 0.20
-Nodes (8): AsyncClient, asyncio, integration, Testes da Loja Online Pública Cobre: Listagem de produtos, categorias, busca…, Suite de testes da loja online pública., Teste: Listar produtos públicos sem autenticação., Teste: Listar categorias públicas sem autenticação., TestLojaOnlinePublica
+### Community 238 - ".validate_nova_senha"
+Cohesion: 0.25
+Nodes (6): field_validator, Valida força da senha (8-20 chars, maiúscula, minúscula, número, especial)., Valida força da nova senha., Valida força da nova senha., Valida força da senha (apenas se senha não for vazia - OAuth users têm senha…, validar_forca_senha()
+
+### Community 239 - "clientes/tests/test_base.py"
+Cohesion: 0.29
+Nodes (7): Base, DeclarativeBase, Classe base para os modelos., asyncio, O mínimo que todo serviço prova antes de qualquer teste de regra de negócio. 1.…, test_app_responde_health(), test_schema_das_migrations_serve_aos_models()
 
 ### Community 240 - "global_exception_handler"
 Cohesion: 0.40
@@ -1330,21 +1318,21 @@ Nodes (5): global_exception_handler(), Exception, exception_handler, Request, Ha
 Cohesion: 0.40
 Nodes (4): Comandos, Como Rodar os Testes - Runas ERP MVP, Pré-requisitos, Testes Prioritários para MVP
 
-### Community 242 - ".rastrear_pedido"
-Cohesion: 0.11
-Nodes (14): Busca venda por número isolada por empresa., AsyncSession, UUID, Obtém o último registro de status de uma venda. Args: db: Sessão do banco…, Lista histórico de status de uma venda (ordenado por data). Args: db: Sessão do…, AsyncSession, datetime, UUID (+6 more)
+### Community 242 - "vendas/tests/test_base.py"
+Cohesion: 0.29
+Nodes (7): Base, DeclarativeBase, Classe base para os modelos., asyncio, O mínimo que todo serviço prova antes de qualquer teste de regra de negócio. 1.…, test_app_responde_health(), test_schema_das_migrations_serve_aos_models()
 
 ### Community 243 - "TestUsuariosAdmin"
 Cohesion: 0.13
 Nodes (12): AsyncClient, asyncio, integration, Testes de Integração - Usuários do tenant (/auth/admin/usuarios) Cobre o…, Suite de isolamento e invariantes de usuários., UsuarioRepository.listar() não filtrava por empresa_id., A rota é de admin: sem token não passa., 404 e não 403: confirmar existência já vaza informação do outro lojista. (+4 more)
 
-### Community 244 - "InadimplenciaMiddleware"
-Cohesion: 0.31
-Nodes (6): InadimplenciaMiddleware, BaseHTTPMiddleware, Request, Rejeita escrita com 402 enquanto o tenant está em somente leitura., Tenant do portador. O JWT de usuário não carrega empresa_id, então o caminho…, Estado da assinatura, com cache curto no Redis que já existe. Redis fora do ar…
+### Community 244 - "loja"
+Cohesion: 0.29
+Nodes (5): chave_de_cifra(), loja(), fixture, Sem INTEGRACOES_SECRET_KEY o setter do segredo levanta — ver utils/crypto.py., Empresa resolvida pelo slug, sem o serviço de empresas, e sem chamar o MP.
 
-### Community 245 - "test_webhook"
-Cohesion: 0.67
-Nodes (3): get, Endpoint de teste para verificar se webhook está acessível., test_webhook()
+### Community 245 - "🔧 Configuração do Nginx"
+Cohesion: 0.33
+Nodes (6): 1. Compressão Gzip, 2. Security Headers, 3. Cache de Assets, 4. SPA Fallback, 5. Proxy para API (opcional), 🔧 Configuração do Nginx
 
 ### Community 246 - "estoque"
 Cohesion: 0.22
@@ -1354,9 +1342,9 @@ Nodes (7): Architecture, Current Schema Status (2026-06-11), Database Migrations
 Cohesion: 0.40
 Nodes (5): global_exception_handler(), Exception, exception_handler, Request, Handler global de exceções.
 
-### Community 248 - "venda_paga"
-Cohesion: 0.22
-Nodes (5): fixture, Substitui o `log` do módulo e guarda cada evento emitido., Venda CONFIRMADA pelo pagamento P1, com a API do Mercado Pago substituída., Registro, venda_paga()
+### Community 248 - "🐛 Troubleshooting"
+Cohesion: 0.33
+Nodes (6): API não responde, Erro 404 ao acessar rotas, Erro: "Cannot find module", Erro: "Port 3000 is already in use", Hot reload não funciona, 🐛 Troubleshooting
 
 ### Community 249 - "global_exception_handler"
 Cohesion: 0.40
@@ -1366,13 +1354,13 @@ Nodes (5): global_exception_handler(), Exception, exception_handler, Request, Ha
 Cohesion: 0.40
 Nodes (5): global_exception_handler(), Exception, exception_handler, Request, Handler global de exceções.
 
-### Community 251 - "schemas/loja.py"
-Cohesion: 0.05
-Nodes (41): BuscarPedidoRequest, CheckoutRequest, CheckoutResponse, ClienteCheckout, ConfiguracaoPagamentoCreate, ConfiguracaoPagamentoResponse, EnderecoEntregaCheckout, ItemCarrinhoBase (+33 more)
+### Community 251 - ".validar_cliente_convidado"
+Cohesion: 0.08
+Nodes (13): field_validator, Valida que endereço é obrigatório para DELIVERY., Valida que um dos dois (cliente_id ou cliente_novo) deve ser fornecido., Valida pagamentos (valores mínimos e formas)., Valida que pelo menos um campo foi fornecido., Normaliza telefone removendo formatação., Normaliza e valida CPF, dígitos verificadores inclusos., Valida CPF brasileiro (dígitos verificadores). Regra: - 11 dígitos numéricos -… (+5 more)
 
 ### Community 252 - "TestIntegracoes"
-Cohesion: 0.17
-Nodes (10): AsyncClient, asyncio, integration, Suite de alcance, isolamento e não-vazamento de segredo., O furo original: 404 aqui significa que o mapa do gateway regrediu., Mesmo furo, prefixo /pagamentos/admin., Credencial de integração não é rota pública., A cifra no banco não serve para nada se a API devolve o valor em claro. Salva… (+2 more)
+Cohesion: 0.15
+Nodes (11): AsyncClient, asyncio, integration, Testes de Integração - Integrações do tenant (/integracoes) O router de…, Suite de alcance, isolamento e não-vazamento de segredo., O furo original: 404 aqui significa que o mapa do gateway regrediu., Mesmo furo, prefixo /pagamentos/admin., Credencial de integração não é rota pública. (+3 more)
 
 ### Community 253 - "global_exception_handler"
 Cohesion: 0.40
@@ -1382,17 +1370,17 @@ Nodes (5): global_exception_handler(), Exception, exception_handler, Request, Ha
 Cohesion: 0.29
 Nodes (7): Clean Code, Code Calisthenics (non-negotiable), Decision Ladder (Ponytail — apply before writing any code), Engineering Standards, Error Handling, Performance, SOLID
 
-### Community 255 - "AuditoriaMiddleware"
-Cohesion: 0.25
-Nodes (7): AuditoriaMiddleware, BaseHTTPMiddleware, Request, Identifica o autor pelo token, cookie primeiro — mesma ordem de…, Substitui recursivamente qualquer chave sensível por ***., Grava toda escrita que passa pelo gateway em gateway.auditoria., _redigir()
+### Community 255 - "📊 Comandos Úteis"
+Cohesion: 0.33
+Nodes (6): 📊 Comandos Úteis, Entrar no container, Limpar volumes, Parar containers, Rebuild, Ver logs
 
 ### Community 256 - "2. Otimização de Queries SQL"
 Cohesion: 0.40
 Nodes (5): 2. Otimização de Queries SQL, ✅ Eager Loading (USAR), ❌ N+1 Problem (EVITAR), ✅ Paginação (SEMPRE USAR), ✅ Índices (CRIAR EM CAMPOS FREQUENTES)
 
-### Community 257 - "🎯 Checklist por Feature"
-Cohesion: 0.29
-Nodes (7): Backend (✅ 90% completo), Backend (✅ 95% completo), 🎯 Checklist por Feature, Frontend (🔴 0% completo), Frontend (🔴 0% completo), Gestão de Estoque, PDV/Vendas
+### Community 257 - ".mercadopago_access_token"
+Cohesion: 0.40
+Nodes (3): Access token em claro, decifrado sob demanda. Existe para que os pontos de uso…, Segredo de assinatura em claro, decifrado sob demanda., setter
 
 ### Community 258 - "vendas/config.py"
 Cohesion: 0.29
@@ -1454,9 +1442,9 @@ Nodes (4): HTTPS Only, Input Sanitization, Security, Token Storage
 Cohesion: 0.33
 Nodes (5): BaseSettings, Configurações do API Gateway., Configurações da aplicação., Settings, pydantic_settings
 
-### Community 275 - "🎯 Prioridades de Desenvolvimento"
-Cohesion: 0.33
-Nodes (6): 🎯 Prioridades de Desenvolvimento, Sprint 1: PDV/Vendas (PRIORIDADE MÁXIMA), Sprint 2: Gestão de Estoque (PRIORIDADE MÁXIMA), Sprint 3: Loja Online - Finalização (PRIORIDADE ALTA), Sprint 4: Melhorias em Clientes e Produtos (PRIORIDADE MÉDIA), Sprint 5: Financeiro (PRIORIDADE MÉDIA)
+### Community 275 - "Comandos Úteis"
+Cohesion: 0.50
+Nodes (4): Build de Produção, Comandos Úteis, Docker Produção, Verificar Segurança
 
 ### Community 276 - "Test Implementation Status - 23/06/2026"
 Cohesion: 0.50
@@ -1466,17 +1454,17 @@ Nodes (3): ✅ Completed, 🔴 Remaining (3-4 hours), Test Implementation Status
 Cohesion: 0.50
 Nodes (3): How to Run, Test Files: 11 created, ✅ Tests Ready to Run!
 
-### Community 278 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste. ASGITransport…
+### Community 278 - "🔐 Fluxo OAuth Implementado"
+Cohesion: 0.50
+Nodes (4): 1. Iniciação (Frontend), 2. Autorização (Google), 3. Callback (Frontend + Backend), 🔐 Fluxo OAuth Implementado
 
 ### Community 281 - "G"
 Cohesion: 0.67
 Nodes (3): G, Glassmorphism, Glow Effect
 
-### Community 282 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste. ASGITransport…
+### Community 282 - "📈 Próximas Melhorias"
+Cohesion: 0.50
+Nodes (4): Curto Prazo, Longo Prazo, Médio Prazo, 📈 Próximas Melhorias
 
 ### Community 283 - "L"
 Cohesion: 0.67
@@ -1498,25 +1486,13 @@ Nodes (3): 📚 Arquitetura Implementada, Backend, Frontend
 Cohesion: 0.67
 Nodes (3): 🎯 Guias Rápidos, Para Criar Componente, Para Implementar Nova Rota
 
-### Community 290 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste. ASGITransport…
+### Community 290 - "estoque/utils/tenant.py"
+Cohesion: 0.50
+Nodes (3): get_empresa_id(), Utilitários para multi-tenancy., Extrai o empresa_id do header X-Empresa-Id. Args: x_empresa_id: ID da empresa…
 
-### Community 292 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste. ASGITransport…
-
-### Community 293 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste. ASGITransport…
-
-### Community 294 - "atualizar_quantidade_item"
-Cohesion: 0.33
-Nodes (6): atualizar_quantidade_item(), put, UUID, Atualiza quantidade de item específico., AtualizarQuantidadeRequest, Schema para atualizar quantidade de item no carrinho.
-
-### Community 295 - "client"
-Cohesion: 0.33
-Nodes (5): client(), db(), fixture, Sessão presa numa transação que nunca é commitada de verdade. O commit() do…, O app inteiro via ASGI, sem subir servidor, na sessão do teste. ASGITransport…
+### Community 293 - "get_db"
+Cohesion: 0.67
+Nodes (3): get_db(), AsyncSession, Dependency para obter sessão do banco de dados.
 
 ### Community 296 - "estoque_responde"
 Cohesion: 0.33
@@ -1546,25 +1522,17 @@ Nodes (4): BaseSettings, Configurações do serviço estoque., Configurações d
 Cohesion: 0.40
 Nodes (4): BaseSettings, Configurações do serviço financeiro., Configurações da aplicação., Settings
 
-### Community 305 - "financeiro/seed.py"
-Cohesion: 0.40
-Nodes (4): Script para popular banco com dados de teste., # TODO: Implementar seed de dados, Popula banco com dados de teste., seed_data()
+### Community 305 - "asyncio"
+Cohesion: 0.07
+Nodes (37): Configuração do banco de dados para o API Gateway., asyncio, pathlib, Configuração do banco de dados., Script para popular banco com dados de teste., Configuração do banco de dados., Configuração do banco de dados., get_db() (+29 more)
 
 ### Community 306 - "notificacoes/config.py"
 Cohesion: 0.40
 Nodes (4): BaseSettings, Configurações do serviço notificacoes., Configurações da aplicação., Settings
 
-### Community 307 - "notificacoes/seed.py"
-Cohesion: 0.40
-Nodes (4): Script para popular banco com dados de teste., # TODO: Implementar seed de dados, Popula banco com dados de teste., seed_data()
-
 ### Community 308 - "produtos/config.py"
 Cohesion: 0.40
 Nodes (4): BaseSettings, Configurações do serviço produtos., Configurações da aplicação., Settings
-
-### Community 309 - "20260828_110000_integracao.py"
-Cohesion: 0.50
-Nodes (3): _cifrar_tokens_existentes(), Cifra as linhas que já existem. Sem INTEGRACOES_SECRET_KEY não dá para cifrar,…, upgrade()
 
 ### Community 310 - "test_headers_internos_nao_vem_do_cliente.py"
 Cohesion: 0.40
@@ -1594,37 +1562,29 @@ Nodes (4): 📁 Documentação Completa, 📚 Documentação Essencial, 🎯 Par
 Cohesion: 0.67
 Nodes (3): H, Health Check, HTTP Status Codes
 
-### Community 360 - "numero_venda.py"
-Cohesion: 0.50
-Nodes (3): gerar_numero_venda(), Utilitário para geração de número de venda., Gera número único de venda no formato: V-{YYYY}-{EMPRESA_ID}-{SEQ} Args:…
-
-### Community 367 - "health_check"
-Cohesion: 0.67
-Nodes (3): health_check(), get, Health check endpoint.
-
 ### Community 372 - "re"
-Cohesion: 0.10
-Nodes (17): io, Confere se o FAQ do componente e o do JSON-LD continuam iguais. As mesmas 6…, main(), Confere a escala fluida de main.css. Um clamp() errado nao quebra nada visivel:…, Mesmo calculo do navegador: clamp(min, base + slope*vw, max), em px., resolve(), re, _corpo_da_rota() (+9 more)
+Cohesion: 0.16
+Nodes (11): re, _corpo_da_rota(), A rota de billing da plataforma não aceita dict cru nem sobrescreve o que não…, O texto de uma rota, do decorador até a próxima., test_alterar_plano_declara_schema(), test_alterar_plano_nao_sobrescreve_campo_nao_informado(), A superfície do gateway é o que a internet alcança — nada morto pode ficar lá.…, Rota deprecada é rota morta: apaga, não deixa respondendo na borda. (+3 more)
 
 ## Knowledge Gaps
 - **1849 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+1844 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3655 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **63 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3666 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **57 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Runas ERP` connect `Runas ERP` to `📚 Documentação Essencial`, `🛠️ Tecnologias`, `🏗️ Arquitetura`, `05-frontend/README.md`, `📊 Status Atual (Agosto 2026)`?**
-  _High betweenness centrality (0.236) - this node is a cross-community bridge._
-- **Why does `🏗️ Arquitetura` connect `🏗️ Arquitetura` to `3. Microsserviços — roteamento, isolamento e comunicação`, `Runas ERP`?**
-  _High betweenness centrality (0.210) - this node is a cross-community bridge._
-- **Why does `3. Microsserviços — roteamento, isolamento e comunicação` connect `3. Microsserviços — roteamento, isolamento e comunicação` to `🏗️ Arquitetura`, `sqlalchemy`, `loja_service.py`?**
-  _High betweenness centrality (0.185) - this node is a cross-community bridge._
+  _High betweenness centrality (0.216) - this node is a cross-community bridge._
+- **Why does `🏗️ Arquitetura` connect `🏗️ Arquitetura` to `typing`, `Runas ERP`?**
+  _High betweenness centrality (0.186) - this node is a cross-community bridge._
+- **Why does `3. Microsserviços — roteamento, isolamento e comunicação` connect `typing` to `asyncio`, `🏗️ Arquitetura`?**
+  _High betweenness centrality (0.161) - this node is a cross-community bridge._
 - **Are the 53 inferred relationships involving `VendaService` (e.g. with `_reconciliar_venda()` and `_cancelar_venda_timeout()`) actually correct?**
   _`VendaService` has 53 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 47 inferred relationships involving `EstoqueService` (e.g. with `ajustar_estoque()` and `atualizar_estoque()`) actually correct?**
   _`EstoqueService` has 47 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 40 inferred relationships involving `Usuario` (e.g. with `get_current_active_user()` and `get_current_user()`) actually correct?**
-  _`Usuario` has 40 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `private`, `version` to the rest of the system?**
   _1849 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `AsyncSession` be split into smaller, more focused modules?**
+  _Cohesion score 0.04918851435705368 - nodes in this community are weakly interconnected._
