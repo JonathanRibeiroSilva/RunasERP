@@ -24,7 +24,9 @@ from schemas.produtos import (
     FornecedorProdutoCreate,
     FornecedorProdutoUpdate,
 )
+from models.produto import Produto
 from repositories.produtos import (
+    campos_gravaveis,
     CategoriaRepository,
     ProdutoRepository,
     VarianteRepository,
@@ -253,46 +255,39 @@ class ProdutoService:
             if not categoria:
                 raise ValueError(f"Categoria com ID {dados.categoria_id} não encontrada")
 
-        preco_efetivo = dados.preco if dados.preco is not None else produto.preco
-        custo_efetivo = dados.custo if dados.custo is not None else produto.custo
-        if preco_efetivo < custo_efetivo:
+        # exclude_unset separa "não mandou o campo" de "mandou vazio". Antes os
+        # dois chegavam como None e eram tratados como ausência, então apagar
+        # uma promoção, uma descrição ou um prazo nunca chegava ao banco: o
+        # lojista limpava o campo, salvava, e o valor antigo continuava lá.
+        # campos_gravaveis tira o `null` que a coluna não aceita — a mesma regra
+        # que o repositório aplica, vinda do mesmo lugar. Sem isso, `preco: null`
+        # faria a guarda logo abaixo comparar None com um Decimal.
+        enviados = campos_gravaveis(Produto, dados.model_dump(exclude_unset=True))
+
+        def efetivo(campo: str):
+            """O valor que o produto terá depois deste PATCH."""
+            return enviados[campo] if campo in enviados else getattr(produto, campo)
+
+        preco_efetivo = efetivo("preco")
+        if preco_efetivo < efetivo("custo"):
             raise ValueError("Preço de venda não pode ser menor que o custo")
 
-        # Valores mesclados como os de cima, e pelo mesmo motivo: o PATCH só
-        # enxerga o que veio. As duas direções levam ao mesmo absurdo — subir a
-        # promoção acima do preço, ou baixar o preço abaixo de uma promoção já
-        # gravada — e olhar só o que o request trouxe fecharia uma e deixaria a
-        # outra aberta.
-        promocional_efetivo = (
-            dados.preco_promocional if dados.preco_promocional is not None
-            else produto.preco_promocional
-        )
+        # As guardas olham o resultado do PATCH, não o que veio nele: as duas
+        # direções levam ao mesmo absurdo — subir a promoção acima do preço, ou
+        # baixar o preço abaixo de uma promoção já gravada — e olhar só o
+        # request fecharia uma e deixaria a outra aberta.
+        promocional_efetivo = efetivo("preco_promocional")
         _exigir_promocao_nao_maior_que_preco(preco_efetivo, promocional_efetivo)
-        _exigir_prazo_da_promocao(
-            promocional_efetivo,
-            dados.promocao_fim if dados.promocao_fim is not None else produto.promocao_fim,
-        )
+        _exigir_prazo_da_promocao(promocional_efetivo, efetivo("promocao_fim"))
 
         # A outra direção do mesmo prejuízo: guardar o vínculo do fornecedor não
         # adianta se depois dá para baixar o preço de venda abaixo dele. Só
         # consulta quando o preço está mudando — não é para pesar num PATCH de nome.
-        if dados.preco is not None:
+        if "preco" in enviados:
             for vinculo in await self.fornecedor_produto_repo.listar_fornecedores_produto(produto_id):
                 _exigir_preco_cobrindo_fornecedor(preco_efetivo, vinculo.preco_fornecedor)
 
-        return await self.produto_repo.atualizar(
-            empresa_id,
-            produto_id,
-            nome=dados.nome,
-            categoria_id=dados.categoria_id,
-            descricao=dados.descricao,
-            ativo=dados.ativo,
-            preco=dados.preco,
-            custo=dados.custo,
-            preco_promocional=dados.preco_promocional,
-            promocao_fim=dados.promocao_fim,
-            unidade_medida=dados.unidade_medida,
-        )
+        return await self.produto_repo.atualizar(empresa_id, produto_id, **enviados)
 
     async def deletar_produto(self, empresa_id: int, produto_id: UUID):
         """Soft delete de um produto."""

@@ -14,6 +14,25 @@ from models.loja_online import LojaOnlineConfig, LojaOnlineFoto
 from models.fornecedor import Fornecedor, FornecedorProduto
 
 
+def campos_gravaveis(modelo, campos: dict) -> dict:
+    """Descarta `null` que o banco não aceita.
+
+    Todo campo de um schema de PATCH aceita None, porque é assim que ele fica
+    opcional — mas a coluna por trás pode ser obrigatória. Sem este filtro,
+    `{"nome": null}` viraria um IntegrityError vindo do flush, sem dizer qual
+    campo. Em coluna anulável o None passa, e é ele que apaga o valor.
+
+    Existe aqui, e não dentro do `atualizar`, porque o service precisa da mesma
+    resposta para decidir suas guardas: duas cópias da regra se desencontram.
+    """
+    colunas = modelo.__table__.columns
+    return {
+        campo: valor
+        for campo, valor in campos.items()
+        if not (valor is None and campo in colunas and not colunas[campo].nullable)
+    }
+
+
 class CategoriaRepository:
     """Repository para Categoria."""
 
@@ -294,43 +313,24 @@ class ProdutoRepository:
         )
         return result.scalars().all(), total
 
-    async def atualizar(
-        self,
-        empresa_id: int,
-        produto_id: UUID,
-        nome: str | None = None,
-        categoria_id: UUID | None = None,
-        descricao: str | None = None,
-        ativo: bool | None = None,
-        preco: Decimal | None = None,
-        custo: Decimal | None = None,
-        preco_promocional: Decimal | None = None,
-        promocao_fim: date | None = None,
-        unidade_medida: str | None = None,
-    ) -> Produto | None:
-        """Atualiza um produto."""
+    async def atualizar(self, empresa_id: int, produto_id: UUID, **campos) -> Produto | None:
+        """Atualiza um produto com os campos recebidos.
+
+        Recebe só o que o PATCH trouxe (o service filtra com exclude_unset), e
+        grava tudo — vazio incluído. O `if x is not None` que estava aqui
+        tratava "não mandou" e "mandou vazio" como a mesma coisa, e por isso
+        apagar uma descrição ou uma promoção nunca chegava ao banco: o lojista
+        limpava o campo, salvava, e o valor antigo continuava lá.
+
+        As chaves vêm de ProdutoUpdate, que é a lista de campos editáveis —
+        não há setattr de nome arbitrário aqui.
+        """
         produto = await self.obter_por_id(empresa_id, produto_id)
         if not produto:
             return None
 
-        if nome is not None:
-            produto.nome = nome
-        if categoria_id is not None:
-            produto.categoria_id = categoria_id
-        if descricao is not None:
-            produto.descricao = descricao
-        if ativo is not None:
-            produto.ativo = ativo
-        if preco is not None:
-            produto.preco = preco
-        if custo is not None:
-            produto.custo = custo
-        if preco_promocional is not None:
-            produto.preco_promocional = preco_promocional
-        if promocao_fim is not None:
-            produto.promocao_fim = promocao_fim
-        if unidade_medida is not None:
-            produto.unidade_medida = unidade_medida
+        for campo, valor in campos_gravaveis(Produto, campos).items():
+            setattr(produto, campo, valor)
 
         await self.session.flush()
         return produto
