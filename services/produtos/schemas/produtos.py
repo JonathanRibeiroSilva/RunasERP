@@ -267,7 +267,10 @@ class ProdutoCreate(ProdutoBase):
     categoria_id: UUID
     preco: Decimal = Field(default=Decimal("0.00"), ge=0, description="Preço de venda")
     custo: Decimal = Field(default=Decimal("0.00"), ge=0, description="Custo de aquisição")
-    preco_promocional: Decimal | None = Field(default=None, gt=0, description="Preço promocional")
+    preco_promocional: Decimal | None = Field(
+        default=None, gt=0,
+        description="Preço promocional; não pode ser maior que o preço de venda",
+    )
     unidade_medida: UnidadeMedida = "UN"
 
 
@@ -279,7 +282,10 @@ class ProdutoUpdate(BaseModel):
     ativo: bool | None = None
     preco: Decimal | None = Field(default=None, ge=0)
     custo: Decimal | None = Field(default=None, ge=0)
-    preco_promocional: Decimal | None = Field(default=None, gt=0)
+    preco_promocional: Decimal | None = Field(
+        default=None, gt=0,
+        description="Preço promocional; não pode ser maior que o preço de venda",
+    )
     unidade_medida: UnidadeMedida | None = None
 
 
