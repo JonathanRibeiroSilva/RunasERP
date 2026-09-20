@@ -53,6 +53,23 @@ def _exigir_preco_cobrindo_fornecedor(preco_venda: Decimal, preco_fornecedor: De
         )
 
 
+def _exigir_promocao_nao_maior_que_preco(preco: Decimal, preco_promocional: Decimal | None) -> None:
+    """
+    Recusa promoção que cobra mais caro que o preço normal.
+
+    Igual ao preço normal passa: é o lojista decidindo não dar desconto neste
+    item, e nenhuma tela mente por isso — o card da loja só risca o preço antigo
+    quando a promoção é estritamente menor. Acima é que não existe: o campo se
+    chama "promocional", a vitrine exibe esse número no lugar do preço, e o
+    cliente lê como desconto o que é aumento.
+    """
+    if preco_promocional is not None and preco_promocional > preco:
+        raise ValueError(
+            f"Preço promocional (R$ {preco_promocional}) não pode ser maior que "
+            f"o preço de venda (R$ {preco})"
+        )
+
+
 class CategoriaService:
     """Service para Categoria."""
 
@@ -116,6 +133,8 @@ class ProdutoService:
 
         if dados.preco < dados.custo:
             raise ValueError("Preço de venda não pode ser menor que o custo")
+
+        _exigir_promocao_nao_maior_que_preco(dados.preco, dados.preco_promocional)
 
         return await self.produto_repo.criar(
             empresa_id=empresa_id,
@@ -215,6 +234,17 @@ class ProdutoService:
         custo_efetivo = dados.custo if dados.custo is not None else produto.custo
         if preco_efetivo < custo_efetivo:
             raise ValueError("Preço de venda não pode ser menor que o custo")
+
+        # Valores mesclados como os de cima, e pelo mesmo motivo: o PATCH só
+        # enxerga o que veio. As duas direções levam ao mesmo absurdo — subir a
+        # promoção acima do preço, ou baixar o preço abaixo de uma promoção já
+        # gravada — e olhar só o que o request trouxe fecharia uma e deixaria a
+        # outra aberta.
+        promocional_efetivo = (
+            dados.preco_promocional if dados.preco_promocional is not None
+            else produto.preco_promocional
+        )
+        _exigir_promocao_nao_maior_que_preco(preco_efetivo, promocional_efetivo)
 
         # A outra direção do mesmo prejuízo: guardar o vínculo do fornecedor não
         # adianta se depois dá para baixar o preço de venda abaixo dele. Só
