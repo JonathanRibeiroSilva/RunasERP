@@ -1,6 +1,7 @@
 """
 Repositories para acesso aos dados de Produtos.
 """
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 from sqlalchemy import select, func
