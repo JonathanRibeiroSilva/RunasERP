@@ -1,7 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/Login/LoginPage';
-import RegisterPage from '@/pages/Register/RegisterPage';
 import GoogleCallback from '@/pages/Auth/GoogleCallback';
 import MicrosoftCallback from '@/pages/Auth/MicrosoftCallback';
 import ForgotPasswordPage from '@/pages/Auth/ForgotPasswordPage';
@@ -50,7 +49,8 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const { pathname } = useLocation();
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -58,6 +58,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // SUPER_ADMIN é papel de plataforma e não tem empresa_id: toda tela de tenant
+  // consultaria uma empresa que ele não tem. Uma porta só, em vez de um guard por
+  // rota — tela nova nasce fechada para ele sem ninguém lembrar de fechá-la.
+  // /perfil fica de fora: é onde ele troca a própria senha.
+  if (
+    user?.role === 'SUPER_ADMIN' &&
+    !pathname.startsWith('/plataforma') &&
+    !pathname.startsWith('/perfil')
+  ) {
+    return <Navigate to="/plataforma" replace />;
   }
 
   return <>{children}</>;
@@ -88,15 +100,6 @@ function App() {
           element={
             <PublicRoute>
               <LoginPage />
-            </PublicRoute>
-          }
-        />
-
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <RegisterPage />
             </PublicRoute>
           }
         />

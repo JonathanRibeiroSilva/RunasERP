@@ -4,7 +4,7 @@ Separado de auth.py que é para usuários operadores do sistema.
 """
 from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Header, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Header, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
@@ -21,6 +21,7 @@ from auth.jwt import create_access_token, create_refresh_token, verify_token
 from auth.redis_client import get_redis
 from schemas.cliente import ClienteRegisterRequest, ClienteLoginResponse
 from config import settings
+from middleware.rate_limit import limiter
 
 
 router = APIRouter(prefix="/auth/cliente", tags=["Autenticação Cliente"])
@@ -195,7 +196,9 @@ async def _complete_cliente_oauth(
 
 
 @router.post("/register", response_model=ClienteLoginResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def register_cliente(
+    request: Request,
     response: Response,
     data: ClienteRegisterRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -274,7 +277,9 @@ async def register_cliente(
 
 
 @router.post("/login", response_model=ClienteLoginResponse)
+@limiter.limit("10/minute")
 async def login_cliente(
+    request: Request,
     response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_db)],

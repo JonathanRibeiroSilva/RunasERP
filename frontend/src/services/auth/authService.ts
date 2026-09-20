@@ -2,12 +2,6 @@ import { api } from '@/services/api/axios';
 import { tokenService } from './tokenService';
 import type { LoginResponse, User } from '@/types/auth';
 
-interface RegisterRequest {
-  nome: string;
-  email: string;
-  senha: string;
-}
-
 export const authService = {
   async login(email: string, password: string): Promise<LoginResponse> {
     // API espera form data para OAuth2
@@ -24,11 +18,6 @@ export const authService = {
     // Tokens agora são gerenciados via cookies HTTP-only pelo backend
     // Não é necessário salvar manualmente
 
-    return response.data;
-  },
-
-  async register(data: RegisterRequest): Promise<User> {
-    const response = await api.post<User>('/auth/register', data);
     return response.data;
   },
 
