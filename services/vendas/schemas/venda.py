@@ -16,14 +16,23 @@ class ItemVendaBase(BaseModel):
     produto_id: UUID = Field(..., description="ID do produto")
     variante_id: Optional[UUID] = Field(None, description="ID da variante (opcional)")
     quantidade: Decimal = Field(..., gt=0, description="Quantidade vendida")
-    preco_unitario: Optional[Decimal] = Field(None, ge=0, description="Preço unitário (opcional - busca do produto)")
     codigo_produto: Optional[str] = Field(None, description="SKU/código de barras do produto")
     descricao_produto: Optional[str] = Field(None, description="Nome/descrição do produto")
 
 
 class ItemVendaCreate(ItemVendaBase):
-    """Schema para criar item de venda."""
-    pass
+    """Schema para criar item de venda.
+
+    Sem preco_unitario de propósito: o preço é o do catálogo, lido no serviço de
+    produtos na criação da venda. Quem precisa cobrar menos usa desconto_tipo/
+    desconto_valor, que é onde o relatório lê que houve desconto e de quanto — o
+    override por item passava por fora deles.
+
+    extra="forbid" para que um payload que ainda mande o campo leve 422: retirá-lo
+    do schema sem isto o faria sumir calado, e o pedido seria gravado com um preço
+    diferente do que quem chamou pediu.
+    """
+    model_config = ConfigDict(extra="forbid")
 
 
 class ItemVendaResponse(BaseModel):
