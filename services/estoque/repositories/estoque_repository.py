@@ -19,6 +19,29 @@ from models.estoque import (
 )
 
 
+def campos_gravaveis(modelo, campos: dict) -> dict:
+    """Descarta `null` que o banco não aceita.
+
+    Todo campo de um schema de PATCH aceita None, porque é assim que ele fica
+    opcional — mas a coluna por trás pode ser obrigatória. Sem este filtro,
+    apagar um campo obrigatório viraria um IntegrityError vindo do flush, sem
+    dizer qual campo. Em coluna anulável o None passa, e é ele que apaga o
+    valor.
+
+    Cópia da mesma regra de services/produtos/repositories/produtos.py. Os
+    serviços não compartilham código (`shared/` está morto, zero imports) e
+    cada um é uma imagem própria — duplicar quatro linhas é mais barato que
+    inventar um pacote comum para elas.
+    """
+    colunas = modelo.__table__.columns
+    return {
+        campo: valor
+        for campo, valor in campos.items()
+        if not (valor is None and campo in colunas and not colunas[campo].nullable)
+    }
+
+
+
 class EstoqueRepository:
     """Repository para operações de Estoque."""
 
@@ -127,8 +150,13 @@ class EstoqueRepository:
         if not estoque:
             return None
         
-        for key, value in kwargs.items():
-            if hasattr(estoque, key) and value is not None:
+        # Grava vazio também: `if value is not None` tratava "não mandou o
+        # campo" e "mandou vazio" como a mesma coisa, então limpar a
+        # localização ou o estoque máximo nunca chegava ao banco. O
+        # exclude_unset do service já separa as duas; campos_gravaveis só
+        # segura o null que a coluna recusa (estoque_minimo é NOT NULL).
+        for key, value in campos_gravaveis(Estoque, kwargs).items():
+            if hasattr(estoque, key):
                 setattr(estoque, key, value)
 
         estoque.updated_at = datetime.utcnow()
