@@ -5,9 +5,9 @@ A confirmação valida o pagamento contra valor_total, então a venda aparecia c
 desconto na tela e cobrava o valor cheio.
 
 Dois detalhes que os testes prendem, porque some fácil num refactor:
-- remover o desconto precisa chegar ao banco. VendaRepository.atualizar pula
-  valores None, então `desconto_tipo=None` passado por **dados seria ignorado e a
-  venda ficaria "PERCENTUAL de 0";
+- remover o desconto precisa chegar ao banco: `desconto_tipo=None` não pode ser
+  confundido com "não mandou o campo", senão a venda fica "PERCENTUAL de 0"
+  (quem garante isso hoje é campos_gravaveis no repositório);
 - a validação do desconto mora no service, não no VendaUpdate: no schema só se vê
   o que veio no PATCH, e um valor sem tipo pode ser um valor novo sobre um tipo
   que já estava gravado.

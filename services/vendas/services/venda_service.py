@@ -763,11 +763,7 @@ class VendaService:
                         [{"subtotal": item.subtotal} for item in venda.itens], tipo, valor
                     )
                     dados["desconto_valor"] = valor
-                    # VendaRepository.atualizar pula None, então remover o desconto
-                    # nunca chegaria ao banco pelo **dados: vai direto na instância
-                    # (a mesma que o atualizar busca, já travada acima).
-                    dados.pop("desconto_tipo", None)
-                    venda.desconto_tipo = tipo.value if tipo else None
+                    dados["desconto_tipo"] = tipo.value if tipo else None
 
                 venda = await VendaRepository.atualizar(
                     db,
