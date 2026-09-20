@@ -26,6 +26,8 @@ DOWN_REVISION = re.compile(
 )
 CREATE_TABLE = re.compile(r"op\.create_table\(\s*['\"]([a-z_]+)['\"]")
 SCHEMALESS = re.compile(r"op\.(create_table|create_index)\(")
+CHECK_CONSTRAINT = re.compile(r"create_check_constraint|ADD\s+CONSTRAINT[^'\"]*CHECK", re.I)
+LIMPEZA = re.compile(r"\b(UPDATE|DELETE\s+FROM)\b")
 
 
 def _alembic_dirs():
@@ -128,6 +130,41 @@ def test_no_table_is_created_twice():
 
         duplicated = {t: f for t, f in created.items() if len(f) > 1}
         assert not duplicated, f"{service}: created more than once -> {duplicated}"
+
+
+def _upgrade(path: Path) -> ast.FunctionDef:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    return next(
+        n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "upgrade"
+    )
+
+
+def test_todo_check_constraint_limpa_os_dados_antes():
+    """ADD CHECK sem limpeza antes não é uma migration que falha: é crashloop.
+
+    Um ALTER TABLE ... ADD CHECK falha se UMA linha já viola a regra, e o init_db
+    de todo serviço mata o startup quando o alembic sai diferente de zero (servir
+    schema velho é pior que reiniciar). O container então sobe, roda a migration,
+    morre na mesma linha e sobe de novo — para sempre, e o deploy não volta
+    sozinho. A limpeza tem que estar no upgrade(), antes do ALTER: conferir o
+    banco à mão antes do deploy protege o banco conferido, não o próximo.
+    """
+    for service, files in _versions_dirs():
+        for path in files:
+            passos = [ast.unparse(s) for s in _upgrade(path).body]
+            check = next(
+                (i for i, s in enumerate(passos) if CHECK_CONSTRAINT.search(s)), None
+            )
+            if check is None:
+                continue
+
+            limpeza = next(
+                (i for i, s in enumerate(passos) if LIMPEZA.search(s)), None
+            )
+            assert limpeza is not None and limpeza < check, (
+                f"{service}/{path.name}: CHECK constraint sem UPDATE/DELETE antes "
+                "— uma linha ruim em qualquer banco vira crashloop no boot"
+            )
 
 
 def test_every_created_object_names_its_schema():
