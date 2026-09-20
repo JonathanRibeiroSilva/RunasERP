@@ -21,7 +21,7 @@ import pytest_asyncio
 from models.produto import hoje_na_loja
 from schemas.produtos import ProdutoCreate, ProdutoUpdate
 from services.produtos import ProdutoService
-from repositories.produtos import CategoriaRepository
+from repositories.produtos import CategoriaRepository, ProdutoRepository
 
 EMPRESA = 991_001
 HOJE = hoje_na_loja()
@@ -145,4 +145,25 @@ async def test_encerrar_a_promocao_e_por_a_data_no_passado(db, categoria):
     )
 
     await db.refresh(produto)
+    assert produto.preco_efetivo == Decimal("10.00")
+
+
+@pytest.mark.asyncio
+async def test_linha_anterior_a_esta_regra_nao_cobra_promocao(db, categoria):
+    """A migration não faz backfill — é este comportamento que a torna segura.
+
+    Linha gravada antes da coluna existir tem promoção e nenhum prazo. Sem data
+    a promoção não vale, então o produto é cobrado pelo preço normal: a vitrine
+    e o carrinho continuam concordando, que é a garantia que importa.
+    """
+    produto = await ProdutoRepository(db).criar(  # direto no repo: pula o service
+        empresa_id=EMPRESA,
+        categoria_id=categoria.id,
+        nome="Legado",
+        preco=Decimal("10.00"),
+        custo=Decimal("4.00"),
+        preco_promocional=Decimal("8.00"),
+    )
+
+    assert produto.promocao_fim is None
     assert produto.preco_efetivo == Decimal("10.00")

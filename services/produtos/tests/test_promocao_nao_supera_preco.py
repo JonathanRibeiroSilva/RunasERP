@@ -14,11 +14,13 @@ baixa o preço depois.
 Promoção igual ao preço passa de propósito: é o lojista decidindo não dar
 desconto, e nenhuma tela mente por isso.
 """
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
 import pytest_asyncio
 
+from models.produto import hoje_na_loja
 from schemas.produtos import ProdutoCreate, ProdutoUpdate
 from services.produtos import ProdutoService
 from repositories.produtos import CategoriaRepository, ProdutoRepository
@@ -35,6 +37,9 @@ async def categoria(db):
 
 
 def _novo(categoria, promocional):
+    # Promoção passou a exigir prazo (ver test_promocao_com_prazo.py). Aqui a
+    # data é só o que torna o produto válido: o que este arquivo mede é a
+    # relação entre promoção e preço, não o prazo.
     return ProdutoCreate(
         empresa_id=EMPRESA,
         categoria_id=categoria.id,
@@ -42,6 +47,7 @@ def _novo(categoria, promocional):
         preco=PRECO,
         custo=Decimal("4.00"),
         preco_promocional=promocional,
+        promocao_fim=hoje_na_loja() + timedelta(days=30) if promocional is not None else None,
     )
 
 
@@ -129,8 +135,13 @@ async def test_linha_legada_ainda_pode_ser_consertada(db, categoria):
     )
     await db.commit()
 
+    # A linha legada não tem prazo, então a promoção dela nem valia (promoção
+    # sem data não se aplica). Consertá-la é dizer a promoção e até quando —
+    # na mesma requisição, que é o que prova que ela não ficou presa.
     await ProdutoService(db).atualizar_produto(
-        EMPRESA, produto.id, ProdutoUpdate(preco_promocional=Decimal("9.00"))
+        EMPRESA,
+        produto.id,
+        ProdutoUpdate(preco_promocional=Decimal("9.00"), promocao_fim=hoje_na_loja() + timedelta(days=7)),
     )
 
     await db.refresh(produto)
