@@ -16,6 +16,9 @@ interface Produto {
   criado_em: string;
   preco?: string | number;
   preco_promocional?: string | number | null;
+  /** O preco que vale hoje, com a promocao ja resolvida pelo backend. */
+  preco_efetivo?: string | number | null;
+  promocao_fim?: string | null;
 }
 
 interface Categoria {

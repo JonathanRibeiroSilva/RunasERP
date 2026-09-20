@@ -17,6 +17,7 @@ from schemas.loja import (
     CarrinhoResponse,
     AtualizarQuantidadeRequest
 )
+from services.preco_catalogo import preco_do_catalogo
 from services.venda_service import VendaService
 from config import settings
 
@@ -152,7 +153,7 @@ class CarrinhoService:
                 # Extrair dados combinados (variante + produto)
                 codigo = variante.get('sku')
                 descricao = produto.get('nome', 'Produto sem nome')  # Fallback se nome vier vazio
-                preco = Decimal(str(variante.get('preco_venda', 0)))
+                preco = preco_do_catalogo(variante)
             else:
                 # Buscar apenas produto (sem variante)
                 produto = await VendaService.verificar_produto_existe(data.produto_id, None, empresa_id)
@@ -175,7 +176,10 @@ class CarrinhoService:
                     nome_vazio=not bool(nome_produto)
                 )
                 
-                preco = Decimal(str(produto.get('preco', produto.get('preco_venda', 0))))
+                # A promoção vale aqui porque quem resolve promoção é o
+                # catálogo, num campo só (preco_efetivo). Antes este ponto lia
+                # 'preco' cru: a vitrine anunciava R$ 8 e o carrinho cobrava R$ 10.
+                preco = preco_do_catalogo(produto)
             
             if preco <= 0:
                 raise ValueError("Produto sem preço de venda definido")

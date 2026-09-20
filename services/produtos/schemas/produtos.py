@@ -1,7 +1,7 @@
 """
 Schemas Pydantic para Produtos.
 """
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 from uuid import UUID
@@ -288,6 +288,14 @@ class ProdutoCreate(ProdutoBase):
         default=None, gt=0,
         description="Preço promocional; não pode ser maior que o preço de venda",
     )
+    promocao_fim: date | None = Field(
+        default=None,
+        description=(
+            "Último dia da promoção, inclusive (fuso do Brasil). Obrigatório "
+            "quando há preço promocional: sem prazo, a promoção esquecida vale "
+            "para sempre."
+        ),
+    )
     unidade_medida: UnidadeMedida = "UN"
 
 
@@ -303,6 +311,14 @@ class ProdutoUpdate(BaseModel):
         default=None, gt=0,
         description="Preço promocional; não pode ser maior que o preço de venda",
     )
+    promocao_fim: date | None = Field(
+        default=None,
+        description=(
+            "Último dia da promoção, inclusive (fuso do Brasil). Obrigatório "
+            "quando há preço promocional: sem prazo, a promoção esquecida vale "
+            "para sempre."
+        ),
+    )
     unidade_medida: UnidadeMedida | None = None
 
 
@@ -315,6 +331,11 @@ class ProdutoRead(ProdutoBase):
     preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda")
     custo: Decimal = Field(default=Decimal("0.00"), description="Custo de aquisição")
     preco_promocional: Decimal | None = Field(default=None, description="Preço promocional")
+    promocao_fim: date | None = Field(default=None, description="Último dia da promoção, inclusive")
+    preco_efetivo: Decimal = Field(
+        default=Decimal("0.00"),
+        description="O preço que vale hoje: promoção enquanto válida, senão o preço de venda",
+    )
     codigo_barras: str | None = Field(default=None, description="Código de barras/EAN")
     sku: str | None = Field(default=None, description="SKU interno")
     unidade_medida: str = Field(default="UN", description="UN, KG, LT, etc")
@@ -333,6 +354,11 @@ class ProdutoReadSimples(ProdutoBase):
     criado_em: datetime
     preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda")
     preco_promocional: Decimal | None = Field(default=None, description="Preço promocional")
+    promocao_fim: date | None = Field(default=None, description="Último dia da promoção, inclusive")
+    preco_efetivo: Decimal = Field(
+        default=Decimal("0.00"),
+        description="O preço que vale hoje: promoção enquanto válida, senão o preço de venda",
+    )
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -360,6 +386,11 @@ class ProdutoLojaOnlineRead(BaseModel):
     criado_em: datetime
     preco: Decimal = Field(default=Decimal("0.00"), description="Preço de venda (produtos sem variantes)")
     preco_promocional: Decimal | None = None
+    promocao_fim: date | None = None
+    preco_efetivo: Decimal = Field(
+        default=Decimal("0.00"),
+        description="O preço que vale hoje: promoção enquanto válida, senão o preço de venda",
+    )
     variantes: list[VarianteLojaOnlineRead] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

@@ -35,10 +35,15 @@ const produtoSchema = z
       (valor) => (valor === '' || valor === null ? undefined : valor),
       z.coerce.number().positive('Preço promocional deve ser maior que zero').optional()
     ),
+    promocao_fim: z.string().optional().or(z.literal('')),
     unidade_medida: z.enum(CODIGOS_UNIDADE),
     ativo: z.boolean(),
     estoque_inicial: quantidadeOpcional('Quantidade não pode ser negativa'),
     estoque_minimo: quantidadeOpcional('Estoque mínimo não pode ser negativo'),
+  })
+  .refine((dados) => !dados.preco_promocional || Boolean(dados.promocao_fim), {
+    message: 'Promoção precisa de uma data de término',
+    path: ['promocao_fim'],
   })
   .refine((dados) => dados.preco >= dados.custo, {
     message: 'Preço de venda não pode ser menor que o custo',
@@ -81,12 +86,28 @@ const ProdutoFormPage: React.FC<ProdutoFormPageProps> = ({ isModal, produtoId: m
     formState: { errors },
     reset,
     watch,
+    setValue,
   } = useForm<ProdutoFormInput, unknown, ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
     defaultValues: { unidade_medida: 'UN', ativo: true, estoque_inicial: 0, estoque_minimo: 0 },
   });
 
   const produtoAtivo = watch('ativo');
+  const promocional = watch('preco_promocional');
+  const promocaoFim = watch('promocao_fim');
+
+  // Sugere 30 dias na primeira vez que aparece um preco promocional sem prazo.
+  // O lojista troca a data antes de salvar; o que nao pode e promocao sem prazo
+  // nenhum, que e como se esquece de tirar e o desconto corre para sempre.
+  useEffect(() => {
+    if (promocional && !promocaoFim) {
+      const daquiATrintaDias = new Date();
+      daquiATrintaDias.setDate(daquiATrintaDias.getDate() + 30);
+      setValue('promocao_fim', daquiATrintaDias.toISOString().slice(0, 10), {
+        shouldValidate: true,
+      });
+    }
+  }, [promocional, promocaoFim, setValue]);
 
   useEffect(() => {
     carregarCategorias();
@@ -167,6 +188,7 @@ const ProdutoFormPage: React.FC<ProdutoFormPageProps> = ({ isModal, produtoId: m
       preco: data.preco,
       custo: data.custo,
       preco_promocional: data.preco_promocional,
+      promocao_fim: data.promocao_fim || undefined,
       unidade_medida: data.unidade_medida,
       ativo: data.ativo,
     };
@@ -296,6 +318,20 @@ const ProdutoFormPage: React.FC<ProdutoFormPageProps> = ({ isModal, produtoId: m
               />
               {errors.preco_promocional && (
                 <span className="pfm-error">{errors.preco_promocional.message}</span>
+              )}
+            </div>
+            <div className="pfm-group">
+              <label htmlFor="promocao_fim">Promoção até</label>
+              <input
+                id="promocao_fim"
+                type="date"
+                {...register('promocao_fim')}
+                className={errors.promocao_fim ? 'invalid' : ''}
+              />
+              {errors.promocao_fim ? (
+                <span className="pfm-error">{errors.promocao_fim.message}</span>
+              ) : (
+                <span className="pfm-hint">Último dia da promoção, inclusive</span>
               )}
             </div>
           </div>

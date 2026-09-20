@@ -1,13 +1,28 @@
 """
 Modelo de Produto.
 """
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, Integer, Numeric, UniqueConstraint, Index
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text, Integer, Numeric, UniqueConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
+
+# O Brasil não tem horário de verão desde 2019, então o offset é fixo e não
+# precisa da base de fusos do sistema — a imagem é python:3.12-slim, que pode
+# subir sem tzdata. Se o horário de verão voltar, é esta linha que muda.
+FUSO_LOJA = timezone(timedelta(hours=-3))
+
+
+def hoje_na_loja() -> date:
+    """Data de hoje para o lojista, não para o servidor.
+
+    Comparar promoção contra a data em UTC encerraria uma promoção que "vale
+    até dia 30" às 21h do dia 30 — justamente as horas de melhor venda do
+    último dia.
+    """
+    return datetime.now(FUSO_LOJA).date()
 
 
 class Produto(Base):
@@ -49,6 +64,10 @@ class Produto(Base):
     preco: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=Decimal("0.00"), comment="Preço de venda")
     custo: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=Decimal("0.00"), comment="Custo de aquisição")
     preco_promocional: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), comment="Preço promocional")
+    promocao_fim: Mapped[date | None] = mapped_column(
+        Date,
+        comment="Último dia da promoção, inclusive. Sem data, a promoção não vale.",
+    )
     
     # Estoque
     estoque_minimo: Mapped[int] = mapped_column(Integer, default=0, comment="Estoque mínimo para alerta")
@@ -87,6 +106,29 @@ class Produto(Base):
         back_populates="produto",
         cascade="all, delete-orphan"
     )
-    
+
+    @property
+    def preco_efetivo(self) -> Decimal:
+        """O preço que a vitrine anuncia e o carrinho cobra.
+
+        Existe porque a regra estava escrita duas vezes: o card da loja em
+        TypeScript decidia `promo > 0 ? promo : preco`, e o carrinho em Python
+        lia `preco` e só. As duas se desencontraram — a loja anunciava R$ 8 e
+        cobrava R$ 10. Agora a regra é uma só, calculada aqui, e quem exibe e
+        quem cobra leem o mesmo campo.
+
+        Promoção sem data de fim não vale: a data é obrigatória na escrita, e
+        linha antiga sem data cobra o preço normal, que é o lado seguro — o
+        anunciado e o cobrado continuam batendo de qualquer forma.
+        """
+        if self.preco_promocional and self.promocao_fim and self.promocao_fim >= hoje_na_loja():
+            return self.preco_promocional
+        return self.preco
+
+    @property
+    def promocao_ativa(self) -> bool:
+        """Para a tela distinguir 'promoção expirada' de 'sem promoção'."""
+        return self.preco_efetivo != self.preco
+
     def __repr__(self) -> str:
         return f"<Produto(id={self.id}, nome={self.nome}, preco={self.preco})>"

@@ -34,6 +34,7 @@ from schemas.venda import (
 )
 from config import settings
 from utils.numero_venda import gerar_numero_venda
+from services.preco_catalogo import preco_do_catalogo
 from services.estoque_resultado import (
     ResultadoBaixaEstoque,
     classificar_reserva_http,
@@ -533,9 +534,10 @@ class VendaService:
                     # chamador o poder de dizer quanto a venda custa, por fora de
                     # desconto_tipo/desconto_valor: o relatório lia "vendido a R$ 3"
                     # como preço normal, sem dizer que houve desconto nem de quanto.
-                    # A leitura é a mesma do carrinho: 'preco' no produto,
-                    # 'preco_venda' na variante.
-                    preco_unitario = Decimal(str(produto.get('preco', produto.get('preco_venda', 0))))
+                    # A leitura é a mesma do carrinho — literalmente a mesma
+                    # função, porque era a duplicata dela que deixava a promoção
+                    # valer numa ponta e não na outra.
+                    preco_unitario = preco_do_catalogo(produto)
                     if preco_unitario <= 0:
                         # Sem o preço do pedido como rede, catálogo sem preço viraria
                         # venda de graça em silêncio. O carrinho já recusa igual.
