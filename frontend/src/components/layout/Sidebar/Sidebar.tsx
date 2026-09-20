@@ -116,13 +116,28 @@ const navItems: NavItem[] = [
       { path: '/configuracoes/integracoes', icon: <FiZap />, label: 'Integrações' },
     ]
   },
-  // MEU PERFIL - Todos os usuários
+  // MEU PERFIL - Todos os usuários, super admin incluído (troca de senha dele)
   {
     path: '/perfil',
     icon: <FiUser />,
-    label: 'Meu Perfil'
+    label: 'Meu Perfil',
+    requiredRole: ['ADMIN', 'OPERADOR', 'SUPER_ADMIN'],
   },
 ];
+
+/**
+ * Quem vê cada item do menu.
+ *
+ * Item sem requiredRole é item de tenant (loja, produtos, estoque, vendas): o
+ * SUPER_ADMIN não tem empresa_id, então essas telas consultariam uma empresa que
+ * ele não tem. Negar por omissão vale mais que marcar item por item — item novo
+ * nasce fora do painel de plataforma sem ninguém lembrar de fechá-lo.
+ */
+export const podeVer = (role: UserRole | undefined, requiredRole?: UserRole[]): boolean => {
+  if (!role) return false;
+  if (!requiredRole || requiredRole.length === 0) return role !== 'SUPER_ADMIN';
+  return requiredRole.includes(role);
+};
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) => {
   const location = useLocation();
@@ -149,12 +164,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) 
     return initialExpanded;
   });
 
-  // Função para verificar se o usuário tem permissão para ver o item
-  const canViewItem = (requiredRole?: UserRole[]): boolean => {
-    if (!requiredRole || requiredRole.length === 0) return true; // Sem restrição
-    if (!user) return false; // Sem usuário logado
-    return requiredRole.includes(user.role); // Verifica se role está na lista
-  };
+  const canViewItem = (requiredRole?: UserRole[]) => podeVer(user?.role, requiredRole);
 
   // Filtrar items baseado em permissão
   const visibleNavItems = navItems.filter(item => canViewItem(item.requiredRole));

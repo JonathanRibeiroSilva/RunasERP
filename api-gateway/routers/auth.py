@@ -2,7 +2,7 @@
 Router de autenticação.
 """
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
@@ -19,6 +19,7 @@ from models.usuario import Usuario
 from config import settings
 from services.email_service import send_reset_password_email
 from proxy.service_proxy import ServiceProxy
+from middleware.rate_limit import limiter
 
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
@@ -96,7 +97,9 @@ async def get_current_user_info(
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("10/minute")
 async def login(
+    request: Request,
     response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -226,8 +229,10 @@ async def logout(
 
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
+@limiter.limit("5/minute")
 async def forgot_password(
-    request: ForgotPasswordRequest,
+    request: Request,
+    payload: ForgotPasswordRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
     redis: Annotated[Redis, Depends(get_redis)]
 ):
@@ -236,7 +241,7 @@ async def forgot_password(
     Sempre retorna sucesso para evitar enumeration attacks.
     """
     repo = UsuarioRepository(db)
-    usuario = await repo.buscar_por_email(request.email)
+    usuario = await repo.buscar_por_email(payload.email)
 
     if usuario and usuario.ativo:
         # Gerar token aleatório
@@ -260,7 +265,7 @@ async def forgot_password(
                  user_id=str(usuario.id),
                  email=usuario.email)
     else:
-        log.warning("forgot_password.user_not_found", email=request.email)
+        log.warning("forgot_password.user_not_found", email=payload.email)
 
     return {
         "message": "Se o email existir, você receberá instruções para resetar sua senha."
@@ -268,18 +273,20 @@ async def forgot_password(
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
+@limiter.limit("10/minute")
 async def reset_password(
-    request: ResetPasswordRequest,
+    request: Request,
+    payload: ResetPasswordRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
     redis: Annotated[Redis, Depends(get_redis)]
 ):
     """
     Reseta a senha usando o token recebido por email.
     """
-    user_id_str = await redis.get(f"password_reset:{request.token}")
+    user_id_str = await redis.get(f"password_reset:{payload.token}")
 
     if not user_id_str:
-        log.warning("reset_password.invalid_token", token=request.token[:10] + "...")
+        log.warning("reset_password.invalid_token", token=payload.token[:10] + "...")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Token inválido ou expirado"
@@ -289,7 +296,7 @@ async def reset_password(
         user_id_str = user_id_str.decode('utf-8')
 
     repo = UsuarioRepository(db)
-    success = await repo.atualizar_senha(user_id_str, request.nova_senha)
+    success = await repo.atualizar_senha(user_id_str, payload.nova_senha)
 
     if not success:
         log.error("reset_password.user_not_found", user_id=user_id_str)
@@ -299,7 +306,7 @@ async def reset_password(
         )
 
     # Token de uso único — remover do Redis
-    await redis.delete(f"password_reset:{request.token}")
+    await redis.delete(f"password_reset:{payload.token}")
 
     # Invalidar refresh tokens (forçar novo login)
     await redis.delete(f"refresh:{user_id_str}")

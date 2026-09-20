@@ -109,6 +109,11 @@ async def seed_admin():
                     ))
                     await db.commit()
                     log.info("seed.super_admin_created", email=super_email)
+            else:
+                # Sem isso o boot fica mudo e o painel /plataforma parece quebrado:
+                # ninguém tem o papel, então a rota nega até o dono do sistema.
+                log.warning("seed.super_admin_skipped",
+                            motivo="SUPER_ADMIN_EMAIL/SUPER_ADMIN_PASSWORD ausentes no env")
 
         except Exception as e:
             log.error("seed.error", error=str(e))

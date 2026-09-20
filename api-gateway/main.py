@@ -9,6 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import structlog
 from sqlalchemy import text
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from config import settings
 from database import engine, init_db
@@ -61,10 +64,21 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.DOCS_ENABLED else None,
 )
 
+# Rate limiting — registrado antes do CORS de propósito. add_middleware()
+# empilha por fora a cada chamada nova, então o último adicionado aqui embrulha
+# o anterior: com o CORS vindo depois, uma resposta 429 do SlowAPIMiddleware
+# ainda passa pelo CORSMiddleware no caminho de volta e sai com os headers —
+# na ordem inversa, o browser veria a resposta como falha de CORS, não como
+# 429. Limite geral em rate_limit.py; login/registro/reset usam @limiter.limit
+# direto na rota.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configurar adequadamente em produção
+    allow_origins=[settings.FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -77,9 +91,6 @@ app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuditoriaMiddleware)  # trilha de intenção (auditoria nível 1)
 app.add_middleware(InadimplenciaMiddleware)  # 402 na escrita de tenant em atraso
 
-# Rate limiting
-app.state.limiter = limiter
-
 # Routers
 app.include_router(auth.router)
 app.include_router(auth_cliente.router)
@@ -91,6 +102,7 @@ app.include_router(proxy.router)
 
 
 @app.get("/health")
+@limiter.exempt
 async def health_check():
     """Liveness: prova apenas que o processo responde.
 
@@ -140,6 +152,7 @@ def _sonda_servico(url: str):
 
 
 @app.get("/health/ready")
+@limiter.exempt
 async def readiness_check():
     """Readiness: Postgres, Redis e os sete serviços, sondados em paralelo.
 
