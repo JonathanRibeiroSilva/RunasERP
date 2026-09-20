@@ -1,6 +1,7 @@
 """
 Services com lógica de negócio para Produtos.
 """
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -70,6 +71,26 @@ def _exigir_promocao_nao_maior_que_preco(preco: Decimal, preco_promocional: Deci
         )
 
 
+def _exigir_prazo_da_promocao(preco_promocional: Decimal | None, promocao_fim: date | None) -> None:
+    """
+    Promoção precisa de último dia.
+
+    Sem prazo, quem esquece de tirar a promoção segue dando desconto para
+    sempre, e nada no sistema avisa — o preço promocional é só um número mais
+    baixo que ninguém revisita. Exigir a data faz o esquecimento acabar sozinho,
+    e continua sendo o lojista quem escolhe quando: "até eu tirar" vira uma data
+    longe, escolhida a dedo, em vez de acontecer por omissão.
+
+    Data no passado é aceita de propósito: é como se encerra uma promoção sem
+    apagar o preço promocional, e o preco_efetivo já volta ao preço normal.
+    """
+    if preco_promocional is not None and promocao_fim is None:
+        raise ValueError(
+            "Promoção precisa de uma data de término (promocao_fim): sem prazo "
+            "ela vale para sempre"
+        )
+
+
 class CategoriaService:
     """Service para Categoria."""
 
@@ -135,6 +156,7 @@ class ProdutoService:
             raise ValueError("Preço de venda não pode ser menor que o custo")
 
         _exigir_promocao_nao_maior_que_preco(dados.preco, dados.preco_promocional)
+        _exigir_prazo_da_promocao(dados.preco_promocional, dados.promocao_fim)
 
         return await self.produto_repo.criar(
             empresa_id=empresa_id,
@@ -145,6 +167,7 @@ class ProdutoService:
             preco=dados.preco,
             custo=dados.custo,
             preco_promocional=dados.preco_promocional,
+            promocao_fim=dados.promocao_fim,
             unidade_medida=dados.unidade_medida,
         )
 
@@ -245,6 +268,10 @@ class ProdutoService:
             else produto.preco_promocional
         )
         _exigir_promocao_nao_maior_que_preco(preco_efetivo, promocional_efetivo)
+        _exigir_prazo_da_promocao(
+            promocional_efetivo,
+            dados.promocao_fim if dados.promocao_fim is not None else produto.promocao_fim,
+        )
 
         # A outra direção do mesmo prejuízo: guardar o vínculo do fornecedor não
         # adianta se depois dá para baixar o preço de venda abaixo dele. Só
@@ -263,6 +290,7 @@ class ProdutoService:
             preco=dados.preco,
             custo=dados.custo,
             preco_promocional=dados.preco_promocional,
+            promocao_fim=dados.promocao_fim,
             unidade_medida=dados.unidade_medida,
         )
 

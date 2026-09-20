@@ -104,6 +104,7 @@ class ProdutoRepository:
         preco: Decimal = Decimal("0.00"),
         custo: Decimal = Decimal("0.00"),
         preco_promocional: Decimal | None = None,
+        promocao_fim: date | None = None,
         unidade_medida: str = "UN",
     ) -> Produto:
         """Cria um novo produto."""
@@ -116,6 +117,7 @@ class ProdutoRepository:
             preco=preco,
             custo=custo,
             preco_promocional=preco_promocional,
+            promocao_fim=promocao_fim,
             unidade_medida=unidade_medida,
         )
         self.session.add(produto)
@@ -302,6 +304,7 @@ class ProdutoRepository:
         preco: Decimal | None = None,
         custo: Decimal | None = None,
         preco_promocional: Decimal | None = None,
+        promocao_fim: date | None = None,
         unidade_medida: str | None = None,
     ) -> Produto | None:
         """Atualiza um produto."""
@@ -323,6 +326,8 @@ class ProdutoRepository:
             produto.custo = custo
         if preco_promocional is not None:
             produto.preco_promocional = preco_promocional
+        if promocao_fim is not None:
+            produto.promocao_fim = promocao_fim
         if unidade_medida is not None:
             produto.unidade_medida = unidade_medida
 
