@@ -1,6 +1,7 @@
 """
 Services com lógica de negócio para Produtos.
 """
+from decimal import Decimal
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas.produtos import (
@@ -32,6 +33,24 @@ from repositories.produtos import (
     FornecedorRepository,
     FornecedorProdutoRepository,
 )
+
+
+def _exigir_preco_cobrindo_fornecedor(preco_venda: Decimal, preco_fornecedor: Decimal) -> None:
+    """
+    Recusa vender por menos do que se paga ao fornecedor.
+
+    Mesma regra que `preco < custo` já barra no cadastro do produto, só que
+    olhando para o preço que se paga de verdade: `Produto.custo` é digitado à
+    mão e nada o sincroniza com o vínculo do fornecedor, então a guarda de lá
+    não cobria esta. Vale nas duas direções — cadastrar fornecedor caro demais
+    e baixar o preço de venda abaixo do fornecedor dão o mesmo prejuízo por
+    unidade vendida.
+    """
+    if preco_fornecedor > preco_venda:
+        raise ValueError(
+            f"Preço do fornecedor (R$ {preco_fornecedor}) não pode ser maior que "
+            f"o preço de venda (R$ {preco_venda})"
+        )
 
 
 class CategoriaService:
@@ -87,6 +106,7 @@ class ProdutoService:
         self.session = session
         self.produto_repo = ProdutoRepository(session)
         self.categoria_repo = CategoriaRepository(session)
+        self.fornecedor_produto_repo = FornecedorProdutoRepository(session)
 
     async def criar_produto(self, empresa_id: int, dados: ProdutoCreate):
         """Cria um novo produto."""
@@ -195,6 +215,13 @@ class ProdutoService:
         custo_efetivo = dados.custo if dados.custo is not None else produto.custo
         if preco_efetivo < custo_efetivo:
             raise ValueError("Preço de venda não pode ser menor que o custo")
+
+        # A outra direção do mesmo prejuízo: guardar o vínculo do fornecedor não
+        # adianta se depois dá para baixar o preço de venda abaixo dele. Só
+        # consulta quando o preço está mudando — não é para pesar num PATCH de nome.
+        if dados.preco is not None:
+            for vinculo in await self.fornecedor_produto_repo.listar_fornecedores_produto(produto_id):
+                _exigir_preco_cobrindo_fornecedor(preco_efetivo, vinculo.preco_fornecedor)
 
         return await self.produto_repo.atualizar(
             empresa_id,
@@ -551,6 +578,7 @@ class FornecedorProdutoService:
         # Validar preço
         if dados.preco_fornecedor <= 0:
             raise ValueError("Preço do fornecedor deve ser maior que zero")
+        _exigir_preco_cobrindo_fornecedor(produto.preco, dados.preco_fornecedor)
 
         return await self.repo.criar(
             fornecedor_id=dados.fornecedor_id,
@@ -596,6 +624,12 @@ class FornecedorProdutoService:
         preco = dados.preco_fornecedor or vinculo.preco_fornecedor
         if preco <= 0:
             raise ValueError("Preço do fornecedor deve ser maior que zero")
+
+        # O produto vem pelo vínculo já conferido acima, então continua sendo
+        # da empresa — obter_por_id não devolveria produto de outro tenant.
+        produto = await self.produto_repo.obter_por_id(empresa_id, vinculo.produto_id)
+        if produto:
+            _exigir_preco_cobrindo_fornecedor(produto.preco, preco)
 
         return await self.repo.atualizar(
             empresa_id,
