@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     # Protege o endpoint da varredura diaria, chamado pelo cron do host.
     PLATAFORMA_JOB_TOKEN: str = ""
 
+    # Segredo compartilhado com o servico de vendas. Protege
+    # POST /auth/cliente/registrar-interno, que aceita a senha ja hasheada:
+    # quem chama define a senha da conta do comprador.
+    REGISTRO_INTERNO_TOKEN: str = ""
+
     # Swagger/ReDoc/openapi.json. Desligado por padrao: o schema completo e um
     # mapa da API pra quem nao deveria ter. Ligue no .env local se precisar.
     DOCS_ENABLED: bool = False

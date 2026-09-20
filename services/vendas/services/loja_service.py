@@ -202,9 +202,13 @@ class LojaService:
                                     "empresa_id": empresa_id
                                 }
                                 
+                                # Este POST define a senha da conta (manda o
+                                # hash pronto). O segredo é o que prova ao
+                                # gateway que a chamada saiu daqui.
                                 auth_response = await client.post(
                                     f"{settings.API_GATEWAY_URL}/auth/cliente/registrar-interno",
                                     json=auth_payload,
+                                    headers={"X-Registro-Interno-Token": settings.REGISTRO_INTERNO_TOKEN},
                                     timeout=10.0
                                 )
                                 

@@ -24,7 +24,10 @@ class ClienteAuth(Base):
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False, comment="Hash da senha ou vazio para OAuth")
-    cliente_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, comment="ID do cliente no serviço clientes")
+    # Único: duas contas de login apontando para o mesmo cliente enxergam os
+    # mesmos pedidos, endereços e crédito. Uma conta por cliente, como o email
+    # já garantia do outro lado.
+    cliente_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), unique=True, nullable=False, comment="ID do cliente no serviço clientes")
     empresa_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True, comment="ID da loja onde o cliente se cadastrou")
     ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

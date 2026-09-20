@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     # API Gateway URL
     API_GATEWAY_URL: str = "http://api-gateway:8000"
 
+    # Segredo compartilhado com o gateway. Carimbado em
+    # POST /auth/cliente/registrar-interno, a rota que cria a conta do
+    # comprador no checkout com a senha já hasheada daqui.
+    REGISTRO_INTERNO_TOKEN: str = ""
+
     # Mercado Pago environment switch.
     # "sandbox" (default) forces the sandbox/test checkout flow; production is only
     # used when MP_ENVIRONMENT is explicitly set to "production". This is the single
