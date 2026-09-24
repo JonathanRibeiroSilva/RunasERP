@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.oauth2 import require_super_admin
 from config import settings
 from database import get_db
+from interno import auth_interno
 from models.usuario import Usuario, RoleEnum
 from repositories.usuario_repository import UsuarioRepository
 from services import preapproval_service
@@ -44,7 +45,9 @@ async def _empresas(method: str, path: str, tenant_id: int | None = None, **kwar
     exigir_tenant, como o DELETE usado na compensação): o serviço é fail closed
     e responde 400 sem ele, o que silenciava o rollback e deixava tenant órfão.
     """
-    headers = dict(HEADERS_PLATAFORMA)
+    # X-Plataforma é identidade pura: quem alcançasse o serviço direto virava
+    # plataforma. O carimbo interno é a prova que faltava (achado G1b).
+    headers = auth_interno(HEADERS_PLATAFORMA)
     if tenant_id is not None:
         headers["X-Empresa-Id"] = str(tenant_id)
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -363,7 +366,7 @@ async def exportar_tenant(
                 yield json.dumps(nome) + ":"
                 resp = await client.get(
                     f"{base}{path}",
-                    headers={"X-Empresa-Id": str(empresa_id)},
+                    headers=auth_interno({"X-Empresa-Id": str(empresa_id)}),
                     params={"limit": 1000},
                 )
                 yield resp.text if resp.status_code == 200 else json.dumps(

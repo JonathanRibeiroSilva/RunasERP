@@ -14,6 +14,7 @@ import structlog
 
 from models.venda import ReservaTemporaria
 from config import settings
+from interno import auth_interno
 
 log = structlog.get_logger()
 
@@ -64,7 +65,7 @@ class ReservaTemporariaService:
             params["variante_id"] = str(variante_id)
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, params=params, headers=headers, timeout=5.0)
+                response = await client.get(url, params=params, headers=auth_interno(headers), timeout=5.0)
             if response.status_code == 200:
                 return Decimal(str(response.json().get("quantidade", 0)))
             log.warning(

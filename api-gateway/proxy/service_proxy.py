@@ -9,6 +9,7 @@ from sqlalchemy import text
 from config import settings
 from models.usuario import Usuario
 from database import get_db
+from interno import auth_interno
 from auth.redis_client import get_redis
 from proxy import idempotency
 
@@ -165,8 +166,14 @@ class ServiceProxy:
         # como identidade. O cliente nao pode fornece-los -- X-Plataforma nem era
         # sobrescrito abaixo, e chaves de request.headers vem minusculas, entao um
         # x-empresa-id do cliente sobreviveria ao lado do X-Empresa-Id injetado.
-        for interno in ("x-empresa-id", "x-cliente-id", "x-plataforma"):
+        for interno in ("x-empresa-id", "x-cliente-id", "x-plataforma",
+                        "x-servico-interno-token"):
             headers.pop(interno, None)
+
+        # E o gateway que prova a origem interna dos headers acima. Um unico
+        # carimbo aqui cobre toda escrita e leitura de todos os servicos --
+        # e' por aqui que passa praticamente todo o trafego da malha.
+        headers = auth_interno(headers)
 
         # Injeção centralizada de contexto multi-tenancy (empresa_id / cliente_id)
         empresa_id = await cls._inject_context_headers(headers, current_user, empresa_slug)

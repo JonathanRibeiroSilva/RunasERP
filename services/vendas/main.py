@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from database import init_db
+from interno import validar_token_interno
 from routers import vendas_router
 from routers.loja import router as loja_router
 from routers.webhook import router as webhook_router
@@ -84,6 +85,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Prova de origem interna. Fail-open enquanto SERVICO_INTERNO_TOKEN
+# nao estiver nos 8 containers -- ver interno.py.
+app.middleware("http")(validar_token_interno)
 
 # Registrar routers
 app.include_router(vendas_router)

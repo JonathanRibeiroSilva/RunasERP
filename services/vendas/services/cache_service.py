@@ -11,6 +11,7 @@ import httpx
 import redis.asyncio as redis
 
 from config import settings
+from interno import auth_interno
 
 log = structlog.get_logger()
 
@@ -126,7 +127,7 @@ class CacheService:
                 if empresa_id:
                     headers["X-Empresa-Id"] = str(empresa_id)
                 
-                response = await client.get(url, headers=headers, timeout=5.0)
+                response = await client.get(url, headers=auth_interno(headers), timeout=5.0)
                 
                 if response.status_code == 200:
                     return response.json()

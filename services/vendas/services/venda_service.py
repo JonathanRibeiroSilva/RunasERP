@@ -34,6 +34,7 @@ from schemas.venda import (
 )
 from config import settings
 from utils.numero_venda import gerar_numero_venda
+from interno import auth_interno
 from services.preco_catalogo import preco_do_catalogo
 from services.estoque_resultado import (
     ResultadoBaixaEstoque,
@@ -78,7 +79,7 @@ class VendaService:
                 # Endpoint administrativo de produto
                 url = f"{settings.PRODUTOS_URL}/produtos/{produto_id}"
                 
-                response = await client.get(url, headers=headers, timeout=5.0)
+                response = await client.get(url, headers=auth_interno(headers), timeout=5.0)
                 if response.status_code == 200:
                     produto = response.json()
                     
@@ -123,7 +124,7 @@ class VendaService:
                 url = f"{settings.CLIENTES_URL}/clientes/{cliente_id}"
                 headers = {"X-Empresa-Id": str(empresa_id)}
                 
-                response = await client.get(url, headers=headers, timeout=5.0)
+                response = await client.get(url, headers=auth_interno(headers), timeout=5.0)
                 if response.status_code == 200:
                     cliente = response.json()
                     if not cliente.get("ativo"):
@@ -163,7 +164,7 @@ class VendaService:
                     "documento": documento
                 }
 
-                response = await client.post(url, json=payload, headers=headers, timeout=5.0)
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
         except Exception as e:
             log.error("erro_reservar_estoque", error=str(e), produto_id=str(produto_id))
             return ResultadoBaixaEstoque.INDETERMINADO
@@ -200,7 +201,7 @@ class VendaService:
                     "documento": documento
                 }
                 
-                response = await client.post(url, json=payload, headers=headers, timeout=5.0)
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
                 return response.status_code in [200, 201]
         except Exception as e:
             log.error("erro_liberar_reserva", error=str(e), produto_id=str(produto_id))
@@ -249,7 +250,7 @@ class VendaService:
                     "documento": documento
                 }
 
-                response = await client.post(url, json=payload, headers=headers, timeout=5.0)
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
                 return response.status_code in [200, 201]
         except Exception as e:
             log.error("erro_baixar_estoque", error=str(e), produto_id=str(produto_id))
@@ -296,7 +297,7 @@ class VendaService:
         }
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=10.0)
         except httpx.TimeoutException as e:
             # Timeout: a baixa pode ter ocorrido no estoque ou não. Resultado incerto.
             log.error("baixar_estoque_venda_timeout", error=str(e), venda_id=str(venda.id))
@@ -365,7 +366,7 @@ class VendaService:
         }
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=10.0)
         except (httpx.TimeoutException, httpx.RequestError) as e:
             log.error("estornar_estoque_venda_falha_comunicacao", error=str(e), venda_id=str(venda.id))
             return (False, f"Falha de comunicação com estoque: {e}")
