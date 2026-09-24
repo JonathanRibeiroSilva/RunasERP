@@ -167,7 +167,7 @@ class ServiceProxy:
         # sobrescrito abaixo, e chaves de request.headers vem minusculas, entao um
         # x-empresa-id do cliente sobreviveria ao lado do X-Empresa-Id injetado.
         for interno in ("x-empresa-id", "x-cliente-id", "x-plataforma",
-                        "x-servico-interno-token"):
+                        "x-servico-interno-token", "x-plataforma-token"):
             headers.pop(interno, None)
 
         # E o gateway que prova a origem interna dos headers acima. Um unico

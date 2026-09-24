@@ -292,6 +292,9 @@ services:
       # Prova de origem interna, o MESMO valor nos 8
       # containers. Ver services/*/interno.py.
       SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
+      # Escopo menor: so estes DOIS containers. Ver
+      # services/empresas/routers/empresas.py:exigir_plataforma.
+      PLATAFORMA_INTERNO_TOKEN: ${PLATAFORMA_INTERNO_TOKEN}
       ALGORITHM: ${ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
@@ -365,6 +368,9 @@ services:
       # Prova de origem interna, o MESMO valor nos 8
       # containers. Ver services/*/interno.py.
       SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
+      # Escopo menor: so estes DOIS containers. Ver
+      # services/empresas/routers/empresas.py:exigir_plataforma.
+      PLATAFORMA_INTERNO_TOKEN: ${PLATAFORMA_INTERNO_TOKEN}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
       interval: 60s
