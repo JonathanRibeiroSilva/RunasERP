@@ -1,10 +1,13 @@
 """
 Rotas para Empresas.
 """
+import secrets
 from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+import structlog
 
+from config import settings
 from database import get_db
 from schemas.empresa import (
     EmpresaCreate,
@@ -15,6 +18,8 @@ from schemas.empresa import (
 )
 from services.empresa_service import EmpresaService
 
+
+log = structlog.get_logger()
 
 router = APIRouter(prefix="/empresas", tags=["Empresas"])
 
@@ -37,16 +42,47 @@ async def exigir_tenant(
 
 
 async def exigir_plataforma(
-    x_plataforma: Optional[str] = Header(None, alias="X-Plataforma")
+    x_plataforma: Optional[str] = Header(None, alias="X-Plataforma"),
+    x_plataforma_token: Optional[str] = Header(None, alias="X-Plataforma-Token"),
 ) -> None:
     """
-    Rotas de plataforma: só o router /plataforma do gateway injeta este header.
+    Rotas de plataforma: só o router /plataforma do gateway injeta estes headers.
 
     O serviço empresas não tem noção de papel — mesmo contrato do X-Empresa-Id:
     confia apenas no que o gateway injeta, e o gateway só injeta depois do
     require_super_admin.
+
+    `X-Plataforma: 1` sozinho era afirmação sem prova: bastava alcançar a porta
+    8007 para virar plataforma e apagar tenant. O SERVICO_INTERNO_TOKEN do
+    INFRA-C não fecha isso — ele é o MESMO nos 8 containers, então prova apenas
+    que a chamada veio de algum deles. Daí um segredo de escopo menor, que só o
+    gateway e este serviço conhecem.
     """
     if x_plataforma != "1":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Rota exclusiva da administração da plataforma"
+        )
+
+    esperado = settings.PLATAFORMA_INTERNO_TOKEN
+
+    # ponytail: fail-open enquanto o segredo não estiver nos dois containers em
+    # prod. Fechar junto com o deploy tiraria o super admin do ar — as rotas de
+    # plataforma são TODAS guardadas por aqui, e o gateway só carimba depois que
+    # a env nova chegar. Medir plataforma.sem_segredo; zerado, fecha-se trocando
+    # o log.warning abaixo pelo mesmo raise do bloco seguinte — uma linha.
+    if not esperado or not x_plataforma_token:
+        log.warning(
+            "plataforma.sem_segredo",
+            configurado=bool(esperado),
+            recebido=bool(x_plataforma_token),
+        )
+        return
+
+    # encode(): compare_digest recusa str não-ASCII com TypeError, e o header vem
+    # de fora — um byte acentuado viraria 500 em vez de 403.
+    if not secrets.compare_digest(x_plataforma_token.encode(), esperado.encode()):
+        log.warning("plataforma.segredo_invalido")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Rota exclusiva da administração da plataforma"

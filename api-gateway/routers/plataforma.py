@@ -45,9 +45,15 @@ async def _empresas(method: str, path: str, tenant_id: int | None = None, **kwar
     exigir_tenant, como o DELETE usado na compensação): o serviço é fail closed
     e responde 400 sem ele, o que silenciava o rollback e deixava tenant órfão.
     """
-    # X-Plataforma é identidade pura: quem alcançasse o serviço direto virava
-    # plataforma. O carimbo interno é a prova que faltava (achado G1b).
+    # X-Plataforma era identidade pura: quem alcançasse o serviço direto virava
+    # plataforma. Dois carimbos fecham isso (achado G1b):
+    #   - auth_interno: veio de dentro da malha (o mesmo nos 8 containers);
+    #   - X-Plataforma-Token: veio DESTE router, que roda depois do
+    #     require_super_admin. As rotas de plataforma apagam tenant, então
+    #     "veio de algum dos 8" não é prova suficiente.
     headers = auth_interno(HEADERS_PLATAFORMA)
+    if settings.PLATAFORMA_INTERNO_TOKEN:
+        headers["X-Plataforma-Token"] = settings.PLATAFORMA_INTERNO_TOKEN
     if tenant_id is not None:
         headers["X-Empresa-Id"] = str(tenant_id)
     async with httpx.AsyncClient(timeout=30.0) as client:
