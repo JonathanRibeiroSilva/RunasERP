@@ -32,6 +32,7 @@ def sem_segredo(monkeypatch):
     monkeypatch.setattr(settings, "PLATAFORMA_INTERNO_TOKEN", "")
 
 
+@pytest.mark.asyncio
 async def test_sem_x_plataforma_continua_403(com_segredo):
     """A guarda antiga não pode ter afrouxado."""
     with pytest.raises(HTTPException) as e:
@@ -39,11 +40,13 @@ async def test_sem_x_plataforma_continua_403(com_segredo):
     assert e.value.status_code == 403
 
 
+@pytest.mark.asyncio
 async def test_token_certo_passa(com_segredo):
     assert await exigir_plataforma(
         x_plataforma="1", x_plataforma_token=SEGREDO) is None
 
 
+@pytest.mark.asyncio
 async def test_token_errado_e_403(com_segredo):
     """O caso que o achado descreve: dentro da malha, mas não é o gateway."""
     with pytest.raises(HTTPException) as e:
@@ -51,6 +54,7 @@ async def test_token_errado_e_403(com_segredo):
     assert e.value.status_code == 403
 
 
+@pytest.mark.asyncio
 async def test_token_nao_ascii_nao_vira_500(com_segredo):
     """compare_digest levanta TypeError em str não-ASCII, e o header vem de fora."""
     with pytest.raises(HTTPException) as e:
@@ -58,6 +62,7 @@ async def test_token_nao_ascii_nao_vira_500(com_segredo):
     assert e.value.status_code == 403
 
 
+@pytest.mark.asyncio
 async def test_fail_open_sem_segredo_configurado(sem_segredo):
     """Fechar junto com o deploy tiraria o super admin do ar."""
     assert await exigir_plataforma(
@@ -66,6 +71,7 @@ async def test_fail_open_sem_segredo_configurado(sem_segredo):
         x_plataforma="1", x_plataforma_token="qualquer") is None
 
 
+@pytest.mark.asyncio
 async def test_fail_open_com_segredo_so_de_um_lado(com_segredo):
     """A janela real do deploy: empresas já tem a env, o gateway ainda não."""
     assert await exigir_plataforma(
