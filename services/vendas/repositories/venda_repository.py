@@ -22,6 +22,29 @@ from models.venda import (
 )
 
 
+def campos_gravaveis(modelo, campos: dict) -> dict:
+    """Descarta `null` que o banco não aceita.
+
+    Todo campo de um schema de PATCH aceita None, porque é assim que ele fica
+    opcional — mas a coluna por trás pode ser obrigatória. Sem este filtro,
+    apagar um campo obrigatório viraria um IntegrityError vindo do flush, sem
+    dizer qual campo. Em coluna anulável o None passa, e é ele que apaga o
+    valor.
+
+    Cópia da mesma regra de services/produtos/repositories/produtos.py. Os
+    serviços não compartilham código (`shared/` está morto, zero imports) e
+    cada um é uma imagem própria — duplicar quatro linhas é mais barato que
+    inventar um pacote comum para elas.
+    """
+    colunas = modelo.__table__.columns
+    return {
+        campo: valor
+        for campo, valor in campos.items()
+        if not (valor is None and campo in colunas and not colunas[campo].nullable)
+    }
+
+
+
 class VendaRepository:
     """Repository para operações de Venda."""
 
@@ -148,9 +171,13 @@ class VendaRepository:
         if not venda:
             return None
         
-        for key, value in dados.items():
-            if value is not None:
-                setattr(venda, key, value)
+        # Grava vazio também. Com `if value is not None`, tirar o desconto ou
+        # apagar a observação de um pedido não chegava ao banco — o service
+        # tinha de escrever direto na instância para contornar. Os treze
+        # chamadores passam valor concreto; campos_gravaveis segura o null em
+        # coluna NOT NULL (desconto_valor).
+        for key, value in campos_gravaveis(Venda, dados).items():
+            setattr(venda, key, value)
         
         venda.updated_at = datetime.utcnow()
         await db.flush()
