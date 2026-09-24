@@ -62,6 +62,10 @@ class Settings(BaseSettings):
         """True unless MP_ENVIRONMENT is explicitly 'production'."""
         return self.MP_ENVIRONMENT.strip().lower() != "production"
 
+    # Segredo compartilhado pelos 8 containers: prova que a requisicao veio
+    # de dentro da malha. Vazio = fail-open (ver interno.py).
+    SERVICO_INTERNO_TOKEN: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

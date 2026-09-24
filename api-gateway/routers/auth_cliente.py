@@ -21,6 +21,7 @@ from auth.jwt import create_access_token, create_refresh_token, verify_token
 from auth.redis_client import get_redis
 from schemas.cliente import ClienteRegisterRequest, ClienteLoginResponse
 from config import settings
+from interno import auth_interno
 from middleware.rate_limit import limiter
 
 
@@ -67,7 +68,9 @@ class OAuthCallbackRequest(BaseModel):
 
 def _internal_headers(empresa_id: int) -> dict[str, str]:
     """Headers de contexto (multi-tenancy) para chamadas internas ao serviço de clientes."""
-    return {"X-Empresa-Id": str(empresa_id)}
+    # X-Empresa-Id é identidade para quem recebe: carimbe junto a prova de que
+    # veio de dentro da malha.
+    return auth_interno({"X-Empresa-Id": str(empresa_id)})
 
 
 async def _upsert_cliente_oauth(empresa_id: int, nome: str, email: str) -> dict:

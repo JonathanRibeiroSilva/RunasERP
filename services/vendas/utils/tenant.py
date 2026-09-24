@@ -8,6 +8,7 @@ from sqlalchemy import select
 import httpx
 
 from config import settings
+from interno import auth_interno
 
 
 async def get_empresa_id_by_slug(
@@ -28,6 +29,7 @@ async def get_empresa_id_by_slug(
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{settings.EMPRESAS_URL}/empresas/publico/{slug}",
+                headers=auth_interno(),
                 timeout=5.0
             )
             
@@ -63,7 +65,7 @@ async def get_empresa_slug_by_id(
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{settings.EMPRESAS_URL}/empresas/{empresa_id}",
-                headers={"X-Empresa-Id": str(empresa_id)},
+                headers=auth_interno({"X-Empresa-Id": str(empresa_id)}),
                 timeout=5.0
             )
 
@@ -127,6 +129,7 @@ async def get_empresa_id_from_slug(
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{settings.EMPRESAS_URL}/empresas/publico/{empresaSlug}",
+                headers=auth_interno(),
                 timeout=5.0
             )
             

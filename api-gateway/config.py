@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     # quem chama define a senha da conta do comprador.
     REGISTRO_INTERNO_TOKEN: str = ""
 
+    # Segredo compartilhado pelos 8 containers: prova que a requisicao veio de
+    # dentro da malha. O gateway e o unico que so carimba (nunca valida) --
+    # nada interno chama o gateway de volta exceto loja_service, que carimba
+    # tambem. Vazio = fail-open (ver services/*/middleware_interno.py).
+    SERVICO_INTERNO_TOKEN: str = ""
+
     # Swagger/ReDoc/openapi.json. Desligado por padrao: o schema completo e um
     # mapa da API pra quem nao deveria ter. Ligue no .env local se precisar.
     DOCS_ENABLED: bool = False

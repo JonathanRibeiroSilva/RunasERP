@@ -13,6 +13,7 @@ import structlog
 from sqlalchemy import func, select
 
 from config import settings
+from interno import auth_interno
 from database import get_db
 from repositories.usuario_repository import UsuarioRepository
 from auth.oauth2 import require_admin
@@ -77,7 +78,7 @@ async def _limite_de_usuarios(empresa_id: int) -> int | None:
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(
             f"{settings.EMPRESAS_URL}/empresas/{empresa_id}",
-            headers={"X-Empresa-Id": str(empresa_id)},
+            headers=auth_interno({"X-Empresa-Id": str(empresa_id)}),
         )
     if resp.status_code != 200:
         return None
