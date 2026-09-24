@@ -1,5 +1,5 @@
 fastapi==0.141.1
-uvicorn[standard]==0.52.4
+uvicorn[standard]==0.53.0
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 # Held at 4.0.1: passlib 1.7.4 reads bcrypt.__about__ to detect the backend,
@@ -8,9 +8,9 @@ passlib[bcrypt]==1.7.4
 # login 500s. Unpin only together with passlib.
 bcrypt==4.0.1
 python-multipart==0.0.32
-sqlalchemy[asyncio]==2.0.52
+sqlalchemy[asyncio]==2.0.54
 asyncpg==0.31.0
-alembic==1.19.2
+alembic==1.20.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
 redis==8.1.0
