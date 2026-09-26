@@ -279,7 +279,6 @@ Regras de negócio do serviço de Produtos.
 
 ## 📚 Referências
 
-- [Diagramas de Sequência - Produtos](../03-arquitetura/diagramas/sequencia.md#2-operações-de-produto)
 - [API de Produtos](../10-api-reference/produtos-api.md)
 - [Regras de Negócio - Índice](./README.md)
 

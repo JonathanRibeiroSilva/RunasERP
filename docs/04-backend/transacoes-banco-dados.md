@@ -4,6 +4,8 @@
 
 - [Visão Geral](#visão-geral)
 - [Conceitos ACID](#conceitos-acid)
+- [Modelo de Banco e Migrations](#modelo-de-banco-e-migrations)
+- [Auditoria em Banco](#auditoria-em-banco)
 - [Implementação no Projeto](#implementação-no-projeto)
 - [Padrões de Uso](#padrões-de-uso)
 - [Exemplos Práticos](#exemplos-práticos)
@@ -67,6 +69,142 @@ Uma vez confirmada (commit), a transação persiste mesmo em caso de falha do si
 ```python
 await db.commit()  # Dados persistidos permanentemente
 ```
+
+---
+
+## Modelo de Banco e Migrations
+
+### Um Postgres, um schema por aplicação
+
+Não existe um banco por serviço: existe **um único Postgres** com **um schema
+por aplicação**. Os schemas são criados por `postgres/init-schemas.sql`:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS gateway;
+CREATE SCHEMA IF NOT EXISTS empresas;
+CREATE SCHEMA IF NOT EXISTS clientes;
+CREATE SCHEMA IF NOT EXISTS produtos;
+CREATE SCHEMA IF NOT EXISTS estoque;
+CREATE SCHEMA IF NOT EXISTS vendas;
+CREATE SCHEMA IF NOT EXISTS financeiro;
+CREATE SCHEMA IF NOT EXISTS notificacoes;
+CREATE SCHEMA IF NOT EXISTS evolution;
+```
+
+São nove schemas para oito aplicações: os sete serviços, o `api-gateway`
+(schema `gateway`) e o `evolution`, que é a Evolution API e não um serviço
+deste repositório. O mesmo script concede `GRANT ALL` e `ALTER DEFAULT
+PRIVILEGES` (tabelas e sequences) ao usuário `erp` em cada schema.
+
+O isolamento é garantido no engine: cada aplicação fixa o `search_path` para o
+schema dela na criação da conexão.
+
+```python
+# services/estoque/database.py:19 (idêntico nos outros, trocando o schema)
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    ...
+    connect_args={"server_settings": {"search_path": "estoque,public"}}
+)
+```
+
+| Aplicação | Arquivo | `search_path` |
+|-----------|---------|---------------|
+| api-gateway | `api-gateway/database.py:20` | `gateway,public` |
+| empresas | `services/empresas/database.py:19` | `empresas,public` |
+| clientes | `services/clientes/database.py:19` | `clientes,public` |
+| produtos | `services/produtos/database.py:19` | `produtos,public` |
+| estoque | `services/estoque/database.py:19` | `estoque,public` |
+| vendas | `services/vendas/database.py:19` | `vendas,public` |
+| financeiro | `services/financeiro/database.py:19` | `financeiro,public` |
+| notificacoes | `services/notificacoes/database.py:19` | `notificacoes,public` |
+
+### Oito Alembics independentes
+
+Cada uma das 8 aplicações tem o seu próprio diretório `alembic/` e a sua
+própria tabela de versão, gravada **dentro do schema da aplicação** via
+`version_table_schema`. Não há histórico de migration compartilhado e não há
+ordem de boot garantida entre os serviços.
+
+```python
+# services/empresas/alembic/env.py:57 e :69
+context.configure(
+    ...
+    version_table_schema="empresas",
+    include_schemas=False,  # Apenas schema empresas
+)
+```
+
+O mesmo padrão aparece em `api-gateway/alembic/env.py:57` (`gateway`) e nos
+`services/<serviço>/alembic/env.py` (linhas 33 e 53) de clientes, estoque,
+financeiro, notificacoes, produtos e vendas.
+
+### As migrations rodam no boot, como subprocesso
+
+O `init_db()` de cada aplicação executa `alembic upgrade head` **antes de a
+aplicação atender tráfego**. É subprocesso, não a API Python do Alembic, porque
+`alembic/env.py` chama `fileConfig()` e substituiria a configuração de logging
+do app em execução.
+
+```python
+# services/empresas/database.py — init_db()
+if not [p for p in Path("alembic/versions").glob("*.py") if p.name != "__init__.py"]:
+    raise RuntimeError(
+        "alembic/versions/ sem revisions: a imagem foi construída sem as "
+        "migrations (verifique o .dockerignore deste serviço)"
+    )
+await asyncio.to_thread(
+    subprocess.run, ["alembic", "upgrade", "head"], check=True
+)
+```
+
+O guard existe porque `alembic upgrade head` **sai com código 0 quando não
+encontra revision nenhuma** — indistinguível de "já está no head". Uma linha no
+`.dockerignore` excluiu `alembic/versions/*.py` da imagem e o serviço subiu
+saudável, com `/health` em 200 e zero tabelas, até o login falhar com 403 três
+camadas adiante. Com o guard, esse caso derruba o processo no boot em vez de
+servir um banco vazio.
+
+Esse par (guard + `alembic upgrade head` em subprocesso) está presente nos 8
+`database.py`: os 7 serviços e o `api-gateway`.
+
+> **Consequência prática:** uma revision nova roda no boot do container. Uma
+> migration que falha — uma constraint que não passa nos dados existentes, por
+> exemplo — significa crashloop, não deploy degradado.
+
+---
+
+## Auditoria em Banco
+
+A auditoria vive no schema `gateway` e tem dois níveis:
+
+| Objeto | O que guarda |
+|--------|--------------|
+| `gateway.auditoria` | Trilha de intenção, gravada pelo middleware do gateway: `usuario_id`, `empresa_id`, `metodo`, `rota`, `payload`, `status_resposta`, `criado_em` |
+| `gateway.auditoria_registros` | Snapshot de estado: `schema_origem`, `tabela`, `registro_id`, `empresa_id`, `operacao`, `dados_antes`, `dados_depois`, `revertido_em`, `criado_em` |
+| `gateway.auditar_registro()` | Função de trigger `plpgsql` que preenche `auditoria_registros` a partir de `OLD`/`NEW` |
+
+A trilha diz quem e quando; só o snapshot diz o quê — é ele que torna o
+rollback possível.
+
+As duas tabelas, seus índices e a função de trigger **não** nascem de uma
+migration de serviço. A função é compartilhada, e sete Alembics independentes
+não têm ordem de boot garantida entre si. Ela é criada em dois lugares, que
+**precisam andar juntos**:
+
+1. `postgres/init-schemas.sql` — roda na primeira inicialização do container do
+   Postgres.
+2. O `db-init` inline em `docker-compose.prod.yml:168-237` — idempotente, roda a
+   cada deploy.
+
+As duas cópias são o mesmo SQL, e cada uma carrega o comentário "Mantenha em
+sincronia com o db-init do docker-compose.prod.yml". Alterar uma sem a outra
+produz um ambiente onde o trigger existe e a função não.
+
+As migrations por serviço só fazem `CREATE TRIGGER` apontando para a função já
+existente — arquivo `alembic/versions/20260828_120000_auditoria.py` em
+api-gateway, clientes, empresas, estoque, produtos e vendas. Financeiro e
+notificacoes não têm essa migration.
 
 ---
 
@@ -587,7 +725,7 @@ async with db.begin_nested():
 
 ## Serviços Implementados
 
-Todos os seguintes serviços já implementam transações atômicas:
+Estado por serviço:
 
 ### ✅ Estoque
 - `criar_estoque()`
@@ -621,11 +759,34 @@ Todos os seguintes serviços já implementam transações atômicas:
 - `atualizar_endereco()`
 - `remover_endereco()`
 
-### ⚪ Vendas
-- Serviço ainda não implementado
+### ✅ Vendas
+
+Implementado. `services/vendas/routers/` expõe 6 routers, todos registrados em
+`services/vendas/main.py:94-99`: `vendas.py`, `loja.py` (loja online),
+`webhook.py` (Mercado Pago), `admin_entrega.py`, `admin_pagamento.py` e
+`admin_integracao.py`.
+
+As transações atômicas ficam em `services/vendas/services/venda_service.py`, que
+usa `async with db.begin_nested()` em:
+- `criar_venda()`
+- `atualizar_venda()`
+- `separar_venda()`
+- `entregar_venda()`
+- `finalizar_venda()`
+- `cancelar_venda()`
+
+Outros serviços da pasta (`reserva_temporaria_service.py`, `loja_service.py`,
+`mercadopago_service.py`, `entrega_service.py`, os de configuração) fazem
+`await db.commit()` direto, sem `begin_nested()`.
 
 ### ⚪ Financeiro
-- Serviço ainda não implementado
+
+Ainda não implementado. `services/financeiro/main.py` não tem nenhuma chamada a
+`include_router`: só health check, CORS, o middleware `validar_token_interno` e
+o handler global de exceções. `routers/`, `services/`, `models/`,
+`repositories/` e `schemas/` contêm apenas `__init__.py`. Existe o Alembic do
+serviço, com uma única revision de baseline
+(`alembic/versions/20260919_baseline.py`).
 
 ---
 
@@ -637,5 +798,5 @@ Todos os seguintes serviços já implementam transações atômicas:
 
 ---
 
-**Última atualização:** 2026-05-26  
-**Versão:** 1.0.0
+**Última atualização:** 2026-09-26  
+**Versão:** 1.1.0

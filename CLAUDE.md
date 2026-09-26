@@ -15,17 +15,23 @@ Single PostgreSQL database, one schema per microservice:
 | Service | Schema | Port |
 |---------|--------|------|
 | api-gateway | `gateway` | 8000 |
-| empresas | `empresas` | — |
 | clientes | `clientes` | 8001 |
 | produtos | `produtos` | 8002 |
 | estoque | `estoque` | 8003 |
 | vendas | `vendas` | 8004 |
 | financeiro | `financeiro` | 8005 |
-| notificacoes | `notificacoes` | — |
+| notificacoes | `notificacoes` | 8006 |
+| empresas | `empresas` | 8007 |
+
+Ports are from `docker-compose.dev.yml`. Only the gateway (`8000:8000`) and the
+frontend (`3000:3000`) publish on all interfaces; **8001–8007 are bound to
+`127.0.0.1` on purpose** — no service validates a JWT, they all trust
+`X-Empresa-Id`, so a service published on the LAN is any tenant for anyone on
+the network (and 8007 additionally accepts `X-Plataforma`).
 
 Each service owns only its schema. Never query another service's schema directly.
 
-**Big picture:** FastAPI (Python 3.12) backend + React 18 / TypeScript / Vite frontend (port 3000), plus Postgres (5432), Redis (cache), and RabbitMQ (events — see `shared/events`). The **API Gateway (8000) is the single entry point**: it owns OAuth2/JWT auth + RBAC, then reverse-proxies `/api/<service>/...` to the backing service. Two cross-cutting facts that aren't obvious from any single file:
+**Big picture:** FastAPI (Python 3.12) backend + React 19 / TypeScript / Vite frontend (port 3000), plus Postgres (5432) and Redis (cache). A RabbitMQ container runs in the dev compose and each service carries an `events/publisher.py`, but **nothing imports it — there is no event traffic today**. The **API Gateway (8000) is the single entry point**: it owns OAuth2/JWT auth + RBAC, then reverse-proxies `/api/<service>/...` to the backing service. Two cross-cutting facts that aren't obvious from any single file:
 
 - **Multi-tenancy by injected header.** `api-gateway/proxy/service_proxy.py` injects `X-Empresa-Id` (and `X-Cliente-Id` for storefront auth) into every proxied request from the authenticated principal. Services **trust and require** these headers and **fail closed** without them — calling a service directly on its own port (bypassing the gateway) will be rejected. Integration-test through the gateway, never service ports.
 - **Each service has its own Alembic history** keyed to its schema (`version_table_schema = "<schema>"`); see Database Migrations.
@@ -50,32 +56,95 @@ model       SQLAlchemy ORM — must have __table_args__ = {"schema": "<name>"}
 
 ```bash
 # Run the full stack (dev). For the Cloudflare tunnel variant + logs, see Infrastructure below.
-docker-compose -f docker-compose.dev.yml up -d
-docker-compose -f docker-compose.dev.yml ps
-docker-compose -f docker-compose.dev.yml down [-v]
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml ps
+docker compose -f docker-compose.dev.yml down [-v]
 
-# Backend tests (pytest, run from repo root; services must be up)
+# Backend tests — the CI runs exactly two legs (.github/workflows/ci.yml).
+# Run those two; anything else is not what the gate checks.
+
+# Leg 1 — unit suite, from the repo root. No services need to be up.
 pip install -r tests/requirements.txt
-pytest                                   # all
-pytest tests/integration/                # one suite
-pytest tests/integration/test_auth.py::TestAuth::test_login_admin_success -v   # single test
-pytest --cov=api-gateway --cov=services --cov-report=html
+pytest -c tests/pytest.ini tests/unit
+pytest -c tests/pytest.ini tests/unit/test_tenant_guards.py -v   # single file
+
+# Leg 2 — per service, from the service's own directory (CI runs a matrix of 8:
+# api-gateway + the 7 services). Each service imports flat (`from main import app`),
+# so two services in one pytest process fight over sys.path.
+cd services/<name>            # or cd api-gateway
+# Path to tests/requirements.txt is relative to where you are: ../../tests from
+# services/<name>, ../tests from api-gateway. CI sidesteps it with
+# $GITHUB_WORKSPACE/tests/requirements.txt (.github/workflows/ci.yml:167).
+pip install -r requirements.txt -r ../../tests/requirements.txt
+pytest tests
+
+# NEVER run a bare `pytest` from the repo root: tests/pytest.ini has
+# `testpaths = tests`, and the files sitting directly under tests/
+# (test_produtos_api.py, test_produtos_local.py, test_estrutura_simples.py) are
+# manual scripts that call a live localhost service — they fail with nothing up.
 
 # Frontend (run from frontend/)
 npm run dev          # Vite dev server
 npm run build        # tsc && vite build
-npm run lint         # eslint (max-warnings 0)
+npm run lint         # eslint --report-unused-disable-directives --max-warnings 115
 npm run test         # vitest  (also test:coverage, test:watch)
 npm run format       # prettier
 ```
 
-Default login: `admin@runas.com` / `Admin@123`. Seed data: `docker-compose -f docker-compose.dev.yml exec <service> python seed.py`. DB migrations have their own section below.
+Default login: `admin@runas.com` / `Admin@123`. Seed data: `docker compose -f docker-compose.dev.yml exec <service> python seed.py`. DB migrations have their own section below.
+
+### The two legs have opposite capabilities — read this before writing a test
+
+They are not the same environment, and a test written for one usually breaks on
+the other:
+
+| | Leg 1 — `tests/unit` | Leg 2 — `<service>/tests` |
+|---|---|---|
+| pytest config | `tests/pytest.ini`, `asyncio_mode = auto` | **none** — no `pytest.ini`, no `pyproject.toml`, no `setup.cfg` in any service |
+| async tests | plain `async def` works | strict mode: needs explicit `@pytest.mark.asyncio` |
+| fastapi / sqlalchemy | **absent** — `tests/requirements.txt` has neither | present, from the service's own `requirements.txt` |
+
+Consequences:
+
+- A file under `tests/unit` that imports a service's `main.py` (or anything
+  pulling in FastAPI/SQLAlchemy) **breaks collection for the whole leg**, not
+  just itself. Unit tests there read source, parse compose/YAML and assert on
+  structure — they do not import the apps.
+- A file under `<service>/tests` with a bare `async def test_...` is **not run**
+  by strict mode — it needs `@pytest.mark.asyncio`. Every existing async test in
+  those directories carries the marker; copy that, do not rely on auto mode.
 
 ---
 
 ## Database Migrations
 
 **Always use Alembic. Never use `Base.metadata.create_all()` in production.**
+
+### A bad revision is a crashloop, not a degradation — read first
+
+Every one of the 8 apps runs `alembic upgrade head` **as a subprocess inside its
+own lifespan startup**, before it serves a single request (`init_db()` in
+`<app>/database.py`, awaited from `lifespan` in `<app>/main.py` — e.g.
+`api-gateway/database.py:47-66` called at `api-gateway/main.py:45`). The failure
+is deliberate and fatal: `subprocess.run(..., check=True)` raises, startup dies,
+the container restarts, and it dies again. There is no "the app comes up with a
+stale schema" middle ground, by design — serving on the wrong schema is
+considered worse than being down.
+
+What that means in practice:
+
+- A migration that fails on production data (a constraint the existing rows
+  violate, a rename against a column that is not there) takes the service
+  **fully offline in a restart loop**, not partially.
+- Production is stamped at a baseline, so old revisions do not replay — but a
+  **new** revision runs on the next boot, on production data, unattended.
+- **A deploy rollback reverts images, never DDL.** `TAG=<sha>` puts the old code
+  back next to the already-migrated schema. Any migration that the previous
+  image cannot read is a one-way door; write it backward-compatible or plan the
+  down path before merging.
+- `init_db()` also refuses to start when `alembic/versions/` is empty, so an
+  image built without its migrations fails loudly instead of booting healthy on
+  an empty schema.
 
 ```python
 # Every SQLAlchemy model MUST declare its schema
@@ -187,7 +256,7 @@ chore(docker): consolidate postgres containers
 
 ### Error Handling
 - Never bare `except Exception` in services — catch specific exceptions
-- Use custom exceptions from `shared/exceptions.py` (`ValidationError`, `NotFoundError`, `ConflictError`)
+- **There is no shared exception library.** `shared/` at the repo root is dead code — zero imports anywhere. Exceptions live per service: `services/empresas/exceptions.py` is the only one that exists today (`BaseServiceError`, `ValidationError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`), registered with `@app.exception_handler(...)` in that service's `main.py`. Copy that shape into a service that needs it — do not import across service boundaries, the images do not ship each other's code.
 - Routers must NOT have try/except — global handlers in `main.py` own that
 - Never expose stack traces to the client — return `request_id` on 500
 - Structured logs: `structlog` with `request_id`, `usuario_id`, `empresa_id`, `action`, `duration_ms`
@@ -254,11 +323,11 @@ Invoke-WebRequest -Uri "$domain/api/health" -UseBasicParsing
 # NEVER test direct to service ports (http://localhost:8001) for integration tests
 
 # Start with Cloudflare tunnel
-docker-compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
+docker compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
 
 # Logs
 docker logs erp-api-gateway-dev -f
-docker logs erp-cloudflared-dev -f
+docker logs erp-cloudflared -f           # no -dev: docker-compose.cloudflare.yml:34
 docker logs erp-<service>-dev -f
 ```
 
@@ -275,7 +344,9 @@ https://app.runaserp.com.br/auth/callback/microsoft
 
 Removed and dead — never reference: Ngrok, Nginx, PgAdmin container,
 `docker-compose.nginx.yml`, `docker-compose.local.yml` (its localhost values are
-the defaults in `docker-compose.dev.yml` now).
+the defaults in `docker-compose.dev.yml` now), and `shared/` at the repo root
+(`shared/exceptions.py`, `shared/pagination.py`, `shared/events/` — zero imports
+in the whole codebase; the service Dockerfiles do not even copy it).
 
 ---
 
@@ -295,7 +366,7 @@ graphify explain "VendaService"
 - Already know the exact file → read it directly (skip graphify)
 - Trivial one-file change → read it directly
 
-The graph auto-updates via GitHub Actions on push to `main`/`master`/`Developer` when `.py`, `.ts`, `.tsx`, `.js`, `.jsx` files change. No manual `graphify update` needed after a push.
+The graph auto-updates via GitHub Actions on push to **`main` only** when `.py`, `.ts`, `.tsx`, `.js`, `.jsx` or `.vue` files change (`.github/workflows/graphify-update.yml:10-18`). It deliberately does **not** run on `Developer` — the bot commits the regenerated `graphify-out/` on whichever branch it runs, and running on both made every merge conflict in the generated files. So after a push to `Developer` the graph is stale; refresh locally with `graphify update` if you need it.
 
 ---
 

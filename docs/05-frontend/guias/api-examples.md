@@ -1,628 +1,158 @@
-# Exemplos de API - Frontend
+# API pelo frontend — o que o cliente Axios faz por você
 
-> Exemplos de payloads de requisição e resposta para referência rápida durante desenvolvimento
-
----
-
-## 🔐 Autenticação
-
-### Login
-
-**Request:**
-```http
-POST /auth/login
-Content-Type: application/x-www-form-urlencoded
-
-username=admin@runas.com&password=Admin@123
-```
-
-**Response (200):**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 1800,
-  "user": {
-    "id": "uuid",
-    "nome": "Administrador",
-    "email": "admin@runas.com",
-    "role": "ADMIN",
-    "ativo": true
-  }
-}
-```
-
-### Refresh Token
-
-**Request:**
-```http
-POST /auth/refresh
-Content-Type: application/json
-
-{
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Response (200):**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 1800
-}
-```
+> Este arquivo **não guarda mais payloads de exemplo**. Eles viviam aqui escritos
+> à mão, sem vínculo com schema nenhum, e apodreceram: documentavam `GET /pedidos`,
+> `POST /produtos/{id}/variantes`, `GET /estoque/{variante_id}` e
+> `GET /estoque/alertas/minimo` — **nenhuma dessas rotas existe** no código. Ver
+> "Por que os exemplos saíram" no fim.
+>
+> Payload e contrato de rota agora têm um lugar só: **[docs/10-api-reference/](../../10-api-reference/README.md)**.
+> O que fica aqui é o que só o frontend faz — o comportamento automático do
+> cliente `api` em `frontend/src/services/api/axios.ts`.
 
 ---
 
-## 👥 Clientes
+## Onde achar payloads
 
-### Listar Clientes
+| Preciso de… | Vá para |
+|---|---|
+| rota, verbo, corpo e resposta por serviço | [docs/10-api-reference/README.md](../../10-api-reference/README.md) (índice) |
+| qual prefixo cai em qual serviço | [mapeamento-rotas.md](../../10-api-reference/mapeamento-rotas.md) |
+| login, refresh, cookies HTTP-only | [guia-autenticacao.md](../../10-api-reference/guia-autenticacao.md) |
+| fluxos completos ponta a ponta | [exemplos-praticos.md](../../10-api-reference/exemplos-praticos.md) |
+| contrato de `Idempotency-Key` no gateway | [docs/10-api-reference/README.md](../../10-api-reference/README.md) (seção Idempotência) |
 
-**Request:**
-```http
-GET /clientes?page=1&size=20&nome=João&bloqueado=false
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "items": [
-    {
-      "id": "uuid",
-      "cpf": "12345678909",
-      "nome": "João Silva",
-      "telefone": "+5511999999999",
-      "email": "joao@email.com",
-      "data_nasc": "1990-01-15",
-      "limite_credito": 1000.00,
-      "credito_disponivel": 750.00,
-      "dia_vencimento": 10,
-      "bloqueado": false,
-      "ativo": true,
-      "criado_em": "2026-01-01T10:00:00Z"
-    }
-  ],
-  "total": 150,
-  "page": 1,
-  "size": 20,
-  "pages": 8
-}
-```
-
-### Criar Cliente
-
-**Request:**
-```http
-POST /clientes
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "cpf": "12345678909",
-  "nome": "João Silva",
-  "telefone": "+5511999999999",
-  "email": "joao@email.com",
-  "data_nasc": "1990-01-15"
-}
-```
-
-**Response (201):**
-```json
-{
-  "id": "uuid",
-  "cpf": "12345678909",
-  "nome": "João Silva",
-  "telefone": "+5511999999999",
-  "email": "joao@email.com",
-  "data_nasc": "1990-01-15",
-  "limite_credito": 0.00,
-  "credito_disponivel": 0.00,
-  "dia_vencimento": null,
-  "bloqueado": false,
-  "ativo": true,
-  "criado_em": "2026-05-25T10:00:00Z"
-}
-```
-
-### Adicionar Endereço
-
-**Request:**
-```http
-POST /clientes/{id}/enderecos
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "cep": "01234567",
-  "logradouro": "Rua das Flores",
-  "numero": "123",
-  "complemento": "Apto 45",
-  "bairro": "Centro",
-  "cidade": "São Paulo",
-  "uf": "SP",
-  "principal": true
-}
-```
-
-**Response (201):**
-```json
-{
-  "id": "uuid",
-  "cliente_id": "uuid",
-  "cep": "01234567",
-  "logradouro": "Rua das Flores",
-  "numero": "123",
-  "complemento": "Apto 45",
-  "bairro": "Centro",
-  "cidade": "São Paulo",
-  "uf": "SP",
-  "principal": true
-}
-```
+**Fonte de última instância é o código**, não um `.md`. Os routers ficam em
+`api-gateway/routers/` e `services/<servico>/routers/`. O Swagger do gateway
+(`/docs`, `/redoc`, `/openapi.json`) existe mas vem **desligado por padrão**:
+`api-gateway/config.py:84` define `DOCS_ENABLED: bool = False`, e `main.py:62-64`
+só monta as três rotas quando a flag está ligada. Para ver o schema gerado,
+ligue `DOCS_ENABLED=true` no `.env` local.
 
 ---
 
-## 📦 Produtos
+## 1. `Idempotency-Key` em toda escrita (automático)
 
-### Listar Produtos
+`axios.ts:42-43` injeta o header em todo `POST`, `PUT`, `PATCH` e `DELETE`:
 
-**Request:**
-```http
-GET /produtos?page=1&size=20&categoria_id=uuid&ativo=true
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "items": [
-    {
-      "id": "uuid",
-      "categoria_id": "uuid",
-      "categoria_nome": "Bebidas",
-      "nome": "Coca-Cola",
-      "descricao": "Refrigerante",
-      "ativo": true,
-      "variantes_count": 3,
-      "criado_em": "2026-01-01T10:00:00Z"
-    }
-  ],
-  "total": 50,
-  "page": 1,
-  "size": 20,
-  "pages": 3
+```ts
+if (WRITE_METHODS.includes((config.method ?? 'get').toLowerCase())) {
+  config.headers['Idempotency-Key'] ??= crypto.randomUUID();
 }
 ```
 
-### Criar Produto com Variante
+`WRITE_METHODS` (`axios.ts:14`) é `['post', 'put', 'patch', 'delete']`, espelhando
+`METODOS` em `api-gateway/proxy/idempotency.py:19`. `GET`/`HEAD`/`OPTIONS` não
+recebem chave.
 
-**Request:**
-```http
-POST /produtos
-Authorization: Bearer {token}
-Content-Type: application/json
+Dois detalhes que importam para quem escreve tela:
 
-{
-  "categoria_id": "uuid",
-  "nome": "Coca-Cola",
-  "descricao": "Refrigerante"
-}
-```
+- **O `??=` é deliberado.** A chave só é gerada se ainda não existe. Num reenvio o
+  Axios passa o mesmo `config`, e gerar uma chave nova a cada passagem faria o
+  gateway ver uma operação nova — exatamente o que a chave existe para impedir.
+- **Você não precisa fazer nada.** Não gere chave à mão, não passe header. Só
+  passe pelo cliente `api` exportado de `axios.ts`; um `fetch()` cru perde isso.
 
-**Response (201):**
-```json
-{
-  "id": "uuid",
-  "categoria_id": "uuid",
-  "nome": "Coca-Cola",
-  "descricao": "Refrigerante",
-  "ativo": true,
-  "criado_em": "2026-05-25T10:00:00Z"
-}
-```
+### O que o gateway faz com ela
 
-### Adicionar Variante
+De `api-gateway/proxy/idempotency.py`:
 
-**Request:**
-```http
-POST /produtos/{id}/variantes
-Authorization: Bearer {token}
-Content-Type: application/json
+| Situação | Resposta |
+|---|---|
+| primeira chamada | reserva a chave no Redis (marcador `EM_VOO`), encaminha, guarda a resposta final |
+| repetição depois da resposta | a resposta guardada, com **`X-Idempotent-Replay: true`** (`:82`) |
+| repetição com a primeira ainda em voo | **409** `"Requisição com esta Idempotency-Key ainda está em processamento"` (`:72-75`) |
 
-{
-  "sku": "COCA-350ML",
-  "preco_custo": 2.50,
-  "markup_pct": 50.00,
-  "atributos": [
-    { "chave": "tamanho", "valor": "350ml" },
-    { "chave": "tipo", "valor": "Lata" }
-  ]
-}
-```
+TTL da reserva: `IDEMPOTENCY_TTL_SECONDS`, default **86400** s
+(`api-gateway/config.py:25`).
 
-**Response (201):**
-```json
-{
-  "id": "uuid",
-  "produto_id": "uuid",
-  "sku": "COCA-350ML",
-  "preco_custo": 2.50,
-  "markup_pct": 50.00,
-  "preco_venda": 3.75,
-  "ativo": true,
-  "atributos": [
-    {
-      "id": "uuid",
-      "chave": "tamanho",
-      "valor": "350ml"
-    },
-    {
-      "id": "uuid",
-      "chave": "tipo",
-      "valor": "Lata"
-    }
-  ]
-}
-```
+Nem toda resposta é guardada. `concluir()` (`idempotency.py:100-102`) **libera** a
+reserva quando o status é `>= 500`, está em `TRANSITORIOS` (`408`, `425`, `429`) ou
+o corpo passa de `MAX_BODY` (256 KB) — nesses casos o cliente pode reenviar com a
+mesma chave. Só 2xx e 4xx de negócio ficam guardados para replay.
+
+O header `X-Idempotent-Replay` é legível no browser porque o CORS do gateway o
+expõe: `expose_headers=["X-Idempotent-Replay"]` (`api-gateway/main.py:86`).
+
+> A idempotência do gateway é defesa contra retry de cliente, não a garantia
+> final — essa continua sendo o `UNIQUE` no banco de cada serviço
+> (`idempotency.py:1-9`).
 
 ---
 
-## 📊 Estoque
+## 2. Retry escalonado na janela de deploy (automático)
 
-### Consultar Estoque
+`axios.ts:97-110` reenvia a requisição quando o deploy derruba o gateway por
+alguns segundos:
 
-**Request:**
-```http
-GET /estoque/{variante_id}
-Authorization: Bearer {token}
-```
+- **Status que disparam** (`axios.ts:8`): `502`, `503`, `504`.
+- **Métodos** (`axios.ts:9`): só `get`, `head`, `options`.
+- **Tentativas** (`axios.ts:10`): até `3`.
+- **Espera** (`axios.ts:108`): `sleep(attempt * 1000)` — **1s, depois 2s, depois 3s**.
 
-**Response (200):**
-```json
-{
-  "id": "uuid",
-  "variante_id": "uuid",
-  "quantidade": 100,
-  "quantidade_minima": 20,
-  "atualizado_em": "2026-05-25T10:00:00Z"
-}
-```
+Por que é mais estreito que `isRetryableError` de `utils/errorLogger`: aquele
+retenta todo `500+`, e um `500` de verdade é bug de aplicação — retentar só
+triplica a carga e atrasa o erro que o usuário precisa ver.
 
-### Entrada de Estoque
+**Escritas estão de fora de propósito.** Elas já carregam `Idempotency-Key`, então
+um replay não duplicaria a venda — mas uma chave reservada cuja primeira tentativa
+ainda está em voo responde **409**, e o loop de retry entregaria esse 409 em vez do
+resultado real. Alargar a lista exige antes aguardar e desembrulhar o 409; é
+mudança de comportamento, não lista maior.
 
-**Request:**
-```http
-POST /estoque/{variante_id}/entrada
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "quantidade": 50,
-  "motivo": "Compra de fornecedor",
-  "documento": "NF-12345",
-  "observacao": "Lote 2026-05"
-}
-```
-
-**Response (200):**
-```json
-{
-  "movimentacao": {
-    "id": "uuid",
-    "variante_id": "uuid",
-    "tipo": "ENTRADA",
-    "quantidade": 50,
-    "motivo": "Compra de fornecedor",
-    "documento": "NF-12345",
-    "observacao": "Lote 2026-05",
-    "criado_em": "2026-05-25T10:00:00Z"
-  },
-  "estoque_atual": {
-    "quantidade": 150,
-    "quantidade_minima": 20
-  }
-}
-```
-
-### Listar Alertas de Estoque Baixo
-
-**Request:**
-```http
-GET /estoque/alertas/minimo
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "items": [
-    {
-      "variante_id": "uuid",
-      "sku": "COCA-350ML",
-      "produto_nome": "Coca-Cola",
-      "quantidade": 15,
-      "quantidade_minima": 20,
-      "diferenca": -5
-    }
-  ],
-  "total": 5
-}
-```
+**Consequência na UI:** um `GET` pode demorar até ~6s a mais antes de falhar.
+Spinner e skeleton precisam suportar isso sem piscar erro.
 
 ---
 
-## 🛒 Vendas/Pedidos
+## 3. Formato de erro
 
-### Listar Pedidos
+O tipo consumido pelo frontend é mínimo (`frontend/src/types/common.ts:20-23`):
 
-**Request:**
-```http
-GET /pedidos?page=1&size=20&status=PENDENTE
-Authorization: Bearer {token}
-```
-
-**Response (200):**
-```json
-{
-  "items": [
-    {
-      "id": "uuid",
-      "cliente_id": "uuid",
-      "cliente_nome": "João Silva",
-      "origem": "BALCAO",
-      "modalidade_pagto": "A_VISTA",
-      "modalidade_entrega": "RETIRADA",
-      "status": "PENDENTE",
-      "subtotal": 100.00,
-      "desconto": 0.00,
-      "frete": 0.00,
-      "total": 100.00,
-      "criado_em": "2026-05-25T10:00:00Z"
-    }
-  ],
-  "total": 25,
-  "page": 1,
-  "size": 20,
-  "pages": 2
+```ts
+export interface ApiError {
+  detail: string;
+  status_code?: number;
 }
 ```
 
-### Detalhes do Pedido
+Helpers em `axios.ts`: `getErrorMessage(error, fallback?)` extrai
+`response.data.detail` e `getErrorStatus(error)` extrai o status. Use-os em vez de
+cavar o `AxiosError` na tela.
 
-**Request:**
-```http
-GET /pedidos/{id}
-Authorization: Bearer {token}
-```
+Atenção: `detail` **não é sempre string**. Num `422` do FastAPI ele é uma lista de
+objetos de validação. O `getErrorMessage` devolve esse valor como veio, então uma
+tela que joga o retorno direto no toast pode renderizar `[object Object]` num
+erro de validação.
 
-**Response (200):**
-```json
-{
-  "id": "uuid",
-  "cliente": {
-    "id": "uuid",
-    "nome": "João Silva",
-    "telefone": "+5511999999999"
-  },
-  "origem": "BALCAO",
-  "modalidade_pagto": "A_VISTA",
-  "modalidade_entrega": "RETIRADA",
-  "status": "PENDENTE",
-  "itens": [
-    {
-      "id": "uuid",
-      "variante_id": "uuid",
-      "sku": "COCA-350ML",
-      "produto_nome": "Coca-Cola",
-      "quantidade": 10,
-      "preco_unitario": 3.75,
-      "subtotal": 37.50
-    }
-  ],
-  "subtotal": 100.00,
-  "desconto": 0.00,
-  "frete": 0.00,
-  "total": 100.00,
-  "pagamento": {
-    "metodo": "DINHEIRO",
-    "status_confirmacao": "PENDENTE"
-  },
-  "criado_em": "2026-05-25T10:00:00Z",
-  "atualizado_em": "2026-05-25T10:00:00Z"
-}
-```
-
-### Atualizar Status do Pedido
-
-**Request:**
-```http
-PATCH /pedidos/{id}/status
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "status": "CONFIRMADO"
-}
-```
-
-**Response (200):**
-```json
-{
-  "id": "uuid",
-  "status": "CONFIRMADO",
-  "atualizado_em": "2026-05-25T10:05:00Z"
-}
-```
+Os códigos e as mensagens de erro por endpoint estão em
+[docs/10-api-reference/README.md](../../10-api-reference/README.md).
 
 ---
 
-## 💰 Financeiro
+## Por que os exemplos saíram
 
-### Listar Contas a Receber
+Auditoria de 2026-09-26 conferiu os payloads deste arquivo contra os routers.
+Amostra do que estava errado:
 
-**Request:**
-```http
-GET /contas?page=1&size=20&status=VENCIDO
-Authorization: Bearer {token}
-```
+| O arquivo dizia | O código diz |
+|---|---|
+| `GET /pedidos`, `GET /pedidos/{id}`, `PATCH /pedidos/{id}/status` | prefixo `/pedidos` não existe em `ServiceProxy.SERVICE_URLS` (`api-gateway/proxy/service_proxy.py:23-38`) |
+| `POST /produtos/{id}/variantes` | variantes é router próprio: `APIRouter(prefix="/variantes")` (`services/produtos/routers/produtos.py:297`) |
+| `GET /estoque/{variante_id}` | `GET /estoque/{estoque_id}` (`services/estoque/routers/estoque.py:111`) |
+| `POST /estoque/{variante_id}/entrada` | `POST /estoque/entrada` (`estoque.py:140`) |
+| `GET /estoque/alertas/minimo` | `GET /estoque/baixo` (`estoque.py:78`) |
+| `GET /contas`, `POST /contas/{id}/pagamentos` | `/contas` roteia para `financeiro`, que **não tem router** — só `GET /health` |
+| login devolve `expires_in: 1800` | `LoginResponse` tem `access_token`, `refresh_token`, `token_type`, `user` — **sem `expires_in`** (`api-gateway/schemas/usuario.py:77-82`) |
 
-**Response (200):**
-```json
-{
-  "items": [
-    {
-      "id": "uuid",
-      "cliente_id": "uuid",
-      "cliente_nome": "João Silva",
-      "pedido_id": "uuid",
-      "valor_original": 100.00,
-      "valor_pago": 0.00,
-      "saldo_devedor": 100.00,
-      "data_vencimento": "2026-05-20",
-      "status": "VENCIDO",
-      "criado_em": "2026-05-10T10:00:00Z"
-    }
-  ],
-  "total": 10,
-  "page": 1,
-  "size": 20,
-  "pages": 1
-}
-```
-
-### Registrar Pagamento
-
-**Request:**
-```http
-POST /contas/{id}/pagamentos
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "valor": 50.00,
-  "forma": "DINHEIRO",
-  "observacao": "Pagamento parcial"
-}
-```
-
-**Response (201):**
-```json
-{
-  "pagamento": {
-    "id": "uuid",
-    "conta_id": "uuid",
-    "valor": 50.00,
-    "forma": "DINHEIRO",
-    "observacao": "Pagamento parcial",
-    "pago_em": "2026-05-25T10:00:00Z"
-  },
-  "conta_atualizada": {
-    "id": "uuid",
-    "valor_original": 100.00,
-    "valor_pago": 50.00,
-    "saldo_devedor": 50.00,
-    "status": "PARCIAL"
-  }
-}
-```
+Payload à mão sem vínculo com schema drifta em silêncio. Se um exemplo tem de
+existir, que exista onde alguém o confere: em `docs/10-api-reference/`, ao lado da
+rota, ou gerado do `/openapi.json`.
 
 ---
 
-## ❌ Erros Comuns
+**A CONFIRMAR:** ninguém gera este `/openapi.json` automaticamente hoje —
+`docs/10-api-reference/openapi.yaml` é mantido à mão. Se a geração automática
+entrar, esta página some e o link vai direto para o schema.
 
-### 400 - Bad Request
-
-```json
-{
-  "detail": "CPF inválido"
-}
-```
-
-### 401 - Unauthorized
-
-```json
-{
-  "detail": "Token inválido ou expirado"
-}
-```
-
-### 403 - Forbidden
-
-```json
-{
-  "detail": "Permissão negada. Apenas ADMIN pode acessar este recurso"
-}
-```
-
-### 404 - Not Found
-
-```json
-{
-  "detail": "Cliente não encontrado"
-}
-```
-
-### 409 - Conflict
-
-```json
-{
-  "detail": "CPF já cadastrado no sistema"
-}
-```
-
-### 422 - Validation Error
-
-```json
-{
-  "detail": [
-    {
-      "loc": ["body", "cpf"],
-      "msg": "field required",
-      "type": "value_error.missing"
-    },
-    {
-      "loc": ["body", "telefone"],
-      "msg": "Telefone deve estar no formato E.164",
-      "type": "value_error"
-    }
-  ]
-}
-```
-
-### 500 - Internal Server Error
-
-```json
-{
-  "detail": "Erro interno do servidor. Tente novamente mais tarde."
-}
-```
-
----
-
-## 🔍 Paginação Padrão
-
-Todos os endpoints de listagem seguem o mesmo padrão:
-
-**Query Parameters:**
-- `page`: Número da página (default: 1)
-- `size`: Itens por página (default: 20, max: 100)
-
-**Response:**
-```json
-{
-  "items": [...],
-  "total": 150,
-  "page": 1,
-  "size": 20,
-  "pages": 8
-}
-```
-
----
-
-**Versão:** 1.0.0  
-**Data:** 2026-05-25  
-**Status:** ✅ Exemplos Completos
+**Última verificação contra o código:** 2026-09-26

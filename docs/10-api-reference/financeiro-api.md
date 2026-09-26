@@ -1,28 +1,61 @@
 # API Financeiro - Runas
 
-> **Referência completa** da API do serviço Financeiro
+> **STATUS: NÃO IMPLEMENTADO.** Este documento é especificação planejada, não
+> contrato vigente. O serviço financeiro hoje expõe apenas `GET /health`.
+
+**Evidência, lida do código:**
+
+- `services/financeiro/main.py` não tem nenhum `include_router`. A única rota
+  declarada é `@app.get("/health")`, na linha 56.
+- `services/financeiro/routers/__init__.py` tem 22 bytes: nenhum router existe.
+- O baseline `services/financeiro/alembic/versions/20260919_baseline.py` diz, na
+  própria docstring: *"The service has no models, so there is nothing to
+  create."* Não há tabela de contas nem de pagamentos — `upgrade()` é `pass`.
+- O caminho já existe no gateway, mas não no destino: `api-gateway/routers/proxy.py`
+  declara `/contas/{path:path}` (métodos GET, POST e PATCH, sob `require_admin`) e
+  `api-gateway/proxy/service_proxy.py:35` mapeia `/contas` para `FINANCEIRO_URL`.
+  O gateway encaminha e o serviço responde 404.
+
+Tudo abaixo descreve o comportamento **pretendido**. Nenhum exemplo cURL ou
+JavaScript deste documento funciona hoje.
 
 ---
 
-## 📋 Visão Geral
+## 📋 Visão Geral (planejado)
 
-**Base URL**: `http://localhost:8005`  
-**Autenticação**: Bearer Token (JWT)  
+**Porta do serviço**: `8005` — `docker-compose.dev.yml` publica
+`127.0.0.1:8005:8005` e sobe `uvicorn main:app --port 8005`. Em dev isso escuta
+só em loopback; o serviço não é ponto de entrada.
+
+**Base URL planejada**: o consumo previsto é através do gateway. O nginx do
+frontend faz `rewrite ^/api/(.*)$ /$1` para `api-gateway:8000`, então
+`/api/contas` chega ao gateway como `/contas` e de lá segue para `financeiro:8005`.
+Os exemplos abaixo usam `http://localhost:8005` porque falam direto com o
+serviço — não é o caminho de produção.
+
+**Autenticação**: o serviço financeiro **não valida JWT**. O único controle na
+porta dele é o header `X-Servico-Interno-Token` (`services/financeiro/interno.py`),
+hoje fail-open e com `/health` isento. O JWT de admin é exigido pelo gateway, na
+rota de proxy, nunca pelo serviço.
+
 **Formato**: JSON
 
 ---
 
-## 🔐 Autenticação
+## 🔐 Autenticação (planejado)
 
-Todas as rotas requerem autenticação via JWT:
+Pelo gateway, a rota `/contas/{path:path}` exige JWT de admin (`require_admin`):
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
+Os cabeçalhos `Authorization` nos exemplos deste documento refletem essa
+intenção. Chamadas diretas à porta 8005 não verificam esse token.
+
 ---
 
-## 📍 Endpoints
+## 📍 Endpoints (planejados — nenhum implementado)
 
 ### Contas a Receber
 
@@ -315,12 +348,16 @@ curl -X POST http://localhost:8005/contas/550e8400-e29b-41d4-a716-446655440010/p
 
 ---
 
-#### Marcar como Vencida (Job Interno)
+#### Marcar como Vencida (job interno previsto)
 ```http
 PATCH /contas/{id}/marcar-vencida
 ```
 
 **Response 200:** Conta marcada como vencida
+
+> O job que chamaria esta rota também não existe: `marcar-vencida` não aparece em
+> nenhum arquivo do repositório, e `services/financeiro/` não tem pasta de jobs
+> nem entrada de cron.
 
 **Exemplo cURL:**
 ```bash
@@ -503,7 +540,11 @@ console.log('Total pendente:', totalPendente);
 
 ---
 
-## 🚨 Códigos de Erro
+## 🚨 Códigos de Erro (planejados)
+
+Hoje qualquer caminho listado acima responde `404`, e o `@app.exception_handler`
+de `main.py` converte exceção não tratada em `500 {"detail": "Erro interno do
+servidor"}`. O resto da tabela é intenção.
 
 | Código | Descrição |
 |--------|-----------|
@@ -520,7 +561,6 @@ console.log('Total pendente:', totalPendente);
 ## 📚 Documentação Relacionada
 
 - [Regras de Negócio - Financeiro](../11-regras-negocio/financeiro.md)
-- [Diagramas de Sequência - Fluxos Integrados](../03-arquitetura/diagramas/sequencia/fluxos-integrados.md)
 - [API de Vendas](./vendas-api.md) - Integração com pedidos
 - [API de Clientes](./clientes-api.md) - Gestão de crédito
 - [Guia de Autenticação](./guia-autenticacao.md)
@@ -530,5 +570,5 @@ console.log('Total pendente:', totalPendente);
 
 **Projeto:** Runas  
 **Equipe:** Equipe DenebCorp  
-**Data:** 26 de Maio de 2026  
-**Versão:** 1.0.0
+**Status:** especificação planejada — nenhum endpoint deste documento existe no código  
+**Versão:** 0.1.0 (rascunho de especificação)

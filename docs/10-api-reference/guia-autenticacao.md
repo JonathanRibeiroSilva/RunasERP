@@ -408,7 +408,7 @@ api.interceptors.response.use(
 ## 📚 Documentação Relacionada
 
 - [OpenAPI Specification](./openapi.yaml)
-- [Troubleshooting](../02-setup/troubleshooting.md)
+- [Troubleshooting](../06-operacao/troubleshooting.md)
 - [FAQ](../01-visao-geral/faq.md)
 
 ---

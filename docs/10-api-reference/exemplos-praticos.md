@@ -416,13 +416,6 @@ app.listen(3000, () => {
 
 ## 📚 Coleções Postman
 
-### Importar Coleção
-
-1. Baixe a coleção: [runas-api.postman_collection.json](./postman/runas-api.postman_collection.json)
-2. Abra o Postman
-3. File → Import → Selecione o arquivo
-4. Configure as variáveis de ambiente
-
 ### Variáveis de Ambiente
 
 ```json

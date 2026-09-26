@@ -588,7 +588,6 @@ print("Preços atualizados!")
 ## 📚 Documentação Relacionada
 
 - [Regras de Negócio - Produtos](../11-regras-negocio/produtos.md)
-- [Diagramas de Sequência - Produtos](../03-arquitetura/diagramas/sequencia/produtos.md)
 - [Mapeamento Completo de Rotas](./mapeamento-rotas.md)
 - [OpenAPI Specification](./openapi.yaml)
 

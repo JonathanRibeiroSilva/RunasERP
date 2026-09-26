@@ -1,490 +1,318 @@
 # Docker - Frontend ERP Runas
 
-Guia completo para executar o frontend com Docker.
+Referência do frontend dentro do Docker: quais arquivos existem, qual serviço
+sobe, em que porta e com quais variáveis.
+
+Para subir a stack pela primeira vez em 5 minutos, use
+[docker-quick-start.md](./docker-quick-start.md) — este documento é a referência
+detalhada, não o roteiro de primeira execução.
 
 ---
 
-## 📦 Arquivos Docker
+## ⚠️ Não existe `docker-compose.yml` na raiz
 
-O projeto possui 3 arquivos Docker:
+A raiz do repositório tem **quatro** arquivos Compose, e nenhum deles se chama
+`docker-compose.yml`:
 
-1. **`Dockerfile`** - Build de produção (otimizado, multi-stage)
-2. **`Dockerfile.dev`** - Desenvolvimento com hot reload
-3. **`nginx.conf`** - Configuração do Nginx para produção
+| Arquivo | Para que serve |
+|---|---|
+| `docker-compose.dev.yml` | Ambiente de desenvolvimento completo (infra + 8 serviços + frontend) |
+| `docker-compose.cloudflare.yml` | Overlay do Cloudflare Tunnel sobre o dev. Não é standalone |
+| `docker-compose.build.yml` | Contextos e build args das imagens publicadas no GHCR |
+| `docker-compose.prod.yml` | Produção (lido pelo Coolify na VPS) |
+
+Consequência prática: **todo comando precisa de `-f <arquivo>`**. Um
+`docker compose up` sem `-f` não encontra arquivo nenhum e falha.
+
+Também **não existe** `frontend/docker-compose.yml`. Os serviços do frontend são
+declarados nos arquivos da raiz, com `context: ./frontend`.
 
 ---
 
-## 🚀 Executar com Docker
+## 📦 Arquivos Docker do frontend
 
-### Opção 1: Produção (com docker-compose principal)
+Em `frontend/`:
 
-Executa todo o sistema (backend + frontend):
+1. **`Dockerfile`** — build de produção, multi-stage (`node:22-alpine` →
+   `nginx:alpine`)
+2. **`Dockerfile.dev`** — desenvolvimento com hot reload (`node:22-alpine`)
+3. **`nginx.conf`** — configuração do Nginx que serve o SPA dentro da imagem de
+   produção
+4. **`.dockerignore`** — mantém `node_modules`, `dist`, `.env*` e `coverage`
+   fora do contexto de build
+
+---
+
+## 🚀 Desenvolvimento (`frontend-dev`)
+
+Serviço: **`frontend-dev`** · container: **`erp-frontend-dev`** ·
+porta: **3000:3000**
 
 ```bash
-# Na raiz do projeto
-docker-compose up -d
+# Toda a stack (infra + serviços + frontend)
+docker compose -f docker-compose.dev.yml up -d
 
-# Ou apenas o frontend
-docker-compose up -d frontend
+# Só o frontend (sobe api-gateway junto, por depends_on)
+docker compose -f docker-compose.dev.yml up -d frontend-dev
 ```
 
-**Acesso:**
-- Frontend: http://localhost (porta 80)
-- Backend API: http://localhost:8000
+**Acesso:** http://localhost:3000
 
-### Opção 2: Desenvolvimento (com hot reload)
+A porta 3000 não é escolha do Compose: `frontend/vite.config.ts` fixa
+`server.port: 3000` e `server.host: '0.0.0.0'` (e `preview.port: 3000`). O
+`Dockerfile.dev` expõe 3000 e o Compose publica `3000:3000`.
 
-Executa apenas o frontend em modo desenvolvimento:
+### Como o frontend fala com a API em dev
 
-```bash
-# Na raiz do projeto
-docker-compose -f docker-compose.dev.yml up
+Não há nginx em desenvolvimento. O próprio Vite faz o proxy:
 
-# Ou em background
-docker-compose -f docker-compose.dev.yml up -d
+- `VITE_API_URL` tem default `/api` no Compose (URL relativa)
+- `VITE_USE_PROXY: "true"` no Compose
+- `vite.config.ts` cria o proxy quando `VITE_USE_PROXY !== 'false'`:
+  `/api` → `http://api-gateway:8000` (alvo sobrescrevível por
+  `VITE_API_GATEWAY_TARGET`), com `rewrite` removendo o prefixo `/api`
+- Se `VITE_API_URL` não estiver definida, `src/config/env.ts` cai no fallback
+  `'/api'`
+
+### Volumes montados
+
+```yaml
+- ./frontend/src:/app/src
+- ./frontend/public:/app/public
+- ./frontend/vite.config.ts:/app/vite.config.ts:ro
+- /app/node_modules          # volume anônimo: preserva o install da imagem
 ```
 
-**Acesso:**
-- Frontend: http://localhost:3000
-- Hot reload ativo (mudanças refletem automaticamente)
+Só `src/`, `public/` e `vite.config.ts` são montados. Mexer em
+`package.json`, `tsconfig.json` ou `index.html` **exige rebuild** — o hot reload
+não vê esses arquivos.
 
-### Opção 3: Build manual
+### Hot reload
 
-```bash
-# Build da imagem de produção
-cd frontend
-docker build -t erp-runas-frontend .
+Watch por polling, porque inotify não atravessa bind mount no Docker Desktop
+(Windows/macOS). Configurado em dois lugares que precisam concordar:
 
-# Executar
-docker run -p 80:80 erp-runas-frontend
+- `Dockerfile.dev`: `ENV CHOKIDAR_USEPOLLING=true`, `ENV CHOKIDAR_INTERVAL=1000`
+- `docker-compose.dev.yml`: `CHOKIDAR_USEPOLLING: "true"`,
+  `CHOKIDAR_INTERVAL: "1000"`
+- `vite.config.ts`: `server.watch.usePolling: true`, `interval: 1000`
 
-# Build da imagem de desenvolvimento
-docker build -f Dockerfile.dev -t erp-runas-frontend-dev .
-
-# Executar com volume para hot reload
-docker run -p 3000:3000 -v $(pwd):/app -v /app/node_modules erp-runas-frontend-dev
-```
+O intervalo é 1s de propósito: valores menores geram falsos positivos de
+mudança no Windows/Docker.
 
 ---
 
-## 📁 Estrutura dos Dockerfiles
-
-### Dockerfile (Produção)
-
-```dockerfile
-# Stage 1: Build
-FROM node:18-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-
-# Stage 2: Production (Nginx)
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-**Características:**
-- ✅ Multi-stage build (imagem final pequena)
-- ✅ Nginx para servir arquivos estáticos
-- ✅ Otimizado para produção
-- ✅ Health check incluído
-- ✅ Compressão gzip
-- ✅ Cache de assets
-- ✅ SPA fallback (todas as rotas → index.html)
-
-### Dockerfile.dev (Desenvolvimento)
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3000
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
-```
-
-**Características:**
-- ✅ Hot reload ativo
-- ✅ DevTools habilitados
-- ✅ Volume mount para mudanças em tempo real
-- ✅ Porta 3000 exposta
-
----
-
-## 🔧 Configuração do Nginx
-
-O `nginx.conf` inclui:
-
-### 1. Compressão Gzip
-
-```nginx
-gzip on;
-gzip_vary on;
-gzip_min_length 1024;
-gzip_types text/plain text/css text/xml text/javascript application/javascript;
-```
-
-### 2. Security Headers
-
-```nginx
-add_header X-Frame-Options "SAMEORIGIN" always;
-add_header X-Content-Type-Options "nosniff" always;
-add_header X-XSS-Protection "1; mode=block" always;
-```
-
-### 3. Cache de Assets
-
-```nginx
-location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-}
-```
-
-### 4. SPA Fallback
-
-```nginx
-location / {
-    try_files $uri $uri/ /index.html;
-}
-```
-
-### 5. Proxy para API (opcional)
-
-```nginx
-location /api {
-    proxy_pass http://api-gateway:8000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-}
-```
-
----
-
-## 🌐 Variáveis de Ambiente no Docker
+## 🌐 Variáveis de ambiente
 
 ### Desenvolvimento
 
-Edite `docker-compose.dev.yml`:
+Vêm do `.env` da **raiz** do repositório (não de `frontend/.env`), interpoladas
+pelo `docker-compose.dev.yml`:
 
-```yaml
-environment:
-  - VITE_API_URL=http://localhost:8000
-  - VITE_ENABLE_DEVTOOLS=true
-  - VITE_GOOGLE_CLIENT_ID=seu-client-id
-  - VITE_MICROSOFT_CLIENT_ID=seu-client-id
+| Variável | Default no Compose |
+|---|---|
+| `VITE_API_URL` | `/api` |
+| `VITE_OAUTH_REDIRECT_URI` | `http://localhost:3000/auth/callback` |
+| `VITE_GOOGLE_CLIENT_ID` | (sem default) |
+| `VITE_MICROSOFT_CLIENT_ID` | (sem default) |
+| `VITE_MICROSOFT_TENANT_ID` | `common` |
+| `VITE_USE_PROXY` | `"true"` (fixo) |
+| `CHOKIDAR_USEPOLLING` / `CHOKIDAR_INTERVAL` | `"true"` / `"1000"` (fixos) |
+
+**Depois de editar o `.env`, recrie o container:**
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --force-recreate frontend-dev
 ```
+
+`docker restart erp-frontend-dev` **não** relê o `.env`.
 
 ### Produção
 
-As variáveis são "baked in" durante o build. Para mudar:
+As `VITE_*` são embutidas no bundle durante o `npm run build`, então têm de estar
+corretas no momento do build (no runner do GitHub Actions), não só no Coolify.
+`docker-compose.build.yml` declara os `args` do serviço `frontend-prod`:
+`VITE_API_URL=/api`, `VITE_OAUTH_REDIRECT_URI=${FRONTEND_URL}/auth/callback`,
+`VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID` e `VITE_MICROSOFT_TENANT_ID`.
 
-1. Edite `.env.production`
-2. Rebuild a imagem:
+**Ressalva verificada:** `frontend/Dockerfile` **não declara nenhum `ARG`**. Sem
+`ARG`, um `--build-arg` não vira variável de ambiente dentro do build, logo esses
+valores não chegam ao `npm run build`. Para `VITE_API_URL` isso é inofensivo — o
+fallback `'/api'` em `src/config/env.ts` coincide com o valor pretendido.
 
-```bash
-docker-compose build frontend
-docker-compose up -d frontend
-```
-
-**Alternativa:** Use build args:
-
-```bash
-docker build \
-  --build-arg VITE_API_URL=https://api.seudominio.com \
-  --build-arg VITE_GOOGLE_CLIENT_ID=seu-client-id \
-  -t erp-runas-frontend .
-```
+A CONFIRMAR: como `VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID` e
+`VITE_OAUTH_REDIRECT_URI` chegam ao bundle de produção hoje, dado que não há
+`ARG` no Dockerfile — ou se o OAuth em produção depende de outro caminho.
 
 ---
 
-## 📊 Comandos Úteis
+## 🏭 Produção (`frontend-prod`)
 
-### Ver logs
+Serviço: **`frontend-prod`** · container: **`erp-frontend-prod`**
+
+Diferenças relevantes em relação ao dev:
+
+- **Não faz build na VPS.** Consome a imagem publicada:
+  `${REGISTRY:-ghcr.io/jonathanribeirosilva/runaserp}/frontend:${TAG:-latest}`,
+  com `pull_policy: always`. A VPS tem 1 vCPU; o build roda no runner do GitHub
+  Actions (`.github/workflows/deploy.yml`).
+- **Não publica porta no host.** Não existe `ports:` no serviço. O único ingress
+  é o Cloudflare Tunnel (`cloudflared`), que roteia
+  `app.runaserp.com.br` → `http://frontend-prod:80` pela rede interna.
+  Portanto **não há `http://localhost` para acessar em produção**.
+- `depends_on: api-gateway-prod (service_healthy)`.
+- Healthcheck: `wget -q --spider http://127.0.0.1/health`. É `127.0.0.1` e não
+  `localhost` porque o `wget` do busybox tenta `::1` primeiro e desiste ali, e o
+  `nginx.conf` só tem `listen 80`.
+
+O build da imagem, quando precisa ser feito à mão:
 
 ```bash
-# Logs do frontend (produção)
-docker-compose logs -f frontend
-
-# Logs do frontend (desenvolvimento)
-docker-compose -f docker-compose.dev.yml logs -f frontend-dev
+docker compose -f docker-compose.prod.yml -f docker-compose.build.yml build frontend-prod
 ```
 
-### Parar containers
+Deploy completo e rollback: [docs/06-operacao/deploy.md](../../06-operacao/deploy.md).
+
+---
+
+## 🔧 O que o `nginx.conf` faz (só produção)
+
+O arquivo serve o SPA construído dentro da imagem. Pontos que costumam ser
+consultados:
+
+- **`location /api/`** — proxy para o gateway. O hostname fica numa variável
+  (`set $gateway api-gateway-prod:8000;`) com `resolver 127.0.0.11 valid=10s`,
+  porque com hostname literal em `proxy_pass` o nginx resolve uma vez no boot e
+  cacheia o IP para sempre — já causou `/` respondendo 200 e `/api/*` 502 por
+  20+ minutos depois de um deploy que trocou só o gateway. O
+  `rewrite ^/api/(.*)$ /$1 break;` remove o prefixo, espelhando o `rewrite` do
+  `vite.config.ts`.
+- **`location = /health`** — retorna `200 "ok"`, é o alvo do healthcheck.
+- **`location /assets/`** — `expires 1y` + `Cache-Control "public, immutable"`
+  (o Vite gera nomes com hash de conteúdo). Repete
+  `add_header X-Content-Type-Options nosniff` porque o nginx só herda
+  `add_header` do nível acima quando o nível atual não declara nenhum.
+- **`location /`** — `try_files $uri $uri/ /index.html` (fallback do SPA).
+- **Headers de segurança** — `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` e
+  um `Content-Security-Policy` onde `style-src` permite `'unsafe-inline'` (JSX
+  usa `style={{...}}`) mas `script-src` fica só em `'self'`.
+- **Gzip** — `gzip on` para `text/plain`, `text/css`,
+  `application/javascript`, `application/json` e `image/svg+xml`, a partir de
+  1024 bytes.
+
+Leia o arquivo antes de alterar: `frontend/nginx.conf`.
+
+---
+
+## 📊 Comandos úteis
+
+Todos com `-f`. Sem `-f`, nenhum funciona.
 
 ```bash
-# Parar tudo
-docker-compose down
+# Logs
+docker compose -f docker-compose.dev.yml logs -f frontend-dev
+docker logs erp-frontend-dev -f
 
-# Parar apenas frontend
-docker-compose stop frontend
+# Parar
+docker compose -f docker-compose.dev.yml stop frontend-dev
+docker compose -f docker-compose.dev.yml down
 
-# Parar desenvolvimento
-docker-compose -f docker-compose.dev.yml down
-```
+# Rebuild
+docker compose -f docker-compose.dev.yml build frontend-dev
+docker compose -f docker-compose.dev.yml build --no-cache frontend-dev
+docker compose -f docker-compose.dev.yml up -d --build frontend-dev
 
-### Rebuild
+# Recriar lendo o .env de novo
+docker compose -f docker-compose.dev.yml up -d --force-recreate frontend-dev
 
-```bash
-# Rebuild e restart
-docker-compose up -d --build frontend
+# Rodar comando dentro do container
+docker compose -f docker-compose.dev.yml exec frontend-dev npm run build
+docker compose -f docker-compose.dev.yml exec frontend-dev npm run lint
 
-# Rebuild sem cache
-docker-compose build --no-cache frontend
-```
-
-### Entrar no container
-
-```bash
-# Produção
-docker exec -it erp-frontend sh
-
-# Desenvolvimento
+# Shell
 docker exec -it erp-frontend-dev sh
+
+# Status
+docker compose -f docker-compose.dev.yml ps
 ```
 
-### Limpar volumes
+Com o Cloudflare Tunnel em dev (overlay, exige os dois `-f` e o profile):
 
 ```bash
-# Remover volumes não usados
-docker volume prune
-
-# Remover tudo (cuidado!)
-docker-compose down -v
+docker compose -f docker-compose.dev.yml -f docker-compose.cloudflare.yml --profile proxy up -d
 ```
+
+O overlay sobrescreve `VITE_OAUTH_REDIRECT_URI` e `FRONTEND_URL` do
+`frontend-dev` para `https://app.runaserp.com.br`.
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Erro: "Cannot find module"
+### `no configuration file provided` / `no such file`
 
-**Causa:** node_modules não foi instalado corretamente
+Faltou o `-f`. Não existe `docker-compose.yml` na raiz.
 
-**Solução:**
+### "Cannot find module" após mudar dependências
+
+`node_modules` vive num volume anônimo e `package.json` não é montado. Rebuild:
+
 ```bash
-docker-compose down
-docker-compose build --no-cache frontend
-docker-compose up -d frontend
+docker compose -f docker-compose.dev.yml down
+docker compose -f docker-compose.dev.yml build --no-cache frontend-dev
+docker compose -f docker-compose.dev.yml up -d frontend-dev
 ```
 
-### Erro: "Port 3000 is already in use"
+### "Port 3000 is already in use"
 
-**Causa:** Porta já está sendo usada
-
-**Solução:**
-```bash
-# Parar processo na porta 3000
-# Windows
+```powershell
 netstat -ano | findstr :3000
 taskkill /PID <PID> /F
-
-# Ou mudar a porta no docker-compose.dev.yml
-ports:
-  - "3001:3000"
 ```
+
+Ou troque só o lado do host em `docker-compose.dev.yml` (`"3001:3000"`) — o lado
+do container precisa continuar 3000, que é o que o Vite escuta.
 
 ### Hot reload não funciona
 
-**Causa:** Volume não está montado corretamente
+1. Confirme que a mudança foi em `src/` ou `public/` — só esses dois diretórios
+   (mais `vite.config.ts`) estão montados.
+2. Confirme o polling: `docker exec erp-frontend-dev env | grep CHOKIDAR`.
+3. Recrie: `docker compose -f docker-compose.dev.yml up -d --force-recreate frontend-dev`.
 
-**Solução:**
-```bash
-# Verificar se o volume está montado
-docker inspect erp-frontend-dev
+### Mudei o `.env` e nada mudou
 
-# Recriar container
-docker-compose -f docker-compose.dev.yml down
-docker-compose -f docker-compose.dev.yml up
-```
+`docker restart` não relê o `.env`. Use
+`docker compose -f docker-compose.dev.yml up -d --force-recreate frontend-dev`.
 
-### Erro 404 ao acessar rotas
+### Frontend abre mas a API não responde
 
-**Causa:** SPA fallback não configurado
+1. O gateway está de pé?
+   `docker compose -f docker-compose.dev.yml ps api-gateway`
+2. O proxy do Vite está ativo? `VITE_USE_PROXY` tem de ser diferente de
+   `"false"` e o alvo padrão é `http://api-gateway:8000` (nome de serviço, só
+   resolve dentro da rede `erp-network`).
+3. Teste o gateway direto: `curl http://localhost:8000/health`.
 
-**Solução:**
-- Verifique se `nginx.conf` tem `try_files $uri $uri/ /index.html;`
-- Rebuild a imagem
+Sintomas de produção (502 em `/api`, 530 do Cloudflare, crashloop) estão em
+[docs/06-operacao/troubleshooting.md](../../06-operacao/troubleshooting.md) e
+[docs/06-operacao/runbook-producao.md](../../06-operacao/runbook-producao.md).
 
-### API não responde
+### 404 ao recarregar uma rota interna
 
-**Causa:** Frontend não consegue acessar o backend
-
-**Solução:**
-1. Verifique se o backend está rodando:
-   ```bash
-   docker-compose ps
-   ```
-2. Verifique a URL da API no `.env`:
-   ```env
-   VITE_API_URL=http://localhost:8000
-   ```
-3. Teste a API diretamente:
-   ```bash
-   curl http://localhost:8000/health
-   ```
+Fallback do SPA. Em produção é o `try_files` do `nginx.conf`; em dev o Vite já
+resolve. Se falhar em produção, confira `location /` no `frontend/nginx.conf` e
+rebuild a imagem.
 
 ---
 
-## 🔒 Segurança em Produção
+## 🔗 Relacionados
 
-### 1. HTTPS
-
-Use um reverse proxy (Nginx, Traefik, Caddy) com SSL:
-
-```yaml
-# docker-compose.yml
-services:
-  nginx-proxy:
-    image: nginx:alpine
-    ports:
-      - "443:443"
-    volumes:
-      - ./ssl:/etc/nginx/ssl
-      - ./nginx-proxy.conf:/etc/nginx/nginx.conf
-```
-
-### 2. Secrets
-
-Não commite secrets no `.env`. Use Docker secrets:
-
-```yaml
-services:
-  frontend:
-    secrets:
-      - google_client_id
-      - microsoft_client_id
-
-secrets:
-  google_client_id:
-    file: ./secrets/google_client_id.txt
-  microsoft_client_id:
-    file: ./secrets/microsoft_client_id.txt
-```
-
-### 3. Health Checks
-
-O Dockerfile já inclui health check:
-
-```dockerfile
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
-```
-
-Verifique:
-```bash
-docker ps
-# Deve mostrar "healthy" na coluna STATUS
-```
-
----
-
-## 📈 Performance
-
-### Tamanho da Imagem
-
-```bash
-# Ver tamanho
-docker images | grep erp-runas-frontend
-
-# Produção: ~25MB (nginx:alpine + build)
-# Desenvolvimento: ~400MB (node + node_modules)
-```
-
-### Build Time
-
-```bash
-# Primeira build: ~2-5 minutos
-# Rebuilds: ~30 segundos (com cache)
-```
-
-### Otimizações
-
-1. **Multi-stage build** - Imagem final não inclui node_modules
-2. **npm ci** - Instalação mais rápida e determinística
-3. **Layer caching** - COPY package.json antes do código
-4. **.dockerignore** - Não copia node_modules, dist, etc
-
----
-
-## 🚀 Deploy em Produção
-
-### Docker Hub
-
-```bash
-# Login
-docker login
-
-# Tag
-docker tag erp-runas-frontend seu-usuario/erp-runas-frontend:latest
-
-# Push
-docker push seu-usuario/erp-runas-frontend:latest
-```
-
-### Docker Compose em Servidor
-
-```bash
-# No servidor
-git clone seu-repo
-cd RunasERP
-
-# Configurar .env
-cp .env.example .env
-nano .env
-
-# Subir
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-```
-
-### Kubernetes (opcional)
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: erp-frontend
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: erp-frontend
-  template:
-    metadata:
-      labels:
-        app: erp-frontend
-    spec:
-      containers:
-      - name: frontend
-        image: seu-usuario/erp-runas-frontend:latest
-        ports:
-        - containerPort: 80
-```
-
----
-
-## ✅ Checklist de Deploy
-
-- [ ] `.env.production` configurado
-- [ ] OAuth Client IDs configurados
-- [ ] Build testado localmente
-- [ ] Imagem enviada para registry
-- [ ] HTTPS configurado
-- [ ] Health checks funcionando
-- [ ] Logs sendo coletados
-- [ ] Backup configurado
-- [ ] Monitoramento ativo
-
----
-
-**Última Atualização:** 2026-05-25  
-**Versão:** 1.0.0
+- [docker-quick-start.md](./docker-quick-start.md) — subir a stack em 5 minutos
+- [prerequisites.md](./prerequisites.md) — o que instalar antes
+- [../../../QUICK-START.md](../../../QUICK-START.md) — variáveis obrigatórias do
+  `.env` da raiz
+- [docs/06-operacao/deploy.md](../../06-operacao/deploy.md) — pipeline de deploy
+- [docs/05-frontend/frontend-current-state.md](../frontend-current-state.md) —
+  estado atual do frontend

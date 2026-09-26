@@ -681,7 +681,6 @@ console.log('Crédito liberado:', resultado.data.credito_liberado);
 ## 📚 Documentação Relacionada
 
 - [Regras de Negócio - Vendas](../11-regras-negocio/vendas.md)
-- [Diagramas de Sequência - Vendas](../03-arquitetura/diagramas/sequencia/vendas.md)
 - [API de Estoque](./estoque-api.md) - Integração com estoque
 - [API Financeiro](./financeiro-api.md) - Integração com contas a receber
 - [Guia de Autenticação](./guia-autenticacao.md)

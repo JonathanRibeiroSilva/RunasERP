@@ -295,7 +295,6 @@ Regras de negócio do serviço de Vendas (Carrinho, Pedidos e Pagamentos).
 
 ## 📚 Referências
 
-- [Diagramas de Sequência - Vendas](../03-arquitetura/diagramas/sequencia.md#39-operações-de-carrinho-e-pedido)
 - [API de Vendas](../10-api-reference/vendas-api.md)
 - [Regras de Negócio - Índice](./README.md)
 

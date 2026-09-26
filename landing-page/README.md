@@ -17,17 +17,27 @@ python -m http.server 8000
 
 ## Deploy
 
-Cloudflare Pages, projeto `runas-landing` (Direct Upload — não é conectado ao
-GitHub, push não publica nada):
+Cloudflare Pages, projeto `runas-landing`. **Um push em `main` que toque
+`landing-page/**` publica sozinho**, por `.github/workflows/landing.yml`
+(`npx wrangler@4 pages deploy dist --project-name runas-landing --branch main`;
+é o `--branch main` que faz disso deploy de produção, e não preview). O mesmo
+workflow tem `workflow_dispatch`, para republicar sem commit.
+
+`tools/deploy.ps1` continua existindo como via **manual** — publicar da máquina,
+sem commitar, ou com o Actions fora do ar:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/deploy.ps1
 ```
 
-O script copia `index.html`, `.image-slots.state.json` e `assets/` para uma
-pasta temporária e sobe só isso. **Não troque por `wrangler pages deploy .`**:
-o comando manda a pasta inteira — `README.md`, `tools/` e `.design/` foram todos
-ao ar no primeiro deploy. `.assetsignore` não é lido por esse comando.
+Os dois fazem o mesmo staging: copiam `index.html`, `404.html`,
+`.image-slots.state.json` e `assets/` para uma pasta separada e sobem só isso.
+Mudar o staging de um lado pede a mesma mudança no outro — o workflow diz
+literalmente "This mirrors `tools/deploy.ps1` — keep the two in step".
+
+**Não troque por `wrangler pages deploy .`**: o comando manda a pasta inteira —
+`README.md`, `tools/` e `.design/` foram todos ao ar no primeiro deploy.
+`.assetsignore` não é lido por esse comando.
 `.design/source/index.original.html` é a página duplicada; indexada, vira
 duplicate content.
 
@@ -37,11 +47,19 @@ lá que moram a capa e o avatar da loja, em base64 — esses dois slots não tê
 atributo `src`. Deixar de fora publica a página com o placeholder tracejado de
 "solte uma imagem" no lugar das duas. Já aconteceu.
 
+⚠️ `404.html` também faz parte do conjunto publicado. É ele que faz o Pages
+responder 404 de verdade; sem ele, todo caminho inexistente devolve a home com
+200 e cada URL errada que o Google acha vira uma cópia indexável da home — o
+mesmo problema que excluir `index.original.html` tenta evitar. A página traz
+`<meta name="robots" content="noindex">`.
+
 ## Estrutura
 
 ```
 index.html                      markup + lógica do componente
+404.html                        página de erro do Pages (vai no deploy)
 README.md
+.gitignore
 assets/
   css/main.css                  toda a folha de estilo (mobile-first)
   js/
@@ -54,12 +72,13 @@ assets/
 tools/
   originals/                    fotos de produto antes do tratamento
   clean_products.py             script que trata as fotos
+  check_faq.py                  confere FAQ do componente x JSON-LD
+  check_type_scale.py           confere a escala fluida (clamp) do main.css
+  deploy.ps1                    publicação manual no Pages
   restore.ps1                   desfaz um reset da ferramenta de design
 .design/                        material de trabalho da ferramenta
   source/index.original.html    versão original, antes da refatoração
-  uploads/  screenshots/
 .image-slots.state.json         estado dos <image-slot> (o componente escreve aqui — manter na raiz)
-.thumbnail
 ```
 
 ## ⚠️ A ferramenta de design reescreve a raiz

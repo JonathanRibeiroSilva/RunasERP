@@ -1,19 +1,36 @@
 # 🎯 Visão Geral - Runas
 
-Bem-vindo à documentação do **Runas**, um sistema de gestão empresarial moderno e acessível para pequenos comércios.
+Bem-vindo à documentação do **Runas**, um ERP SaaS multi-tenant para pequenos
+comércios brasileiros.
+
+> Toda afirmação técnica abaixo foi conferida contra o código em **2026-09-25** e
+> traz a evidência (`arquivo:linha`) quando não é óbvia. O que não pôde ser
+> confirmado está marcado como **A CONFIRMAR** em vez de afirmado.
 
 ---
 
 ## 📖 Sobre o Projeto
 
-O Runas é um ERP (Enterprise Resource Planning) desenvolvido especificamente para atender as necessidades de pequenos comércios brasileiros. O sistema oferece uma solução completa e integrada para gestão de:
+O Runas é um ERP (Enterprise Resource Planning) multi-tenant: uma instalação
+atende vários lojistas, e há um plano de controle separado para o dono da
+plataforma administrar esses lojistas (ver
+[Plataforma](../03-arquitetura/plataforma.md)).
 
+Domínios cobertos pelos serviços do repositório (`services/`):
+
+- 🏢 **Empresas** - Tenants, usuários e assinaturas
 - 👥 **Clientes** - Cadastro, crédito e histórico
 - 📦 **Produtos** - Catálogo, variantes e fornecedores
 - 📊 **Estoque** - Controle, movimentações e lotes
 - 🛒 **Vendas** - Carrinho, pedidos e pagamentos
 - 💰 **Financeiro** - Contas a receber e vendas fiadas
-- 📱 **Notificações** - WhatsApp via Evolution API
+- 📱 **Notificações** - Mensageria para o cliente final
+
+> ⚠️ Domínio implementado ≠ serviço pronto. **Financeiro** e **Notificações**
+> hoje são cascas: `services/financeiro/routers/__init__.py` e
+> `services/notificacoes/routers/__init__.py` têm 22 bytes (vazios) e nenhum
+> `include_router` é chamado — os dois expõem só `/health`. O estado real de
+> cada peça está no [Roadmap](./roadmap.md).
 
 ---
 
@@ -26,142 +43,136 @@ O Runas é um ERP (Enterprise Resource Planning) desenvolvido especificamente pa
 
 ### Acessibilidade
 - Solução de baixo custo
-- Hospedagem flexível (local ou nuvem)
-- Sem dependência de internet para operações básicas
+- Hospedagem em VPS única (Coolify + Cloudflare)
 
 ### Controle
-- Rastreabilidade completa de operações
-- Relatórios e dashboards em tempo real
-- Auditoria de todas as ações
+- Rastreabilidade das operações: o gateway grava auditoria de requisição
+  (`api-gateway/middleware/auditoria_middleware.py`)
+- Isolamento por tenant no gateway, antes de chegar ao serviço
 
 ### Flexibilidade
 - Adaptável a diferentes tipos de negócio
-- Configurável sem necessidade de código
-- Integrações com serviços externos
+- Integrações com serviços externos (Mercado Pago, ViaCEP)
 
 ---
 
 ## 🏗️ Arquitetura
 
-O Runas utiliza uma **arquitetura de microserviços** moderna e escalável:
-
 ```
-Frontend (React) → API Gateway (FastAPI) → Microserviços (Python)
+Frontend (React) → API Gateway (FastAPI) → 7 microsserviços (FastAPI)
                                           ↓
-                                    PostgreSQL + Redis + RabbitMQ
+                                  PostgreSQL + Redis + RabbitMQ
 ```
 
 ### Componentes Principais
 
-- **Frontend**: React + TypeScript + Tailwind CSS
-- **API Gateway**: FastAPI com autenticação JWT
-- **Microserviços**: 6 serviços independentes em Python
-- **Banco de Dados**: PostgreSQL (1 banco por serviço)
-- **Cache**: Redis para sessões e rate limiting
-- **Mensageria**: RabbitMQ para eventos assíncronos
-- **Notificações**: Evolution API para WhatsApp
+- **Frontend**: React 19 + TypeScript + Vite, servido por nginx dentro da própria
+  imagem (`docker-compose.prod.yml:506`)
+- **API Gateway**: FastAPI com autenticação JWT (`api-gateway/auth/jwt.py`) e
+  rate limiting (`api-gateway/main.py`)
+- **Microsserviços**: **7** serviços independentes em Python — `clientes`,
+  `empresas`, `estoque`, `financeiro`, `notificacoes`, `produtos`, `vendas`
+  (`ls services/`) — mais o `api-gateway`, totalizando 8 aplicações FastAPI
+- **Banco de Dados**: **um** PostgreSQL com **um schema por serviço**, não um
+  banco por serviço. O container `db-init` cria os schemas `gateway`, `empresas`,
+  `clientes`, `produtos`, `estoque`, `vendas`, `financeiro`, `notificacoes` e
+  `evolution` (`docker-compose.prod.yml`), e cada serviço fixa o seu via
+  `search_path` (`services/clientes/database.py:19`)
+- **Cache**: Redis, usado pelo gateway (`api-gateway/main.py`) e pelo middleware
+  de inadimplência
+- **Mensageria**: RabbitMQ sobe no compose e os 7 serviços têm
+  `events/publisher.py` com a classe `EventPublisher`, mas **nenhum arquivo
+  importa o publisher** — zero chamadas a `publish()` no repositório. A
+  comunicação entre serviços hoje é 100% HTTP síncrono via `httpx`. Escrito e
+  desligado, não em uso.
 
 ---
 
 ## 🚀 Tecnologias
 
 ### Backend
-- **Python 3.11+** - Linguagem principal
-- **FastAPI** - Framework web moderno e rápido
-- **SQLAlchemy** - ORM para banco de dados
+- **Python 3.12** - `services/clientes/Dockerfile:2`, `api-gateway/Dockerfile:2`
+- **FastAPI** - Framework web
+- **SQLAlchemy** - ORM (async)
 - **Alembic** - Migrações de banco
 - **Pydantic** - Validação de dados
-- **Celery** - Tarefas assíncronas
-- **Pytest** - Testes automatizados
+- **Pytest** - 62 arquivos `test_*.py` no repositório
+
+> `celery==5.6.3` aparece nos `requirements.txt` dos 7 serviços, mas **nenhum
+> código Python instancia um app Celery**. Não há worker Celery rodando; as
+> rotinas em `services/vendas/jobs/` são scripts. **A CONFIRMAR**: como esses
+> jobs são agendados em produção.
 
 ### Frontend
-- **React 18** - Biblioteca UI
-- **TypeScript** - Tipagem estática
-- **Vite** - Build tool
-- **Tailwind CSS** - Framework CSS
-- **React Router** - Roteamento
+- **React 19** (`frontend/package.json`)
+- **TypeScript** + **Vite**
+- **Bootstrap 5** + **react-bootstrap** + **Sass** — o projeto **não** usa
+  Tailwind CSS
+- **React Router 7** - Roteamento
+- **TanStack React Query 5** - Estado de servidor
+- **React Hook Form** + **Zod** - Formulários e validação
 - **Axios** - Cliente HTTP
+- **Chart.js** / **react-chartjs-2** - Gráficos
+- **Vitest** + **Testing Library** - Testes
 
 ### Infraestrutura
-- **Docker** - Containerização
-- **Docker Compose** - Orquestração
-- **PostgreSQL 15** - Banco de dados
-- **Redis 7** - Cache e sessões
-- **RabbitMQ 3** - Mensageria
-- **Nginx** - Proxy reverso
+- **Docker** / **Docker Compose** - Containerização e orquestração
+- **PostgreSQL 15** (`postgres:15-alpine`)
+- **Redis 7** (`redis:7-alpine`)
+- **RabbitMQ 3.12** (`rabbitmq:3.12-management-alpine`)
+- **Coolify** - Deploy na VPS
+- **Cloudflare** - TLS e borda; não há nginx-proxy nem Let's Encrypt em produção
+  (`docker-compose.prod.yml:9`)
 
 ### Integrações
-- **Mercado Pago** - Pagamentos PIX
-- **Evolution API** - WhatsApp
-- **OAuth2** - Google e Microsoft
+- **Mercado Pago** - Pagamentos PIX, no serviço `vendas`
+  (`services/vendas/config.py`, `services/vendas/routers/webhook.py`)
+- **OAuth2 Google e Microsoft** - Credenciais previstas em
+  `api-gateway/config.py:36-43`, fluxo em `api-gateway/routers/auth_cliente.py`
+- **Evolution API (WhatsApp)** - Há um schema `evolution` no banco e menção em
+  `services/notificacoes/interno.py:39`, mas o serviço de notificações é casca.
+  **A CONFIRMAR**: se existe envio de WhatsApp funcionando hoje.
 
 ---
 
 ## 📊 Status do Projeto
 
-**Versão Atual**: 1.0.0 (MVP)  
-**Data de Lançamento**: Maio de 2026  
-**Status**: Em Desenvolvimento
-
-### Progresso Geral
-
-| Componente | Status | Progresso |
-|------------|--------|-----------|
-| Infraestrutura | ✅ Completo | 100% |
-| API Gateway | 🟡 Em Progresso | 70% |
-| Clientes | 🔴 Planejado | 5% |
-| Produtos | 🔴 Planejado | 5% |
-| Estoque | 🔴 Planejado | 5% |
-| Vendas | 🔴 Planejado | 5% |
-| Financeiro | 🔴 Planejado | 5% |
-| Notificações | 🔴 Planejado | 5% |
-| Frontend | 🟡 Em Progresso | 40% |
-| Documentação | 🟡 Em Progresso | 60% |
+O estado real de cada peça vive em um lugar só, com evidência por item:
+**[Roadmap](./roadmap.md)**. Não há tabela de percentuais aqui — a anterior
+dizia "Clientes 5% planejado" enquanto o serviço já existia e rodava no CI.
 
 ---
 
 ## 👥 Equipe
 
-**Desenvolvido por**: Equipe DenebCorp  
+**Desenvolvido por**: Equipe DenebCorp
 **Contato**: [contato@denebcorp.com](mailto:contato@denebcorp.com)
 
 ---
 
 ## 📚 Documentos Relacionados
 
-- **[Arquitetura Completa](./arquitetura/)** - Especificação técnica detalhada dos microsserviços
-  - [Visão Geral](./arquitetura/visao-geral.md)
-  - [Microsserviços](./arquitetura/microsservicos.md)
-  - [Tecnologias e Padrões](./arquitetura/tecnologias.md)
-- [Status do Projeto](./status-projeto.md)
+- **[Arquitetura Completa](../03-arquitetura/)** - Especificação técnica detalhada
+  - [Visão Geral](../03-arquitetura/visao-geral.md)
+  - [Microsserviços](../03-arquitetura/microsservicos.md)
+  - [Plataforma / SaaS](../03-arquitetura/plataforma.md)
 - [Glossário](./glossario.md) - Termos técnicos e conceitos
 - [FAQ](./faq.md) - Perguntas frequentes
-- [Roadmap](./roadmap.md) - Planejamento de desenvolvimento
-
----
-
-## 🚀 Próximos Passos
-
-1. **Completar API Gateway** - Roteamento e testes
-2. **Implementar Clientes** - CRUD completo
-3. **Implementar Produtos** - Catálogo e variantes
-4. **Implementar Estoque** - Controle e movimentações
-5. **Implementar Vendas** - Carrinho e checkout
-6. **Implementar Financeiro** - Contas a receber
-7. **Implementar Notificações** - WhatsApp
-8. **Frontend Completo** - Todas as telas
-9. **Testes** - Cobertura 100%
-10. **Deploy** - Produção
+- [Roadmap](./roadmap.md) - O que falta, com evidência
+- [Referência de API](../10-api-reference/) - Rotas e contratos
+- [Regras de Negócio](../11-regras-negocio/README.md)
+- [Operação](../06-operacao/runbook-producao.md) - Runbook de produção
+- [Deploy](../06-operacao/deploy.md)
+- [Workflow do Graphify](../02-desenvolvimento/GRAPHIFY_WORKFLOW.md)
+- [Hooks de Segurança](../02-desenvolvimento/SECURITY_HOOKS.md)
 
 ---
 
 ## 📄 Licença
 
-Este projeto está sob licença proprietária da DenebCorp.  
+Este projeto está sob licença proprietária da DenebCorp.
 Todos os direitos reservados © 2026 DenebCorp.
 
 ---
 
-**Última atualização**: 26 de Maio de 2026  
-**Versão**: 1.0.0  
-**Autor**: Equipe DenebCorp
+**Última verificação contra o código**: 2026-09-25

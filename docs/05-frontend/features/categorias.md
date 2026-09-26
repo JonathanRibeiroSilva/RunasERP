@@ -1,314 +1,150 @@
-# 🏷️ Interface de Categorias - Documentação
+# Categorias de produto — interface
 
-> **Status**: ✅ Implementado e Funcional
-> **Data**: 28/05/2026
-> **Sprint**: Sprint 2 - Produtos Frontend
+**Verificado contra o código em:** 2026-09-26
+**Frontend:** `frontend/src/pages/Produtos/CategoriasPage.tsx` (255 LOC) + `CategoriasPage.scss`
+**Backend:** `services/produtos/routers/produtos.py:50-134` (`router_categorias`)
 
----
-
-## 📋 Visão Geral
-
-A interface de categorias permite gerenciar as categorias de produtos do sistema através de uma interface moderna e intuitiva. É um **pré-requisito essencial** para o cadastro de produtos, pois todo produto deve estar vinculado a uma categoria.
+Categoria é pré-requisito de produto: `Produto.categoria_id` é
+`nullable=False` (`services/produtos/models/produto.py:49-54`), então não há
+cadastro de produto sem categoria existente.
 
 ---
 
-## ✨ Funcionalidades Implementadas
+## Acesso
 
-### 1. Listagem de Categorias
-- ✅ Grid responsivo com cards visuais
-- ✅ Ícone de pasta para cada categoria
-- ✅ Exibição de nome e descrição
-- ✅ Badge de status (Ativo/Inativo)
-- ✅ Ações rápidas (Editar/Excluir)
-- ✅ Estado vazio com mensagem amigável
-- ✅ Loading state durante carregamento
-
-### 2. Criação de Categoria
-- ✅ Formulário inline (abre na mesma página)
-- ✅ Campos: Nome (obrigatório) e Descrição (opcional)
-- ✅ Validação de campos obrigatórios
-- ✅ Feedback visual de sucesso/erro
-- ✅ Limpeza automática do formulário após criação
-
-### 3. Edição de Categoria
-- ✅ Formulário inline pré-preenchido
-- ✅ Atualização de nome e descrição
-- ✅ Validação de campos
-- ✅ Feedback visual de sucesso/erro
-
-### 4. Exclusão de Categoria
-- ✅ Confirmação antes de excluir
-- ✅ Mensagem personalizada com nome da categoria
-- ✅ Feedback visual de sucesso/erro
-- ✅ Atualização automática da lista
+- Rota: `/categorias` (`frontend/src/App.tsx:167`)
+- Menu lateral: **Produtos → Categorias** (`Sidebar.tsx:82`)
+- Sem `RoleProtectedRoute`: qualquer usuário autenticado que chegue ao
+  `MainLayout` alcança a página.
 
 ---
 
-## 🎨 Design e UX
+## O que a página faz
 
-### Layout
-- **Grid Responsivo**: Adapta-se automaticamente ao tamanho da tela
-- **Cards Visuais**: Cada categoria é exibida em um card com ícone
-- **Cores Consistentes**: Segue o design system do projeto
-- **Animações Suaves**: Hover effects e transições
+| Operação | Como | Chamada |
+|---|---|---|
+| Listar | `useEffect` no mount, sem paginação | `api.get('/categorias?limit=100')` (`:40`) |
+| Criar | Modal, campo `nome` obrigatório (`required` HTML5) | `api.post('/categorias', {...payload, empresa_id})` (`:65`) |
+| Editar | Mesmo modal, pré-preenchido | `api.put('/categorias/{id}', payload)` (`:62`) |
+| Excluir | `confirm()` nativo com o nome da categoria (`:99`) | `api.delete('/categorias/{id}')` (`:104`) |
 
-### Componentes Visuais
+Detalhes que costumam ser lembrados errado:
+
+- **É um modal, não um formulário inline:** `.modal-overlay` / `.modal-content`
+  em `:146-147`. Os botões são **Salvar** e **Cancelar**, iguais em criação e
+  edição.
+- **Não há badge de status.** O card mostra avatar com a primeira letra do nome
+  (`:224`), nome e descrição. Nada de "Ativo/Inativo".
+- **Não usa React Query para ler.** A lista vive em `useState` e é recarregada
+  chamando `carregarCategorias()` à mão. O `useQueryClient` só serve para
+  invalidar a chave `['categorias']` que *outras* páginas consomem
+  (`:72`, `:106`).
+- Estado vazio: "Nenhuma categoria cadastrada" (`:205`). Loading: spinner
+  Bootstrap (`:121-131`).
+
+### A gambiarra da cor
+
+A página tem um campo **Cor** (color picker + hex, `maxLength 7`) que **não
+existe no backend**. O valor é concatenado dentro da descrição com um separador
+e desmontado na leitura:
+
+```ts
+// CategoriasPage.tsx:54-59
+const payloadDescricao = formData.cor ? `${formData.descricao}::color::${formData.cor}` : formData.descricao;
+const payload = { ...formData, descricao: payloadDescricao };
+delete payload.cor;
 ```
-┌─────────────────────────────────────────┐
-│  🏷️ Categorias                          │
-│  Gerencie as categorias de produtos     │
-│                          [+ Nova Categoria] │
-├─────────────────────────────────────────┤
-│                                         │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
-│  │ 📁       │  │ 📁       │  │ 📁       │ │
-│  │ Eletrônicos│ │ Alimentos│ │ Vestuário│ │
-│  │ Produtos...│ │ Produtos...│ │ Roupas...│ │
-│  │ [Ativo] ✏️🗑️│ │ [Ativo] ✏️🗑️│ │ [Ativo] ✏️🗑️│ │
-│  └──────────┘  └──────────┘  └──────────┘ │
-│                                         │
-└─────────────────────────────────────────┘
+
+```ts
+// CategoriasPage.tsx:212-216 (e :84-88 na edição)
+if (desc.includes('::color::')) { const parts = desc.split('::color::'); desc = parts[0]; color = parts[1]; }
 ```
+
+Consequências reais: a cor consome o orçamento de 500 caracteres de `descricao`;
+uma descrição que contenha `::color::` é truncada; e qualquer outro consumidor da
+API (storefront, relatório) lê o marcador como texto da descrição.
 
 ---
 
-## 🔌 Integração com Backend
+## Contrato do backend (o que realmente volta)
 
-### Endpoints Utilizados
+`CategoriaRead` (`services/produtos/schemas/produtos.py:35-39`) expõe **quatro
+campos**:
 
-#### GET /categorias
-```typescript
-// Lista todas as categorias
-const response = await api.get('/categorias?limit=100');
-// Retorna: { total, skip, limit, items: Categoria[] }
+```python
+empresa_id: int
+nome: str          # max_length=100
+descricao: str | None  # max_length=500
+id: UUID
 ```
 
-#### POST /categorias
-```typescript
-// Cria nova categoria
-const response = await api.post('/categorias', {
-  nome: "Eletrônicos",
-  descricao: "Produtos eletrônicos em geral"
-});
-// Retorna: Categoria (201 Created)
-```
+O modelo (`services/produtos/models/categoria.py`) tem exatamente essas colunas
+— **não existe `ativo`, nem `criado_em`, nem `cor`**. A interface `Categoria` do
+frontend (`CategoriasPage.tsx:9-16`) declara `cor?`, `ativo` e `criado_em`: os
+três chegam sempre `undefined` do servidor. É tipo sem lastro, não contrato.
 
-#### PUT /categorias/:id
-```typescript
-// Atualiza categoria existente
-const response = await api.put(`/categorias/${id}`, {
-  nome: "Eletrônicos Premium"
-});
-// Retorna: Categoria (200 OK)
-```
+Unicidade é **por tenant**, não global:
+`UniqueConstraint('empresa_id', 'nome')` (`models/categoria.py:16`).
 
-#### DELETE /categorias/:id
-```typescript
-// Exclui categoria
-await api.delete(`/categorias/${id}`);
-// Retorna: 204 No Content
-```
+### Endpoints
 
-### Modelo de Dados
+| Método | Rota | Status | Observação |
+|---|---|---|---|
+| POST | `/categorias` | 201 | `empresa_id` é **obrigatório no body** (`CategoriaBase`, `schemas/produtos.py:19`). Se divergir do header `X-Empresa-Id`, retorna **403** (`routers/produtos.py:61-62`) |
+| GET | `/categorias` | 200 | Retorna `{total, skip, limit, items}`. Default do serviço é `limit=10` (`services/produtos.py:117`) — a página pede 100 |
+| GET | `/categorias/{id}` | 200 | |
+| PUT | `/categorias/{id}` | 200 | `CategoriaUpdate`: `nome` e `descricao`, ambos opcionais |
+| DELETE | `/categorias/{id}` | 204 | |
 
-```typescript
-interface Categoria {
-  id: string;           // UUID
-  nome: string;         // Nome da categoria (único)
-  descricao?: string;   // Descrição opcional
-  ativo: boolean;       // Status (sempre true nas consultas)
-  criado_em: string;    // Data de criação (ISO 8601)
-}
-```
+### Exclusão é definitiva, não soft delete
+
+`CategoriaRepository.deletar` chama `session.delete(categoria)`
+(`repositories/produtos.py:106`). Não há coluna de soft delete na categoria — o
+soft delete (`deletado_em`) existe em **Produto**, não em Categoria.
+
+Não há verificação de produtos vinculados no serviço. A proteção vem do banco:
+`ForeignKey("produtos.categorias.id", ondelete="RESTRICT")`
+(`models/produto.py:51`). O `IntegrityError` resultante cai no
+`except Exception` genérico do router (`routers/produtos.py:133-134`), então o
+cliente recebe **500 "Erro ao deletar categoria"** — não um 400 explicativo.
+Isso é um defeito, não o comportamento desejado.
 
 ---
 
-## 📁 Estrutura de Arquivos
+## Erros por status
 
-```
-frontend/src/pages/Produtos/
-├── CategoriasPage.tsx       # Componente principal
-├── CategoriasPage.scss      # Estilos da página
-└── index.ts                 # Exportações
-```
+| Status | Corpo | Quando |
+|---|---|---|
+| 400 | `Categoria '<nome>' já existe` | Nome duplicado no mesmo tenant, em POST ou PUT (`services/produtos.py:107` e `:130`) |
+| 403 | `empresa_id do body não corresponde ao header X-Empresa-Id` | Só no POST |
+| 404 | `Categoria com ID <id> não encontrada` | GET/PUT/DELETE de id inexistente (`services/produtos.py:114`, `:125`, `:138`) |
+| 422 | erro de validação do FastAPI | POST sem `empresa_id`, ou `nome` acima de 100 / `descricao` acima de 500 caracteres |
+| 500 | `Erro ao deletar categoria` | Exclusão de categoria com produtos vinculados (ver acima) |
 
-### CategoriasPage.tsx
-- **Responsabilidades**:
-  - Gerenciar estado das categorias
-  - Controlar exibição do formulário
-  - Fazer requisições à API
-  - Exibir feedback ao usuário
-
-### CategoriasPage.scss
-- **Responsabilidades**:
-  - Estilos do grid de categorias
-  - Estilos dos cards
-  - Estilos do formulário
-  - Responsividade
+A página exibe essas mensagens via `getErrorMessage(error, ...)` em um toast
+(`CategoriasPage.tsx:75`, `:109`).
 
 ---
 
-## 🚀 Como Usar
+## Dívidas conhecidas nesta tela
 
-### Acessar a Página
-1. Fazer login no sistema
-2. No menu lateral, clicar em "Produtos" → "Categorias"
-3. Ou acessar diretamente: `/categorias`
+- Cor guardada dentro de `descricao` com separador `::color::` (ver acima).
+- Exclusão bloqueada pelo banco devolve 500 em vez de 400.
+- `ativo` / `criado_em` / `cor` tipados no frontend sem existirem na API.
+- Sem paginação, busca ou ordenação: carrega até 100 registros e filtra nada.
+- Leitura fora do React Query, ao contrário do resto do módulo de Produtos
+  (ver `docs/05-frontend/frontend-architectural-debt-log.md`, H2 e C2).
+- Sem `aria-label` nos botões de ícone (só `title`).
 
-### Criar Nova Categoria
-1. Clicar no botão "Nova Categoria"
-2. Preencher o nome (obrigatório)
-3. Preencher a descrição (opcional)
-4. Clicar em "Criar"
-
-### Editar Categoria
-1. Clicar no ícone de lápis (✏️) no card da categoria
-2. Modificar os campos desejados
-3. Clicar em "Atualizar"
-
-### Excluir Categoria
-1. Clicar no ícone de lixeira (🗑️) no card da categoria
-2. Confirmar a exclusão no diálogo
-3. A categoria será removida
+A CONFIRMAR: números de latência e cobertura de teste desta tela. Não há
+benchmark nem teste automatizado de `CategoriasPage` no repositório — os nove
+arquivos em `frontend/src/**/__tests__/` não cobrem esta página.
 
 ---
 
-## ⚠️ Validações e Regras
+## Relacionados
 
-### Backend
-- ✅ Nome é obrigatório
-- ✅ Nome deve ser único (não pode duplicar)
-- ✅ Descrição é opcional (máx. 500 caracteres)
-- ✅ Soft delete (categoria fica inativa, não é deletada fisicamente)
-
-### Frontend
-- ✅ Nome é obrigatório (validação HTML5)
-- ✅ Confirmação antes de excluir
-- ✅ Feedback visual para todas as operações
-- ✅ Loading state durante requisições
-
-### Restrições
-- 🔴 **Não pode excluir categoria com produtos vinculados** (backend retorna erro 400)
-- 🔴 **Não pode criar categoria com nome duplicado** (backend retorna erro 400)
-
----
-
-## 🎯 Impacto no Sistema
-
-### Desbloqueio de Funcionalidades
-A implementação da interface de categorias **desbloqueia**:
-- ✅ Cadastro de produtos (categoria é obrigatória)
-- ✅ Filtro de produtos por categoria
-- ✅ Organização do catálogo
-- ✅ Relatórios por categoria
-
-### Próximos Passos
-Com categorias implementadas, agora é possível:
-1. Cadastrar produtos normalmente
-2. Implementar filtros por categoria na lista de produtos
-3. Criar relatórios de vendas por categoria
-4. Implementar catálogo público organizado por categorias
-
----
-
-## 🐛 Tratamento de Erros
-
-### Erros Comuns
-
-#### 400 - Bad Request
-```json
-{
-  "detail": "Categoria 'Eletrônicos' já existe"
-}
-```
-**Causa**: Tentativa de criar categoria com nome duplicado
-**Solução**: Usar nome diferente ou editar a categoria existente
-
-#### 400 - Bad Request
-```json
-{
-  "detail": "Não é possível excluir categoria com produtos vinculados"
-}
-```
-**Causa**: Tentativa de excluir categoria que tem produtos
-**Solução**: Remover ou reclassificar os produtos antes de excluir
-
-#### 404 - Not Found
-```json
-{
-  "detail": "Categoria com ID {id} não encontrada"
-}
-```
-**Causa**: Tentativa de acessar categoria inexistente ou inativa
-**Solução**: Verificar se a categoria existe e está ativa
-
-#### 500 - Internal Server Error
-```json
-{
-  "detail": "Erro ao criar categoria"
-}
-```
-**Causa**: Erro interno do servidor
-**Solução**: Verificar logs do backend e tentar novamente
-
----
-
-## 📊 Métricas de Qualidade
-
-### Cobertura de Funcionalidades
-- ✅ CRUD Completo: 100%
-- ✅ Validações: 100%
-- ✅ Feedback Visual: 100%
-- ✅ Responsividade: 100%
-- ✅ Acessibilidade: 90% (falta ARIA labels)
-
-### Performance
-- ⚡ Carregamento inicial: < 500ms
-- ⚡ Criação de categoria: < 300ms
-- ⚡ Atualização de categoria: < 300ms
-- ⚡ Exclusão de categoria: < 300ms
-
----
-
-## 🔄 Melhorias Futuras
-
-### Curto Prazo
-- 🔴 Adicionar paginação (atualmente carrega todas)
-- 🔴 Adicionar busca/filtro por nome
-- 🔴 Adicionar ordenação (nome, data)
-- 🔴 Melhorar acessibilidade (ARIA labels)
-
-### Médio Prazo
-- 🔴 Adicionar contador de produtos por categoria
-- 🔴 Adicionar ícones personalizados por categoria
-- 🔴 Adicionar cores personalizadas por categoria
-- 🔴 Adicionar categorias hierárquicas (subcategorias)
-
-### Longo Prazo
-- 🔴 Drag & drop para reordenar categorias
-- 🔴 Importação/exportação de categorias
-- 🔴 Histórico de alterações
-- 🔴 Auditoria de uso (quem criou, quando, etc.)
-
----
-
-## 📚 Referências
-
-### Arquivos Relacionados
-- Backend: `services/produtos/routers/produtos.py`
-- Backend: `services/produtos/models/categoria.py`
-- Backend: `services/produtos/services/produtos.py`
-- Frontend: `frontend/src/pages/Produtos/CategoriasPage.tsx`
-- Rotas: `frontend/src/App.tsx`
-
-### Documentação
-- [Checklist de Desenvolvimento](../../../CHECKLIST_DESENVOLVIMENTO.md)
-- [Arquitetura de Produtos](../../04-backend/servicos/produtos.md)
-- [Design System](../design/componentes.md)
-
----
-
-**Documento criado em**: 28/05/2026  
-**Última atualização**: 28/05/2026  
-**Responsável**: Equipe de Frontend  
-**Status**: ✅ Implementado e Documentado
+- [API de Produtos e Categorias](../../10-api-reference/produtos-api.md)
+- [Checklist de Desenvolvimento](../../02-desenvolvimento/CHECKLIST_DESENVOLVIMENTO.md)
+- [Design System — componentes](../design/componentes.md)
+- [Regras de negócio — produtos](../../11-regras-negocio/produtos.md)

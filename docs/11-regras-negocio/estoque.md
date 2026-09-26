@@ -285,7 +285,6 @@ Estado Inicial:
 
 ## 📚 Referências
 
-- [Diagramas de Sequência - Estoque](../03-arquitetura/diagramas/sequencia.md#3-operações-de-estoque)
 - [API de Estoque](../10-api-reference/estoque-api.md)
 - [Regras de Negócio - Índice](./README.md)
 

@@ -345,7 +345,6 @@ curl -X GET "http://localhost:8003/estoque/alertas/minimo" \
 ## 📚 Documentação Relacionada
 
 - [Regras de Negócio - Estoque](../11-regras-negocio/estoque.md)
-- [Diagramas de Sequência - Estoque](../03-arquitetura/diagramas/sequencia/estoque.md)
 - [Mapeamento Completo de Rotas](./mapeamento-rotas.md)
 - [OpenAPI Specification](./openapi.yaml)
 
