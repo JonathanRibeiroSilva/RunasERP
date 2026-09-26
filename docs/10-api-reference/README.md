@@ -23,7 +23,7 @@ sete serviços estão publicadas como `127.0.0.1:800X:800X` — só o gateway
 > ⚠️ **`financeiro-api.md` documenta uma API que ainda não existe.**
 > `services/financeiro/main.py` expõe apenas `GET /health`; as pastas
 > `routers/`, `models/`, `schemas/`, `repositories/` e `services/` contêm só
-> `__init__.py` vazio. O gateway *roteia* `/contas/*` para o serviço
+> um `__init__.py` com docstring (sem código). O gateway *roteia* `/contas/*` para o serviço
 > (`ServiceProxy.SERVICE_URLS`), mas o serviço não tem rota para atender.
 > Trate o documento como especificação a implementar, não como contrato vigente.
 
@@ -81,8 +81,9 @@ loja ficam sob `/loja/*` (ex.: `/loja/meus-pedidos`,
 `/loja/pedidos/{numero_venda}/retry-payment`).
 
 Rotas públicas (sem token): `GET /empresas/publico/*`,
-`GET /loja-online/publico/*` e `/carrinho/*` — as duas últimas resolvem o
-tenant pelo query param `?empresaSlug=`.
+`GET /loja-online/publico/*`, `/carrinho/*` e o catch-all `/loja/*` (exceto
+`/loja/meus-pedidos` e `/loja/pedidos/{numero_venda}/...`, que exigem token de
+cliente) — as três últimas resolvem o tenant pelo query param `?empresaSlug=`.
 
 ### Base URL
 
@@ -349,10 +350,9 @@ clientes = requests.get(
 **[openapi.yaml](./openapi.yaml)** é um arquivo escrito à mão, **não** gerado a
 partir do código.
 
-> ⚠️ **Está dessincronizado.** Ele documenta os paths `/catalogo` e `/pedidos`,
-> que não existem no roteamento do gateway, e anuncia rate limits de
-> "100/min anônimo, 500/min autenticado" — o código aplica 300/min por IP.
-> Enquanto não for regerado, o roteamento real é o de
+> ⚠️ **Está dessincronizado e congelado** (o próprio arquivo declara isso no
+> cabeçalho). Ele documenta paths que não existem no roteamento do gateway
+> (`/catalogo`, `/pedidos`, `/carrinho/{token}`...). Enquanto não for regerado, o roteamento real é o de
 > `api-gateway/proxy/service_proxy.py` e `api-gateway/routers/proxy.py`, junto
 > com o `mapeamento-rotas.md`.
 

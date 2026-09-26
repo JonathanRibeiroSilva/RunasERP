@@ -16,13 +16,13 @@
 
 ## Visão Geral
 
-O sistema Runas ERP implementa **transações atômicas** em todas as operações de banco de dados para garantir a integridade e consistência dos dados. Utilizamos SQLAlchemy com suporte assíncrono para gerenciar transações de forma eficiente.
+O sistema Runas ERP usa **transações atômicas** nas operações de escrita para garantir a integridade e consistência dos dados. Utilizamos SQLAlchemy com suporte assíncrono. O padrão não é idêntico em todos os serviços (veja [Estrutura de Camadas](#estrutura-de-camadas)): `estoque` e `vendas` usam `begin_nested()` + `commit()` no service, `clientes` faz `commit()` direto no service e `produtos` confia na transação aberta por requisição em `get_db()`.
 
 ### Por que Transações são Importantes?
 
 Em um sistema ERP, operações como:
 - **Entrada de estoque** (criar movimentação + atualizar quantidade + criar lote)
-- **Venda de produto** (criar venda + baixar estoque + gerar financeiro)
+- **Venda de produto** (criar venda + reservar/baixar estoque; a geração de contas a receber no Financeiro ainda não existe, o serviço é casca)
 - **Ajuste de inventário** (registrar movimentação + atualizar quantidade)
 
 Precisam ser **atômicas**: ou todas as operações são concluídas com sucesso, ou nenhuma é aplicada.
@@ -58,9 +58,15 @@ O banco de dados passa de um estado válido para outro estado válido.
 ### 🔹 Isolamento
 Transações concorrentes não interferem entre si.
 
+O SQLAlchemy **não** trava linhas sozinho: sem lock explícito, duas requisições
+leem a mesma quantidade e a segunda apaga a primeira (lost update). Por isso o
+`estoque_service.py` lê a linha com `SELECT ... FOR UPDATE`
+(`buscar_por_produto(..., for_update=True)`) antes de calcular a quantidade nova:
+
 ```python
-# SQLAlchemy gerencia locks automaticamente
-# Duas vendas simultâneas do mesmo produto não causam inconsistência
+estoque = await EstoqueRepository.buscar_por_produto(
+    db, empresa_id, data.produto_id, data.variante_id, for_update=True
+)
 ```
 
 ### 🔹 Durabilidade
@@ -227,6 +233,17 @@ AsyncSessionLocal = async_sessionmaker(
 
 ### Estrutura de Camadas
 
+Como cada serviço fecha a transação hoje:
+
+| Serviço | Onde o `commit` acontece |
+|---------|--------------------------|
+| estoque | service: `async with db.begin_nested()` + `await db.commit()` |
+| vendas | `venda_service.py`: `begin_nested()` + `commit()` em `criar/atualizar/separar/entregar/finalizar/cancelar_venda`; demais services e alguns routers fazem `commit()` direto |
+| clientes | service: `await self.db.commit()` direto, sem `begin_nested()` |
+| produtos | nenhum `commit` no service: `get_db()` abre `session.begin()` e a transação fecha ao fim da requisição |
+| empresas | service: `await self.session.commit()` (`empresa_service.py`) |
+| api-gateway | `commit()` em repositories (`usuario_repository.py`, `cliente_auth_repository.py`) e routers (`plataforma.py`) |
+
 ```
 ┌─────────────────────────────────────────┐
 │           ROUTER (FastAPI)              │
@@ -254,77 +271,75 @@ AsyncSessionLocal = async_sessionmaker(
 
 | Camada | Responsabilidade | Transações |
 |--------|------------------|------------|
-| **Router** | Validação HTTP, injeção de dependências | ❌ Não gerencia |
+| **Router** | Validação HTTP, injeção de dependências | ❌ Em geral não gerencia (exceções: `vendas/routers/vendas.py:314` e `admin_entrega.py` chamam `db.commit()`) |
 | **Service** | Lógica de negócio, validações, transações | ✅ **Gerencia aqui** |
-| **Repository** | Operações CRUD, queries | ❌ Não gerencia |
+| **Repository** | Operações CRUD, queries | ❌ Só `flush()` nos repositories de estoque (`EstoqueRepository`, `MovimentacaoRepository`, `atualizar_quantidade` do lote) e produtos. Exceções: `LoteRepository.atualizar/marcar_vencidos` e `InventarioRepository` em `estoque_repository.py`, e os repositories do `api-gateway` (`usuario_repository.py`, `cliente_auth_repository.py`) fazem `commit()` |
 
 ---
 
 ## Padrões de Uso
 
-### Padrão 1: Transação Simples (Operação Única)
+### Padrão 1: Transação Simples (commit direto no service)
 
-Para operações que envolvem apenas uma ação no banco:
+Usado em `clientes` (`services/clientes/services/cliente_service.py`). Sem
+`begin_nested()`: o repository faz `flush()` e o service fecha com `commit()`.
+Trecho simplificado de `criar_cliente()`:
 
 ```python
-async def criar_categoria(self, dados: CategoriaCreate):
-    """Cria uma nova categoria com transação atômica."""
+async def criar_cliente(self, data: ClienteCreate) -> Cliente:
     try:
-        async with self.session.begin_nested():
-            # Validações
-            existente = await self.repo.obter_por_nome(dados.nome)
-            if existente:
-                raise ValueError(f"Categoria '{dados.nome}' já existe")
-            
-            # Operação
-            categoria = await self.repo.criar(
-                nome=dados.nome, 
-                descricao=dados.descricao
-            )
-        
-        # Commit da transação principal
-        await self.session.commit()
-        return categoria
-        
-    except ValueError:
-        await self.session.rollback()
+        existente = await self.cliente_repo.buscar_por_cpf(data.cpf, data.empresa_id)
+        if existente and existente.ativo:
+            raise HTTPException(status_code=409, detail="CPF já cadastrado para esta empresa")
+
+        cliente = await self.cliente_repo.criar(data)  # só flush
+        await self.db.commit()
+        await self.db.refresh(cliente)
+        return cliente
+
+    except HTTPException:
+        await self.db.rollback()
         raise
     except Exception:
-        await self.session.rollback()
+        await self.db.rollback()
         raise
 ```
 
-### Padrão 2: Transação Complexa (Múltiplas Operações)
+### Padrão 2: Transação Complexa (`begin_nested` + lock de linha)
 
-Para operações que envolvem múltiplas ações que devem ser atômicas:
+Usado em `estoque` (`services/estoque/services/estoque_service.py`), onde várias
+escritas precisam ser atômicas. Todos os métodos recebem `empresa_id` (tenant) e
+leem o estoque com `for_update=True`. Trecho de `entrada_estoque()`, abreviado
+(o original também valida o produto no serviço de produtos antes de criar o
+estoque e registra o log):
 
 ```python
+@staticmethod
 async def entrada_estoque(
     db: AsyncSession,
+    empresa_id: int,
     data: EntradaEstoqueRequest,
     usuario_id: Optional[UUID] = None
 ) -> Tuple[EstoqueResponse, Optional[UUID]]:
-    """Registra entrada de estoque com transação atômica."""
     try:
         async with db.begin_nested():
-            # 1. Buscar ou criar estoque
+            # 1. Buscar (com lock) ou criar estoque
             estoque = await EstoqueRepository.buscar_por_produto(
-                db, data.produto_id, data.variante_id
+                db, empresa_id, data.produto_id, data.variante_id, for_update=True
             )
-            
             if not estoque:
                 estoque = await EstoqueRepository.criar(
                     db,
+                    empresa_id=empresa_id,
                     produto_id=data.produto_id,
                     variante_id=data.variante_id,
                     quantidade=0.0,
                     estoque_minimo=0.0
                 )
-            
+
             # 2. Registrar movimentação
             quantidade_anterior = estoque.quantidade
             quantidade_posterior = quantidade_anterior + data.quantidade
-            
             movimentacao = await MovimentacaoRepository.criar(
                 db,
                 estoque_id=estoque.id,
@@ -332,49 +347,29 @@ async def entrada_estoque(
                 quantidade=data.quantidade,
                 quantidade_anterior=quantidade_anterior,
                 quantidade_posterior=quantidade_posterior,
-                motivo=data.motivo,
-                observacao=data.observacao,
-                documento=data.documento,
-                custo_unitario=data.custo_unitario,
-                usuario_id=usuario_id
+                # ... motivo, observacao, documento, custo_unitario, usuario_id
             )
-            
+
             # 3. Atualizar quantidade
             estoque = await EstoqueRepository.atualizar_quantidade(
-                db, estoque.id, quantidade_posterior
+                db, empresa_id, estoque.id, quantidade_posterior
             )
-            
+
             # 4. Criar lote se solicitado
             lote_id = None
             if data.criar_lote and data.codigo_lote:
                 lote = await LoteRepository.criar(
-                    db,
-                    estoque_id=estoque.id,
-                    codigo=data.codigo_lote,
-                    quantidade=data.quantidade,
-                    data_fabricacao=data.data_fabricacao,
-                    data_validade=data.data_validade,
-                    fornecedor=data.fornecedor,
-                    nota_fiscal=data.nota_fiscal,
-                    custo_unitario=data.custo_unitario
+                    db, empresa_id=empresa_id, estoque_id=estoque.id,
+                    codigo=data.codigo_lote, quantidade=data.quantidade,
+                    # ... datas, fornecedor, nota_fiscal, custo_unitario
                 )
                 lote_id = lote.id
-                
-                # 5. Atualizar movimentação com lote
-                movimentacao.lote_id = lote_id
-        
+                movimentacao.lote_id = lote_id  # 5. vincula a movimentação ao lote
+
         # Commit da transação principal
         await db.commit()
-        
-        log.info(
-            "entrada_estoque",
-            estoque_id=estoque.id,
-            quantidade=data.quantidade,
-            lote_id=lote_id
-        )
-        
         return EstoqueResponse.model_validate(estoque), lote_id
-        
+
     except ValueError:
         await db.rollback()
         raise
@@ -386,21 +381,45 @@ async def entrada_estoque(
 
 ### Padrão 3: Router Simplificado
 
-Os routers não gerenciam transações, apenas chamam os serviços:
+No estoque o router não gerencia transação, apenas valida o tenant e chama o
+service (`services/estoque/routers/estoque.py:140`):
 
 ```python
-@router.post("/entrada", response_model=EstoqueResponse, status_code=201)
+@router.post("/entrada", response_model=EstoqueResponse, status_code=status.HTTP_201_CREATED)
 async def entrada_estoque(
     data: EntradaEstoqueRequest,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
     db: AsyncSession = Depends(get_db)
 ):
     """Registra entrada de estoque."""
+    if data.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+
     try:
-        estoque, lote_id = await EstoqueService.entrada_estoque(db, data)
+        estoque, lote_id = await EstoqueService.entrada_estoque(db, empresa_id, data)
         return estoque
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 ```
+
+### Padrão 4: Transação por requisição (produtos)
+
+`services/produtos/database.py` abre a transação dentro do `get_db()`:
+
+```python
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+```
+
+Os services de produtos (`services/produtos/services/produtos.py`) e os
+repositories só fazem `flush()`; o commit acontece quando a requisição termina
+sem exceção.
 
 ---
 
@@ -408,52 +427,50 @@ async def entrada_estoque(
 
 ### Exemplo 1: Saída de Estoque com Validação
 
+Trecho abreviado de `EstoqueService.saida_estoque()`
+(`services/estoque/services/estoque_service.py`):
+
 ```python
 @staticmethod
 async def saida_estoque(
     db: AsyncSession,
+    empresa_id: int,
     data: SaidaEstoqueRequest,
     usuario_id: Optional[UUID] = None
 ) -> EstoqueResponse:
-    """Registra saída de estoque com transação atômica."""
     try:
         async with db.begin_nested():
-            # Buscar estoque
+            # Lock de linha: serializa saídas concorrentes do mesmo produto
             estoque = await EstoqueRepository.buscar_por_produto(
-                db, data.produto_id, data.variante_id
+                db, empresa_id, data.produto_id, data.variante_id, for_update=True
             )
             if not estoque:
-                raise ValueError("Estoque não encontrado")
-            
+                raise ValueError("Estoque não encontrado para este produto/variante")
+
             # Verificar disponibilidade
             if estoque.quantidade_disponivel < data.quantidade:
                 raise ValueError(
                     f"Quantidade disponível insuficiente. "
-                    f"Disponível: {estoque.quantidade_disponivel}, "
-                    f"Solicitado: {data.quantidade}"
+                    f"Disponível: {estoque.quantidade_disponivel}, Solicitado: {data.quantidade}"
                 )
-            
+
             # Se especificou lote, verificar e atualizar
             if data.lote_id:
-                lote = await LoteRepository.buscar_por_id(db, data.lote_id)
+                lote = await LoteRepository.buscar_por_id(db, empresa_id, data.lote_id)
                 if not lote or lote.estoque_id != estoque.id:
-                    raise ValueError("Lote não encontrado")
-                
+                    raise ValueError("Lote não encontrado ou não pertence a este estoque")
+                if lote.status == StatusLote.BLOQUEADO.value:
+                    raise ValueError(f"Lote {lote.codigo} está bloqueado e não pode sair do estoque")
                 if lote.quantidade < data.quantidade:
-                    raise ValueError(
-                        f"Quantidade insuficiente no lote. "
-                        f"Disponível: {lote.quantidade}"
-                    )
-                
-                # Atualizar quantidade do lote
+                    raise ValueError(f"Quantidade insuficiente no lote. Disponível: {lote.quantidade}")
+
                 await LoteRepository.atualizar_quantidade(
-                    db, lote.id, lote.quantidade - data.quantidade
+                    db, empresa_id, lote.id, lote.quantidade - data.quantidade
                 )
-            
+
             # Registrar movimentação
             quantidade_anterior = estoque.quantidade
             quantidade_posterior = quantidade_anterior - data.quantidade
-            
             await MovimentacaoRepository.criar(
                 db,
                 estoque_id=estoque.id,
@@ -462,29 +479,18 @@ async def saida_estoque(
                 quantidade=data.quantidade,
                 quantidade_anterior=quantidade_anterior,
                 quantidade_posterior=quantidade_posterior,
-                motivo=data.motivo,
-                observacao=data.observacao,
-                documento=data.documento,
-                usuario_id=usuario_id
+                # ... motivo, observacao, documento, usuario_id
             )
-            
+
             # Atualizar quantidade
             estoque = await EstoqueRepository.atualizar_quantidade(
-                db, estoque.id, quantidade_posterior
+                db, empresa_id, estoque.id, quantidade_posterior
             )
-        
+
         # Commit da transação principal
         await db.commit()
-        
-        log.info(
-            "saida_estoque",
-            estoque_id=estoque.id,
-            quantidade=data.quantidade,
-            lote_id=data.lote_id
-        )
-        
         return EstoqueResponse.model_validate(estoque)
-        
+
     except ValueError:
         await db.rollback()
         raise
@@ -494,57 +500,39 @@ async def saida_estoque(
         raise
 ```
 
-### Exemplo 2: Criação de Variante com Atributos
+### Exemplo 2: Criação de Variante com Atributos (produtos)
+
+`VarianteService.criar_variante()` (`services/produtos/services/produtos.py`)
+**não** abre transação nem faz `commit()`: valida, grava via repository
+(`flush()`) e devolve. O commit é o do `get_db()` (Padrão 4). Trecho abreviado:
 
 ```python
-async def criar_variante(self, dados: VarianteCreate):
-    """Cria uma nova variante com transação atômica."""
-    try:
-        async with self.session.begin_nested():
-            # Validar produto
-            produto = await self.produto_repo.obter_por_id(dados.produto_id)
-            if not produto:
-                raise ValueError(f"Produto não encontrado")
+async def criar_variante(self, empresa_id: int, dados: VarianteCreate):
+    produto = await self.produto_repo.obter_por_id(empresa_id, dados.produto_id)
+    if not produto:
+        raise ValueError(f"Produto com ID {dados.produto_id} não encontrado")
 
-            # Verificar SKU único
-            existente = await self.variante_repo.obter_por_sku(dados.sku)
-            if existente:
-                raise ValueError(f"SKU '{dados.sku}' já existe")
+    existente = await self.variante_repo.obter_por_sku(empresa_id, dados.sku)
+    if existente:
+        raise ValueError(f"SKU '{dados.sku}' já existe")
 
-            # Validar preço
-            if dados.preco_venda < dados.preco_custo:
-                raise ValueError(
-                    "Preço de venda não pode ser menor que preço de custo"
-                )
+    # preco_venda do corpo é ignorado: o repository calcula pelo markup
+    variante = await self.variante_repo.criar(
+        empresa_id=empresa_id,
+        produto_id=dados.produto_id,
+        sku=dados.sku,
+        preco_custo=dados.preco_custo,
+        markup_pct=dados.markup_pct,
+    )
 
-            # Criar variante
-            variante = await self.variante_repo.criar(
-                produto_id=dados.produto_id,
-                sku=dados.sku,
-                preco_custo=dados.preco_custo,
-                markup_pct=dados.markup_pct,
-                preco_venda=dados.preco_venda,
-            )
+    for atributo in dados.atributos:
+        await self.atributo_repo.criar(
+            variante_id=variante.id,
+            chave=atributo.chave,
+            valor=atributo.valor,
+        )
 
-            # Criar atributos (cor, tamanho, etc.)
-            for atributo in dados.atributos:
-                await self.atributo_repo.criar(
-                    variante_id=variante.id,
-                    chave=atributo.chave,
-                    valor=atributo.valor,
-                )
-
-            await self.session.flush()
-        
-        await self.session.commit()
-        return variante
-        
-    except ValueError:
-        await self.session.rollback()
-        raise
-    except Exception:
-        await self.session.rollback()
-        raise
+    return variante
 ```
 
 ---
@@ -553,19 +541,19 @@ async def criar_variante(self, dados: VarianteCreate):
 
 ### ✅ DO (Faça)
 
-1. **Sempre use `begin_nested()` para operações complexas**
+1. **Use `begin_nested()` para operações complexas nos serviços que seguem esse padrão (estoque, vendas)**
    ```python
    async with db.begin_nested():
        # Múltiplas operações aqui
    ```
 
-2. **Faça commit no service, não no router**
+2. **Faça commit no service, não no router nem no repository** (em produtos, o commit é o do `get_db()`)
    ```python
    # Service
    await db.commit()
    
    # Router apenas chama o service
-   return await service.criar_produto(dados)
+   return await EstoqueService.entrada_estoque(db, empresa_id, data)
    ```
 
 3. **Trate exceções específicas primeiro**
@@ -683,7 +671,7 @@ except Exception as e:
 
 ### Problema: Objetos Expirados
 
-**Sintoma:** `DetachedInstanceError` ao acessar objetos após commit.
+**Sintoma:** erro ao acessar atributos de um objeto após o commit (em sessão assíncrona, um lazy-load/refresh implícito, tipicamente `MissingGreenlet`).
 
 **Causa:** `expire_on_commit=True` (padrão do SQLAlchemy).
 
@@ -735,8 +723,11 @@ Estado por serviço:
 - `reservar_estoque()`
 - `liberar_reserva()`
 - `atualizar_estoque()`
+- `baixar_venda()` e `estornar_venda()` (idempotentes, com retry de deadlock)
 
 ### ✅ Produtos
+
+Sem `begin_nested()`/`commit()` no service: a transação é a do `get_db()`.
 - `criar_categoria()`
 - `atualizar_categoria()`
 - `deletar_categoria()`
@@ -748,6 +739,8 @@ Estado por serviço:
 - `deletar_variante()`
 
 ### ✅ Clientes
+
+`commit()`/`rollback()` direto no service, sem `begin_nested()`.
 - `criar_cliente()`
 - `atualizar_cliente()`
 - `desativar_cliente()`
@@ -779,6 +772,10 @@ Outros serviços da pasta (`reserva_temporaria_service.py`, `loja_service.py`,
 `mercadopago_service.py`, `entrega_service.py`, os de configuração) fazem
 `await db.commit()` direto, sem `begin_nested()`.
 
+### ⚪ Notificações
+
+`services/notificacoes/main.py` também não tem nenhuma chamada a `include_router`. `routers/` e `services/` contêm apenas `__init__.py`.
+
 ### ⚪ Financeiro
 
 Ainda não implementado. `services/financeiro/main.py` não tem nenhuma chamada a
@@ -799,4 +796,4 @@ serviço, com uma única revision de baseline
 ---
 
 **Última atualização:** 2026-09-26  
-**Versão:** 1.1.0
+**Versão:** 1.2.0

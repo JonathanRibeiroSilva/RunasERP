@@ -28,7 +28,7 @@ JavaScript deste documento funciona hoje.
 só em loopback; o serviço não é ponto de entrada.
 
 **Base URL planejada**: o consumo previsto é através do gateway. O nginx do
-frontend faz `rewrite ^/api/(.*)$ /$1` para `api-gateway:8000`, então
+frontend faz `rewrite ^/api/(.*)$ /$1` para `api-gateway-prod:8000` (nome do container em produção, `frontend/nginx.conf`), então
 `/api/contas` chega ao gateway como `/contas` e de lá segue para `financeiro:8005`.
 Os exemplos abaixo usam `http://localhost:8005` porque falam direto com o
 serviço — não é o caminho de produção.
@@ -356,7 +356,7 @@ PATCH /contas/{id}/marcar-vencida
 **Response 200:** Conta marcada como vencida
 
 > O job que chamaria esta rota também não existe: `marcar-vencida` não aparece em
-> nenhum arquivo do repositório, e `services/financeiro/` não tem pasta de jobs
+> nenhum código do repositório (só nesta documentação), e `services/financeiro/` não tem pasta de jobs
 > nem entrada de cron.
 
 **Exemplo cURL:**

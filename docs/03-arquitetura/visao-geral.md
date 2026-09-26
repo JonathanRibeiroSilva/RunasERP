@@ -2,207 +2,220 @@
 
 > **Contexto geral, stack tecnológica e estrutura de microsserviços**
 
+Verificado contra o código em 2026-09-26. Onde o código não permite afirmar, o texto diz
+`A CONFIRMAR`. Detalhe por serviço: [`microsservicos.md`](microsservicos.md). Como os
+serviços conversam: [`comunicacao.md`](comunicacao.md).
+
 ---
 
 ## Contexto Geral
 
-Você é um engenheiro sênior Python especializado em arquiteturas de microsserviços. Sua tarefa é gerar o código completo e funcional do backend MVP de um ERP para comércio de alimentos e bebidas chamado **Runas**, seguindo rigorosamente as especificações abaixo. O código deve ser production-ready para MVP: limpo, sem gambiarras, com tratamento de erros, logs e tipagem completa.
+**Runas** é um ERP SaaS multi-tenant para comércio de alimentos e bebidas. Cada lojista
+é uma empresa (tenant) do serviço `empresas`; os dados dos demais serviços carregam
+`empresa_id` e o gateway injeta o tenant do usuário autenticado no header `X-Empresa-Id`.
 
 ---
 
-## Stack Obrigatória
+## Stack
 
-| Camada | Tecnologia | Versão |
+| Camada | Tecnologia | Versão (fonte) |
 |---|---|---|
-| Linguagem | Python | 3.12 |
-| Framework | FastAPI | latest |
-| ORM | SQLAlchemy | 2.x (async) |
-| Migrations | Alembic | latest |
-| Banco | PostgreSQL | 15 |
-| Autenticação | OAuth2 + JWT | python-jose + passlib |
-| Fila | RabbitMQ + Celery | latest |
-| Cache/broker backend | Redis | 7 |
-| Notificações | Evolution API (WhatsApp) | self-hosted |
-| Pagamentos | Mercado Pago API | PIX automático via webhook |
-| Containerização | Docker + Docker Compose | latest |
-| Testes | Pytest + pytest-asyncio | cobertura básica |
-| Validação | Pydantic v2 | latest |
+| Linguagem | Python | 3.12 (`FROM python:3.12-slim` nos Dockerfiles) |
+| Framework | FastAPI | 0.141.1, fixado em `requirements.txt` |
+| ORM | SQLAlchemy async + asyncpg | 2.0.54 / 0.31.0 |
+| Migrations | Alembic | 1.20.0 |
+| Banco | PostgreSQL | 15 (`postgres:15-alpine`) |
+| Autenticação | JWT HS256 (python-jose) + senha bcrypt (passlib) | 3.5.0 / 1.7.4 — só no gateway |
+| Cache / estado | Redis | 7 (`redis:7-alpine`) |
+| Mensageria | RabbitMQ + aio-pika | `rabbitmq:3.12-management-alpine`; **sobe no compose, mas nenhum código publica ou consome** (ver `comunicacao.md`) |
+| Fila de tarefas | Celery | `celery==5.6.3` está nos requirements dos serviços, **sem uso no código** |
+| WhatsApp | Evolution API | configurada por empresa no serviço vendas (`configuracoes_integracao`); o container `evolution-api` existe só no compose de dev |
+| Pagamentos | Mercado Pago | preferência de checkout + webhook no serviço vendas |
+| Containerização | Docker + Docker Compose | dev, prod, cloudflare e build (4 arquivos na raiz) |
+| Testes | Pytest + pytest-asyncio + pytest-cov | 9.1.1 / 1.4.0 / 7.1.0 (`tests/requirements.txt`) |
+| Validação | Pydantic | 2.13.5 |
+| Frontend | React + TypeScript + Vite | react ^19.3.0, vite ^8.3.0 (`frontend/package.json`) |
 
 ---
 
 ## Arquitetura de Microsserviços
 
-O sistema possui **7 microsserviços independentes** + **1 API Gateway**, totalizando **8 serviços**. Cada microsserviço tem seu próprio schema PostgreSQL isolado (multi-tenancy por schema):
+O sistema possui **7 microsserviços** + **1 API Gateway**, totalizando **8 serviços de
+aplicação**, mais o frontend. Há **um único PostgreSQL com um schema por serviço**
+(`gateway`, `empresas`, `clientes`, `produtos`, `estoque`, `vendas`, `financeiro`,
+`notificacoes` — `postgres/init-schemas.sql`). O isolamento entre tenants é por coluna
+`empresa_id`, não por schema.
 
 ```
-erp-runas/
+RunasERP/
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
-├── docker-compose.cloudflare.yml      # Cloudflare Tunnel
-├── .env
+├── docker-compose.cloudflare.yml      # overlay: URLs públicas + Cloudflare Tunnel
+├── docker-compose.build.yml
 ├── .env.example
-├── .gitignore
 ├── README.md
 ├── QUICK-START.md
 ├── FRONTEND_IMPLEMENTACAO.md
 ├── api-gateway/
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   ├── main.py                        # FastAPI + roteamento
+│   ├── main.py                        # FastAPI, middlewares e routers
+│   ├── config.py  database.py  health.py  interno.py  seed.py
+│   ├── alembic/
 │   ├── auth/
-│   │   ├── jwt.py                     # JWT tokens
-│   │   ├── oauth2.py                  # OAuth2 (Google, Microsoft)
-│   │   └── redis_client.py            # Blacklist de tokens
+│   │   ├── jwt.py                     # criação/validação de tokens
+│   │   ├── oauth2.py                  # get_current_user (bearer/cookie) e RBAC
+│   │   └── redis_client.py            # cliente Redis (refresh tokens)
 │   ├── middleware/
 │   │   ├── rate_limit.py
-│   │   └── logging_middleware.py
+│   │   ├── logging_middleware.py
+│   │   ├── auditoria_middleware.py
+│   │   └── inadimplencia_middleware.py
 │   ├── models/
 │   │   ├── usuario.py
-│   │   └── cliente_auth.py            # OAuth clientes
+│   │   └── cliente_auth.py            # credenciais de compradores
+│   ├── proxy/
+│   │   ├── service_proxy.py           # tabela de prefixos -> serviço
+│   │   └── idempotency.py
+│   ├── repositories/  schemas/  services/  tests/
 │   └── routers/
 │       ├── auth.py
 │       ├── auth_admin.py
 │       ├── auth_cliente.py
+│       ├── plataforma.py
 │       └── proxy.py
 ├── services/
-│   ├── empresas/                      # Multi-tenancy
-│   ├── clientes/
-│   ├── produtos/
-│   ├── estoque/
-│   ├── vendas/
-│   ├── financeiro/
-│   └── notificacoes/
-├── frontend/                          # React + TypeScript
+│   ├── empresas/                      # multi-tenancy (porta 8007)
+│   ├── clientes/                      # porta 8001
+│   ├── produtos/                      # porta 8002
+│   ├── estoque/                       # porta 8003
+│   ├── vendas/                        # porta 8004
+│   ├── financeiro/                    # porta 8005 (esqueleto)
+│   └── notificacoes/                  # porta 8006 (esqueleto)
+├── frontend/                          # React + TypeScript + Vite
 │   ├── src/
 │   ├── public/
 │   └── Dockerfile
-└── shared/
-    ├── events/
-    ├── exceptions.py
-    └── pagination.py
+├── shared/
+│   ├── events/base.py
+│   ├── exceptions.py
+│   └── pagination.py
+├── postgres/init-schemas.sql
+├── scripts/
+├── tests/
+└── docs/
 ```
 
-### Estrutura Interna de Cada Serviço (Padrão Obrigatório)
+### Estrutura interna de um serviço
+
+Padrão seguido pelos 7 serviços (com variações: por exemplo `vendas` tem `jobs/`,
+`utils/` e `redis_client.py`; `empresas` tem `utils/` e `exceptions.py`):
 
 ```
 services/{servico}/
 ├── Dockerfile
 ├── requirements.txt
 ├── alembic.ini
-├── alembic/
-│   └── versions/
+├── alembic/versions/
 ├── main.py                            # FastAPI app + routers
-├── database.py                        # engine async + session
-├── models/
-│   └── {entidade}.py                  # SQLAlchemy models
-├── schemas/
-│   └── {entidade}.py                  # Pydantic v2 schemas
-├── repositories/
-│   └── {entidade}_repository.py       # padrão Repository (acesso a dados)
-├── services/
-│   └── {entidade}_service.py          # regras de negócio
-├── routers/
-│   └── {entidade}.py                  # endpoints FastAPI
-├── events/
-│   └── publisher.py                   # publicador RabbitMQ
+├── config.py                          # settings (pydantic-settings)
+├── database.py                        # engine async + sessão
+├── interno.py                         # valida X-Servico-Interno-Token
+├── seed.py
+├── models/                            # SQLAlchemy
+├── schemas/                           # Pydantic
+├── repositories/                      # acesso a dados
+├── services/                          # regras de negócio
+├── routers/                           # endpoints FastAPI
+├── events/publisher.py                # publisher RabbitMQ (não chamado por ninguém)
 └── tests/
-    ├── conftest.py
-    └── test_{entidade}.py
 ```
+
+`financeiro` e `notificacoes` têm essa estrutura, mas `models/`, `routers/`, `schemas/`,
+`repositories/` e `services/` contêm apenas `__init__.py` vazio.
 
 ---
 
-## Visão Geral dos Microsserviços
+## Visão Geral dos Serviços
 
-### 1. API Gateway (porta 8000)
-- Recebe todas as requisições externas
-- Autenticação JWT e OAuth2 (Google, Microsoft)
-- Roteamento para serviços internos
-- Rate limiting
-- Log estruturado
-- Gestão de usuários admin e clientes OAuth
+Portas: `services/*/Dockerfile` (`EXPOSE` e `CMD uvicorn --port`) e `api-gateway/Dockerfile`;
+o `docker-compose.dev.yml` usa as mesmas nos `command:`.
 
-### 2. Serviço de Empresas (porta 8001)
-- **Multi-tenancy**: Gestão de empresas/tenants
-- CRUD de empresas
-- Isolamento de dados por empresa_id
-- Configurações por empresa
+| # | Serviço | Porta | Estado |
+|---|---|---|---|
+| 1 | api-gateway | 8000 | implementado |
+| 2 | clientes | 8001 | implementado |
+| 3 | produtos | 8002 | implementado |
+| 4 | estoque | 8003 | implementado |
+| 5 | vendas | 8004 | implementado |
+| 6 | financeiro | 8005 | **esqueleto**: só `/health` |
+| 7 | notificacoes | 8006 | **esqueleto**: só `/health` |
+| 8 | empresas | 8007 | implementado |
 
-### 3. Serviço de Clientes (porta 8002)
-- Gestão de clientes e endereços
-- Controle de crédito e limite
-- Validação de CPF
-- Bloqueio automático por inadimplência
+### API Gateway (porta 8000)
+- Único ponto de entrada externo; roteia por prefixo de path para os serviços
+- Autenticação JWT (usuários admin/operador) e login de compradores, inclusive OAuth Google/Microsoft
+- RBAC e injeção de `X-Empresa-Id` / `X-Cliente-Id`
+- Rate limiting por IP (300/min por padrão), idempotência via `Idempotency-Key`
+- Log estruturado, auditoria de escritas e bloqueio de escrita de tenant inadimplente
+- Rotas de plataforma (`/plataforma/*`): provisionar, suspender e cobrar tenants
 
-### 4. Serviço de Produtos (porta 8003)
-- Produtos, categorias e variantes
-- Catálogo público (loja online)
-- Gestão de fornecedores
-- Upload de fotos
-- Cálculo automático de preço de venda
+### Empresas (porta 8007)
+- Multi-tenancy: cadastro de empresas/tenants, com slug e CNPJ únicos
+- Configuração de catálogo público, tema e plano/limites por empresa
 
-### 5. Serviço de Estoque (porta 8004)
-- Controle de estoque por variante
-- Movimentações (entrada, saída, ajuste, devolução, perda)
-- Gestão de lotes
-- Inventário físico
-- Alertas de estoque mínimo
-- Reserva/liberação para vendas
-- Histórico imutável
+### Clientes (porta 8001)
+- Clientes e endereços, crédito e limite, bloqueio/desbloqueio manual
+- Validação de CPF e normalização de telefone para E.164
 
-### 6. Serviço de Vendas (porta 8007)
-- Checkout e pedidos (loja online)
-- Integração com Mercado Pago (PIX)
-- Workflow de vendas (6 estados)
-- Gestão de status de pedidos
-- Múltiplas formas de pagamento
-- Snapshot de dados do produto
+### Produtos (porta 8002)
+- Produtos, categorias e variantes (preço de venda calculado por markup)
+- Catálogo público / loja online (config, fotos, publicação)
+- Fornecedores e vínculo fornecedor-produto
 
-### 7. Serviço Financeiro (porta 8005)
-- Contas a receber
-- Pagamentos fiados
-- Controle de vencimentos
-- Jobs automáticos de cobrança
+### Estoque (porta 8003)
+- Saldo por produto/variante, movimentações, lotes e inventário
+- Reserva, liberação, baixa e estorno de estoque por venda (idempotentes)
+- Listagens de estoque baixo, zerado e lotes vencendo; relatórios
 
-### 8. Serviço de Notificações (porta 8006)
-- WhatsApp via Evolution API
-- Consumidor de eventos RabbitMQ
-- Retry automático
-- Deduplicação de mensagens
+### Vendas (porta 8004)
+- Vendas (balcão) e loja online: carrinho, checkout, rastreio de pedido
+- Integração Mercado Pago (preferência + webhook)
+- Configuração de entrega (faixas por CEP), de pagamento e de integrações (WhatsApp/SMTP) por empresa
+- Workflow de status: PEDIDO, PENDENTE_PAGAMENTO, CONFIRMADA, SEPARADA, EM_ENTREGA, ENTREGUE, FINALIZADA, CANCELADA, REEMBOLSADA
+- Dois loops assíncronos dentro do processo (pagamentos pendentes a cada 60 s, reconciliação de estoque a cada 120 s)
+
+### Financeiro (porta 8005) — esqueleto
+- Só `/health`. Contas a receber, pagamentos de fiado e cobrança **não existem no código**.
+
+### Notificações (porta 8006) — esqueleto
+- Só `/health`. Não há consumidor de eventos, envio de WhatsApp nem histórico neste serviço.
 
 ---
 
 ## Comunicação Entre Serviços
 
-### HTTP Interno
-- Serviços se comunicam via HTTP (httpx async)
-- URLs internas via Docker network
-- Exemplos de integrações:
-  - Vendas → Estoque (reserva/baixa de estoque)
-  - Vendas → Clientes (validação de crédito)
-  - Produtos → Estoque (consulta de disponibilidade)
+Resumo (detalhe e linhas de código em [`comunicacao.md`](comunicacao.md)):
 
-### Eventos Assíncronos (RabbitMQ)
-- Exchange: `erp.events` (tipo: topic)
-- Eventos principais:
-  - `pedido.confirmado`
-  - `pedido.cancelado`
-  - `estoque.minimo`
-  - `cobranca.lembrete`
-  - `cobranca.vencida`
-  - `conta.quitada`
+- **HTTP síncrono com `httpx`** é o único mecanismo em uso. Cliente → gateway → serviço;
+  entre serviços, chamadas diretas carimbadas com `X-Servico-Interno-Token`.
+- Integrações existentes: estoque → produtos; vendas → produtos, clientes, estoque,
+  empresas e gateway.
+- **Eventos assíncronos**: existe o exchange `erp.events` (tipo `topic`, declarado em
+  `services/*/events/publisher.py`), mas nenhum código chama `publish()` e não há
+  consumidor. Só existem as definições dos 6 tipos de evento em `shared/events/base.py`
+  (`pedido.confirmado`, `pedido.cancelado`, `estoque.minimo`, `cobranca.lembrete`,
+  `cobranca.vencida`, `conta.quitada`), sem emissor nem receptor.
 
 ### Infraestrutura
-- **PostgreSQL**: 1 instância com 8 schemas isolados (um por serviço)
-- **Redis**: Cache, sessões, blacklist de tokens
-- **RabbitMQ**: Mensageria assíncrona
-- **Cloudflare Tunnel**: Acesso externo (www.runaserp.com.br)
-- **Docker Compose**: Orquestração de todos os serviços
+- **PostgreSQL 15**: 1 instância, 1 database, 8 schemas (um por serviço, incluindo o gateway)
+- **Redis 7**: refresh tokens e idempotência no gateway; carrinho/cache no vendas
+- **RabbitMQ 3.12**: sobe no compose, sem uso
+- **Cloudflare Tunnel**: acesso externo em produção (`app.runaserp.com.br`, ver comentário em `docker-compose.prod.yml`)
+- **Docker Compose**: orquestração (dev/prod/cloudflare/build)
 
 ---
 
 **Projeto:** Runas  
 **Equipe:** Equipe DenebCorp  
-**Data:** 26 de Junho de 2026  
-**Versão:** 2.0.0  
-**Atualização**: Sistema com 8 serviços (+ Empresas), Multi-tenancy, Loja Online completa
+**Última verificação contra o código:** 2026-09-26

@@ -204,7 +204,7 @@ async with httpx.AsyncClient() as client:
 
 ### Assíncrona (RabbitMQ, aio-pika)
 
-Cada serviço tem `events/publisher.py` com um `EventPublisher` (`connect`,
+Cada um dos 7 serviços (o gateway não) tem `events/publisher.py` com um `EventPublisher` (`connect`,
 `publish`, `close`) sobre `aio_pika`.
 
 **A CONFIRMAR:** não localizei nenhum consumidor de fila no backend — só
@@ -242,15 +242,17 @@ antes de repassar (`frontend/nginx.conf:36`). Detalhes no
 
 ## Testes
 
-Existem **62 arquivos `test_*.py`** no repositório, e o CI roda todos. Não há
-`Makefile`: os comandos abaixo são os do `.github/workflows/ci.yml`.
+Existem **62 arquivos `test_*.py`** no repositório, mas o CI roda só **49**: os de
+`tests/unit` e os das pernas por serviço. `tests/integration` (9), `tests/e2e` (1) e
+os 3 scripts soltos em `tests/` **não rodam no CI** (`.github/workflows/ci.yml`
+não os referencia). Não há `Makefile`: os comandos abaixo são os do `.github/workflows/ci.yml`.
 
 | Local | Arquivos |
 |---|---|
 | `tests/unit` | 17 |
-| `tests/integration` | 9 |
-| `tests/e2e` | 1 |
-| `tests/` (scripts manuais, contra serviço vivo) | 3 |
+| `tests/integration` | 9 (fora do CI) |
+| `tests/e2e` | 1 (fora do CI) |
+| `tests/` (scripts manuais, contra serviço vivo) | 3 (fora do CI) |
 | `api-gateway/tests` | 5 |
 | `services/vendas/tests` | 10 |
 | `services/produtos/tests` | 7 |

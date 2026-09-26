@@ -19,21 +19,24 @@
 
 **O que faz:**
 ```python
-uvicorn main:app --reload  # ❌ Scanneia arquivos a cada 1 segundo
+uvicorn main:app --reload  # ❌ sem --reload-delay: vale o padrão do uvicorn
 ```
 
-- 🔴 Watchdog ativo em TODOS os arquivos Python
+- 🔴 Monitor de arquivos ativo em `--reload` (o `uvicorn[standard]==0.53.0` dos
+  requirements traz `watchfiles`; A CONFIRMAR: se o reloader em uso é o
+  `watchfiles` ou o de `stat` por polling, e qual o intervalo padrão efetivo)
 - 🔴 São **8 containers Python** com watchdog próprio: o `api-gateway` e os 7 de
   `services/` — o custo do polling é pago 8 vezes, não uma
   (A CONFIRMAR: nº de arquivos varridos por container, não medido)
-- 🔴 Polling contínuo consome CPU
+- 🔴 Varredura contínua consome CPU (A CONFIRMAR: quanto, não foi medido)
 
 **Solução aplicada:**
 ```python
-uvicorn main:app --reload --reload-delay 2  # ✅ Scanneia a cada 2 segundos
+uvicorn main:app --reload --reload-delay 2  # ✅ delay de 2s entre checagens
 ```
 
-**Redução esperada:** 40-50% menos CPU
+**Redução esperada:** A CONFIRMAR — o "40-50%" que constava aqui não tem medição
+no repositório.
 
 ---
 
@@ -46,7 +49,7 @@ CHOKIDAR_INTERVAL: "1000"    # A cada 1 segundo
 ```
 
 - 🟡 Necessário para hot-reload no Docker/Windows
-- 🟡 Consome ~5-10% de CPU
+- 🟡 A CONFIRMAR: o custo em CPU (constava "~5-10%", sem medição no repo)
 
 **Otimização:** Mantido em dev, removido em produção
 
@@ -78,7 +81,8 @@ api-gateway:
 
 **Características:**
 - ✅ Hot-reload continua funcionando
-- ✅ Delay de 2s entre scans (em vez de 1s)
+- ✅ Delay de 2s entre checagens (`--reload-delay 2`; o valor padrão do uvicorn não
+  está fixado em nenhum arquivo do repo)
 - ⚠️ A CONFIRMAR: a redução de CPU não foi medida — não há coleta de métricas no repo
 
 ---
@@ -163,11 +167,12 @@ microsserviços ficam só com `interval: 60s`.
 
 ### **1. Desenvolvimento (aplicado):**
 ```bash
-# Reiniciar containers para aplicar --reload-delay 2
-docker compose -f docker-compose.dev.yml restart
+# --reload-delay 2 já está no `command:` do docker-compose.dev.yml; um `restart`
+# não relê o compose, então recrie os containers
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-**Redução de consumo esperada: 40-50%** 🚀
+**Redução de consumo esperada:** A CONFIRMAR (sem medição no repo).
 
 ---
 
@@ -206,8 +211,11 @@ pelo próprio código. Esta página é a fonte que prevalece; não reintroduza:
 - **Celery** — `celery==5.6.3` está nos sete `services/*/requirements.txt`, mas
   **nenhum `.py` do repo importa celery** e não há container de worker/beat em
   `docker-compose.prod.yml`: é dependência morta, não arquitetura. O que
-  realmente roda para trabalho agendado é cron do host batendo num endpoint (ver
-  comentário em `api-gateway/routers/plataforma.py:489`). **Publicação de eventos
+  roda para trabalho periódico é (a) cron do host batendo num endpoint (ver
+  comentário em `api-gateway/routers/plataforma.py:489`) e (b) dois loops
+  `asyncio` dentro do próprio processo do `vendas` (`services/vendas/main.py`,
+  `lifespan`: pagamentos pendentes a cada 60s, reconciliação de estoque a cada
+  120s) — nenhum dos dois usa Celery. **Publicação de eventos
   em RabbitMQ também não roda**: `services/*/events/publisher.py` existe, mas
   nenhum código chama `publish()` fora da própria definição — ver
   `docs/03-arquitetura/comunicacao.md`, seção 2.

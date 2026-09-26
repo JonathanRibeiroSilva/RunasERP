@@ -280,7 +280,7 @@ Não há coluna `empresa_id`: o tenant vem do cliente dono.
 - Só o comprimento é verificado: `abcdefgh` passa.
 
 **RN-END-002: Validação de UF — SÓ COMPRIMENTO**
-- `uf: str = Field(..., min_length=2, max_length=2)` (`schemas/cliente.py:134`).
+- `uf: str = Field(..., min_length=2, max_length=2)` (`schemas/cliente.py:133`).
 - **Não existe lista de siglas válidas de estado.** `SP` e `RJ` passam, mas `XX`
   e `zz` também. Nada confere contra as 27 unidades federativas e nada normaliza
   para maiúsculas.

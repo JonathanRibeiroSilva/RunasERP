@@ -1,605 +1,523 @@
 # Detalhamento dos Microsserviços - Runas
 
-> **Especificação completa de cada microsserviço:** modelos, endpoints e regras de negócio
+> **Resumo de cada serviço: porta, modelos, endpoints e regras que o código de fato implementa**
 
-**Última atualização**: 26 de Junho de 2026  
-**Sistema atual**: 8 serviços (1 Gateway + 7 microsserviços)
+**Verificado contra o código em 2026-09-26.** Sistema: 8 serviços de aplicação (1 Gateway + 7
+microsserviços). Fontes: `services/*/routers/`, `services/*/models/`, `api-gateway/`.
+Onde o código não permite afirmar, o texto diz `A CONFIRMAR`.
+
+Contratos completos de request/response não estão aqui: use o OpenAPI de cada serviço
+(`/docs`, quando habilitado) ou os schemas em `services/*/schemas/`.
+
+## Portas
+
+Fonte: `EXPOSE` e `CMD uvicorn --port` em `services/*/Dockerfile` e `api-gateway/Dockerfile`;
+o `docker-compose.dev.yml` usa as mesmas nos `command:`. O healthcheck do
+`docker-compose.prod.yml` bate nas mesmas portas.
+
+| Serviço | Porta | Estado |
+|---|---|---|
+| api-gateway | 8000 | implementado |
+| clientes | 8001 | implementado |
+| produtos | 8002 | implementado |
+| estoque | 8003 | implementado |
+| vendas | 8004 | implementado |
+| financeiro | 8005 | esqueleto (só `/health`) |
+| notificacoes | 8006 | esqueleto (só `/health`) |
+| empresas | 8007 | implementado |
+
+## Convenções comuns aos serviços
+
+- **IDs**: `empresas.id` é inteiro (autoincrement); demais tabelas usam UUID. `empresa_id` é
+  sempre inteiro.
+- **Tenant**: os serviços não validam JWT. Confiam no header `X-Empresa-Id` injetado pelo
+  gateway (ver `comunicacao.md`); sem o header a rota é rejeitada (400 em `empresas`).
+- **Origem interna**: `X-Servico-Interno-Token` validado em `services/*/interno.py`
+  (fail-open enquanto o segredo não estiver em todos os containers).
+- **Banco**: um PostgreSQL, um schema por serviço; isolamento entre tenants por coluna
+  `empresa_id` (`UniqueConstraint` costuma incluir `empresa_id`).
+- **Eventos RabbitMQ**: cada serviço tem `events/publisher.py`, mas nenhum código publica ou
+  consome (ver `comunicacao.md`). Onde este documento antes descrevia "publicar evento X",
+  isso **não acontece**.
+- **Jobs**: não há Celery em uso. O único agendamento no código são dois loops asyncio dentro
+  do processo do serviço vendas (ver seção 5).
 
 ---
 
 ## 1. API Gateway (`api-gateway/` — porta 8000)
 
 ### Responsabilidades
-- Receber todas as requisições externas
-- Autenticação JWT e OAuth2 (Google, Microsoft)
-- Rotear para o serviço correto via HTTP interno
-- Rate limiting por IP
-- Log estruturado de todas as requisições (JSON)
-- Gestão de usuários admin e clientes OAuth
+- Único ponto de entrada externo; roteia por prefixo (`ServiceProxy.SERVICE_URLS` em
+  `api-gateway/proxy/service_proxy.py`)
+- Autenticação JWT de usuários (admin/operador) e de compradores (login próprio e OAuth
+  Google/Microsoft)
+- RBAC (`require_admin`, `require_super_admin`, `require_admin_or_operador` em `auth/oauth2.py`)
+- Injeta `X-Empresa-Id`/`X-Cliente-Id` e descarta os mesmos headers vindos do cliente
+- Rate limiting por IP: 300/min por padrão, limite mais apertado em login/registro/reset
+  (`middleware/rate_limit.py`)
+- Log estruturado (`logging_middleware.py`), auditoria de escritas
+  (`auditoria_middleware.py`) e 402 na escrita de tenant inadimplente
+  (`inadimplencia_middleware.py`)
+- Idempotência por `Idempotency-Key` (`proxy/idempotency.py`)
 
-### Endpoints de Autenticação
+### Prefixos roteados
 
-**Admin**:
+`/clientes`, `/produtos`, `/categorias`, `/variantes`, `/fornecedores`, `/loja-online`,
+`/estoque`, `/loja`, `/carrinho`, `/pagamentos`, `/integracoes`, `/contas`,
+`/notificacoes`, `/empresas`. **Não há prefixo `/vendas` nem `/admin/entrega`** no proxy
+externo: essas rotas do serviço vendas (seção 5) só são alcançadas direto no serviço.
+`A CONFIRMAR`: como o frontend chega em `/vendas` (o `Sidebar.tsx` aponta para `/vendas`,
+mas é rota de tela, não prova de rota de API).
+
+### Endpoints de autenticação
+
+**Usuários** (`routers/auth.py`, prefixo `/auth`):
 ```
-POST /auth/login          → OAuth2 password flow → retorna access_token + refresh_token
-POST /auth/refresh        → renova access_token via refresh_token
-POST /auth/logout         → invalida refresh_token (Redis blacklist)
-POST /auth/register       → registro de novos usuários admin
-POST /auth/password-reset → recuperação de senha
+GET  /auth/me
+POST /auth/login             → OAuth2 password flow; retorna access_token + refresh_token e seta cookies HTTP-only
+POST /auth/refresh           → novo access_token a partir do refresh_token
+POST /auth/logout            → apaga refresh:{user_id} no Redis e limpa cookies
+POST /auth/forgot-password   → limite 5/min
+POST /auth/reset-password
+POST /auth/alterar-senha
 ```
 
-**Cliente (OAuth)**:
+**Administração de usuários da empresa** (`routers/auth_admin.py`, prefixo `/auth/admin`):
 ```
-GET  /auth/google         → inicia fluxo OAuth Google
-GET  /auth/microsoft      → inicia fluxo OAuth Microsoft  
-GET  /auth/callback       → callback OAuth providers
-POST /auth/cliente/logout → logout de cliente OAuth
+GET    /auth/admin/usuarios
+POST   /auth/admin/usuarios
+PUT    /auth/admin/usuarios/{user_id}
+DELETE /auth/admin/usuarios/{user_id}
 ```
 
-### Regras de JWT
-- `access_token`: expira em 30 minutos
-- `refresh_token`: expira em 7 dias, salvo no Redis
-- Payload do token deve conter: `sub` (user_id), `role` (ADMIN|OPERADOR), `exp`, `iat`
-- Algoritmo: HS256
+**Compradores** (`routers/auth_cliente.py`, prefixo `/auth/cliente`):
+```
+POST /auth/cliente/register
+POST /auth/cliente/login
+POST /auth/cliente/logout
+POST /auth/cliente/oauth/google/init        e  /oauth/google/callback
+POST /auth/cliente/oauth/microsoft/init     e  /oauth/microsoft/callback
+POST /auth/cliente/registrar-interno        → uso interno (vendas), protegido por REGISTRO_INTERNO_TOKEN
+```
 
-### Modelos de Usuário
+O OAuth Google/Microsoft existe **apenas para compradores**. Não há `POST /auth/register`,
+`GET /auth/google` nem `GET /auth/callback`.
+
+**Plataforma** (`routers/plataforma.py`, prefixo `/plataforma`, só `SUPER_ADMIN`):
+`GET|POST /tenants`, `PATCH /tenants/{id}/suspender|reativar|plano`,
+`GET /tenants/{id}/auditoria|exportar|dumps`, `POST|DELETE /tenants/{id}/assinatura`,
+`POST /auditoria/{registro_id}/reverter`. Públicos (sem JWT): `POST /plataforma/webhook/mercadopago`
+e `POST /plataforma/jobs/regua` (protegido por `PLATAFORMA_JOB_TOKEN`).
+Detalhe em [`plataforma.md`](plataforma.md).
+
+### Regras de JWT (`auth/jwt.py`, `config.py`)
+- `access_token`: expira em `ACCESS_TOKEN_EXPIRE_MINUTES` (padrão **30**)
+- `refresh_token`: expira em `REFRESH_TOKEN_EXPIRE_DAYS` (padrão **7**); o logout apaga a chave
+  `refresh:{user_id}` no Redis
+- Payload do access token: `sub`, `role`, `user_type`, `exp`, `iat`; para compradores, também
+  `empresa_id` e `cliente_id`
+- Algoritmo: `HS256` (padrão em `ALGORITHM`)
+- Roles (`RoleEnum`): `SUPER_ADMIN`, `ADMIN`, `OPERADOR`. Comprador usa `role = "CLIENTE"`.
+
+### Modelos (schema `gateway`)
 
 ```python
-class Usuario(Base):
+class Usuario(Base):            # gateway.usuarios
     id: UUID
     nome: str
-    email: str          # unique
-    senha_hash: str     # bcrypt via passlib
-    role: Enum(ADMIN, GERENTE, VENDEDOR, OPERADOR)
-    empresa_id: UUID    # FK para empresas
+    email: str                  # unique
+    senha_hash: str             # bcrypt via passlib
+    role: Enum(SUPER_ADMIN, ADMIN, OPERADOR)
     ativo: bool
+    empresa_id: int | None      # None = SUPER_ADMIN, sem tenant
     criado_em: datetime
 
-class ClienteAuth(Base):
+class ClienteAuth(Base):        # gateway.clientes_auth
     id: UUID
-    email: str          # unique
-    nome: str
-    provider: Enum(GOOGLE, MICROSOFT)
-    provider_user_id: str
+    email: str                  # unique
+    senha_hash: str             # vazio para OAuth
+    cliente_id: UUID            # unique; id do cliente no serviço clientes
+    empresa_id: int             # loja onde se cadastrou
     ativo: bool
     criado_em: datetime
 ```
 
 ---
 
-## 2. Serviço de Empresas (`services/empresas/` — porta 8001)
+## 2. Serviço de Empresas (`services/empresas/` — porta 8007)
+
+Pivô do multi-tenant: cada empresa é um tenant. Detalhe do contrato de plataforma em
+[`plataforma.md`](plataforma.md) e [`comunicacao.md`](comunicacao.md).
 
 ### Responsabilidades
-- **Multi-tenancy**: Gestão de empresas/tenants
-- CRUD de empresas
-- Isolamento de dados por empresa_id
-- Configurações por empresa
-- Slug único por empresa (usado em URLs públicas)
+- Cadastro de empresas/tenants (CNPJ e slug únicos)
+- Configuração por empresa: catálogo público, tema (cores/logo), plano e limites
 
-### Modelo
+### Modelo (`empresas.empresas`, resumo)
 
 ```python
 class Empresa(Base):
-    id: UUID (PK)
+    id: int (PK, autoincrement)
+    slug: str (UK, max 100)            # URL pública da loja
     razao_social: str
     nome_fantasia: str
-    cnpj: str (UK, validado)
-    slug: str (UK)              # ex: "loja-do-joao"
-    telefone: str
-    email: str
-    logo_url: Optional[str]
-    ativo: bool (default=True)
-    criado_em: datetime
+    tipo: Enum(MATRIZ, FILIAL)         # default MATRIZ
+    status: Enum(ATIVA, INATIVA, SUSPENSA)
+    cnpj: str (UK, formatado XX.XXX.XXX/XXXX-XX)
+    inscricao_estadual, inscricao_municipal: Optional[str]
+    regime_tributario: Enum(SIMPLES_NACIONAL, LUCRO_PRESUMIDO, LUCRO_REAL, MEI)
+    cep, logradouro, numero, complemento, bairro, cidade, uf   # endereço
+    telefone, celular, email, site: Optional[str]
+    logo_url, cor_primaria, cor_secundaria: Optional[str]
+    catalogo_ativo: bool; catalogo_titulo, catalogo_descricao, catalogo_whatsapp
+    plano: str (default "BASICO"); max_usuarios: int (default 5)
+    max_produtos: Optional[int]; max_lojas: int (default 1)
+    empresa_matriz_id: Optional[int]
+    ativo: bool (default True); criado_em, atualizado_em; criado_por, atualizado_por
 ```
 
-### Endpoints
+### Endpoints (`routers/empresas.py`, prefixo `/empresas`)
 
 ```
-POST   /empresas                      → criar empresa (valida CNPJ único)
-GET    /empresas                      → listar empresas
-GET    /empresas/{id}                 → buscar por ID
-GET    /empresas/slug/{slug}          → buscar por slug (usado na loja online)
-PATCH  /empresas/{id}                 → atualizar dados
-DELETE /empresas/{id}                 → soft delete (ativo=False)
+POST   /empresas                    → criar empresa            [plataforma]
+GET    /empresas                    → lista só a empresa do chamador (paginação skip/limit; filtros busca, tipo, status, uf)   [tenant]
+GET    /empresas/{id}               → buscar por ID (só a própria empresa; senão 403)   [tenant]
+GET    /empresas/slug/{slug}        → buscar por slug (só a própria empresa)   [tenant]
+GET    /empresas/publico/{slug}     → info pública para o catálogo (sem X-Empresa-Id)
+PUT    /empresas/{id}               → atualizar dados (só a própria empresa)   [tenant]
+DELETE /empresas/{id}               → soft delete (ativo=False; retorna a empresa)   [tenant]
+PATCH  /empresas/{id}/plano         → plano, limites e status   [plataforma]
+GET    /empresas/plataforma/todas   → lista todos os tenants    [plataforma]
 ```
 
-### Regras de Negócio
+`[tenant]` exige `X-Empresa-Id` (400 sem ele). `[plataforma]` exige `X-Plataforma: 1` e
+`X-Plataforma-Token` (só o router `/plataforma` do gateway injeta). Não existe `PATCH /empresas/{id}`
+genérico: a atualização é `PUT`.
 
-1. CNPJ validado matematicamente (algoritmo dos dígitos verificadores)
-2. Slug deve ser único e lowercase, sem espaços (ex: "loja-do-joao")
-3. Ao criar empresa, criar automaticamente schemas PostgreSQL para cada serviço
-4. Empresas desativadas não podem ter usuários ativos
-5. Verificar dependências antes de desativar (usuários, clientes, produtos, etc)
+### Regras de negócio (`services/empresa_service.py`)
+
+1. CNPJ validado por dígitos verificadores (`validate-docbr`) e único; CNPJ de empresa
+   **inativa** já cadastrada reativa o registro em vez de falhar.
+2. Slug em kebab-case minúsculo (`schemas/empresa.py`); se omitido na criação, é gerado a
+   partir do `nome_fantasia` com sufixo numérico em caso de conflito; slug duplicado → 409.
+3. Filial exige `empresa_matriz_id` de uma matriz existente e respeita `max_lojas` da matriz.
+   `A CONFIRMAR`: se filiais são usadas de fato; o docstring de `listar_empresas` diz
+   "cada empresa tem uma única loja (sem matriz/filial)".
+4. Desativar **não** verifica dependências: o serviço tem `TODO: Validar se não tem dados
+   dependentes` e desativa direto. Também não há checagem de usuários ativos.
+5. Criar empresa **não** cria schemas de outros serviços: os schemas nascem em
+   `postgres/init-schemas.sql` (dev) e no `db-init` do `docker-compose.prod.yml`.
 
 ---
 
-## 3. Serviço de Clientes (`services/clientes/` — porta 8002)
+## 3. Serviço de Clientes (`services/clientes/` — porta 8001)
 
-### Modelos
+### Modelos (schema `clientes`)
 
 ```python
 class Cliente(Base):
     id: UUID (PK)
-    empresa_id: UUID (NOT NULL)        # Multi-tenancy
-    cpf: str (NOT NULL, validado)
+    empresa_id: int (NOT NULL)          # multi-tenancy
+    cpf: str | None                     # opcional (clientes OAuth)
     nome: str
-    telefone: str (NOT NULL)
-    email: Optional[str]
-    data_nasc: Optional[date]
-    limite_credito: Decimal (default=0.00)
-    credito_disponivel: Decimal (default=0.00)
-    dia_vencimento: Optional[int]  # 1-28
-    bloqueado: bool (default=False)
-    ativo: bool (default=True)
+    telefone: str | None
+    email: str | None
+    data_nasc: date | None
+    limite_credito: Decimal (default 0.00)
+    credito_disponivel: Decimal (default 0.00)
+    dia_vencimento: int | None
+    bloqueado: bool (default False)
+    ativo: bool (default True)
     criado_em: datetime
-    UNIQUE(empresa_id, cpf)            # CPF único por empresa
+    UNIQUE(empresa_id, cpf)
 
 class Endereco(Base):
     id: UUID (PK)
-    cliente_id: UUID (FK → clientes.id, ON DELETE CASCADE)
-    cep: str
-    logradouro: str
-    numero: str
-    complemento: Optional[str]
-    bairro: str
-    cidade: str
-    uf: str (2 chars)
-    principal: bool (default=False)
+    cliente_id: UUID (FK → clientes.clientes.id, ON DELETE CASCADE)
+    cep, logradouro, numero, complemento, bairro, cidade, uf (2 chars), principal: bool
 ```
+
+### Endpoints (`routers/clientes.py`, `routers/enderecos.py`)
+
+```
+POST   /clientes                          → criar (CPF duplicado ativo → 409; inativo → reativa)
+POST   /clientes/oauth                    → criar/obter cliente vindo de login OAuth
+GET    /clientes                          → listar
+GET    /clientes/{id}                     → buscar por id
+GET    /clientes/{id}/completo            → cliente com endereços
+GET    /clientes/cpf/{cpf}                → buscar por CPF
+PATCH  /clientes/{id}                     → atualizar parcialmente
+DELETE /clientes/{id}                     → soft delete (ativo=False)
+POST   /clientes/{id}/ativar              → reativar
+
+POST   /clientes/{id}/enderecos           → adicionar endereço
+GET    /clientes/{id}/enderecos           → listar
+PATCH  /clientes/{id}/enderecos/{eid}     → atualizar
+DELETE /clientes/{id}/enderecos/{eid}     → remover
+
+PUT    /clientes/{id}/credito             → define limite_credito e dia_vencimento
+POST   /clientes/{id}/credito/ajustar     → ajusta credito_disponivel por delta
+POST   /clientes/{id}/bloquear
+POST   /clientes/{id}/desbloquear
+```
+
+O gateway ainda expõe `GET|PATCH /clientes/me` (comprador autenticado).
+**Não existe** `GET /clientes/{id}/historico-credito`.
+
+### Regras de negócio
+
+1. CPF validado por dígitos verificadores (`validate-docbr`) e único por empresa.
+2. Telefone normalizado para E.164 no schema.
+3. `dia_vencimento` aceita 1 a 28 (`Field(ge=1, le=28)`).
+4. `credito_disponivel` nunca fica negativo: `POST /credito/ajustar` responde 400 quando o
+   delta o tornaria negativo.
+5. **Definir crédito ainda não considera dívida**: `credito_disponivel` recebe o
+   `limite_credito` inteiro (`saldo_devedor` fixo em 0; `TODO: Buscar saldo devedor do serviço
+   financeiro`).
+6. **Não há bloqueio automático por inadimplência**: `bloqueado` só muda pelos endpoints
+   `bloquear`/`desbloquear`.
+7. Desativar **não** verifica pedidos em aberto nem contas pendentes (`TODO` no serviço) e não
+   retorna 409 por isso.
+
+---
+
+## 4. Serviço de Produtos (`services/produtos/` — porta 8002)
+
+### Modelos (schema `produtos`, resumo)
+
+```python
+class Categoria:  id UUID, empresa_id int, nome (UK por empresa), descricao
+class Produto:    id UUID, empresa_id, categoria_id, nome, descricao, codigo_barras (UK por empresa),
+                  sku, unidade_medida ("UN"), preco, custo, preco_promocional, promocao_fim,
+                  estoque_minimo, estoque_maximo, peso_bruto, peso_liquido, ativo, criado_em, deletado_em
+class Variante:   id UUID, empresa_id, produto_id (FK, CASCADE), sku (UK por empresa),
+                  preco_custo (> 0), markup_pct (>= 0), preco_venda (calculado e gravado), ativo
+class AtributoVariante: id, variante_id (FK), chave, valor
+class Fornecedor: id UUID, empresa_id, nome, cnpj (UK por empresa), email, telefone, endereco, cidade, uf, ativo
+class FornecedorProduto: id, fornecedor_id, produto_id, codigo_fornecedor, preco_fornecedor,
+                  prazo_entrega_dias, quantidade_minima, ativo
+class LojaOnlineConfig: id, produto_id, visivel (default False), destaque, ordem_exibicao, descricao_publica
+class LojaOnlineFoto:   id, produto_id, url, ordem
+```
+
+### Endpoints (`routers/produtos.py`)
+
+```
+# Categorias — /categorias
+POST /categorias    GET /categorias    GET /categorias/{id}    PUT /categorias/{id}    DELETE /categorias/{id}
+
+# Produtos — /produtos
+POST /produtos    GET /produtos    GET /produtos/{id}    PUT /produtos/{id}    DELETE /produtos/{id}
+GET  /produtos/categoria/{categoria_id}    GET /produtos/buscar/nome    PATCH /produtos/{id}/restaurar
+
+# Variantes — /variantes
+POST /variantes    GET /variantes/{id}    GET /variantes/produto/{produto_id}
+PUT  /variantes/{id}    DELETE /variantes/{id}
+
+# Loja online (admin) — /loja-online
+POST /loja-online/config    GET /loja-online/config/{produto_id}    PUT /loja-online/config/{config_id}
+GET  /loja-online/produtos    PUT /loja-online/produtos/{produto_id}/publicar
+POST /loja-online/fotos    GET /loja-online/fotos/{produto_id}
+PUT  /loja-online/fotos/{foto_id}    DELETE /loja-online/fotos/{foto_id}
+
+# Público (sem auth) — /loja-online/publico e /catalogo-publico
+GET /loja-online/publico/produtos    GET /loja-online/publico/categorias
+GET /loja-online/publico/produto/{produto_id}    GET /catalogo-publico/produto/{produto_id}
+
+# Fornecedores — /fornecedores e /fornecedor-produtos
+POST /fornecedores    GET /fornecedores    GET /fornecedores/{id}    PUT /fornecedores/{id}    DELETE /fornecedores/{id}
+POST /fornecedor-produtos    GET /fornecedor-produtos/{vinculo_id}
+GET  /fornecedor-produtos/produto/{produto_id}    GET /fornecedor-produtos/fornecedor/{fornecedor_id}
+PUT  /fornecedor-produtos/{vinculo_id}    DELETE /fornecedor-produtos/{vinculo_id}
+```
+
+Variantes são criadas em `POST /variantes` (com `produto_id` no corpo), **não** em
+`/produtos/{id}/variantes`; o catálogo é `/loja-online`, não `/catalogo`. Não há `PATCH` de
+produto, categoria ou fornecedor: a atualização é `PUT`.
+
+### Regras de negócio
+
+1. `preco_venda = preco_custo * (1 + markup_pct / 100)`, calculado no repositório
+   (`Variante.calcular_preco_venda()`); `preco_venda` enviado no corpo é ignorado.
+2. SKU é único **por empresa** (`uq_variantes_empresa_sku`), não globalmente.
+3. Produto tem soft delete (`deletado_em`) e rota de restauração.
+4. `criar_produto` **não** cria `LojaOnlineConfig`: a config é criada à parte, em
+   `POST /loja-online/config` (default `visivel=False` no modelo).
+5. **Não existe** "fornecedor principal": `FornecedorProduto` não tem campo `principal`
+   (tem `codigo_fornecedor`, `preco_fornecedor`, `prazo_entrega_dias`, `quantidade_minima`, `ativo`).
+6. Produtos **não chama** o estoque (não há `httpx` no serviço): o catálogo público não filtra
+   por saldo. A chamada existente é **estoque → produtos** (`/produtos/{id}`, `/variantes/{id}`).
+
+---
+
+## 5. Serviço de Estoque (`services/estoque/` — porta 8003)
+
+### Modelos (schema `estoque`, resumo)
+
+```python
+class Estoque:      # UNIQUE(empresa_id, produto_id, variante_id); CHECK quantidades >= 0
+    id UUID, empresa_id, produto_id UUID, variante_id UUID | None
+    quantidade, quantidade_reservada, quantidade_disponivel: float
+    estoque_minimo: float, estoque_maximo: float | None, localizacao, ativo, created_at, updated_at
+
+class Movimentacao:
+    id UUID, estoque_id, lote_id, tipo (ENTRADA|SAIDA|AJUSTE|DEVOLUCAO|PERDA|TRANSFERENCIA),
+    quantidade, quantidade_anterior, quantidade_posterior, motivo, observacao,
+    documento, usuario_id, custo_unitario, custo_total, created_at
+
+class Lote:         # UNIQUE(empresa_id, codigo); status ATIVO|VENCIDO|BLOQUEADO
+class BaixaVendaProcessada / EstornoVendaProcessado:   # ledgers de idempotência, UNIQUE(empresa_id, documento)
+class Inventario / ItemInventario:
+```
+
+Estoque é por `produto_id` (+ `variante_id` opcional), identificado por `estoque_id`;
+**não** por `variante_id` como chave única.
+
+### Endpoints (`routers/estoque.py`, prefixo `/estoque`)
+
+```
+POST /estoque                          → criar registro de estoque
+GET  /estoque                          → listar (com alerta)
+GET  /estoque/baixo                    → abaixo do mínimo
+GET  /estoque/zerado
+GET  /estoque/disponibilidade          → ?produto_id=&variante_id=
+GET  /estoque/{estoque_id}    PUT /estoque/{estoque_id}
+GET  /estoque/{estoque_id}/movimentacoes
+GET  /estoque/{estoque_id}/lotes       GET /estoque/lotes/vencendo
+
+POST /estoque/entrada    POST /estoque/saida    POST /estoque/ajuste
+POST /estoque/reservar   POST /estoque/liberar-reserva
+POST /estoque/baixar-venda    POST /estoque/estornar-venda      (idempotentes por documento)
+
+GET  /estoque/relatorios/geral    GET /estoque/relatorios/movimentacoes
+```
+
+Não há `/estoque/{variante_id}/entrada|saida|ajuste|devolucao` nem `/estoque/alertas/minimo`;
+o corpo carrega `produto_id`/`variante_id`.
+
+### Regras de negócio
+
+1. `quantidade`, `quantidade_reservada` e `quantidade_disponivel` não podem ser negativas:
+   `CHECK ck_estoque_quantidades_nao_negativas` no banco. Saída acima do saldo é recusada pelo
+   serviço com `ValueError` → **HTTP 400** (não 422).
+2. Movimentações não têm endpoint de edição nem de exclusão (histórico só cresce).
+3. Body com `empresa_id` diferente de `X-Empresa-Id` → 403.
+4. `baixar-venda` e `estornar-venda` usam `documento` (= `numero_venda`) como chave de
+   idempotência: repetir a chamada não baixa/devolve em duplicidade.
+5. **Não há evento `estoque.minimo`**: o serviço não publica nada. O "abaixo do mínimo" é
+   consulta (`/estoque/baixo`, `estoque.quantidade <= estoque_minimo`).
+6. Chama o serviço produtos por HTTP (`services/estoque/services/estoque_service.py`).
+
+---
+
+## 6. Serviço de Vendas (`services/vendas/` — porta 8004)
+
+### Modelos (schema `vendas`, resumo — `models/venda.py`)
+
+```python
+class Venda:         # UNIQUE(empresa_id, numero_venda)
+    id UUID, empresa_id, numero_venda ("V-2026-00001"), cliente_id UUID | None,
+    subtotal, desconto_tipo (PERCENTUAL|VALOR_FIXO), desconto_valor, valor_frete, valor_total,
+    status, tipo_entrega (RETIRADA|DELIVERY),
+    mercadopago_preference_id, mercadopago_payment_id, sessao_carrinho_id,
+    cliente_convidado_* (nome, telefone, email, cpf), endereco_* (entrega),
+    data_pedido/confirmacao/separacao/entregue/finalizada/cancelada, motivo_cancelamento,
+    reconciliacao_estoque_pendente, observacao
+class ItemVenda:            # snapshot do produto: descricao_produto, preco_unitario, subtotal
+class PagamentoVenda:       # forma_pagamento (DINHEIRO|PIX|DEBITO|CREDITO|FIADO), valor_pago,
+                            # valor_recebido, valor_troco, gera_conta_receber, conta_receber_id
+class ReservaEstoqueVenda / ReservaTemporaria       # reserva de estoque (temporária: 15 min)
+class WebhookProcessado                             # idempotência do webhook
+class ConfiguracaoPagamento / ConfiguracaoIntegracao / FaixaEntrega / ConfiguracaoLoja
+```
+
+`StatusVenda`: `PEDIDO`, `PENDENTE_PAGAMENTO`, `CONFIRMADA`, `SEPARADA`, `EM_ENTREGA`,
+`ENTREGUE`, `FINALIZADA`, `CANCELADA`, `REEMBOLSADA`.
+
+**O carrinho não é tabela**: fica no Redis (`services/carrinho_service.py`, TTL de 7 dias). Não há
+modelos `Carrinho`, `Pedido`, `EnderecoEntrega` nem `Pagamento` com esses nomes.
 
 ### Endpoints
 
 ```
-POST   /clientes                      → criar cliente (valida CPF único + formato)
-GET    /clientes                      → listar (paginado, filtro por nome/cpf/bloqueado)
-GET    /clientes/{id}                 → buscar por id
-GET    /clientes/cpf/{cpf}            → buscar por CPF (usado no checkout)
-PATCH  /clientes/{id}                 → atualizar dados parcialmente
-DELETE /clientes/{id}                 → soft delete (ativo=False)
+# Vendas (balcão/admin) — /vendas
+POST /vendas    GET /vendas    GET /vendas/{id}    PUT /vendas/{id}
+POST /vendas/{id}/confirmar|separar|entregar|finalizar|cancelar
+GET  /vendas/{id}/pagamentos    POST /vendas/{id}/pagamentos
+GET  /vendas/relatorios/resumo
 
-POST   /clientes/{id}/enderecos       → adicionar endereço
-GET    /clientes/{id}/enderecos       → listar endereços
-PATCH  /clientes/{id}/enderecos/{eid} → atualizar endereço
-DELETE /clientes/{id}/enderecos/{eid} → remover endereço
+# Loja online — /loja (carrinho e checkout no serviço; slug/tenant resolvido em utils/tenant.py)
+GET    /loja/carrinho    POST /loja/carrinho/itens
+PUT    /loja/carrinho/itens/{produto_id}    DELETE /loja/carrinho/itens/{produto_id}
+DELETE /loja/carrinho
+POST   /loja/checkout
+GET    /loja/meus-pedidos    GET /loja/rastrear/{numero_venda}
+POST   /loja/pedidos/{numero_venda}/retry-payment
+POST   /loja/pedidos/{numero_venda}/recuperar-carrinho
 
-PATCH  /clientes/{id}/credito         → ADMIN: define/ajusta limite_credito e dia_vencimento
-PATCH  /clientes/{id}/bloquear        → ADMIN: bloquear cliente manualmente
-PATCH  /clientes/{id}/desbloquear     → ADMIN: desbloquear cliente manualmente
-GET    /clientes/{id}/historico-credito → extrato de movimentações de crédito
+# Webhook Mercado Pago
+POST /loja/{empresa_slug}/webhook/mercadopago      GET /loja/{empresa_slug}/webhook/mercadopago/test
+
+# Configuração por empresa (admin)
+GET|PUT  /admin/entrega/configuracao       GET|POST /admin/entrega/faixas
+GET|PUT|DELETE /admin/entrega/faixas/{faixa_id}    GET /admin/entrega/simular/{cep}
+GET /pagamentos/admin/status    GET|POST|PUT|DELETE /pagamentos/admin/configuracao
+PATCH /pagamentos/admin/configuracao/ativar|desativar
+GET|PUT|DELETE /integracoes                 # WhatsApp (Evolution) e SMTP por empresa
 ```
 
-### Regras de Negócio
+Não há `/pedidos`, `PATCH /pedidos/{id}/status`, `PATCH /pedidos/{id}/frete` nem
+`PATCH /pagamentos/{pedido_id}/confirmar`. O gateway já tem um proxy
+`POST /pagamentos/webhook/mercadopago` que encaminha ao vendas; `A CONFIRMAR` qual rota do vendas
+o recebe (o serviço expõe `/loja/{empresa_slug}/webhook/mercadopago`).
 
-1. CPF deve ser validado matematicamente (algoritmo dos dígitos verificadores)
-2. Ao definir `limite_credito`, `credito_disponivel` = `limite_credito` − `saldo_devedor_atual`
-3. `credito_disponivel` nunca pode ser negativo
-4. `bloqueado=True` quando saldo vencido E `credito_disponivel == 0`
-5. `dia_vencimento` aceita apenas valores entre 1 e 28
-6. Telefone deve estar no formato E.164 (ex: +5511999999999) — validar e normalizar
-7. Ao desativar (soft delete), verificar se cliente tem pedidos em aberto ou contas pendentes — se sim, impedir e retornar erro 409
+### Regras de negócio
+
+1. **Reserva de estoque**: chamadas HTTP a `ESTOQUE_URL` — `/estoque/reservar`,
+   `/estoque/liberar-reserva`, `/estoque/saida` (`services/venda_service.py`), e
+   `/estoque/baixar-venda`, `/estoque/estornar-venda` (ver `comunicacao.md` para linhas).
+   A porta do estoque é **8003**.
+2. **Webhook Mercado Pago**: valida `x-signature` com segredo por empresa
+   (`mercadopago_webhook_secret`); notificação sem o cabeçalho cai no IPN legado (`?topic=`).
+   Idempotência por `WebhookProcessado`.
+3. **Pagamento online**: cria preferência de checkout no Mercado Pago
+   (`services/mercadopago_service.py`); não há geração de QR code PIX própria no serviço.
+4. **Desconto existe**: `desconto_tipo`/`desconto_valor` na venda (não é "sempre 0.00").
+5. **Frete**: `valor_frete`, calculado por faixas de CEP (`FaixaEntrega`,
+   `/admin/entrega/simular/{cep}`), não por `PATCH` manual.
+6. **Troco**: `PagamentoVenda.valor_recebido` e `valor_troco` (só DINHEIRO).
+7. **Loops periódicos no processo** (`main.py`, `lifespan`): `verificar_pagamentos_pendentes`
+   a cada 60 s e `reconciliar_estoque_vendas` a cada 120 s. Os demais arquivos em `jobs/`
+   (`limpar_reservas`, `limpar_carrinhos_abandonados`, `verificar_timeouts_separacao`) **não são
+   agendados por nenhum código**; `A CONFIRMAR` se algum cron externo os executa.
+8. **Fiado**: `PagamentoVenda.gera_conta_receber`/`conta_receber_id` existem, mas o serviço
+   financeiro é esqueleto (sem rotas). `A CONFIRMAR` o que acontece de fato no fiado.
 
 ---
 
-## 4. Serviço de Produtos (`services/produtos/` — porta 8003)
+## 7. Serviço Financeiro (`services/financeiro/` — porta 8005) — ESQUELETO
 
-### Modelos
-
-```python
-class Categoria(Base):
-    id: UUID (PK)
-    nome: str (UK)
-    descricao: Optional[str]
-
-class Produto(Base):
-    id: UUID (PK)
-    categoria_id: UUID (FK → categorias.id)
-    nome: str
-    descricao: Optional[str]
-    ativo: bool (default=True)
-    criado_em: datetime
-
-class Variante(Base):
-    id: UUID (PK)
-    produto_id: UUID (FK → produtos.id, ON DELETE CASCADE)
-    sku: str (UK, NOT NULL)
-    preco_custo: Decimal (NOT NULL, > 0)
-    markup_pct: Decimal (NOT NULL, >= 0)
-    preco_venda: Decimal (calculado e armazenado)
-    ativo: bool (default=True)
-
-class AtributoVariante(Base):
-    id: UUID (PK)
-    variante_id: UUID (FK → variantes.id, ON DELETE CASCADE)
-    chave: str  # ex: "cor", "tamanho"
-    valor: str  # ex: "vermelho", "G"
-
-class CatalogoConfig(Base):
-    id: UUID (PK)
-    produto_id: UUID (FK UK → produtos.id)
-    visivel: bool (default=False)
-    destaque: bool (default=False)
-    ordem_exibicao: int (default=0)
-    descricao_publica: Optional[str]
-    atualizado_em: datetime
-
-class CatalogoFoto(Base):
-    id: UUID (PK)
-    produto_id: UUID (FK → produtos.id, ON DELETE CASCADE)
-    url: str
-    ordem: int (default=0)
-
-class Fornecedor(Base):
-    id: UUID (PK)
-    cnpj: str (UK, validado)
-    razao_social: str
-    nome_fantasia: Optional[str]
-    telefone: str
-    email: Optional[str]
-    prazo_entrega_dias: Optional[int]
-    ativo: bool (default=True)
-
-class FornecedorProduto(Base):
-    id: UUID (PK)
-    fornecedor_id: UUID (FK → fornecedores.id)
-    produto_id: UUID (FK → produtos.id)
-    preco_custo: Decimal
-    cod_fornecedor: Optional[str]
-    principal: bool (default=False)
-    UNIQUE(fornecedor_id, produto_id)
-```
-
-### Endpoints
-
-```
-# Categorias
-POST   /categorias                    → criar
-GET    /categorias                    → listar
-PATCH  /categorias/{id}               → atualizar
-DELETE /categorias/{id}               → deletar (impedir se tiver produtos vinculados)
-
-# Produtos
-POST   /produtos                      → criar produto + CatalogoConfig automática (visivel=False)
-GET    /produtos                      → listar (filtro: categoria, ativo, nome)
-GET    /produtos/{id}                 → buscar com variantes e config de catálogo
-PATCH  /produtos/{id}                 → atualizar dados do produto
-DELETE /produtos/{id}                 → soft delete
-
-# Variantes
-POST   /produtos/{id}/variantes       → adicionar variante (calcula preco_venda automaticamente)
-PATCH  /produtos/{id}/variantes/{vid} → atualizar variante (recalcula preco_venda)
-DELETE /produtos/{id}/variantes/{vid} → desativar variante
-
-# Catálogo (admin)
-PATCH  /produtos/{id}/catalogo        → publicar/ocultar, destaque, ordem, descrição pública
-POST   /produtos/{id}/catalogo/fotos  → adicionar foto (url)
-DELETE /produtos/{id}/catalogo/fotos/{fid} → remover foto
-
-# Catálogo (público — sem auth)
-GET    /catalogo                      → listar produtos visíveis com estoque disponível (paginado)
-GET    /catalogo/{id}                 → detalhe público do produto com variantes disponíveis
-
-# Fornecedores
-POST   /fornecedores                  → criar (valida CNPJ)
-GET    /fornecedores                  → listar
-PATCH  /fornecedores/{id}             → atualizar
-POST   /fornecedores/{id}/produtos    → vincular produto com preço de custo
-DELETE /fornecedores/{id}/produtos/{pid} → desvincular
-```
-
-### Regras de Negócio
-
-1. `preco_venda = preco_custo * (1 + markup_pct / 100)` — calculado e salvo sempre que custo ou markup mudar
-2. SKU deve ser único globalmente (não apenas por produto)
-3. Ao criar produto, `CatalogoConfig` é criada automaticamente com `visivel=False`
-4. Apenas 1 `FornecedorProduto` pode ter `principal=True` por produto — ao marcar um como principal, os demais são desmarcados automaticamente
-5. CNPJ validado matematicamente (algoritmo dos dígitos verificadores)
-6. Endpoint `/catalogo` público deve cruzar com o serviço de estoque (via HTTP interno ao `services/estoque`) para mostrar apenas variantes com `quantidade > 0`
+- `main.py` só expõe `GET /health` (mais o middleware de origem interna).
+- `models/`, `routers/`, `schemas/`, `repositories/` e `services/` contêm apenas `__init__.py`
+  vazio; `seed.py` tem 16 linhas.
+- O gateway roteia `/contas/*` para este serviço (`SERVICE_URLS`), mas **não há rota `/contas`
+  implementada**: qualquer chamada resulta em 404 do serviço.
+- **Não existem**: contas a receber, pagamentos de fiado, jobs de vencimento, evento
+  `cobranca.*`. O que antes era descrito aqui era especificação, não código.
 
 ---
 
-## 5. Serviço de Estoque (`services/estoque/` — porta 8004)
+## 8. Serviço de Notificações (`services/notificacoes/` — porta 8006) — ESQUELETO
 
-### Modelos
-
-```python
-class Estoque(Base):
-    id: UUID (PK)
-    variante_id: UUID (UK, NOT NULL)  # referência externa — sem FK entre serviços
-    quantidade: int (default=0, >= 0)
-    quantidade_minima: int (default=0)
-    atualizado_em: datetime
-
-class Movimentacao(Base):
-    id: UUID (PK)
-    variante_id: UUID (NOT NULL)
-    tipo: Enum(ENTRADA, SAIDA, AJUSTE, DEVOLUCAO)
-    quantidade: int (NOT NULL, != 0)
-    motivo: str
-    referencia_id: Optional[UUID]     # id do pedido, ajuste manual, etc.
-    criado_em: datetime (readonly — nunca editável)
-```
-
-### Endpoints
-
-```
-POST   /estoque                       → criar registro de estoque para variante
-GET    /estoque                       → listar (filtro: variante_id, abaixo_minimo)
-GET    /estoque/{variante_id}         → consultar estoque de uma variante
-POST   /estoque/{variante_id}/entrada → registrar entrada de mercadoria
-POST   /estoque/{variante_id}/saida   → registrar saída manual
-POST   /estoque/{variante_id}/ajuste  → corrigir quantidade (inventário)
-POST   /estoque/{variante_id}/devolucao → devolução de pedido
-GET    /estoque/{variante_id}/movimentacoes → histórico de movimentações (paginado)
-GET    /estoque/alertas/minimo        → listar variantes abaixo do mínimo
-```
-
-### Regras de Negócio
-
-1. `quantidade` nunca pode ser negativa — retornar 422 se `saida > quantidade_atual`
-2. Toda movimentação é **imutável** após criação — nenhum endpoint de PATCH/DELETE em movimentações
-3. Ao registrar entrada de produto novo via `POST /estoque`, criar registro de `Estoque` com `quantidade=0` primeiro
-4. Ao dar saída (via pedido confirmado), o `referencia_id` deve ser o `pedido_id`
-5. Ao atingir `quantidade <= quantidade_minima`, publicar evento `estoque.minimo` no RabbitMQ com payload:
-   ```json
-   {
-     "variante_id": "uuid",
-     "sku": "string",
-     "quantidade_atual": 5,
-     "quantidade_minima": 10
-   }
-   ```
-6. Operações de entrada/saída/ajuste devem ser **transacionais** (tudo ou nada com a movimentação)
-
----
-
-## 6. Serviço de Vendas (`services/vendas/` — porta 8007)
-
-### Modelos
-
-```python
-class Carrinho(Base):
-    id: UUID (PK, usado como token anônimo)
-    cliente_id: Optional[UUID]         # null = visitante anônimo
-    status: Enum(ATIVO, FINALIZADO, ABANDONADO, EXPIRADO)
-    criado_em: datetime
-    expira_em: datetime                # criado_em + 24h
-
-class ItemCarrinho(Base):
-    id: UUID (PK)
-    carrinho_id: UUID (FK → carrinhos.id, ON DELETE CASCADE)
-    variante_id: UUID (NOT NULL)       # referência externa
-    quantidade: int (> 0)
-    preco_unitario: Decimal            # snapshot do preço no momento
-
-class Pedido(Base):
-    id: UUID (PK)
-    cliente_id: Optional[UUID]         # null = visitante anônimo
-    origem: Enum(CATALOGO, BALCAO)
-    nome_comprador: str                # obrigatório para anônimos
-    telefone_comprador: str            # obrigatório para notificação
-    modalidade_pagto: Enum(A_VISTA, FIADO)
-    modalidade_entrega: Enum(RETIRADA, ENTREGA)
-    status: Enum(PENDENTE, CONFIRMADO, SEPARANDO, ENVIADO, ENTREGUE, CANCELADO)
-    subtotal: Decimal
-    desconto: Decimal (default=0.00)
-    frete: Decimal (default=0.00)
-    total: Decimal
-    observacao: Optional[str]
-    criado_em: datetime
-    atualizado_em: datetime
-
-class ItemPedido(Base):
-    id: UUID (PK)
-    pedido_id: UUID (FK → pedidos.id, ON DELETE CASCADE)
-    variante_id: UUID (NOT NULL)
-    quantidade: int
-    preco_unitario: Decimal            # snapshot imutável
-    subtotal: Decimal
-
-class EnderecoEntrega(Base):
-    id: UUID (PK)
-    pedido_id: UUID (FK UK → pedidos.id)
-    logradouro: str
-    numero: str
-    complemento: Optional[str]
-    bairro: str
-    cidade: str
-    uf: str
-    cep: str
-
-class Pagamento(Base):
-    id: UUID (PK)
-    pedido_id: UUID (FK UK → pedidos.id)
-    metodo: Enum(DINHEIRO, PIX, CARTAO, FIADO)
-    subtipo: Optional[Enum(DEBITO, CREDITO)]   # apenas para CARTAO
-    valor: Decimal
-    status_confirmacao: Enum(PENDENTE, CONFIRMADO, RECUSADO)
-    mp_payment_id: Optional[str]               # ID retornado pelo Mercado Pago
-    confirmado_em: Optional[datetime]
-    valor_recebido: Optional[Decimal]          # apenas para DINHEIRO
-    troco: Optional[Decimal]                   # calculado: valor_recebido - total
-```
-
-### Endpoints
-
-```
-# Carrinho (público — sem auth)
-POST   /carrinho                      → criar carrinho → retorna {id, token}
-GET    /carrinho/{token}              → consultar carrinho
-POST   /carrinho/{token}/itens        → adicionar item (verifica estoque via HTTP)
-PATCH  /carrinho/{token}/itens/{id}   → alterar quantidade
-DELETE /carrinho/{token}/itens/{id}   → remover item
-DELETE /carrinho/{token}              → abandonar carrinho
-
-# Checkout (público)
-POST   /carrinho/{token}/checkout     → finalizar compra → gera Pedido
-
-# Pedidos (protegido)
-GET    /pedidos                       → listar (filtro: status, origem, cliente_id, data)
-GET    /pedidos/{id}                  → detalhe completo
-PATCH  /pedidos/{id}/status           → ADMIN: avançar status manualmente
-PATCH  /pedidos/{id}/frete            → ADMIN: define valor do frete (apenas status PENDENTE)
-DELETE /pedidos/{id}/cancelar         → cancelar pedido (com motivo)
-
-# Pagamentos
-POST   /pagamentos/webhook/mercadopago → webhook público do MP (valida assinatura HMAC)
-PATCH  /pagamentos/{pedido_id}/confirmar → ADMIN: confirmar pagamento manual (dinheiro/cartão)
-```
-
-### Regras de Negócio
-
-1. **Carrinho expira em 24h** — job Celery Beat roda a cada hora verificando carrinhos expirados
-2. **Adição de item ao carrinho**: verificar disponibilidade em estoque via `GET http://estoque:8003/estoque/{variante_id}` — retornar 422 se indisponível
-3. **Snapshot de preço**: ao adicionar ao carrinho, salvar `preco_unitario` atual — não atualizar se o preço mudar depois
-4. **Checkout — fluxo completo:**
-   a. Validar carrinho (`ATIVO`, não expirado, mínimo 1 item)
-   b. Se `modalidade_pagto=FIADO`:
-      - Verificar `cliente_id` não é null (obrigatório)
-      - Consultar cliente via HTTP: verificar `bloqueado=False` e `credito_disponivel >= total`
-   c. Se `modalidade_entrega=ENTREGA`: endereço de entrega obrigatório no body
-   d. Criar `Pedido` com `status=PENDENTE`
-   e. Se `metodo=PIX`: chamar API do Mercado Pago → salvar `mp_payment_id` → retornar `qr_code` e `qr_code_base64` para o frontend exibir
-   f. Se `metodo=DINHEIRO` ou `CARTAO`: `status_confirmacao=PENDENTE` (admin confirma)
-   g. Se `metodo=FIADO`: debitar crédito do cliente via HTTP → `status_confirmacao=CONFIRMADO` → publicar evento `pedido.confirmado`
-   h. Marcar carrinho como `FINALIZADO`
-
-5. **Webhook Mercado Pago:**
-   - Validar assinatura HMAC-SHA256 no header `x-signature`
-   - Consultar payment status na API do MP para confirmar
-   - Se `status=approved`: setar `status_confirmacao=CONFIRMADO` → publicar `pedido.confirmado` → dar baixa no estoque via HTTP
-   - Se `status=rejected`: setar `status_confirmacao=RECUSADO` → cancelar pedido → publicar `pedido.cancelado`
-
-6. **Ao confirmar pedido** (`pedido.confirmado`):
-   - Dar baixa no estoque: `POST http://estoque:8003/estoque/{variante_id}/saida` para cada item
-   - Se qualquer baixa falhar → rollback do pedido → retornar estoque
-
-7. **Cancelamento:**
-   - Se pedido já confirmado → devolver estoque: `POST http://estoque:8003/estoque/{variante_id}/devolucao`
-   - Se modalidade era FIADO → creditar de volta no cliente via HTTP
-   - Status não pode voltar atrás: ENTREGUE e CANCELADO são estados finais
-
-8. **Desconto:**
-   - Não existe desconto no MVP
-   - Campo `desconto` sempre persistido como `0.00`
-   - Nenhum endpoint aceita desconto no body
-
-9. **Frete:**
-   - Definido manualmente pelo admin por pedido
-   - No checkout, `frete` nasce como `0.00`
-   - Admin ajusta via `PATCH /pedidos/{id}/frete` (apenas status PENDENTE)
-   - `total` recalculado automaticamente: `total = subtotal + frete`
-
-10. **Troco (pagamento em dinheiro):**
-    - No checkout com `metodo=DINHEIRO`, body deve incluir `valor_recebido`
-    - Regra: `valor_recebido >= total` (retornar 422 se menor)
-    - Sistema calcula e retorna `troco = valor_recebido - total`
-    - Troco nunca é negativo
-
----
-
-## 7. Serviço Financeiro (`services/financeiro/` — porta 8005)
-
-### Modelos
-
-```python
-class ContaReceber(Base):
-    id: UUID (PK)
-    cliente_id: UUID (NOT NULL)
-    pedido_id: UUID (UK)               # 1 conta por pedido
-    valor_original: Decimal
-    valor_pago: Decimal (default=0.00)
-    saldo_devedor: Decimal             # calculado: valor_original - valor_pago
-    data_vencimento: date              # calculada a partir do dia_vencimento do cliente
-    status: Enum(ABERTO, PARCIAL, QUITADO, VENCIDO)
-    criado_em: datetime
-    quitado_em: Optional[datetime]
-
-class PagamentoFiado(Base):
-    id: UUID (PK)
-    conta_id: UUID (FK → contas_receber.id)
-    valor: Decimal (> 0)
-    forma: Enum(DINHEIRO, PIX, CARTAO)
-    observacao: Optional[str]
-    pago_em: datetime
-```
-
-### Endpoints
-
-```
-POST   /contas                         → criar conta (chamado internamente pelo serviço de vendas)
-GET    /contas                         → listar (filtro: cliente_id, status, vencimento)
-GET    /contas/{id}                    → detalhe com histórico de pagamentos
-GET    /contas/cliente/{cliente_id}    → todas as contas de um cliente
-POST   /contas/{id}/pagamentos         → registrar pagamento parcial ou total
-GET    /contas/vencer                  → contas que vencem nos próximos N dias (param)
-GET    /contas/vencidas                → contas com status VENCIDO
-PATCH  /contas/{id}/marcar-vencida    → (chamado pelo job Celery Beat)
-```
-
-### Regras de Negócio
-
-1. `data_vencimento` calculada assim: se `dia_vencimento=10` e pedido criado em 15/01, vencimento = 10/02
-2. `saldo_devedor = valor_original - valor_pago` — recalcular a cada pagamento
-3. Ao registrar pagamento:
-   - Se `valor >= saldo_devedor`: status → `QUITADO`, `quitado_em = now()`
-   - Senão: status → `PARCIAL`
-   - Creditar no cliente via HTTP: `PATCH http://clientes:8001/clientes/{id}/credito` com `delta = valor_pago`
-4. **Job Celery Beat diário (00:00):**
-   - Buscar contas com `data_vencimento < hoje` e `status IN (ABERTO, PARCIAL)` → marcar como `VENCIDO`
-   - Verificar cada cliente: se `credito_disponivel == 0` E tem conta `VENCIDO` → `bloquear=True` via HTTP
-   - Publicar evento `cobranca.vencida` para cada conta vencida com `{conta_id, cliente_id, cliente_telefone, saldo_devedor}`
-5. **Job Celery Beat (3 dias antes do vencimento):**
-   - Buscar contas que vencem em exatamente 3 dias → publicar evento `cobranca.lembrete`
-
----
-
-## 8. Serviço de Notificações (`services/notificacoes/` — porta 8006)
-
-### Modelo
-
-```python
-class Notificacao(Base):
-    id: UUID (PK)
-    tipo: Enum(PEDIDO_CONFIRMADO, PEDIDO_CANCELADO, ESTOQUE_MINIMO,
-               COBRANCA_LEMBRETE, COBRANCA_VENCIDA, CONTA_QUITADA)
-    destinatario: str                  # número telefone E.164
-    mensagem: str
-    status: Enum(PENDENTE, ENVIADO, FALHOU)
-    tentativas: int (default=0)
-    criado_em: datetime
-```
-
-### Consumer Events (RabbitMQ)
-
-**Exchange:** `erp.events` (tipo: topic)
-
-| Routing key | Ação |
-|---|---|
-| `pedido.confirmado` | WPP pro comprador: "Seu pedido #X foi confirmado!" |
-| `pedido.cancelado` | WPP pro comprador: "Seu pedido #X foi cancelado." |
-| `estoque.minimo` | WPP pro responsável (TELEFONE_RESPONSAVEL do .env): alerta |
-| `cobranca.lembrete` | WPP pro cliente: "Olá! Seu pagamento de R$X vence em 3 dias." |
-| `cobranca.vencida` | WPP pro cliente: "Seu pagamento de R$X está vencido." |
-| `conta.quitada` | WPP pro cliente: confirmação de quitação |
-
-### Regras de Negócio
-
-1. Retry automático: máximo 5 tentativas com backoff de 30s, 60s, 120s, 300s, 600s
-2. Após 5 falhas: status → `FALHOU`, não tenta mais
-3. Deduplicação: usar Redis com TTL de 1h para evitar reenvio duplicado (key: `notif:{tipo}:{referencia_id}`)
-4. Salvar histórico de toda notificação tentada (sucesso ou falha) no PostgreSQL
-
-### Endpoint
-
-```
-GET    /notificacoes                   → listar histórico (filtro: status, tipo, destinatario)
-POST   /notificacoes/{id}/reenviar     → ADMIN: forçar reenvio de uma notificação falha
-```
+- `main.py` só expõe `GET /health`.
+- Sem modelos, routers ou consumidor RabbitMQ. O gateway roteia `/notificacoes/*` para cá, mas
+  não há rota implementada.
+- **Não existem**: histórico de notificações, retry com backoff, deduplicação, consumo de
+  `erp.events`. Envio de WhatsApp (Evolution) e e-mail hoje é configurado no serviço vendas
+  (`configuracoes_integracao`). `A CONFIRMAR`: quem de fato envia mensagens ao comprador.
 
 ---
 
 **Projeto:** Runas  
 **Equipe:** Equipe DenebCorp  
-**Data:** 26 de Junho de 2026  
-**Versão:** 2.0.0  
-**Status**: 8 serviços operacionais (Gateway + Empresas + Clientes + Produtos + Estoque + Vendas + Financeiro + Notificações)
+**Última verificação contra o código:** 2026-09-26

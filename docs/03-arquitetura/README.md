@@ -27,8 +27,10 @@ apenas os ponteiros e os poucos fatos de arquitetura que não têm outro lar.
 ## Serviços e portas
 
 Portas lidas de `docker-compose.dev.yml` (bloco `ports:` e o `--port` de cada
-`command:`). Em dev elas são publicadas em `127.0.0.1` — só o gateway e o
-frontend ficam acessíveis de fora da máquina.
+`command:`). Em dev, as portas 8001-8007 dos microsserviços são publicadas só em
+`127.0.0.1`; o gateway (8000) e o frontend (3000) são publicados em todas as
+interfaces, assim como o Postgres, o Redis, o RabbitMQ e a Evolution API (ver a
+lista de infraestrutura abaixo).
 
 | Serviço | Porta | Container (dev) |
 |---|---|---|
@@ -50,11 +52,13 @@ Infraestrutura: PostgreSQL 15 em `5432`, Redis 7 em `6379`, RabbitMQ em
 
 ### 1. A comunicação é 100% HTTP síncrono — não há eventos em uso
 
-Existe infraestrutura de eventos: o RabbitMQ sobe em dev e em produção, todo
-um dos 7 microsserviços recebe `RABBITMQ_URL` (o gateway não) e todos os 7 têm
-um `events/publisher.py` com um método `publish()`. **Nenhum desses publishers
-é chamado por nenhum router, service ou repository** — `get_publisher` e `event_publisher` não aparecem fora
-das próprias pastas `events/`.
+Existe infraestrutura de eventos: o RabbitMQ sobe em dev e em produção, cada
+um dos 7 microsserviços recebe `RABBITMQ_URL` (em dev o gateway não recebe; em
+produção ele herda a variável pelo anchor `x-service-env`, mas o `config.py` do
+gateway não a lê) e todos os 7 têm um `events/publisher.py` com um método
+`publish()`. **Nenhum desses publishers é chamado por nenhum router, service ou
+repository** — `get_publisher` e `event_publisher` não aparecem fora das
+próprias pastas `events/`.
 
 Na prática, toda integração entre serviços passa por `httpx` a partir de
 `api-gateway/proxy/service_proxy.py`. Trate RabbitMQ como dependência
@@ -116,7 +120,10 @@ Detalhes de backup, volume e durabilidade em
 - **Rate limiting** no gateway: `300/minute` por IP como padrão
   (`api-gateway/middleware/rate_limit.py`); login, registro e reset de senha têm
   limites bem mais apertados aplicados por rota.
-- **Cache com Redis** para sessões, blacklist de tokens e rate limiting.
+- **Redis** para refresh tokens, blacklist de tokens, tokens de reset de senha e
+  idempotência no gateway. O rate limiting (`slowapi`) não usa Redis: o
+  `Limiter` é criado sem `storage_uri`, então os contadores ficam em memória do
+  processo (comportamento padrão do slowapi; A CONFIRMAR na versão instalada).
 
 ### O que não existe
 
@@ -124,8 +131,9 @@ Detalhes de backup, volume e durabilidade em
   em uma instância única.
 - **Nenhum load balancer.** O nginx do projeto (`frontend/nginx.conf`) serve o
   SPA buildado dentro da imagem do frontend; ele não distribui carga entre
-  instâncias. Em produção o TLS termina na Cloudflare e não há nginx na frente
-  dos serviços.
+  instâncias. Em produção o TLS termina na Cloudflare; o único nginx é o do
+  frontend, que repassa `/api/` a uma única instância do gateway
+  (`frontend/nginx.conf:25-37`) e não há nginx na frente dos microsserviços.
 - A VPS de produção é apertada em CPU — ver
   [performance e consumo de CPU](./performance-cpu.md) antes de propor subir
   mais containers.

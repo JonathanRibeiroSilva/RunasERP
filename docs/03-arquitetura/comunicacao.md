@@ -13,11 +13,14 @@ requirements e `services/*/events/publisher.py` existe, mas **nenhum código cha
 
 ### 1.1 Cliente → API Gateway → Microsserviço
 
-Todo tráfego externo entra pelo gateway:
+Todo tráfego de API entra pelo gateway (em produção, via o nginx do frontend):
 
 ```
 Navegador / app
-      │ HTTPS (Cloudflare Tunnel)
+      │ HTTPS (Cloudflare Tunnel -> frontend-prod:80)
+      ▼
+nginx do frontend (location /api/, tira o prefixo /api)   [frontend/nginx.conf:25-37]
+      │ HTTP
       ▼
 api-gateway (8000)
       │ valida JWT + RBAC
@@ -70,6 +73,7 @@ Chamadas diretas, sempre com `httpx.AsyncClient` e sempre carimbadas com
 | vendas | estoque (`/estoque/reservar`, `/liberar-reserva`, `/saida`, `/baixar-venda`, `/estornar-venda`, `/disponibilidade`) | `services/vendas/services/venda_service.py:157-369`, `reserva_temporaria_service.py:61-68` |
 | vendas | empresas (`/empresas/publico/{slug}`, `/empresas/{id}`) | `services/vendas/utils/tenant.py:31-131` |
 | vendas | api-gateway (`POST /auth/cliente/registrar-interno`) | `services/vendas/services/loja_service.py:210-215` |
+| vendas | empresas (GET do nome da empresa para o e-mail de credenciais, montado como `{CLIENTES_URL}/../empresas/empresas/{id}`) | `services/vendas/services/loja_service.py:247` (A CONFIRMAR: se essa URL relativa resolve em algum ambiente; as outras chamadas a empresas usam `EMPRESAS_URL`) |
 
 Notas de estado real:
 
@@ -110,11 +114,19 @@ O que **não** existe:
 - Nenhum consumidor: não há worker de fila em nenhum compose.
 - Nenhum Celery: `celery==5.6.3` está nos requirements, mas não há `Celery(...)`,
   `celery_app`, `@shared_task` nem `beat_schedule` em lugar nenhum, e não há
-  container de worker/beat. **Não existe job agendado rodando.**
+  container de worker/beat. **Não existe scheduler residente separado**, mas há trabalho
+periódico rodando: o `vendas` sobe dois loops `asyncio` no `lifespan`
+(`services/vendas/main.py:37-71` — pagamentos pendentes a cada 60s, reconciliação de
+estoque a cada 120s), e a régua de inadimplência depende de cron do host chamando
+`POST /plataforma/jobs/regua` (runbook de produção, seção "O cron obrigatório").
 
 Consequência prática: qualquer fluxo descrito como "publica evento X e o serviço Y
-consome" é ficção. Notificação, baixa de estoque e conta a receber, quando acontecem,
-acontecem por chamada HTTP síncrona dentro do mesmo request.
+consome" é ficção. A baixa de estoque de uma venda acontece por chamada HTTP síncrona
+de `vendas` para `estoque` (tabela da seção 1.2). O WhatsApp sai direto de `vendas`
+para a Evolution API (`notificacao_service.py:359-374`), sem passar pelo serviço
+`notificacoes`. Já **conta a receber**: `vendas` só grava a flag/coluna
+`gera_conta_receber` / `conta_receber_id` e não chama o `financeiro` (ver "Notas de
+estado real" acima) — A CONFIRMAR: o que de fato cria a conta a receber.
 
 ---
 
@@ -243,7 +255,7 @@ Não há um Postgres por serviço. Há **um container `db`, um database `erp`, e
 por serviço**:
 
 - `docker-compose.prod.yml:51` define o único serviço `db`; `POSTGRES_DB=erp`.
-- `db-init` (`docker-compose.prod.yml:140-163`) roda `CREATE SCHEMA IF NOT EXISTS` para
+- `db-init` (`docker-compose.prod.yml:140-238`) roda `CREATE SCHEMA IF NOT EXISTS` para
   cada schema, porque as migrations fazem `CREATE TABLE <schema>.<table>` mas nunca
   `CREATE SCHEMA`.
 - Cada serviço recebe sua própria variável (`DATABASE_URL_CLIENTES`,
@@ -262,7 +274,8 @@ O isolamento é **lógico (schema + `X-Empresa-Id`)**, não físico.
 
 - **Produção**: `docker-compose.prod.yml` **não publica nenhuma porta**. O único
   ingress é o `cloudflared` (`docker-compose.prod.yml:539`), que aponta para
-  `frontend-prod:80` e para o gateway. Os serviços só se alcançam pela rede
+  `frontend-prod:80` (o nginx do frontend repassa `/api/` ao gateway); o comentário do
+  compose lista ainda uma rota para o Coolify no host (`:545-546`). Os serviços só se alcançam pela rede
   `erp-network`.
 - **Desenvolvimento**: os serviços internos publicam apenas em loopback
   (`127.0.0.1:8001:8001` … `127.0.0.1:8007:8007`), garantido por
@@ -275,7 +288,7 @@ O isolamento é **lógico (schema + `X-Empresa-Id`)**, não físico.
 
 | Caminho | Transporte | Prova de identidade |
 |---|---|---|
-| Cliente → gateway | HTTPS via Cloudflare Tunnel | JWT + RBAC no gateway |
+| Cliente → gateway | HTTPS via Cloudflare Tunnel, nginx do frontend em `/api/` | JWT + RBAC no gateway |
 | Gateway → serviço | `httpx.AsyncClient` (timeout 30s) | `X-Servico-Interno-Token` (fail-open) + `X-Empresa-Id`/`X-Cliente-Id` injetados |
 | Gateway → empresas (plataforma) | `httpx.AsyncClient` (timeout 30s) | acima + `X-Plataforma: 1` e `X-Plataforma-Token` (fail-open) |
 | Serviço → serviço | `httpx.AsyncClient` (timeout 5s/10s) | `auth_interno()` explícito por chamada |

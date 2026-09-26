@@ -66,9 +66,9 @@ O `ServiceProxy` **não reescreve** o caminho: a URL final é `f"{service_url}{p
 
 ### 🚨 `/contas` aponta para um serviço que não tem a rota
 
-`SERVICE_URLS` manda `/contas` para `FINANCEIRO_URL`, mas `services/financeiro/main.py` registra **apenas** `@app.get("/health")` — e `services/financeiro/routers/__init__.py` está vazio, sem nenhum router incluído.
+`SERVICE_URLS` manda `/contas` para `FINANCEIRO_URL`, mas `services/financeiro/main.py` registra **apenas** `@app.get("/health")` — e `services/financeiro/routers/__init__.py` só tem uma docstring, sem nenhum router incluído.
 
-Portanto **toda** chamada a `/contas/*` é 404 garantido, vindo do FastAPI do financeiro (não do gateway). O gateway autentica, exige ADMIN, encaminha, e o financeiro responde 404. O serviço financeiro tem `models/`, `repositories/`, `services/` e `schemas/`, mas nenhum deles está exposto por HTTP.
+Portanto **toda** chamada a `/contas/*` é 404 garantido, vindo do FastAPI do financeiro (não do gateway). O gateway autentica, exige ADMIN, encaminha, e o financeiro responde 404. O serviço financeiro tem as pastas `models/`, `repositories/`, `services/` e `schemas/`, mas o `__init__.py` de cada uma só contém uma docstring: não há modelo, repositório, serviço nem schema implementado (`main.py` não inclui nenhum router).
 
 ---
 
@@ -156,7 +156,7 @@ Detalhe do plano de controle e dos contratos de cada rota: [plataforma-api.md](p
 
 ## 🛒 Rotas de proxy sem autenticação
 
-De `api-gateway/routers/proxy.py`, os handlers declarados **antes** dos autenticados (o Starlette casa na ordem de registro).
+De `api-gateway/routers/proxy.py`. O Starlette casa na ordem de registro, então cada handler público precisa vir antes do catch-all autenticado do mesmo prefixo (`/empresas/publico`, `/loja-online/publico`, `/carrinho` e `/loja` estão antes de `/empresas/{path}`, `/loja-online/{path}` etc.). **Exceção**: o webhook de `/pagamentos`, ver nota abaixo da tabela.
 
 | Métodos | Rota no gateway | Serviço | Como resolve o tenant |
 |---------|-----------------|---------|----------------------|
@@ -164,7 +164,9 @@ De `api-gateway/routers/proxy.py`, os handlers declarados **antes** dos autentic
 | GET | `/loja-online/publico/{path:path}` | produtos (8002) | query param `empresaSlug` |
 | GET POST PATCH DELETE | `/carrinho/{path:path}` | vendas (8004) | query param `empresaSlug` |
 | GET POST PUT PATCH DELETE | `/loja/{path:path}` | vendas (8004) | query param `empresaSlug` |
-| POST | `/pagamentos/webhook/mercadopago` | vendas (8004) | nenhum (webhook) |
+| POST | `/pagamentos/webhook/mercadopago` | vendas (8004) | nenhum (webhook) — **ver aviso abaixo** |
+
+> **Aviso sobre `/pagamentos/webhook/mercadopago`.** Ele é declarado em `proxy.py:498`, **depois** de `/pagamentos/{path:path}` (`proxy.py:452`, guard `get_current_active_user`). Pela ordem de registro, um POST nesse caminho casa primeiro com o catch-all autenticado, então o handler público provavelmente nunca é alcançado. Além disso, o serviço de vendas não tem rota `/pagamentos/webhook/mercadopago`: o webhook do Mercado Pago de vendas é `POST /loja/{empresa_slug}/webhook/mercadopago` (`services/vendas/routers/webhook.py:61`), coberto pelo catch-all público `/loja/{path:path}`. **A CONFIRMAR**: comportamento em runtime (só a leitura do código foi feita) e qual URL está cadastrada no painel do Mercado Pago. O webhook de mensalidade da plataforma é outro: `/plataforma/webhook/mercadopago`, acima.
 
 Quando `empresaSlug` vem preenchido, `ServiceProxy.get_empresa_id_from_slug()` faz `SELECT id FROM empresas.empresas WHERE slug = :slug`; slug inexistente → `404 "Empresa com slug '<x>' não encontrada"`.
 
@@ -355,7 +357,7 @@ Credenciais de seed: ver [../06-operacao/SEED_DATA_COMPLETO.md](../06-operacao/S
 }
 ```
 
-Eventos relacionados no mesmo módulo: `proxy.idempotent_hit`, `proxy.timeout`. Em `main.py`: `health.check_failed`.
+Eventos relacionados no mesmo módulo: `proxy.response`, `proxy.idempotent_hit`, `proxy.timeout`, `proxy.connection_error`, `proxy.error`. Em `main.py`: `health.check_failed`.
 
 ---
 
@@ -366,11 +368,11 @@ Eventos relacionados no mesmo módulo: `proxy.idempotent_hit`, `proxy.timeout`. 
 | Nenhum prefixo de `SERVICE_URLS` casou | 404 `"Serviço não encontrado"` | gateway |
 | `empresaSlug` inexistente | 404 `"Empresa com slug '<x>' não encontrada"` | gateway |
 | Papel insuficiente | 403 | guard do gateway |
-| Serviço não respondeu em 30s | 504 | gateway (`proxy.timeout`) |
+| Serviço não respondeu em 30s | 504 `"Serviço não respondeu a tempo"` | gateway (`proxy.timeout`) |
+| Conexão recusada (`httpx.ConnectError`) | 503 `"Serviço indisponível"` | gateway (`proxy.connection_error`) |
+| Qualquer outra exceção ao falar com o serviço | 500 `"Erro ao comunicar com o serviço"` | gateway (`proxy.error`) |
 | Rota não existe no serviço de destino (ex.: qualquer `/contas/*`) | 404 | microsserviço |
 | Dependência caída em `/health/ready` | 503 nomeando o check | gateway |
-
-**A CONFIRMAR**: o comportamento exato de conexão recusada (503 vs 502) não foi lido no `except` de `proxy_request` — as linhas inspecionadas cobrem só o ramo de timeout.
 
 ---
 
