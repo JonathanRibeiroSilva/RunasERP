@@ -10,8 +10,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Restrito a raiz: e artefato de empacotamento Python (build/, dist/, sdist/).
+# Sem o "/" inicial engoliria qualquer pasta lib/ de codigo real em subdiretorio.
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -111,6 +113,9 @@ dump.rdb
 # Dev Scripts (Windows batch files for local development)
 dev-scripts/
 *.bat
+# Excecao: Menu.bat e o atalho de entrada do projeto (chama erp.ps1) e precisa
+# chegar em clones novos.
+!Menu.bat
 
 # Graphify (per-file AST cache is regenerable and bloats the repo; graph outputs are tracked)
 graphify-out/cache/
