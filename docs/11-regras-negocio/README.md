@@ -12,7 +12,7 @@ usa `RN-CLI-*` e `RN-END-*`; `produtos.md` usa `RN-CAT-*`, `RN-PRO-*`, `RN-VAR-*
 | Clientes | [clientes.md](./clientes.md) | Cliente e Endereço: validação de CPF, telefone E.164, nome e e-mail; limite e crédito disponível para venda fiada; bloqueio. Casos de uso ao final. |
 | Produtos | [produtos.md](./produtos.md) | Sete entidades: Categoria, Produto, Variante, Fornecedor, vínculo Fornecedor-Produto, configuração de Catálogo e fotos de Catálogo. |
 | Estoque | [estoque.md](./estoque.md) | Estoque, Movimentação, Lote e Inventário: fórmula `quantidade_disponivel = quantidade - quantidade_reservada`, alertas de mínimo/zerado e reserva. |
-| Vendas | [vendas.md](./vendas.md) | Carrinho (token anônimo, TTL, reserva de estoque no Redis), Pedido e Venda, além dos fluxos completos e das integrações com os outros serviços. |
+| Vendas | [vendas.md](./vendas.md) | Carrinho anônimo por sessão (Redis, TTL de 7 dias), reserva temporária, o ciclo da Venda (`PEDIDO` a `FINALIZADA`), pagamentos e Mercado Pago, além da integração com o estoque. |
 | Financeiro | [financeiro.md](./financeiro.md) | **PLANEJADO — ver aviso abaixo.** Conta a Receber, Pagamento Fiado, controle de crédito, jobs Celery, eventos assíncronos e relatórios. |
 
 ## ⚠️ financeiro.md é especificação, não é o que roda
@@ -39,5 +39,5 @@ clientes (2 `include_router`), produtos (8), estoque (1) e vendas (6).
 
 ## A confirmar
 
-- **A CONFIRMAR:** se as regras dos quatro documentos implementados (clientes, produtos, estoque, vendas) ainda correspondem ao código — este índice confirmou apenas que os serviços existem e têm rotas montadas, não fez a conferência regra a regra.
+- Os quatro documentos implementados (clientes, produtos, estoque, vendas) foram conferidos contra o código em revisão de 2026-09-26. Em produtos, estoque e vendas, as regras trazem o status **Implementado / Parcial / Não implementado**; regra sem implementação não deve ser tratada como comportamento do sistema.
 - **A CONFIRMAR:** os cinco documentos declaram "Última atualização: 26 de Maio de 2026, Versão 1.0.0" no rodapé; nenhuma fonte no repositório corrobora essa data.
