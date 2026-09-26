@@ -211,6 +211,9 @@ Invoke-WebRequest -Uri "https://app.runaserp.com.br/api/auth/login" `
 ```powershell
 $token = "SEU_TOKEN_AQUI"
 
+# empresa_id do body tem de ser igual ao da empresa do token; o admin do seed
+# usa ADMIN_EMPRESA_ID (padrão 1, api-gateway/seed.py:30). O CPF precisa ter
+# dígitos verificadores válidos (schema: services/clientes/schemas/cliente.py).
 Invoke-WebRequest -Uri "http://localhost:8000/clientes" `
   -Method POST `
   -Headers @{
@@ -218,11 +221,11 @@ Invoke-WebRequest -Uri "http://localhost:8000/clientes" `
     "Content-Type"="application/json"
   } `
   -Body '{
+    "empresa_id": 1,
     "nome": "João Silva",
-    "cpf_cnpj": "12345678901",
+    "cpf": "52998224725",
     "email": "joao@example.com",
-    "telefone": "+5511999999999",
-    "tipo": "PESSOA_FISICA"
+    "telefone": "+5511999999999"
   }'
 ```
 

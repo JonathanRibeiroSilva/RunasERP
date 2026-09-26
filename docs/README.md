@@ -137,7 +137,7 @@ Não há changelog escrito à mão — `git log` é a fonte da verdade
 
 ```bash
 git log --oneline --graph --all
-git log v1.0.0..HEAD --oneline
+git log --oneline -20   # o repositório não tem tags de versão
 ```
 
 ## Links úteis

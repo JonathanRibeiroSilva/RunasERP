@@ -128,6 +128,11 @@ Linha:  +TOKEN="sk_live_EXEMPLO"
 Use variáveis de ambiente, ou um placeholder curto em exemplos.
 ```
 
+> O `sk_live_EXEMPLO` acima está encurtado de propósito, para este documento não
+> disparar o próprio hook. Com esse valor curto o check **não** bloquearia: o
+> padrão Stripe exige 24+ caracteres depois de `sk_live_`. A saída mostrada é a
+> de uma chave de verdade.
+
 Tudo limpo:
 
 ```
@@ -201,8 +206,9 @@ repositório contendo um **Cloudflare Tunnel Token** real.
 
 Corrigido em `34c137f`:
 
-1. `.env.cloudflare` removido com `git rm --cached`
-2. `.gitignore` passou a ignorar `.env.*`, com exceção de `!.env.*.example`
+1. `.env.cloudflare` removido do repositório
+2. `.gitignore` ganhou `.env.cloudflare`, `.env.production` e `!.env.production.example`
+   (hoje ele usa o glob `.env.*` com `!.env.*.example`)
 3. `.env.cloudflare.example` criado como template seguro
 4. O check ganhou a detecção de token de túnel do Cloudflare
 5. Este documento foi criado

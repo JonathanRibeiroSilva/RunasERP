@@ -23,17 +23,19 @@ Single PostgreSQL database, one schema per microservice:
 | notificacoes | `notificacoes` | 8006 |
 | empresas | `empresas` | 8007 |
 
-Ports are from `docker-compose.dev.yml`. Only the gateway (`8000:8000`) and the
+Ports are from `docker-compose.dev.yml`. Among the app containers only the gateway (`8000:8000`) and the
 frontend (`3000:3000`) publish on all interfaces; **8001–8007 are bound to
 `127.0.0.1` on purpose** — no service validates a JWT, they all trust
 `X-Empresa-Id`, so a service published on the LAN is any tenant for anyone on
-the network (and 8007 additionally accepts `X-Plataforma`).
+the network (and 8007 additionally accepts `X-Plataforma`). The infra containers in
+that same file are not loopback-bound: Postgres `5432`, Redis `6379`, RabbitMQ
+`5672`/`15672` and evolution-api `8080` publish on all interfaces.
 
 Each service owns only its schema. Never query another service's schema directly.
 
 **Big picture:** FastAPI (Python 3.12) backend + React 19 / TypeScript / Vite frontend (port 3000), plus Postgres (5432) and Redis (cache). A RabbitMQ container runs in the dev compose and each service carries an `events/publisher.py`, but **nothing imports it — there is no event traffic today**. The **API Gateway (8000) is the single entry point**: it owns OAuth2/JWT auth + RBAC, then reverse-proxies `/api/<service>/...` to the backing service. Two cross-cutting facts that aren't obvious from any single file:
 
-- **Multi-tenancy by injected header.** `api-gateway/proxy/service_proxy.py` injects `X-Empresa-Id` (and `X-Cliente-Id` for storefront auth) into every proxied request from the authenticated principal. Services **trust and require** these headers and **fail closed** without them — calling a service directly on its own port (bypassing the gateway) will be rejected. Integration-test through the gateway, never service ports.
+- **Multi-tenancy by injected header.** `api-gateway/proxy/service_proxy.py` injects `X-Empresa-Id` (and `X-Cliente-Id` for storefront auth) into every proxied request from the authenticated principal. Services **trust and require** these headers and **fail closed** without them — calling a service directly on its own port (bypassing the gateway) without `X-Empresa-Id` is rejected (400 in `produtos`, e.g. `utils/tenant.py`). Setting the header by hand is enough to pick any tenant, which is why the ports are loopback-bound. Each service also runs `validar_token_interno` (`services/*/interno.py`, header `X-Servico-Interno-Token`), but it is **fail-open** while `SERVICO_INTERNO_TOKEN` is unset or absent from the request. Integration-test through the gateway, never service ports.
 - **Each service has its own Alembic history** keyed to its schema (`version_table_schema = "<schema>"`); see Database Migrations.
 
 Layer order (FastAPI): `router → service → repository → model`
@@ -79,9 +81,11 @@ pip install -r requirements.txt -r ../../tests/requirements.txt
 pytest tests
 
 # NEVER run a bare `pytest` from the repo root: tests/pytest.ini has
-# `testpaths = tests`, and the files sitting directly under tests/
-# (test_produtos_api.py, test_produtos_local.py, test_estrutura_simples.py) are
-# manual scripts that call a live localhost service — they fail with nothing up.
+# `testpaths = tests`, and the files sitting directly under tests/ are manual
+# scripts, not part of the gate: test_produtos_api.py calls a live
+# localhost:8002 (fails with nothing up); test_produtos_local.py and
+# test_estrutura_simples.py run module-level code against services/produtos
+# (imports its models, `sys.exit(1)` on failure), so collection breaks.
 
 # Frontend (run from frontend/)
 npm run dev          # Vite dev server
@@ -176,7 +180,7 @@ docker exec -i erp-db-dev psql -U erp -d erp -c "SELECT version_num FROM <schema
 | `type ENUM already exists` | Migration tries to create existing ENUM | Create empty migration (`pass`) and stamp it |
 | Alembic detects phantom changes | Model/DB state mismatch | Apply pending migrations; last resort: `alembic stamp head` (careful) |
 
-### Current Schema Status (2026-06-11)
+### Current Schema Status (snapshot of 2026-06-11; all 8 apps run Alembic at boot, see above)
 
 | Service | Schema | Status |
 |---------|--------|--------|
@@ -256,7 +260,7 @@ chore(docker): consolidate postgres containers
 
 ### Error Handling
 - Never bare `except Exception` in services — catch specific exceptions
-- **There is no shared exception library.** `shared/` at the repo root is dead code — zero imports anywhere. Exceptions live per service: `services/empresas/exceptions.py` is the only one that exists today (`BaseServiceError`, `ValidationError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`), registered with `@app.exception_handler(...)` in that service's `main.py`. Copy that shape into a service that needs it — do not import across service boundaries, the images do not ship each other's code.
+- **There is no shared exception library.** `shared/` at the repo root is dead code — zero imports anywhere. Exceptions live per service: `services/empresas/exceptions.py` is the only one that exists today (`BaseServiceError`, `ValidationError`, `NotFoundError`, `ConflictError`, `UnauthorizedError`, `ForbiddenError`), of which `main.py` registers `@app.exception_handler(...)` for `ValidationError`, `NotFoundError`, `ConflictError` and a catch-all `Exception` (`UnauthorizedError`/`ForbiddenError` have no handler). Copy that shape into a service that needs it — do not import across service boundaries, the images do not ship each other's code.
 - Routers must NOT have try/except — global handlers in `main.py` own that
 - Never expose stack traces to the client — return `request_id` on 500
 - Structured logs: `structlog` with `request_id`, `usuario_id`, `empresa_id`, `action`, `duration_ms`
@@ -284,7 +288,7 @@ chore(docker): consolidate postgres containers
 - Bcrypt/Argon2 for passwords
 - Restrictive CORS (explicit origins only)
 - Backend validation even when frontend validates
-- Rate limiting on auth endpoints (5/min login, 10/min register)
+- Rate limiting on auth endpoints (today in `api-gateway/routers/auth.py`: login 10/min, forgot-password 5/min, reset-password 10/min; default 300/min per IP)
 - CSP, `X-Content-Type-Options`, `X-Frame-Options` headers
 
 ### Auth Pattern
@@ -337,12 +341,13 @@ https://app.runaserp.com.br/auth/callback
 https://app.runaserp.com.br/auth/callback/google
 https://app.runaserp.com.br/auth/callback/microsoft
 ```
+Only `/auth/callback/google` and `/auth/callback/microsoft` have routes in `frontend/src/App.tsx`; the bare `/auth/callback` is just the `VITE_OAUTH_REDIRECT_URI` default in `frontend/src/config/env.ts`. A CONFIRMAR: whether the consoles actually have all three registered.
 
 **Mercado Pago webhook:** per-empresa, sent as `notification_url` on each preference — `{API_BASE_URL}/loja/{empresa_slug}/webhook/mercadopago`. Driven by `API_BASE_URL` in the compose file; nothing to configure in the MP dashboard.
 
 **DB access:** `localhost:5432` with credentials from `.env` (use DBeaver or any PostgreSQL client).
 
-Removed and dead — never reference: Ngrok, Nginx, PgAdmin container,
+Removed and dead — never reference: Ngrok, the standalone Nginx reverse-proxy container (the frontend image still serves the SPA with nginx: `frontend/nginx.conf`, `docker-compose.prod.yml`), PgAdmin container,
 `docker-compose.nginx.yml`, `docker-compose.local.yml` (its localhost values are
 the defaults in `docker-compose.dev.yml` now), and `shared/` at the repo root
 (`shared/exceptions.py`, `shared/pagination.py`, `shared/events/` — zero imports

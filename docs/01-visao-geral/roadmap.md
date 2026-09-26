@@ -61,7 +61,7 @@ o log é a fonte. Itens que valem como marco de roadmap:
 |----|------|--------------------------|
 | C4 | Quebrar o god component `CheckoutPage` | `frontend/src/pages/LojaOnlinePublico/CheckoutPage.tsx` = **1507 linhas** (o log registrou 1.381 — piorou) |
 | H5 | Code splitting por rota | `lazy(` em `frontend/src/App.tsx` = 0 ocorrências |
-| C6 | Placeholders de módulo | cobre Vendas e Financeiro, já detalhados na Prioridade 1 |
+| C6 | Placeholders de módulo | cobre Dashboard, Vendas e Financeiro, já detalhados na Prioridade 1 |
 
 Os demais IDs (C1, C2, C3, C5, H1–H4, H6, H7) seguem no log e valem a revisita —
 vários foram parcial ou totalmente resolvidos desde a auditoria; conferir lá antes de agir.
@@ -82,14 +82,22 @@ vários foram parcial ou totalmente resolvidos desde a auditoria; conferir lá a
 
 - **Produtos**: histórico de preços e produtos compostos (kits).
   *Evidência*: nenhum arquivo em `services/produtos/` menciona `HistoricoPreco`, `kit` ou `composto`.
-- **Estoque**: FIFO/FEFO e bloqueio de lote vencido.
-  *Evidência*: nenhuma ocorrência de `fifo`/`fefo` em `services/estoque/`.
-- **Estoque**: alertas automáticos de estoque mínimo e de lote vencendo —
-  o campo existe (`services/estoque/models/estoque.py`), o disparo depende do serviço de Notificações acima.
+- **Estoque**: FIFO/FEFO.
+  *Evidência*: nenhuma ocorrência de `fifo`/`fefo` em `services/estoque/`. (Lote `VENCIDO` sair do
+  estoque é intencional — é o descarte, `services/estoque/services/estoque_service.py:324-327` —
+  então "bloqueio de lote vencido" não é pendência.)
+- **Estoque**: inventário. *Evidência*: o modelo `Inventario` existe (`services/estoque/models/estoque.py:222`)
+  e o `InventarioRepository` (`repositories/estoque_repository.py:523`), mas nenhuma rota de
+  `services/estoque/routers/` o referencia, `estoque_service.py:34` só o importa e não há tela no frontend.
+- **Estoque**: alertas *automáticos* (push) de estoque mínimo e de lote vencendo. Hoje só há alerta sob
+  consulta (`GET /baixo` e `GET /lotes/vencendo`, `services/estoque/routers/estoque.py:78` e `:314`); o campo
+  `estoque_minimo` está em `models/estoque.py:70`. O disparo depende do serviço de Notificações acima.
 - **Vendas**: devolução como entidade própria.
   *Evidência*: nenhuma ocorrência de `devolucao` em `services/vendas/models/`.
   (O *tipo* de movimentação "devolução" já existe no Estoque; falta o fluxo de venda.)
 - **Clientes**: histórico de compras na tela do cliente.
+  *Evidência*: o único histórico em `frontend/src/pages/Clientes/` é o de crédito
+  (`ClienteCreditoPage.tsx:37`); nenhuma ocorrência de histórico de compras em `services/clientes/routers/`.
 
 ---
 
@@ -99,7 +107,7 @@ Registrado aqui só para impedir que volte à lista de pendências:
 
 - **Estoque, ponta a ponta** — `frontend/src/pages/Estoque/EstoquePage.tsx` (336 linhas),
   `EstoqueDetalhePage.tsx`, `hooks/useEstoque.ts`, backend com movimentações, lotes,
-  inventário, reserva e integração com Vendas.
+  reserva (`POST /reservar`) e integração com Vendas.
 - **Loja Online completa** — `frontend/src/pages/LojaOnlinePublico/` com vitrine, detalhe,
   `CarrinhoPage`, `CheckoutPage`, `ClienteLoginPage`, `ClientePerfilPage`, `MeusPedidosPage`
   e `RastreamentoPedidoPage`; backend em `services/vendas/routers/loja.py` (25 KB).
@@ -109,7 +117,9 @@ Registrado aqui só para impedir que volte à lista de pendências:
 - **Mercado Pago (PIX)** — `services/vendas/routers/admin_pagamento.py` e `webhook.py`.
 - **ViaCEP no backend** — `services/vendas/services/entrega_service.py:27` e `:49` validam CEP
   pela API. *(Constava como "backend pendente"; não procede mais.)*
-- **Multi-tenancy**, soft delete e transações ACID em Clientes, Produtos, Estoque e Vendas.
+- **Multi-tenancy** por `empresa_id` nos serviços e soft delete em Clientes
+  (`services/clientes/repositories/cliente_repository.py:150`, `ativo = False`) e Produtos
+  (`services/produtos/models/produto.py:83`, `deletado_em`). **A CONFIRMAR**: soft delete em Estoque e Vendas.
 - **CI/CD e operação** — 5 workflows em `.github/workflows/` (ci, deploy, uptime, landing,
   graphify-update), deploy via Coolify, Cloudflare Tunnel, backup `pg_dump` antes de cada deploy
   e readiness profundo em `/health/ready` (`api-gateway/main.py`).
@@ -148,4 +158,4 @@ trabalho de integração, não de implementação do zero.
 
 ---
 
-**Projeto**: Runas · **Equipe**: DenebCorp · **Contato**: product@denebcorp.com
+**Projeto**: Runas · **Equipe**: DenebCorp · **Contato**: contato@denebcorp.com

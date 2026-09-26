@@ -18,8 +18,8 @@ plataforma administrar esses lojistas (ver
 
 Domínios cobertos pelos serviços do repositório (`services/`):
 
-- 🏢 **Empresas** - Tenants, usuários e assinaturas
-- 👥 **Clientes** - Cadastro, crédito e histórico
+- 🏢 **Empresas** - Tenants (usuários e assinaturas ficam no `api-gateway`: `models/usuario.py`, `routers/plataforma.py`)
+- 👥 **Clientes** - Cadastro, endereços e crédito (com histórico de crédito)
 - 📦 **Produtos** - Catálogo, variantes e fornecedores
 - 📊 **Estoque** - Controle, movimentações e lotes
 - 🛒 **Vendas** - Carrinho, pedidos e pagamentos
@@ -46,8 +46,8 @@ Domínios cobertos pelos serviços do repositório (`services/`):
 - Hospedagem em VPS única (Coolify + Cloudflare)
 
 ### Controle
-- Rastreabilidade das operações: o gateway grava auditoria de requisição
-  (`api-gateway/middleware/auditoria_middleware.py`)
+- Rastreabilidade das operações: o gateway grava auditoria das requisições de escrita
+  (POST/PUT/PATCH/DELETE — `api-gateway/middleware/auditoria_middleware.py:20`)
 - Isolamento por tenant no gateway, antes de chegar ao serviço
 
 ### Flexibilidade
@@ -100,8 +100,8 @@ Frontend (React) → API Gateway (FastAPI) → 7 microsserviços (FastAPI)
 
 > `celery==5.6.3` aparece nos `requirements.txt` dos 7 serviços, mas **nenhum
 > código Python instancia um app Celery**. Não há worker Celery rodando; as
-> rotinas em `services/vendas/jobs/` são scripts. **A CONFIRMAR**: como esses
-> jobs são agendados em produção.
+> rotinas em `services/vendas/jobs/` são scripts (o README da pasta sugere cron ou
+> Task Scheduler). **A CONFIRMAR**: como esses jobs são agendados em produção.
 
 ### Frontend
 - **React 19** (`frontend/package.json`)
@@ -130,8 +130,9 @@ Frontend (React) → API Gateway (FastAPI) → 7 microsserviços (FastAPI)
 - **OAuth2 Google e Microsoft** - Credenciais previstas em
   `api-gateway/config.py:36-43`, fluxo em `api-gateway/routers/auth_cliente.py`
 - **Evolution API (WhatsApp)** - Há um schema `evolution` no banco e menção em
-  `services/notificacoes/interno.py:39`, mas o serviço de notificações é casca.
-  **A CONFIRMAR**: se existe envio de WhatsApp funcionando hoje.
+  `services/notificacoes/interno.py:39`, mas o serviço de notificações é casca e o
+  `docker-compose.prod.yml:494-495` diz que o `evolution-api` **não está implantado** (chamadas
+  WhatsApp falham fechadas). Ou seja, não há envio de WhatsApp funcionando hoje.
 
 ---
 

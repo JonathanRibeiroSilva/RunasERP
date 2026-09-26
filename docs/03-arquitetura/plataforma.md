@@ -19,7 +19,7 @@ Este documento descreve o segundo. Ele vive quase inteiro em
 herda de `ADMIN`**. A checagem é igualdade estrita:
 
 ```python
-# api-gateway/auth/oauth2.py:153-164
+# api-gateway/auth/oauth2.py:161-165
 if current_user.role != RoleEnum.SUPER_ADMIN:
     raise HTTPException(403, "Acesso negado: apenas a administração da plataforma")
 ```
@@ -81,10 +81,13 @@ webhook e cron não têm usuário logado, então não podem herdar `require_supe
   evento repetido responde **200**, porque 4xx faria o MP reenviar para sempre (`:448`).
 - `POST /plataforma/jobs/regua` (`:480`) — varredura diária. Não é público de fato:
   exige `X-Job-Token` igual a `PLATAFORMA_JOB_TOKEN`, e **rejeita com 403 se a env
-  estiver vazia** (`:492`) — é a única das quatro validações de segredo em header do
-  sistema que é *fail closed*; as outras três (`SERVICO_INTERNO_TOKEN`,
-  `PLATAFORMA_INTERNO_TOKEN` e `REGISTRO_INTERNO_TOKEN` —
-  `api-gateway/routers/auth_cliente.py:600-611`) são fail-open.
+  estiver vazia** (`:492`) — é a única das quatro validações de segredo em header
+  entre gateway e serviços que é *fail closed*; as outras três
+  (`SERVICO_INTERNO_TOKEN`, `PLATAFORMA_INTERNO_TOKEN` e `REGISTRO_INTERNO_TOKEN` —
+  `api-gateway/routers/auth_cliente.py:600-611`) são fail-open. (Fora da conta fica
+  a assinatura HMAC do webhook do MP de cada lojista, em vendas: usa o segredo do
+  lojista, não um nosso, e sem segredo configurado ou sem `x-signature` a
+  notificação ainda passa — `services/vendas/routers/webhook.py:36-43`.)
 
 ---
 
@@ -100,7 +103,7 @@ O serviço `empresas` **não tem noção de papel**. Ele não valida JWT, não c
 Isso era *afirmação sem prova*. Quem alcançasse a porta 8007 do container `empresas`
 mandava o header e virava administrador da plataforma — podia listar todos os tenants
 e apagar empresa. O próprio docstring registra o furo
-(`services/empresas/routers/empresas.py:52-58`).
+(`services/empresas/routers/empresas.py:55-59`).
 
 O `SERVICO_INTERNO_TOKEN` **não fecha isso**: ele é o *mesmo valor nos 8 containers*
 (`.env.example:132-136`), então prova apenas "a chamada veio de algum dos 8". Para
@@ -133,7 +136,7 @@ requisição atravessou a checagem de papel.
 
 ### 3.3 A validação (empresas)
 
-Do outro lado, `exigir_plataforma` (`services/empresas/routers/empresas.py:44-88`)
+Do outro lado, `exigir_plataforma` (`services/empresas/routers/empresas.py:44-89`)
 roda em três etapas:
 
 1. `x_plataforma != "1"` → **403** (`:61-65`).
@@ -181,7 +184,7 @@ Em desenvolvimento a porta 8007 está publicada, mas só em loopback:
 `X-Empresa-Id` é ortogonal ao resto: ele diz *de quem é o dado*, o
 `X-Plataforma-Token` diz *quem está mandando*. As rotas de plataforma do `empresas`
 que também tocam um tenant específico precisam dos dois — por isso `_empresas()`
-aceita `tenant_id` (`plataforma.py:44-46`): sem o `X-Empresa-Id`, o `DELETE` da
+aceita `tenant_id` (`plataforma.py:40-46`): sem o `X-Empresa-Id`, o `DELETE` da
 compensação de rollback levava 400 silencioso e deixava tenant órfão.
 
 ### 3.6 O gateway apaga headers forjados
@@ -225,9 +228,11 @@ rota do catálogo público, chamada sem usuário logado; ela só devolve
 - **Serviço da malha** — tem o `SERVICO_INTERNO_TOKEN`; pode falar com os outros
   serviços; **não** pode agir como plataforma (quando o segredo estiver ativo).
 - **Cron do host** — só o `POST /plataforma/jobs/regua`, com `X-Job-Token`.
-- **Mercado Pago** — só o `POST /plataforma/webhook/mercadopago`, sem segredo; a
-  defesa é a idempotência por `evento_id` e o fato de a rota só alterar assinatura a
-  partir do `preapproval_id` que o MP informa.
+- **Mercado Pago** — só o `POST /plataforma/webhook/mercadopago`, sem segredo e sem
+  verificação de assinatura: o `preapproval_id` vem do corpo do request
+  (`plataforma.py:472`), não de uma consulta ao MP. O que existe é a idempotência por
+  `evento_id` e o fato de a rota só mexer em assinatura já cadastrada
+  (`UPDATE ... WHERE mp_preapproval_id`, `preapproval_service.py:117-125`).
 
 ---
 
@@ -235,7 +240,7 @@ rota do catálogo público, chamada sem usuário logado; ela só devolve
 
 `SUPER_ADMIN` não tem `empresa_id`, então **toda** tela de tenant do React consultaria
 uma empresa que ele não tem. Em vez de um guard por rota, há **uma porta só**, dentro
-do `ProtectedRoute` (`frontend/src/App.tsx:63-72`):
+do `ProtectedRoute` (`frontend/src/App.tsx:63-73`):
 
 ```tsx
 if (
@@ -252,14 +257,15 @@ Qualquer rota protegida que não seja `/plataforma` nem `/perfil` redireciona. O
 fechá-la**; `/perfil` fica de fora porque é onde ele troca a própria senha.
 
 A rota `/plataforma` tem ainda um `RoleProtectedRoute requiredRole={['SUPER_ADMIN']}`
-(`App.tsx:224-229`) — o caminho inverso: impedir que um ADMIN entre no painel.
+(`App.tsx:225-232`) — o caminho inverso: impedir que um ADMIN entre no painel.
 
 O painel em si:
 
 - `frontend/src/pages/Plataforma/PlataformaPage.tsx` — lista de tenants, via
   `useTenants()` (`PlataformaPage.tsx:85`)
 - `frontend/src/pages/Plataforma/TenantDetalhe.tsx` — abas `auditoria`, `assinatura`,
-  `backups` (`TenantDetalhe.tsx:88-96`), cada uma carregada sob demanda
+  `backups` (`TenantDetalhe.tsx:19-24`); `auditoria` e `backups` só consultam a API
+  quando a aba está ativa (`:95-96`), `assinatura` é um formulário
 - `frontend/src/hooks/usePlataforma.ts` — hooks React Query; toda mutação invalida
   `['plataforma-tenants']` (`usePlataforma.ts:11-17`)
 - `frontend/src/services/api/plataformaApi.ts` — camada HTTP
