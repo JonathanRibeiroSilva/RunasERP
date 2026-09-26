@@ -88,7 +88,7 @@ dezenas de minutos.
 `**.js`, `**.jsx`, `**.vue`), mais `workflow_dispatch`. Não roda em `Developer`:
 o bot commita o `graphify-out/` regenerado na branch onde roda, então as duas
 branches divergiam nos mesmos arquivos gerados e todo merge para `main`
-colidia (o racional, com os PRs que colidiram, está em `graphify-update.yml:5-9`). `master` nunca existiu neste repositório.
+colidia (o racional, com os PRs que colidiram, está em `graphify-update.yml:5-9`). O próprio arquivo registra que `master` não existe neste repositório.
 
 Passos: instala `graphifyy` (Python 3.11), confere se o último commit realmente
 tocou código, roda `graphify update`, e se o `graphify-out/` mudou, commita como
@@ -104,7 +104,7 @@ Duas travas contra loop:
 ### Execução manual
 
 **Actions** → **Auto-Update Graphify Knowledge Graph** → **Run workflow**.
-(Os outros quatro também têm `workflow_dispatch`.)
+(`deploy.yml`, `landing.yml` e `uptime.yml` também têm `workflow_dispatch`; o `ci.yml` não.)
 
 ---
 

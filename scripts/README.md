@@ -22,8 +22,11 @@ dispara deploy nem gera janela de indisponibilidade.
 | `graphify-smart.ps1` | Wrapper de `graphify query/path/explain` com expansão de keywords e filtro por camada. | `.\scripts\graphify-smart.ps1 query "webhook" -Layer backend` |
 | `setup-graphify-hook.ps1` | Instala/remove/desativa o hook `post-commit` que atualiza o grafo Graphify. | `.\scripts\setup-graphify-hook.ps1 status` |
 
-Os quatro `.sh` estão com bit de execução (755); os `.ps1` são chamados pelo
-PowerShell.
+Os quatro `.sh` estão versionados com modo `100644` (sem bit de execução; o
+`core.fileMode` está `false` neste checkout Windows), então num clone Linux rode
+com `bash scripts/<nome>.sh` — o shim do `pre-commit` faz `exec` direto no
+`check-secrets.sh`, e isso só funciona com o bit ligado (`chmod +x`). Os `.ps1`
+são chamados pelo PowerShell.
 
 ---
 
@@ -47,8 +50,8 @@ Duas verificações, nessa ordem:
 2. **Padrões sensíveis nas linhas adicionadas** — `git diff --cached -U0
    --diff-filter=ACM`, filtrado por `^+[^+]`. Cobre Mercado Pago, Stripe, Google
    API key, AWS access key id, token de túnel Cloudflare, PAT do GitHub, DSNs
-   (`postgresql://`, `postgresql+asyncpg://`, `mongodb://`, `mysql://`) e
-   atribuições genéricas de `token`/`api_key`/`secret`.
+   (`postgresql://`, `postgresql+asyncpg://`, `mongodb://`, `mysql://`),
+   `Bearer <token>` e atribuições genéricas de `token`/`api_key`/`secret`.
 
 Qualquer acerto termina com `exit 1` e o commit não acontece. Escaneia linhas
 adicionadas, não arquivos inteiros: um DSN que já está no arquivo há um ano não
@@ -149,9 +152,8 @@ o script só monta o payload e imprime o resultado.
 o router "substitui `scripts/provisionar-lojista.ps1`, que batia direto nos
 containers em dois endpoints sem autenticação". Essa frase se refere à versão
 antiga do script: a atual já é só um wrapper autenticado do endpoint. O caminho
-oficial é a própria rota (ou a UI da plataforma); este script é atalho de linha
-de comando e deve ser tratado como obsoleto — não escreva código novo em cima
-dele. Ver `docs/10-api-reference/plataforma-api.md`.
+oficial é a própria rota; este script é só atalho de linha de comando — não
+escreva lógica nova nele. Ver `docs/10-api-reference/plataforma-api.md`.
 
 ---
 
@@ -169,8 +171,17 @@ sessão, pedidos pendentes, recuperar carrinho de um pedido e retentar pagamento
 
 **Precisa ser editado antes de rodar.** O script tem valores fixos de
 placeholder: `$empresaSlug = "empresa-teste"` e `$produtoId =
-"produto-uuid-aqui"`. Sem trocá-los por IDs reais do ambiente, o cenário 1
-falha na adição do item. Não é um teste automatizado e não roda no CI — é um
+"produto-uuid-aqui"`. Sem trocá-los por valores reais do ambiente, a adição
+do item (1.2) falha e o checkout (1.3) aborta o script com `exit 1`. Além disso,
+as URLs dos cenários 3-5 (`/api/loja/c/{slug}/meus-pedidos-pendentes`,
+`/api/loja/c/{slug}/pedidos/{n}/recuperar-carrinho`,
+`/api/loja/{slug}/pedidos/{n}/retry-payment`) não batem com o que o gateway
+expõe (`/loja/pedidos/{numero_venda}/recuperar-carrinho` e `/retry-payment`,
+com `?empresaSlug=`; `api-gateway/routers/proxy.py:146,176`) e nenhuma rota
+`meus-pedidos-pendentes` existe em `api-gateway/` nem em `services/vendas/`:
+esses cenários imprimem "NÃO implementado" mesmo com o ambiente correto. A
+CONFIRMAR: se os cenários 1-2 (`/api/loja/carrinho`, `empresa_slug`) ainda
+batem com as rotas atuais. Não é um teste automatizado e não roda no CI — é um
 roteiro de verificação manual.
 
 ---

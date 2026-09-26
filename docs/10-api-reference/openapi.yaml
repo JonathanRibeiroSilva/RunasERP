@@ -24,7 +24,10 @@ info:
 
     - `/catalogo` — o serviço de produtos expõe `/catalogo-publico` e
       `/loja-online` (`services/produtos/routers/produtos.py`).
-    - `/pedidos` — o real é `/vendas` (`services/vendas/routers/vendas.py`) e
+    - `/pedidos` — o serviço de vendas tem `/vendas`
+      (`services/vendas/routers/vendas.py`), mas `/vendas` não consta em
+      `SERVICE_URLS` nem tem rota em `api-gateway/routers/proxy.py`: A CONFIRMAR
+      se é alcançável pelo gateway. Pelo gateway existe
       `GET /loja/meus-pedidos` (`api-gateway/routers/proxy.py`).
     - `/carrinho`, `/carrinho/{token}` e `/carrinho/{token}/checkout` — o
       serviço de vendas só expõe carrinho e checkout sob `/loja`
@@ -52,6 +55,19 @@ info:
       rota em alguma doc antiga, ela nunca existiu.
     - As rotas de `/plataforma` (multi-tenancy e billing) ficam **fora** desta
       spec de propósito: veja `docs/10-api-reference/plataforma-api.md`.
+
+    Schemas divergentes (amostra conferida em 2026-09-26, não é lista completa):
+
+    - `TokenResponse` declara `expires_in`, mas o `Token` real
+      (`api-gateway/schemas/usuario.py`) só tem `access_token`, `refresh_token`
+      e `token_type`; `POST /auth/login` responde `LoginResponse` (tokens mais
+      dados do usuário).
+    - `ProdutoCreate` real (`services/produtos/schemas/produtos.py`) tem também
+      `preco`, `custo`, `preco_promocional` e `promocao_fim`, ausentes aqui.
+    - `ClienteResponse` real traz `empresa_id`, e `cpf`/`telefone` podem ser
+      nulos (clientes OAuth).
+    - A CONFIRMAR: os demais schemas (Estoque, Movimentacao, Carrinho, Pedido,
+      ContaReceber...) não foram conferidos campo a campo.
 
     Paginação: o código usa `skip`/`limit` (`limit` no máximo 100), não
     `page`/`size` como os parâmetros reutilizáveis desta spec declaram. O

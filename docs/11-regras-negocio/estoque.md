@@ -1,6 +1,8 @@
 # 📊 Regras de Negócio - Estoque
 
-Regras de negócio do serviço de Estoque.
+Regras de negócio do serviço de Estoque, conferidas contra `services/estoque/` (`models/estoque.py`, `schemas/estoque.py`, `services/estoque_service.py`, `repositories/estoque_repository.py`).
+
+> **Legenda de status**: **Implementado** = existe e roda no código; **Parcial** = existe com ressalvas; **Não implementado** = aparecia neste documento mas não há código que o faça.
 
 ---
 
@@ -8,82 +10,80 @@ Regras de negócio do serviço de Estoque.
 
 ### 📊 Estrutura de Dados
 
+Tabela `estoque.estoque`.
+
 | Campo | Tipo | Obrigatório | Único | Descrição |
 |-------|------|-------------|-------|-----------|
 | `id` | UUID | Sim | Sim | Identificador único |
-| `produto_id` | UUID | Sim | Não | FK para Produto (externo) |
-| `variante_id` | UUID | Não | Não | FK para Variante (externo) |
-| `quantidade` | Float | Sim | Não | Quantidade total |
+| `empresa_id` | Integer | Sim | Não | Tenant (multi-tenancy) |
+| `produto_id` | UUID | Sim | Não | Produto (id do serviço de Produtos, sem FK no banco) |
+| `variante_id` | UUID | Não | Não | Variante (idem) |
+| `quantidade` | Float | Sim | Não | Quantidade física total |
 | `quantidade_reservada` | Float | Sim | Não | Quantidade reservada |
-| `quantidade_disponivel` | Float | Sim | Não | Quantidade disponível |
-| `estoque_minimo` | Float | Sim | Não | Estoque mínimo |
+| `quantidade_disponivel` | Float | Sim | Não | `quantidade - quantidade_reservada` |
+| `estoque_minimo` | Float | Sim | Não | Estoque mínimo (padrão 0) |
 | `estoque_maximo` | Float | Não | Não | Estoque máximo |
 | `localizacao` | String(100) | Não | Não | Localização física |
 | `ativo` | Boolean | Sim | Não | Estoque ativo? |
 | `created_at` | DateTime | Sim | Não | Data de criação |
 | `updated_at` | DateTime | Sim | Não | Data de atualização |
 
+Restrições no banco: `UNIQUE (empresa_id, produto_id, variante_id)` e `CHECK (quantidade >= 0 AND quantidade_reservada >= 0 AND quantidade_disponivel >= 0)` (`ck_estoque_quantidades_nao_negativas`).
+
 ### ✅ Regras de Validação
 
-**RN-EST-001: Produto ou Variante**
-- Estoque deve estar vinculado a um `produto_id`
-- `variante_id` é opcional
-- Se `variante_id` for fornecido, controla estoque da variante específica
-- Se `variante_id` for NULL, controla estoque geral do produto
+**RN-EST-001: Produto ou Variante** (Implementado)
+- Estoque é sempre de um `produto_id`; `variante_id` é opcional.
+- Com `variante_id`, controla a variante específica; sem ele, o estoque geral do produto.
+- Um mesmo par `(empresa, produto, variante)` só pode ter um registro. Atenção: como `NULL` não é igual a `NULL` no `UNIQUE` do PostgreSQL, a unicidade para produto **sem variante** é garantida só pela checagem do serviço, não pelo banco (nenhuma migration de estoque cria índice parcial).
+- Ao criar (`POST /estoque`) ou na primeira entrada, o serviço consulta o serviço de Produtos: produto inexistente, de outra empresa ou **inativo** não inicia estoque (variante, se informada, precisa existir).
 
-**RN-EST-002: Cálculo de Quantidade Disponível**
-- Fórmula: `quantidade_disponivel = quantidade - quantidade_reservada`
-- Calculado automaticamente
-- Não pode ser editado diretamente
+**RN-EST-002: Cálculo de Quantidade Disponível** (Implementado)
+- `quantidade_disponivel = quantidade - quantidade_reservada`, recalculado a cada operação.
+- Nenhuma rota permite editá-lo diretamente.
 
-**RN-EST-003: Validação de Quantidades**
-- `quantidade` deve ser maior ou igual a zero
-- `quantidade_reservada` deve ser maior ou igual a zero
-- `quantidade_reservada` não pode ser maior que `quantidade`
-- `estoque_minimo` deve ser maior ou igual a zero
-- `estoque_maximo` (se fornecido) deve ser maior que `estoque_minimo`
+**RN-EST-003: Validação de Quantidades** (Parcial)
+- Schema: `quantidade >= 0`, `estoque_minimo >= 0`, `estoque_maximo >= 0` (se informado).
+- `quantidade_reservada` nunca passa de `quantidade`: garantido pela checagem em `reservar` e pelo CHECK do banco.
+- **Não há validação** de `estoque_maximo > estoque_minimo`.
+- Ajuste (`quantidade_nova`) menor que a quantidade reservada é recusado com 400: "Libere as reservas antes".
 
-**RN-EST-004: Alertas de Estoque**
-- **Estoque Baixo**: `quantidade_disponivel < estoque_minimo`
-- **Estoque Zerado**: `quantidade_disponivel = 0`
-- **Estoque Negativo**: Não permitido (validação impede)
+**RN-EST-004: Alertas de Estoque** (Implementado, com ressalva)
+- **Estoque baixo**: `quantidade <= estoque_minimo` **e** `quantidade > 0` (compara a quantidade **física**, não a disponível, e usa `<=`).
+- **Estoque zerado**: `quantidade == 0`.
+- **Estoque negativo**: impossível (validações do serviço + CHECK do banco).
+- Os alertas são campos de resposta (`alerta_estoque_baixo`, `alerta_estoque_zerado`); não disparam notificação. O filtro `apenas_baixo` da listagem inclui itens zerados (`quantidade <= estoque_minimo`, sem o `> 0`).
 
-**RN-EST-005: Localização Física**
-- Localização é opcional
-- Usado para organização física do estoque
-- **Exemplos**: `Prateleira A1`, `Depósito 2`, `Geladeira 3`
+**RN-EST-005: Localização Física** (Implementado)
+- Opcional, texto livre até 100 caracteres. **Exemplos**: `Prateleira A1`, `Depósito 2`.
 
-**RN-EST-006: Reserva de Estoque**
-- Estoque pode ser reservado para vendas pendentes
-- Reserva diminui `quantidade_disponivel` mas não `quantidade`
-- Reserva é liberada quando:
-  - Venda é finalizada (quantidade é decrementada)
-  - Venda é cancelada (reserva é removida)
-  - Reserva expira (após X horas)
+**RN-EST-006: Reserva de Estoque** (Parcial)
+- `POST /estoque/reservar` aumenta `quantidade_reservada` e reduz `quantidade_disponivel`; `quantidade` não muda. Recusa (400) se a reserva total passar da `quantidade`.
+- `POST /estoque/liberar-reserva` devolve à disponibilidade; recusa (400) se liberar mais do que reservado.
+- A venda confirmada é `POST /estoque/baixar-venda`: baixa a quantidade física **e** desconta a reserva correspondente (sem ficar negativa).
+- **Não há expiração de reserva neste serviço.** A expiração de 15 minutos do carrinho é do serviço de Vendas (`reserva_temporaria_service.py`, com Redis).
 
 ### 🔄 Fluxo de Reserva
 
 ```
-Estado Inicial:
-  quantidade = 100
-  quantidade_reservada = 0
-  quantidade_disponivel = 100
+Estado inicial:  quantidade=100  reservada=0  disponivel=100
 
-1. Reservar (carrinho):
-   quantidade_reservada += 5      → 5
-   quantidade_disponivel -= 5     → 95
-   quantidade permanece           → 100
+1. Reservar 5 (carrinho):
+   reservada=5  disponivel=95  quantidade=100
 
-2. Confirmar Reserva (venda):
-   quantidade_reservada -= 5      → 0
-   quantidade -= 5                → 95
-   quantidade_disponivel permanece → 95
+2. Venda confirmada (baixar-venda de 5):
+   quantidade=95  reservada=0  disponivel=95
 
-3. Cancelar (liberar reserva):
-   quantidade_reservada -= 5      → 0
-   quantidade_disponivel += 5     → 100
-   quantidade permanece           → 100
+3. Alternativa: cancelar (liberar-reserva de 5):
+   reservada=0  disponivel=100  quantidade=100
 ```
+
+### 🔒 Concorrência
+
+**RN-EST-007: Lock de linha** (Implementado)
+- Entrada, saída, ajuste, reserva, liberação, baixa e estorno leem o registro com `SELECT ... FOR UPDATE` dentro da transação, para que duas requisições simultâneas não partam do mesmo valor (atualização perdida) nem reservem o último item duas vezes.
+- Baixa e estorno de venda travam vários registros em ordem determinística por `(produto_id, variante_id)` para evitar deadlock e refazem a operação em até 3 tentativas (backoff exponencial a partir de 50 ms) em `40P01`/`40001`.
+- Baixa e estorno são **idempotentes** por `(empresa_id, documento)`, com tabelas de ledger (`baixas_venda_processadas`, `estornos_venda_processados`) e constraint única.
 
 ---
 
@@ -91,52 +91,50 @@ Estado Inicial:
 
 ### 📊 Estrutura de Dados
 
+Tabela `estoque.movimentacoes` (não tem `empresa_id` próprio; o tenant vem do estoque dono).
+
 | Campo | Tipo | Obrigatório | Único | Descrição |
 |-------|------|-------------|-------|-----------|
 | `id` | UUID | Sim | Sim | Identificador único |
 | `estoque_id` | UUID | Sim | Não | FK para Estoque |
 | `lote_id` | UUID | Não | Não | FK para Lote |
-| `tipo` | Enum | Sim | Não | Tipo de movimentação |
-| `quantidade` | Float | Sim | Não | Quantidade movimentada |
+| `tipo` | String(20) | Sim | Não | `TipoMovimentacao` |
+| `quantidade` | Float | Sim | Não | Quantidade movimentada (valor absoluto) |
 | `quantidade_anterior` | Float | Sim | Não | Quantidade antes |
 | `quantidade_posterior` | Float | Sim | Não | Quantidade depois |
-| `motivo` | String(200) | Não | Não | Motivo da movimentação |
+| `motivo` | String(200) | Não | Não | Motivo |
 | `observacao` | Text | Não | Não | Observações |
 | `documento` | String(100) | Não | Não | Número do documento |
-| `usuario_id` | UUID | Não | Não | Usuário responsável |
+| `usuario_id` | UUID | Não | Não | Usuário responsável (as rotas atuais não o preenchem) |
 | `custo_unitario` | Float | Não | Não | Custo unitário |
 | `custo_total` | Float | Não | Não | Custo total |
 | `created_at` | DateTime | Sim | Não | Data da movimentação |
 
 ### ✅ Regras de Validação
 
-**RN-MOV-001: Tipos de Movimentação**
-- `ENTRADA`: Entrada de mercadoria (compra, devolução de cliente)
-- `SAIDA`: Saída de mercadoria (venda, perda, doação)
-- `AJUSTE`: Ajuste de inventário (correção de quantidade)
-- `DEVOLUCAO`: Devolução para fornecedor
-- `PERDA`: Perda de mercadoria (vencimento, quebra, roubo)
-- `TRANSFERENCIA`: Transferência entre locais
+**RN-MOV-001: Tipos de Movimentação** (Parcial)
+Enum: `ENTRADA`, `SAIDA`, `AJUSTE`, `DEVOLUCAO`, `PERDA`, `TRANSFERENCIA`. Uso real:
+- `ENTRADA`: `POST /estoque/entrada`.
+- `SAIDA`: `POST /estoque/saida` e `baixar-venda` (motivo `Venda confirmada`).
+- `AJUSTE`: `POST /estoque/ajuste`.
+- `DEVOLUCAO`: **estorno de venda reembolsada** (`estornar-venda`, motivo `Venda reembolsada`), que **aumenta** o estoque. Não é devolução ao fornecedor.
+- `PERDA` e `TRANSFERENCIA`: existem no enum e aceitam filtro, mas nenhuma rota os grava. Perda hoje se registra como saída com motivo.
 
-**RN-MOV-002: Validação de Quantidade**
-- `quantidade` deve ser maior que zero
-- Para `ENTRADA`: quantidade é positiva
-- Para `SAIDA`: quantidade é positiva (mas decrementa o estoque)
-- Sistema registra `quantidade_anterior` e `quantidade_posterior` automaticamente
+**RN-MOV-002: Validação de Quantidade** (Implementado)
+- Na entrada, saída, baixa, estorno e reserva, `quantidade > 0`.
+- `quantidade` da movimentação é sempre positiva; o sentido vem do `tipo`. No `AJUSTE`, é `abs(nova - atual)`.
+- `quantidade_anterior` e `quantidade_posterior` são gravados automaticamente.
 
-**RN-MOV-003: Rastreabilidade**
-- Toda movimentação é registrada permanentemente
-- Movimentações não podem ser editadas ou excluídas
-- Correções devem ser feitas com novas movimentações de ajuste
+**RN-MOV-003: Rastreabilidade** (Implementado no nível da API)
+- Não há rota para editar ou excluir movimentação; correções são novos ajustes. O banco não impede um `UPDATE` manual.
 
-**RN-MOV-004: Custo**
-- `custo_unitario` é opcional
-- `custo_total` é calculado: `custo_total = quantidade * custo_unitario`
-- Usado para cálculo de valor do estoque
+**RN-MOV-004: Custo** (Parcial)
+- `custo_unitario` é opcional e só é recebido na **entrada**.
+- `custo_total = quantidade * custo_unitario` é calculado apenas quando `custo_unitario` é informado e diferente de zero.
+- Não há cálculo de valor total do estoque (`valor_total_estoque` no relatório é sempre `null`).
 
-**RN-MOV-005: Documento**
-- Campo `documento` armazena referência externa
-- **Exemplos**: `NF-12345`, `PEDIDO-789`, `VENDA-456`
+**RN-MOV-005: Documento** (Implementado)
+- `documento` guarda a referência externa. Na baixa/estorno de venda é o número da venda e serve de chave de idempotência. **Exemplos**: `NF-12345`, `PEDIDO-789`.
 
 ---
 
@@ -144,11 +142,14 @@ Estado Inicial:
 
 ### 📊 Estrutura de Dados
 
+Tabela `estoque.lotes`.
+
 | Campo | Tipo | Obrigatório | Único | Descrição |
 |-------|------|-------------|-------|-----------|
 | `id` | UUID | Sim | Sim | Identificador único |
+| `empresa_id` | Integer | Sim | Não | Tenant |
 | `estoque_id` | UUID | Sim | Não | FK para Estoque |
-| `codigo` | String(100) | Sim | Sim | Código do lote |
+| `codigo` | String(100) | Sim | Por empresa | Código do lote |
 | `quantidade` | Float | Sim | Não | Quantidade atual |
 | `quantidade_inicial` | Float | Sim | Não | Quantidade inicial |
 | `data_fabricacao` | Date | Não | Não | Data de fabricação |
@@ -156,87 +157,66 @@ Estado Inicial:
 | `fornecedor` | String(200) | Não | Não | Nome do fornecedor |
 | `nota_fiscal` | String(100) | Não | Não | Número da NF |
 | `custo_unitario` | Float | Não | Não | Custo unitário |
-| `status` | Enum | Sim | Não | Status do lote |
+| `status` | String(20) | Sim | Não | `ATIVO`, `VENCIDO`, `BLOQUEADO` |
 | `created_at` | DateTime | Sim | Não | Data de criação |
 | `updated_at` | DateTime | Sim | Não | Data de atualização |
 
 ### ✅ Regras de Validação
 
-**RN-LOT-001: Código Único**
-- Código do lote deve ser único no sistema
-- Usado para rastreabilidade
-- **Exemplo**: `LOTE-2026-001`, `FAB-20260521`
+**RN-LOT-001: Código Único** (Implementado no banco)
+- `UNIQUE (empresa_id, codigo)`: único **por empresa**, não no sistema inteiro. Lote repetido numa entrada falha na transação (a resposta sai como erro interno, sem tratamento dedicado). **Exemplo**: `LOTE-2026-001`.
 
-**RN-LOT-002: Validação de Quantidades**
-- `quantidade` deve ser maior que zero
-- `quantidade_inicial` é registrada na criação e não muda
-- `quantidade` diminui conforme o lote é consumido
+**RN-LOT-002: Quantidades** (Parcial)
+- O lote nasce **somente** numa entrada (`criar_lote = true` **e** `codigo_lote` preenchido) com a quantidade da entrada (`> 0`), que vira `quantidade_inicial`.
+- `quantidade` diminui só em saída com `lote_id`. Quando chega a 0, o lote passa a `BLOQUEADO`.
+- Não existe rota para criar lote avulso nem para editar quantidade ou status (`LoteCreate`/`LoteUpdate` existem nos schemas, mas nenhuma rota os usa).
 
-**RN-LOT-003: Validação de Datas**
-- `data_validade` deve ser posterior a `data_fabricacao`
-- Se `data_validade` for fornecida, sistema monitora vencimento
-- Lotes sem data de validade não geram alertas
+**RN-LOT-003: Validação de Datas** (Não aplicada)
+- O validador "validade não anterior à fabricação" existe em `LoteBase`, que nenhuma rota usa. O caminho real (`EntradaEstoqueRequest`) **não valida** a ordem das datas.
 
-**RN-LOT-004: Status do Lote**
-- `ATIVO`: Lote disponível para uso
-- `VENCIDO`: Lote passou da data de validade
-- `BLOQUEADO`: Lote bloqueado manualmente (recall, problema de qualidade)
+**RN-LOT-004: Status do Lote** (Parcial)
+- `ATIVO`: padrão na criação.
+- `VENCIDO`: `LoteRepository.marcar_vencidos` existe, mas **nenhum código o chama** (sem job, sem rota). Na prática o status não muda sozinho; o campo `vencido` das respostas de lotes é calculado pela data (`data_validade < hoje`).
+- `BLOQUEADO`: saída com esse lote é recusada. O status é definido pelo sistema (quantidade zerada); não há rota para bloquear manualmente (recall).
+- Saída de lote `VENCIDO` é permitida de propósito: é a forma de dar baixa em vencido.
 
-**RN-LOT-005: Alertas de Vencimento**
-- Sistema verifica diariamente lotes próximos do vencimento
-- Alerta é gerado quando faltam 7 dias para vencer
-- Notificação via WhatsApp para gerentes
+**RN-LOT-005: Alertas de Vencimento** (Parcial)
+- Calculados **na consulta**: `alerta_vencimento` quando faltam de 1 a **30** dias (não 7); `GET /estoque/lotes/vencendo` lista lotes `ATIVO` com validade em até 30 dias.
+- Lotes sem `data_validade` não geram alerta.
+- **Não há verificação diária, notificação WhatsApp nem evento**: o `EventPublisher` existe mas nenhum código de estoque o chama.
 
-**RN-LOT-006: Rastreabilidade**
-- Código do lote permite rastreamento completo
-- Todas as movimentações registram o lote de origem
-- Usado para recalls e controle de qualidade
+**RN-LOT-006: Rastreabilidade** (Parcial)
+- Vale para entrada com lote e saída com `lote_id`, que gravam `lote_id` na movimentação.
+- **Não é verdade** que todas as movimentações registram lote: baixa de venda, estorno, ajuste e reserva não tocam lotes. Não há saída automática por FIFO.
 
 ---
 
 ## 4. Entidade: Inventário
 
+> **Não exposto pela API.** Existem tabelas (`inventarios`, `itens_inventario`), schemas e `InventarioRepository`, mas **não há rota nem serviço** que crie ou finalize inventário (o repositório só é importado no service, sem uso). O fluxo de contagem hoje é o `POST /estoque/ajuste` por item. As regras abaixo descrevem o **modelo de dados**, não um comportamento disponível.
+
 ### 📊 Estrutura de Dados
 
-| Campo | Tipo | Obrigatório | Único | Descrição |
-|-------|------|-------------|-------|-----------|
-| `id` | UUID | Sim | Sim | Identificador único |
-| `data_inventario` | DateTime | Sim | Não | Data da contagem |
-| `responsavel` | String(200) | Sim | Não | Nome do responsável |
-| `observacao` | Text | Não | Não | Observações gerais |
-| `finalizado` | Boolean | Sim | Não | Inventário finalizado? |
-| `data_finalizacao` | DateTime | Não | Não | Data de finalização |
-| `created_at` | DateTime | Sim | Não | Data de criação |
-| `updated_at` | DateTime | Sim | Não | Data de atualização |
+Tabela `estoque.inventarios`:
 
-### ✅ Regras de Validação
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | UUID | Sim | Identificador único |
+| `empresa_id` | Integer | Sim | Tenant |
+| `data_inventario` | DateTime | Sim | Data da contagem |
+| `responsavel` | String(200) | Sim | Nome do responsável |
+| `observacao` | Text | Não | Observações gerais |
+| `finalizado` | Boolean | Sim | Padrão `false` |
+| `data_finalizacao` | DateTime | Não | Data de finalização |
+| `created_at` / `updated_at` | DateTime | Sim | Auditoria |
 
-**RN-INV-001: Criação de Inventário**
-- Inventário é criado com `finalizado = false`
-- Deve ter pelo menos um item para ser criado
-- Responsável é obrigatório
+Tabela `estoque.itens_inventario`: `id`, `inventario_id`, `estoque_id`, `quantidade_sistema`, `quantidade_contada`, `diferenca`, `observacao`, `ajustado`, `created_at`.
 
-**RN-INV-002: Itens do Inventário**
-- Cada item registra:
-  - `quantidade_sistema`: Quantidade no sistema
-  - `quantidade_contada`: Quantidade física contada
-  - `diferenca`: Calculada automaticamente
-- Diferença pode ser positiva (sobra) ou negativa (falta)
+### Regras (somente modelo/schema)
 
-**RN-INV-003: Finalização de Inventário**
-- Apenas inventários não finalizados podem ser finalizados
-- Ao finalizar:
-  - Todos os itens com diferença são ajustados
-  - Movimentações de ajuste são criadas
-  - Campo `finalizado` é marcado como `true`
-  - `data_finalizacao` é registrada
-- Inventário finalizado não pode ser editado
-
-**RN-INV-004: Ajustes Automáticos**
-- Ao finalizar inventário, sistema ajusta automaticamente:
-  - Aumenta quantidade se diferença for positiva
-  - Diminui quantidade se diferença for negativa
-- Cada ajuste gera uma movimentação tipo `AJUSTE`
+- **RN-INV-001**: o schema `InventarioCreate` exige `responsavel` e a lista `itens`; `finalizado` nasce `false`.
+- **RN-INV-002**: cada item guarda `quantidade_sistema`, `quantidade_contada` e `diferenca`.
+- **RN-INV-003 / RN-INV-004** (finalização que ajusta o estoque e gera movimentações `AJUSTE`): **Não implementado.** `InventarioRepository.finalizar` só marca `finalizado = true` e `data_finalizacao`; não ajusta quantidades nem cria movimentações, e nada o chama.
 
 ---
 
@@ -244,42 +224,31 @@ Estado Inicial:
 
 ### 5.1. Venda com Estoque Insuficiente
 
-**Cenário**: Cliente tenta comprar 100 unidades, mas há apenas 50 em estoque
+**Cenário**: cliente quer 100 unidades, há 50.
 
-**Comportamento**:
-1. Sistema tenta reservar 100 unidades
-2. Estoque valida disponibilidade
-3. Retorna erro: `400 Bad Request - Estoque insuficiente`
-4. Venda não é criada
-5. Nenhuma reserva é feita
-
-**Alternativa**: Venda parcial (futuro)
-- Permitir venda de 50 unidades
-- Criar backorder para as 50 restantes
+**Comportamento real**:
+1. Se o chamador reservar (o serviço de Vendas chama `POST /estoque/reservar` em `venda_service.py`): estoque insuficiente responde **400** `Quantidade disponível insuficiente para reserva`, nada é reservado.
+2. Na confirmação, `POST /estoque/baixar-venda` valida a quantidade **física** de todos os itens sob lock; qualquer item sem saldo devolve **409** e **nenhum** item é baixado.
+3. Venda parcial/backorder: **não existe**.
 
 ### 5.2. Lote Vencido com Estoque
 
-**Cenário**: Lote vence mas ainda tem 50 unidades
+**Cenário**: lote vence e ainda tem 50 unidades.
 
-**Comportamento**:
-1. Job diário verifica lotes vencidos
-2. Marca lote como `VENCIDO`
-3. Publica evento `estoque.lote_vencido`
-4. Notificação é enviada ao gerente
-5. Lote vencido não é usado em novas saídas (FIFO)
-6. Gerente deve dar baixa manual (perda) ou remarcar validade
+**Comportamento real**:
+1. Nenhum job marca o lote como `VENCIDO` nem publica evento ou notificação (ver RN-LOT-004/005).
+2. Enquanto vencido, ele aparece com `vencido = true` em `GET /estoque/{id}/lotes` e em `/lotes/vencendo` (se ainda `ATIVO`).
+3. O gerente dá baixa com `POST /estoque/saida` informando o `lote_id` (permitido para lote vencido). Não há remarcação de validade por rota.
 
-### 5.3. Inventário com Grandes Diferenças
+### 5.3. Contagem com Grandes Diferenças
 
-**Cenário**: Inventário encontra diferença de -100 unidades (falta)
+**Cenário**: a contagem física de um item é 100 unidades menor que o sistema.
 
-**Comportamento**:
-1. Diferença é registrada no item do inventário
-2. Ao finalizar inventário:
-   - Quantidade é ajustada para quantidade contada
-   - Movimentação tipo `AJUSTE` é criada
-   - Motivo: `Inventário #{uuid}`
-3. Alerta é gerado se diferença > 10% do estoque
+**Comportamento real**:
+1. O operador chama `POST /estoque/ajuste` com `estoque_id` e `quantidade_nova` (a contagem) e um `motivo`.
+2. Grava-se uma movimentação `AJUSTE` com `quantidade = 100`, `quantidade_anterior` e `quantidade_posterior`.
+3. O motivo é o texto informado; não há `Inventário #uuid` automático nem alerta por diferença acima de 10%.
+4. Se a contagem ficar abaixo da quantidade reservada, o ajuste é recusado (400).
 
 ---
 
@@ -290,6 +259,6 @@ Estado Inicial:
 
 ---
 
-**Última atualização**: 26 de Maio de 2026  
+**Última revisão de conteúdo**: 2026-09-26, contra o código  
 **Versão**: 1.0.0  
 **Autor**: Equipe DenebCorp

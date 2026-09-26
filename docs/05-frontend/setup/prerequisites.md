@@ -150,8 +150,10 @@ test -f .env && echo ".env ok" || echo "falta copiar .env.example"
 docker compose -f docker-compose.dev.yml config >/dev/null && echo "compose ok"
 ```
 
-`docker compose config` falha nomeando a variável obrigatória que estiver
-faltando — é o teste mais curto de que o `.env` está completo.
+`docker compose config` valida a sintaxe e imprime o compose resolvido. O
+`docker-compose.dev.yml` não usa `${VAR:?}` (nenhuma variável é marcada como
+obrigatória), então uma variável ausente **não** faz o comando falhar: ela
+aparece como aviso `variable is not set` e vira string vazia. Leia os avisos.
 
 Depois de subir (`docker compose -f docker-compose.dev.yml up frontend-dev`):
 

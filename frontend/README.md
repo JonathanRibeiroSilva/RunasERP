@@ -56,7 +56,7 @@ docker compose -f docker-compose.dev.yml up -d --force-recreate frontend-dev
 ```
 
 Serviço `frontend-dev`, container `erp-frontend-dev`, porta `3000:3000` →
-**http://localhost:3000** (`docker-compose.dev.yml:527-541`).
+**http://localhost:3000** (`docker-compose.dev.yml:527-571`).
 
 No compose de dev o `VITE_USE_PROXY` é `"true"`: o próprio Vite faz o proxy de
 `/api/*` para `http://api-gateway:8000` (`vite.config.ts:79-86`). Não há nginx
@@ -113,7 +113,10 @@ no `.env` da raiz antes de rodar o seed.
 ### Login social (OAuth)
 
 Google e Microsoft têm callbacks implementados
-(`src/pages/Auth/GoogleCallback.tsx`, `src/pages/Auth/MicrosoftCallback.tsx`).
+(`src/pages/Auth/GoogleCallback.tsx`, `src/pages/Auth/MicrosoftCallback.tsx`),
+rotas `/auth/callback/google` e `/auth/callback/microsoft`. Eles chamam
+`/auth/cliente/oauth/*`: é o login do **cliente da loja online**; o `LoginPage`
+do operador não tem botão social.
 Variáveis: `VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID`,
 `VITE_MICROSOFT_TENANT_ID` (default `common`) e `VITE_OAUTH_REDIRECT_URI`
 (`.env.example:53-56`).
@@ -132,7 +135,7 @@ frontend/
 │   ├── components/
 │   │   ├── common/         # ErrorBoundary, MaskedInput, Modal, Responsive{Card,Container,Table}, RoleProtectedRoute
 │   │   ├── layout/         # MainLayout, Navbar, Sidebar
-│   │   └── clientes/ estoque/ financeiro/ produtos/ vendas/
+│   │   └── (clientes/ estoque/ financeiro/ produtos/ vendas/ existem vazias, sem arquivo)
 │   ├── pages/              # uma pasta por módulo (ver Status abaixo)
 │   ├── services/
 │   │   ├── api/            # axios.ts + um *Api.ts por domínio + apiPublica.ts
@@ -150,7 +153,7 @@ frontend/
 ```
 
 Aliases de import (`@`, `@/components`, `@/pages`, …) estão em
-`vite.config.ts:20-33` e replicados em `vitest.config.ts`.
+`vite.config.ts:20-33`; o `vitest.config.ts` só replica o `@`.
 
 ---
 
@@ -233,8 +236,13 @@ Rotas efetivamente chamadas por `src/services/`:
 | `/integracoes`, `/pagamentos/admin/status` | `api/integracoesApi.ts` |
 | `/loja-online/produtos/{id}/publicar` | `api/lojaOnlineApi.ts` |
 
+A loja pública não passa por esses clientes: usa `apiPublica` (`baseURL: '/api'`
+fixo) direto em `hooks/useCarrinho.ts` e nas páginas de `LojaOnlinePublico/`
+(`/empresas/publico/{slug}`, `/loja-online/publico/produtos`, `/loja/checkout`,
+`/clientes/me`, `/auth/cliente/*`).
+
 Não há cliente para `/vendas` nem `/financeiro` — os dois só aparecem em
-`api/__tests__/axios.test.ts` como caminho de exemplo.
+`src/services/api/__tests__/axios.test.ts` como caminho de exemplo.
 
 Referência da API: [docs/10-api-reference/](../docs/10-api-reference/) e
 [docs/10-api-reference/plataforma-api.md](../docs/10-api-reference/plataforma-api.md).
@@ -247,7 +255,7 @@ Referência da API: [docs/10-api-reference/](../docs/10-api-reference/) e
 
 - Autenticação por cookie HTTP-only + rotas protegidas e `RoleProtectedRoute`
 - Layout (Navbar, Sidebar com filtro por permissão), Login, Perfil
-- OAuth Google e Microsoft
+- OAuth Google e Microsoft (login do cliente da loja online)
 - **Clientes** — 4 páginas (lista, formulário, endereços, crédito)
 - **Produtos** — 5 páginas (lista, formulário, detalhes, variantes, categorias)
 - **Estoque** — 2 páginas + 4 componentes (modal de operação, badges, timeline)
@@ -268,7 +276,7 @@ Referência da API: [docs/10-api-reference/](../docs/10-api-reference/) e
 ### Parcial
 
 - **Gráficos no Dashboard** — os gráficos existem de verdade (`Line` e
-  `Doughnut` do Chart.js, `DashboardPage.tsx:13`), mas os dados são estáticos
+  `Doughnut` do Chart.js, `DashboardPage.tsx:14`), mas os dados são estáticos
   dentro do próprio arquivo: `mockStats:32`, `lineChartData:122`,
   `doughnutData:162`. Renderizam; não refletem o banco.
 

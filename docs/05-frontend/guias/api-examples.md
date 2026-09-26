@@ -125,8 +125,10 @@ objetos de validação. O `getErrorMessage` devolve esse valor como veio, então
 tela que joga o retorno direto no toast pode renderizar `[object Object]` num
 erro de validação.
 
-Os códigos e as mensagens de erro por endpoint estão em
-[docs/10-api-reference/README.md](../../10-api-reference/README.md).
+O formato de erro do backend e a tabela de códigos HTTP do gateway estão em
+[docs/10-api-reference/README.md](../../10-api-reference/README.md). A CONFIRMAR:
+mensagens de erro por endpoint não estão documentadas ali; só o código dos
+routers é fonte.
 
 ---
 

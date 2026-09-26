@@ -65,7 +65,7 @@ assets/
   js/
     support.js                  runtime do Design Component
     image-slot.js               <image-slot> — slots de imagem editáveis
-    glitter-warp.js             <glitter-warp> — partículas do CTA final
+    glitter-warp.js             <glitter-warp> — NÃO é carregado nem usado hoje (a seção de CTA final saiu do index.html)
   img/
     brand/                      logotipos
     products/                   fotos dos produtos da loja de exemplo
@@ -87,15 +87,19 @@ Já aconteceu uma vez: a ferramenta regenerou o projeto, renomeou `index.html`
 para `*.dc.html`, devolveu `support.js` / `image-slot.js` / `glitter-warp.js`
 para a raiz, restaurou as fotos com o xadrez e apagou as pastas.
 
-Por isso o projeto está sob **git** — essa é a rede de segurança. Se acontecer
-de novo:
+Por isso o projeto está sob **git** (`landing-page/` faz parte do repositório do
+ERP) — essa é a rede de segurança. Se acontecer de novo:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/restore.ps1
 ```
 
-O script restaura os arquivos rastreados e lista o que a ferramenta recriou
-fora do lugar. Se o runtime tiver mudado de versão, mova por cima:
+O script roda `git checkout -- .` (restaura os arquivos rastreados) e lista o
+que a ferramenta recriou fora do lugar. Atenção: ele começa checando `.git` em
+`landing-page/`, e aqui o `.git` está na raiz do monorepo — nesse layout o
+script aborta com "Sem repositorio git aqui". A CONFIRMAR: se ainda é usável;
+enquanto isso, `git checkout -- landing-page/` a partir da raiz do repo faz o
+mesmo. Se o runtime tiver mudado de versão, mova por cima:
 
 ```powershell
 Move-Item -Force support.js, image-slot.js, glitter-warp.js assets/js/
@@ -113,7 +117,7 @@ reset reversível.
 ## CSS
 
 `assets/css/main.css` é mobile-first: o estilo base atende telefone e cada
-`@media (min-width: …)` só acrescenta para telas maiores. Breakpoints:
+`@media (min-width: …)` só acrescenta para telas maiores. Breakpoints principais (há outros pontuais: 900px, 980px e um `max-width: 359px`):
 
 | Largura | O que muda |
 |---------|------------|
@@ -122,9 +126,9 @@ reset reversível.
 | 600px   | rodapé em 2 colunas |
 | 640px   | tipografia e espaçamentos maiores |
 | 680/720px | listas de módulos e passos em 2 colunas |
-| 768px   | mock do dashboard ganha sidebar e 4 KPIs |
-| 960px   | seção da Loja Online em 2 colunas; rodapé em 4 |
-| 1024px  | navegação completa no lugar do hambúrguer |
+| 768px   | navegação completa no lugar do hambúrguer; mock do dashboard ganha sidebar |
+| 960px   | seção da Loja Online em 2 colunas; rodapé em 3 (2fr 1fr 1.2fr) |
+| 1024px  | mock do dashboard com 4 KPIs e painéis lado a lado |
 | 1440px  | container vai a 1320px (senão sobra vazio nas laterais) |
 | 1800px  | container a 1480px e seções mais espaçadas |
 
@@ -140,7 +144,7 @@ Convenções:
 - `@media (prefers-reduced-motion: reduce)` desliga marquee, scroll suave e
   transições.
 
-Verificado sem overflow horizontal de **280px a 2560px**.
+Sem overflow horizontal: A CONFIRMAR (a faixa "280px a 2560px" que constava aqui não tem teste nem script no repo).
 
 ### Cuidado: o header sticky depende de um override no wrapper
 
@@ -157,10 +161,11 @@ Se o header voltar a sumir ao rolar, é esse override que se perdeu.
 ### Cuidado: custom elements não recebem `class`
 
 O runtime **não repassa o atributo `class`** para custom elements
-(`<image-slot>`, `<glitter-warp>`) — a classe simplesmente não chega no DOM.
-Esses elementos precisam de `style` inline, e não é só cosmético: os dois medem
-o próprio `clientWidth`/`clientHeight` para dimensionar o canvas/imagem, então
-sem tamanho inline eles nascem 0×0 e não aparecem. Para elementos HTML normais,
+(`<image-slot>`) — a classe simplesmente não chega no DOM (A CONFIRMAR: o
+comportamento vem de `support.js`, não localizei o trecho). Esses elementos
+precisam de `style` inline, e não é só cosmético: o `<image-slot>` mede o
+próprio `clientWidth`/`clientHeight` (`image-slot.js:885,962`), então sem
+tamanho inline ele nasce 0×0 e não aparece. Para elementos HTML normais,
 `class` funciona sem problema.
 
 ### Cuidado: SEO fica no `<head>` estático, não no `<helmet>`
@@ -204,9 +209,10 @@ o branco do `.store-thumb`, o que dá exatamente essa cor — assim a faixa late
 do `object-fit: contain` some.
 
 A saída é **WebP de no máximo 320px** de lado (`OUT_SIZE`/`QUALITY` no topo do
-script). O thumb da loja renderiza a ~118px, então 320 já cobre telas 2x. Antes
-o teto era 800px em PNG e uma das fotos saía com 501 KB para ocupar 118px na
-tela — as quatro somavam 710 KB, hoje somam 38 KB.
+script). O thumb da loja renderiza a ~118px, então 320 já cobre telas 2x. As quatro
+fotos em `assets/img/products/` somam hoje ~38 KB. A CONFIRMAR: os números do
+"antes" (teto de 800px em PNG, 501 KB numa foto, 710 KB no total) — não achei os
+PNGs antigos no histórico do git.
 
 O script nunca amplia: fotos cujo recorte é menor que o teto ficam no tamanho
 nativo, para não borrar.

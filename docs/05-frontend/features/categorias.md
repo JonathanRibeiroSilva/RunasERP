@@ -116,10 +116,12 @@ Isso é um defeito, não o comportamento desejado.
 | Status | Corpo | Quando |
 |---|---|---|
 | 400 | `Categoria '<nome>' já existe` | Nome duplicado no mesmo tenant, em POST ou PUT (`services/produtos.py:107` e `:130`) |
+| 400 | `Categoria com ID <id> não encontrada` | **PUT** de id inexistente: o router converte qualquer `ValueError` em 400 (`routers/produtos.py:115-116`), não em 404 |
 | 403 | `empresa_id do body não corresponde ao header X-Empresa-Id` | Só no POST |
-| 404 | `Categoria com ID <id> não encontrada` | GET/PUT/DELETE de id inexistente (`services/produtos.py:114`, `:125`, `:138`) |
+| 404 | `Categoria com ID <id> não encontrada` | GET e DELETE de id inexistente (`services/produtos.py:114`, `:138`) |
 | 422 | erro de validação do FastAPI | POST sem `empresa_id`, ou `nome` acima de 100 / `descricao` acima de 500 caracteres |
 | 500 | `Erro ao deletar categoria` | Exclusão de categoria com produtos vinculados (ver acima) |
+| 500 | `Erro ao criar categoria` / `Erro ao atualizar categoria` | Qualquer exceção que não seja `ValueError` em POST / PUT (`routers/produtos.py:70-71`, `:117-118`) |
 
 A página exibe essas mensagens via `getErrorMessage(error, ...)` em um toast
 (`CategoriasPage.tsx:75`, `:109`).

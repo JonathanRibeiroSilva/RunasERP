@@ -1,12 +1,13 @@
 # Graphify metadata — component tags, aliases, business flows, layer priorities
-# Used by graphify to improve query quality and ranking
+# A CONFIRMAR: se o graphify le este arquivo. Nada no repositorio o referencia e o
+# graphify 0.9.30 instalado localmente nao contem nenhuma das chaves abaixo
+# (component_tags, layer_priorities...). Trate como anotacao para leitura humana.
 #
 # Escopo do repositorio: 7 microsservicos FastAPI em services/ (clientes, empresas,
 # estoque, financeiro, notificacoes, produtos, vendas) + api-gateway (que tambem
 # hospeda o modulo plataforma em api-gateway/routers/plataforma.py) + frontend React.
-# Este arquivo fica NA RAIZ: o graphify le do diretorio corrente e
-# .github/workflows/graphify-update.yml roda `graphify update` a partir da raiz do
-# checkout. Mover quebraria os dois.
+# Este arquivo fica NA RAIZ por convencao; .github/workflows/graphify-update.yml
+# roda `graphify update` a partir da raiz do checkout.
 #
 # NOTA: os component_tags/business_flows abaixo cobrem por enquanto so o fluxo de
 # pagamento/loja online. A CONFIRMAR: tags para os demais dominios (estoque,
@@ -32,7 +33,7 @@ component_tags:
 
   LojaService:
     tags: [loja, ecommerce, checkout, pedido, venda-online, loja-publica]
-    keywords: [processar_checkout, criar_pedido_loja, rastrear_pedido]
+    keywords: [processar_checkout, rastrear_pedido]
     layer: backend-service
     business_domain: vendas-online
     priority: high
@@ -59,7 +60,7 @@ business_flows:
     components:
       - name: LojaService.processar_checkout
         step: 1
-        description: Customer finalizes checkout, creates venda with status PEDIDO
+        description: Customer finalizes checkout, creates venda (PENDENTE_PAGAMENTO when the payment is PIX/debito/credito online, PEDIDO otherwise)
       - name: MercadoPagoService.criar_preferencia
         step: 2
         description: Generates payment preference in Mercado Pago

@@ -90,7 +90,7 @@ não vê esses arquivos.
 ### Hot reload
 
 Watch por polling, porque inotify não atravessa bind mount no Docker Desktop
-(Windows/macOS). Configurado em dois lugares que precisam concordar:
+(Windows/macOS). Configurado em três lugares que precisam concordar:
 
 - `Dockerfile.dev`: `ENV CHOKIDAR_USEPOLLING=true`, `ENV CHOKIDAR_INTERVAL=1000`
 - `docker-compose.dev.yml`: `CHOKIDAR_USEPOLLING: "true"`,
