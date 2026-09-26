@@ -4,16 +4,16 @@
 
 PIX não aparece nas opções de pagamento ao ser redirecionado para o Mercado Pago, mesmo estando em modo Sandbox.
 
+> **Nota de verificação:** as afirmações sobre o comportamento do PIX **no lado do Mercado Pago** (disponibilidade em contas sandbox, QR Code simulado, quais cartões de teste existem) não puderam ser confirmadas a partir do repositório. Estão marcadas **A CONFIRMAR** e devem ser conferidas na documentação oficial. O que é do nosso código foi conferido e cita arquivo.
+
 ## ✅ Solução
 
 ### 1. **Verificar Configuração da Conta de Teste**
 
-O PIX no Mercado Pago Sandbox tem algumas limitações:
+O PIX no Mercado Pago Sandbox pode ter limitações.
 
 #### **Importante sobre PIX em Sandbox:**
-- ⚠️ **PIX nem sempre está disponível em todas as contas de teste sandbox**
-- ⚠️ **Algumas contas sandbox antigas não suportam PIX**
-- ⚠️ **PIX sandbox funciona apenas com credenciais específicas**
+- A CONFIRMAR (documentação do MP): se o PIX está disponível em todas as contas de teste sandbox, se contas antigas não o suportam e se exige credenciais específicas.
 
 ### 2. **Verificar suas Credenciais**
 
@@ -41,7 +41,7 @@ Ou pelo painel: https://www.mercadopago.com.br/developers/panel/test-users
 
 ### 4. **Alternativa: Usar Produção**
 
-⚠️ **IMPORTANTE**: Em produção, o PIX funciona normalmente. O problema é específico do Sandbox.
+⚠️ **IMPORTANTE**: Em produção, o PIX deve funcionar normalmente (A CONFIRMAR: o problema ser específico do Sandbox).
 
 Para mudar para produção:
 
@@ -50,32 +50,30 @@ Para mudar para produção:
    - Vá em **"Credenciais de produção"**
    - Copie o `Access Token` de produção
 
-2. **Atualizar no banco de dados**:
-```sql
-UPDATE vendas.configuracoes_pagamento
-SET 
-  mercadopago_access_token = 'SEU_TOKEN',
-  mercadopago_public_key = 'SEU_PUBLIC_KEY_DE_PRODUCAO',
-  environment = 'production'
-WHERE empresa_id = 4;
+2. **Gravar as credenciais pela API** (não por SQL: o access token é gravado cifrado, coluna `mercadopago_access_token_enc`, e a tabela não tem coluna `environment`):
+```bash
+# PUT /pagamentos/admin/configuracao (via gateway; empresa = a do usuário logado)
+# corpo: mercadopago_access_token, mercadopago_public_key, mercadopago_webhook_secret (opcional), ativo
 ```
+Depois defina `MP_ENVIRONMENT=production` no ambiente do serviço de vendas e recrie o container (`services/vendas/config.py`). Detalhes em `CONFIGURACAO_MERCADO_PAGO.md`.
 
 3. **⚠️ ATENÇÃO**: Em produção, **pagamentos reais serão processados**!
 
 ### 5. **Verificar Configuração Atual**
 
-Execute no banco de dados para ver sua configuração:
+Pela API: `GET /pagamentos/admin/status` (configurado/ativo, sem credenciais) e `GET /pagamentos/admin/configuracao` (só a `public_key`). Ou, no banco (o access token fica cifrado, então só dá para ver que existe):
 
 ```sql
-SELECT 
+SELECT
   empresa_id,
-  mercadopago_access_token,
+  mercadopago_access_token_enc IS NOT NULL AS tem_access_token,
   mercadopago_public_key,
-  environment,
   ativo
 FROM vendas.configuracoes_pagamento
-WHERE empresa_id = 4;
+WHERE empresa_id = <empresa_id>;
 ```
+
+O ambiente (sandbox/produção) **não** fica no banco: vem de `MP_ENVIRONMENT` no serviço de vendas.
 
 ### 6. **Documentação Oficial do Mercado Pago**
 
@@ -83,10 +81,7 @@ WHERE empresa_id = 4;
 - https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/integration-test/test-payments
 - https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/payment-methods/pix
 
-**Limitações conhecidas do PIX em Sandbox:**
-- Pode não aparecer em todas as contas de teste
-- Fluxo simulado (não gera QR Code real)
-- Apenas para testes de integração
+**Limitações do PIX em Sandbox:** A CONFIRMAR na documentação acima (se aparece em todas as contas de teste, se o QR Code é simulado).
 
 ### 7. **Workaround para Desenvolvimento**
 
@@ -94,10 +89,8 @@ Se você só quer testar o **fluxo de pagamento** (não o PIX em si):
 
 1. Use **Cartão de Crédito** no sandbox (sempre disponível)
 2. Use os cartões de teste do Mercado Pago:
-   - **Aprovado**: `5031 4332 1540 6351` (MasterCard)
-   - **Rejeitado**: `5031 7557 3453 0604` (MasterCard)
-   - CVV: `123`
-   - Validade: Qualquer data futura
+   - Mastercard de teste: `5031 4332 1540 6351`, CVV `123`, validade qualquer data futura
+   - A CONFIRMAR: qual cartão/nome de titular gera pagamento rejeitado (o número `5031 7557 3453 0604` citado antes não foi confirmado); veja [Cartões de teste](https://www.mercadopago.com.br/developers/pt/docs/checkout-api/testing)
 
 ### 8. **Testar se PIX está Habilitado**
 
@@ -125,9 +118,9 @@ curl -X POST \
 
 Depois acesse o `init_point` retornado e veja se PIX aparece.
 
-### 9. **Nosso Código Está Correto**
+### 9. **O que o nosso código envia**
 
-O código já está configurado corretamente para suportar PIX:
+A preference já é criada sem excluir nenhum método de pagamento (`services/vendas/services/mercadopago_service.py:181-190`):
 
 ```python
 "payment_methods": {
@@ -164,12 +157,12 @@ O código já está configurado corretamente para suportar PIX:
 
 | Recurso | Sandbox | Produção |
 |---------|---------|----------|
-| PIX | ⚠️ Limitado (pode não aparecer) | ✅ Funciona perfeitamente |
-| Cartão de Crédito | ✅ Cartões de teste | ✅ Cartões reais |
-| Boleto | ⚠️ Simulado | ✅ Real |
-| Webhooks | ✅ Funciona | ✅ Funciona |
-| QR Code PIX | ❌ Não gera | ✅ Gera QR Code real |
-| Cobranças | ❌ Simuladas | ✅ Reais (cuidado!) |
+| PIX | A CONFIRMAR (pode não aparecer) | A CONFIRMAR |
+| Cartão de Crédito | Cartões de teste | Cartões reais |
+| Boleto | A CONFIRMAR | A CONFIRMAR |
+| Webhooks | Funciona (`/loja/{slug}/webhook/mercadopago`) | Funciona |
+| QR Code PIX | A CONFIRMAR | A CONFIRMAR |
+| Cobranças | Simuladas | Reais (cuidado!) |
 
 ---
 

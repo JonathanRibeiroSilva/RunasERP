@@ -2,6 +2,13 @@
 
 Este guia explica como configurar o Mercado Pago para aceitar pagamentos online na loja.
 
+## Como o sistema usa as credenciais (leia primeiro)
+
+- As credenciais usadas em runtime ficam **no banco**, uma linha por empresa, em `vendas.configuracoes_pagamento`: access token e segredo do webhook cifrados (colunas `mercadopago_access_token_enc` e `mercadopago_webhook_secret_enc`, precisam de `INTEGRACOES_SECRET_KEY`), public key em claro (`services/vendas/models/venda.py`).
+- As variáveis `MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY` e `MP_WEBHOOK_SECRET` do `.env` **não são lidas pelo serviço de vendas em runtime** (`services/vendas/config.py` só declara `MP_ENVIRONMENT`). Elas servem de fonte para o script `services/vendas/scripts/set_mercadopago_credentials.py`, que as grava no banco (só em sandbox).
+- `MP_ENVIRONMENT` (`sandbox` por padrão no código e no `docker-compose.dev.yml`; o `docker-compose.prod.yml` usa `production` por padrão) é a chave que decide sandbox x produção.
+- Cada empresa (tenant) tem a sua própria configuração.
+
 ## 1. Criar Conta no Mercado Pago
 
 1. Acesse [https://www.mercadopago.com.br](https://www.mercadopago.com.br)
@@ -10,66 +17,50 @@ Este guia explica como configurar o Mercado Pago para aceitar pagamentos online 
 
 ## 2. Obter Credenciais de Teste (Sandbox)
 
-### Access Token de Teste
+### Access Token e Public Key de Teste
 
 1. No painel do Mercado Pago, vá em **Credenciais**
 2. Selecione **Credenciais de teste**
-3. Copie o **Access Token** (começa com `TEST-`)
-4. Cole no arquivo `.env`:
+3. Copie o **Access Token** e a **Public Key** (ambos começam com `TEST-`)
+4. Cole no arquivo `.env` (modelo em `.env.example`):
    ```env
-   MP_ACCESS_TOKEN=TEST-1234567890-123456-abc123def456-789012345
+   MP_ACCESS_TOKEN=TEST-<seu-access-token>
+   MP_PUBLIC_KEY=TEST-<sua-public-key>
+   MP_ENVIRONMENT=sandbox
    ```
-
-### Public Key de Teste
-
-1. Na mesma página, copie a **Public Key** (também começa com `TEST-`)
-2. Cole no arquivo `.env`:
-   ```env
-   MP_PUBLIC_KEY=TEST-abc123def-456789-012345-678901-abc123
+5. Grave no banco (o container precisa ter sido **recriado** depois de mudar o `.env`, pois `docker restart` não relê variáveis: `docker compose -f docker-compose.dev.yml up -d vendas`):
+   ```bash
+   docker exec -it erp-vendas-dev python scripts/set_mercadopago_credentials.py [empresa_id ...]
    ```
+   Sem argumentos o script atualiza apenas `empresa_id=4` (loja de teste padrão do script). Ele recusa rodar com `MP_ENVIRONMENT=production`.
+
+   Alternativa: `POST /pagamentos/admin/configuracao` (ver seção 6).
 
 ### Webhook Secret
 
-O webhook é fundamental para receber notificações de pagamento em tempo real.
-
-#### Como configurar:
+O webhook é fundamental para receber notificações de pagamento em tempo real. O sistema valida a assinatura (`x-signature`, HMAC-SHA256) quando o segredo está gravado para a empresa.
 
 1. **Acesse o painel do Mercado Pago**: [https://www.mercadopago.com.br/developers/panel/webhooks](https://www.mercadopago.com.br/developers/panel/webhooks)
-
-2. **Clique em "Criar webhook" ou "Nova URL"**
-
-3. **Configure a URL do webhook**:
+2. **Crie o webhook** com os eventos `payment` e `merchant_order` (os dois tópicos que a rota trata, `services/vendas/routers/webhook.py`).
+3. **URL do webhook**. O sistema já envia a URL em cada preference (`notification_url`), no formato:
    ```
-   https://www.runaserp.com.br/api/vendas/webhook/mercadopago
+   {API_BASE_URL}/loja/{empresa_slug}/webhook/mercadopago
    ```
-   ⚠️ **Importante**: Use o domínio Cloudflare configurado (`.env` → `FRONTEND_URL`)
-
-4. **Selecione os eventos a serem notificados**:
-   - ✅ `payment` - Quando um pagamento é criado/atualizado
-   - ✅ `merchant_order` - Quando um pedido é criado/atualizado
-
-5. **Copie o Secret gerado** pelo Mercado Pago
-
-6. **Cole no arquivo `.env`**:
+   Em produção `API_BASE_URL=https://app.runaserp.com.br/api` (`.env.production.example`), ou seja:
+   `https://app.runaserp.com.br/api/loja/{empresa_slug}/webhook/mercadopago`. Para receber notificações em desenvolvimento local, `API_BASE_URL` precisa apontar para uma URL pública (ex.: túnel).
+   A CONFIRMAR: se o painel do MP exige uma URL cadastrada para revelar o segredo de assinatura.
+4. **Copie o Secret gerado** pelo Mercado Pago e coloque em `MP_WEBHOOK_SECRET` no `.env`:
    ```env
-   MP_WEBHOOK_SECRET=seu-webhook-secret-aqui
+   MP_WEBHOOK_SECRET=<segredo-do-webhook>
    ```
+5. Grave no banco com o script da seção anterior (ele também aplica `MP_WEBHOOK_SECRET`) ou informe `mercadopago_webhook_secret` no `PUT /pagamentos/admin/configuracao`.
 
-7. **Reinicie o serviço de vendas**:
-   ```bash
-   docker restart erp-vendas-dev
-   ```
+Sem segredo gravado, a rota aceita notificações não assinadas (com warning no log); com segredo, uma assinatura errada devolve **401**.
 
-#### Testando o Webhook:
+#### Testando o Webhook
 
-Após configurar, você pode testar enviando um evento de teste pelo painel do Mercado Pago:
-
-1. No painel de webhooks, clique em "Testar"
-2. Selecione o tipo de evento (ex: `payment`)
-3. Envie o teste
-4. Verifique os logs: `docker logs erp-vendas-dev`
-
-Se ver uma linha como `INFO: Webhook recebido com sucesso`, está funcionando!
+- Rota de verificação: `GET {API_BASE_URL}/loja/{empresa_slug}/webhook/mercadopago/test` deve responder `{"status":"ok", ...}`.
+- Depois de enviar um evento de teste pelo painel do MP, veja os logs: `docker logs erp-vendas-dev`. Os logs são JSON (structlog): procure `webhook_mercadopago_recebido_completo` e, em caso de sucesso, `webhook_processado_sucesso`.
 
 ### Ambiente
 
@@ -82,35 +73,23 @@ MP_ENVIRONMENT=sandbox
 
 Quando estiver pronto para produção:
 
-1. Vá em **Credenciais de produção**
+1. Vá em **Credenciais de produção** no painel do MP
 2. Complete o formulário de ativação de conta
-3. Obtenha o **Access Token** e **Public Key** de produção
-4. Atualize o `.env`:
-   ```env
-   MP_ACCESS_TOKEN=APP-1234567890123456-123456-abc123def456789012345678901234-789012345
-   MP_PUBLIC_KEY=APP-abc123def456789012345678901234
-   MP_ENVIRONMENT=production
-   ```
+3. Obtenha o **Access Token** e a **Public Key** de produção
+4. Grave-os **pela API/tela de integrações** (`PUT /pagamentos/admin/configuracao`, seção 6): o script do passo anterior recusa `MP_ENVIRONMENT=production`.
+5. Defina `MP_ENVIRONMENT=production` no ambiente do serviço de vendas.
 
 ## 4. Testar Pagamentos (Sandbox)
 
 ### Usuário de Teste do Mercado Pago
 
-Use estas credenciais para fazer login no app Mercado Pago em modo teste:
-
-- **Email/CPF**: TESTUSER4688266867233527599
-- **Senha**: Cgm288PNKx
-- **Código de verificação**: 634187
+Crie um usuário de teste pelo painel (Contas de teste): [https://www.mercadopago.com.br/developers/panel/test-users](https://www.mercadopago.com.br/developers/panel/test-users). Não versione e-mail, senha ou código de verificação desses usuários.
 
 ### Cartões de Teste
 
-Use estes cartões para testar diferentes cenários:
+O cartão de teste Mastercard usado nesta documentação é `5031 4332 1540 6351`, CVV `123`, validade: qualquer data futura. O resultado do pagamento (aprovado, recusado, pendente) **não** depende do número do cartão, e sim do nome do titular e do documento informados no checkout.
 
-| Cenário | Cartão | CVV | Validade |
-|---------|--------|-----|----------|
-| Aprovado | 5031 4332 1540 6351 | 123 | 11/25 |
-| Recusado (fundos insuficientes) | 5031 4332 1540 6351 | 123 | 11/25 |
-| Pendente | 5031 4332 1540 6351 | 123 | 11/25 |
+A CONFIRMAR: os nomes de titular que forçam cada cenário (aprovado, recusado, fundos insuficientes, pendente); consulte [Cartões de teste](https://www.mercadopago.com.br/developers/pt/docs/checkout-api/testing).
 
 **CPF para testes**: 12345678909
 
@@ -120,33 +99,44 @@ Use estes cartões para testar diferentes cenários:
 2. O sistema gerará um QR Code
 3. Use o app Mercado Pago em modo teste para pagar
 
-## 5. Configurar Webhook
+PIX em sandbox pode não estar disponível: ver `MERCADOPAGO_PIX_SANDBOX.md`.
 
-O webhook é essencial para receber notificações de pagamento:
+## 5. Como o webhook é processado
 
-1. URL do webhook:
-   ```
-   https://seu-dominio.com/api/vendas/webhook/mercadopago
-   ```
+Para cada pagamento notificado, o sistema relê o pagamento na API do MP pelo id e age conforme o status (`services/vendas/services/mercadopago_service.py`):
 
-2. Eventos a serem notificados:
-   - `payment` - Pagamento criado/atualizado
-   - `merchant_order` - Pedido criado/atualizado
+- **Aprovado** → confirma a venda (baixa de estoque) e limpa o carrinho.
+- **Recusado/cancelado** em venda ainda não paga → a venda volta/permanece `PENDENTE_PAGAMENTO`, aguardando nova tentativa (não cancela na hora).
+- **Reembolsado/chargeback** → devolve o estoque e marca a venda como reembolsada.
+- A idempotência é garantida pela tabela `webhooks_processados`.
 
-3. O sistema processará automaticamente:
-   - Pagamento aprovado → Confirma pedido
-   - Pagamento recusado → Cancela reserva
-   - Pagamento pendente → Aguarda confirmação
+## 6. Endpoints administrativos de configuração
 
-## 6. URLs de Redirecionamento
+Prefixo `/pagamentos/admin` (o gateway encaminha `/pagamentos` ao serviço de vendas; `services/vendas/routers/admin_pagamento.py`). Todos operam na empresa do usuário logado:
 
-O sistema está configurado para redirecionar após o pagamento:
+| Verbo | Rota | O que faz |
+|-------|------|-----------|
+| GET | `/pagamentos/admin/status` | Diz se está configurado/ativo e se há segredo de webhook gravado (sem credenciais) |
+| GET | `/pagamentos/admin/configuracao` | Lê a configuração (só `public_key`, nunca o access token); 404 se não existir |
+| POST | `/pagamentos/admin/configuracao` | Cria; 409 se já existe |
+| PUT | `/pagamentos/admin/configuracao` | Atualiza; 404 se não existe |
+| PATCH | `/pagamentos/admin/configuracao/ativar` | Ativa |
+| PATCH | `/pagamentos/admin/configuracao/desativar` | Desativa |
+| DELETE | `/pagamentos/admin/configuracao` | Remove (irreversível) |
 
-- **Sucesso**: `/c/{empresaSlug}/pedido/{numero_venda}`
-- **Falha**: `/c/{empresaSlug}/checkout` (com mensagem de erro)
-- **Pendente**: `/c/{empresaSlug}/pedido/{numero_venda}` (com status pendente)
+Corpo do POST/PUT: `mercadopago_access_token` e `mercadopago_public_key` (mínimo 20 caracteres cada), `mercadopago_webhook_secret` (opcional; vazio mantém o já gravado) e `ativo` (padrão `true`).
 
-## 7. Verificar Configuração
+## 7. URLs de Redirecionamento
+
+O sistema redireciona após o pagamento para a página do pedido, sempre a mesma rota, mudando só o parâmetro `status` (`mercadopago_service.py:151-153`):
+
+- **Sucesso**: `{FRONTEND_URL}/c/{empresaSlug}/pedido/{numero_venda}?status=success`
+- **Falha**: `{FRONTEND_URL}/c/{empresaSlug}/pedido/{numero_venda}?status=failure`
+- **Pendente**: `{FRONTEND_URL}/c/{empresaSlug}/pedido/{numero_venda}?status=pending`
+
+O `auto_return` só é enviado quando a URL de sucesso é HTTPS (o MP rejeita `localhost`); em dev local o comprador volta pelo botão do checkout.
+
+## 8. Verificar Configuração
 
 Execute este comando para verificar se as credenciais estão corretas:
 
@@ -158,7 +148,7 @@ curl -X GET \
 
 Se retornar uma lista de métodos de pagamento, está configurado!
 
-## 8. Documentação Oficial
+## 9. Documentação Oficial
 
 - [Documentação Mercado Pago](https://www.mercadopago.com.br/developers/pt)
 - [Credenciais](https://www.mercadopago.com.br/developers/panel/credentials)
@@ -171,27 +161,27 @@ Se retornar uma lista de métodos de pagamento, está configurado!
 
 - Verifique se copiou o Access Token completo
 - Certifique-se de usar credenciais de TEST em sandbox
-- Reinicie o serviço de vendas após alterar o `.env`
+- Lembre que a credencial vigente é a do **banco**: depois de alterar o `.env`, rode de novo o script da seção 2 (ou o `PUT`)
 
 ### Webhook não está funcionando
 
-- Verifique se a URL está acessível publicamente
-- Use ngrok para testes locais
+- Verifique se a URL está acessível publicamente (`.../webhook/mercadopago/test`)
+- Use ngrok (ou outro túnel) para testes locais e aponte `API_BASE_URL` para ele
 - Verifique os logs do serviço de vendas
 
 ### Pagamento não é confirmado
 
-- Verifique se o webhook está configurado
+- Verifique nos logs se chegou `webhook_mercadopago_recebido_completo`
 - Veja os logs de webhook no painel do Mercado Pago
-- Confirme que o `MP_WEBHOOK_SECRET` está correto
+- `webhook_assinatura_invalida` (401) indica que o segredo gravado no banco não confere com o do painel
 
 ## Próximos Passos
 
 Após configurar o Mercado Pago:
 
-1. ✅ Teste um checkout completo em sandbox
-2. ✅ Verifique se o webhook está sendo recebido
-3. ✅ Confirme que o pedido é atualizado após pagamento
-4. ✅ Solicite ativação das credenciais de produção
-5. ✅ Atualize para credenciais de produção
-6. ✅ Faça um pedido real de teste
+1. Teste um checkout completo em sandbox
+2. Verifique se o webhook está sendo recebido
+3. Confirme que o pedido é atualizado após pagamento
+4. Solicite ativação das credenciais de produção
+5. Grave as credenciais de produção (seção 3)
+6. Faça um pedido real de teste

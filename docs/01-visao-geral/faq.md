@@ -107,7 +107,7 @@ docker compose -f docker-compose.dev.yml up -d
 Não é um caminho suportado — não há script nem documentação de instalação
 manual no repositório. As versões que as imagens usam, se você insistir:
 
-- Python **3.12** (`api-gateway/Dockerfile:2`, `services/*/Dockerfile:2`)
+- Python **3.12** (`FROM python:3.12-slim` no `Dockerfile` do gateway e de cada serviço)
 - PostgreSQL **15** (`postgres:15-alpine`) — um banco único, um schema por serviço
 - Redis **7** (`redis:7-alpine`)
 - RabbitMQ **3.12** (`rabbitmq:3.12-management-alpine`) — sobe, mas nenhum código
@@ -122,7 +122,7 @@ Evolution API **não** é requisito: o serviço de notificações é casca (só
 
 Em **produção** a atualização é o deploy, não um `git pull` no servidor: o CI
 publica as imagens e o Coolify puxa. O procedimento completo (incluindo o
-`pg_dump` que roda antes de migrar e o rollback por `TAG=<sha>`) está em
+`pg_dump` que roda antes de migrar e o rollback pelo campo `tag` do `workflow_dispatch`, seção 6) está em
 [`docs/06-operacao/deploy.md`](../06-operacao/deploy.md).
 
 Em **desenvolvimento**:
@@ -311,11 +311,13 @@ Com **bcrypt** via passlib, nunca em texto plano:
 
 ### Posso usar autenticação de dois fatores (2FA)?
 
-Não no MVP. 2FA está planejado para versões futuras.
+Não existe hoje. **A CONFIRMAR**: previsão de 2FA — não consta no [Roadmap](./roadmap.md).
 
 ### Como reporto uma vulnerabilidade?
 
-**NÃO** abra issues públicas. Envie email para: **security@denebcorp.com**
+**NÃO** abra issues públicas. **A CONFIRMAR**: canal de segurança — `security@denebcorp.com`
+não aparece em nenhum outro arquivo do repositório; o contato versionado é
+`contato@denebcorp.com` (README e Roadmap).
 
 ### Os dados são criptografados?
 
@@ -337,19 +339,26 @@ O Runas é proprietário da DenebCorp. Consulte o arquivo [LICENSE](../../LICENS
 
 ### Posso usar comercialmente?
 
-Sim, você pode usar o Runas para fins comerciais em seu próprio negócio.
+Depende de contrato. O `LICENSE` não concede nenhum direito de uso; quem usa
+o Runas sob licença comercial segue o [EULA](../07-legal/EULA-comercial.md).
+Licenciamento e permissões: `legal@runas.com` (indicado no `LICENSE`).
 
 ### Posso revender o Runas?
 
-Não. A revenda ou redistribuição comercial não é permitida sem autorização expressa.
+Não. Qualquer redistribuição exige autorização prévia por escrito (`LICENSE`;
+EULA, seção 2).
 
 ### Posso modificar o código?
 
-Sim, você pode modificar o código para uso próprio. Porém, não pode redistribuir versões modificadas sem autorização.
+Não sem permissão. O `LICENSE` exige autorização prévia por escrito para copiar,
+modificar ou distribuir, e o EULA (seção 2) proíbe modificar e criar trabalhos
+derivados.
 
 ### Posso ver o código-fonte?
 
-Sim, o código-fonte está disponível no GitHub para fins de transparência e auditoria.
+Só onde o acesso de leitura foi concedido: o `LICENSE` admite acesso para leitura e
+avaliação técnica (portfólio, seleção, auditoria, due diligence), e isso não
+constitui licença de uso.
 
 ---
 
@@ -358,33 +367,28 @@ Sim, o código-fonte está disponível no GitHub para fins de transparência e a
 ### Onde obtenho ajuda?
 
 - **Documentação**: [docs/](../)
-- **GitHub Issues**: [github.com/denebcorp/runas/issues](https://github.com/denebcorp/runas/issues)
-- **Discord**: [Link do servidor]
-- **Email**: support@denebcorp.com
+- **GitHub Issues**: [github.com/JonathanRibeiroSilva/RunasERP/issues](https://github.com/JonathanRibeiroSilva/RunasERP/issues)
+- **Discord**: A CONFIRMAR (nenhum servidor versionado)
+- **Email**: A CONFIRMAR (`support@denebcorp.com` só aparece em docs; o contato versionado é `contato@denebcorp.com`)
 
 ### Como reporto um bug?
 
 1. Verifique se já não foi reportado
 2. Abra uma issue no GitHub
-3. Use o template de bug report
+3. Descreva o problema (não há templates em `.github/ISSUE_TEMPLATE/`)
 4. Inclua logs e passos para reproduzir
 
 ### Como sugiro uma funcionalidade?
 
 1. Verifique se já não foi sugerida
 2. Abra uma issue no GitHub
-3. Use o template de feature request
+3. Descreva o caso de uso
 4. Explique o problema que resolve
 
 ### Existe suporte comercial?
 
-Sim, oferecemos:
-- Instalação e configuração
-- Treinamento de equipe
-- Suporte prioritário
-- Customizações
-
-Entre em contato: **sales@denebcorp.com**
+**A CONFIRMAR**: oferta de suporte comercial. O EULA (seção 7) diz que suporte só
+existe mediante acordo separado. Contato versionado: `contato@denebcorp.com`.
 
 ---
 
@@ -401,8 +405,8 @@ Entre em contato: **sales@denebcorp.com**
 ## ❓ Sua pergunta não está aqui?
 
 Abra uma issue no GitHub com a tag `question` ou entre em contato:
-- **Email**: support@denebcorp.com
-- **Discord**: [Link do servidor]
+- **Email**: `contato@denebcorp.com`
+- **Discord**: A CONFIRMAR
 
 ---
 
