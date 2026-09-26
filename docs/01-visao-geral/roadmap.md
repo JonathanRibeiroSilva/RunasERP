@@ -1,449 +1,151 @@
 # Roadmap - Runas
 
-> **Planejamento de desenvolvimento** e evolução do Runas
+> **Esta é a única fonte de "o que falta" no projeto.** Qualquer outro documento que
+> liste pendências está desatualizado. Todo item aberto abaixo cita a evidência
+> (`arquivo:linha`) que prova que ele continua aberto; item sem evidência não entra.
+
+**Última verificação contra o código**: 2026-09-25
 
 ---
 
-## 🎯 Visão Geral
+## 🚨 Aberto — Prioridade 1 (bloqueia o MVP)
 
-Este documento apresenta o roadmap de desenvolvimento do Runas, organizado em fases com objetivos claros e prazos estimados.
+### Vendas / PDV — frontend não existe
+- **Evidência**: `frontend/src/pages/Vendas/VendasPage.tsx` tem 47 linhas de placeholder ("em breve").
+- **Contexto**: o backend está pronto — `services/vendas/routers/` tem `vendas.py`, `loja.py`,
+  `admin_pagamento.py`, `admin_entrega.py`, `admin_integracao.py` e `webhook.py`. Falta só a tela.
+- Pendências: PDV, lista de vendas, detalhe da venda.
 
----
+### Financeiro — casca de serviço, sem backend e sem frontend
+- **Evidência (backend)**: `services/financeiro/main.py:56` expõe um único endpoint, `@app.get("/health")`.
+  `services/financeiro/routers/__init__.py` tem 22 bytes — só a docstring do pacote — e nenhum
+  `include_router` é chamado. As pastas `models/` (26 bytes), `repositories/` (19 bytes),
+  `services/` (37 bytes) e `schemas/` (23 bytes) estão no mesmo estado: docstring e mais nada.
+  O que existe de código real no serviço é infraestrutura compartilhada, não domínio —
+  `database.py`, `config.py` e `interno.py` (middleware de origem interna, igual nos 7 serviços).
+- **Evidência (frontend)**: `frontend/src/pages/Financeiro/FinanceiroPage.tsx` tem 47 linhas de placeholder.
+- Pendências: contas a receber, contas a pagar, pagamentos, cálculo de juros/multa,
+  jobs de cobrança, dashboard financeiro, fluxo de caixa.
+- **Dependência bloqueada por este item**: a integração Vendas → Financeiro
+  (gerar `ContaReceber` para venda FIADO) não tem onde escrever enquanto o serviço for casca.
 
-## ✅ Fase 0: Fundação (Concluída - Maio 2026)
+### Notificações — casca de serviço
+- **Evidência**: `services/notificacoes/main.py:56` expõe só `@app.get("/health")`;
+  `routers/__init__.py` (22 bytes), `services/__init__.py` (37 bytes) e `models/__init__.py` (26 bytes)
+  contêm apenas a docstring do pacote — nenhuma classe, nenhuma função.
+- Já existe e **não** é pendência: envio de e-mail, que vive no gateway
+  (`api-gateway/services/email_service.py`).
+- Pendências: integração WhatsApp via Evolution API, consumidor de eventos,
+  deduplicação, retry com backoff, templates de mensagem.
+- **Nota**: a configuração de Evolution API já existe do lado de Vendas
+  (`services/vendas/config.py:27-30`, `services/vendas/routers/admin_integracao.py:33-36`),
+  mas nenhum código envia mensagem — são apenas campos de configuração por tenant.
 
-### Objetivos
-- Definir arquitetura e stack tecnológica
-- Criar documentação base
-- Configurar infraestrutura de desenvolvimento
-
-### Entregas
-- ✅ Arquitetura de microsserviços definida
-- ✅ Stack tecnológica escolhida
-- ✅ Docker Compose configurado
-- ✅ Estrutura de pastas criada
-- ✅ Documentação inicial
-
----
-
-## 🚧 Fase 1: MVP Backend (Em Progresso - Junho 2026)
-
-### Objetivos
-- Implementar todos os microsserviços
-- Configurar autenticação e autorização
-- Integrar serviços externos
-
-### Entregas
-
-#### API Gateway (85% completo)
-- ✅ Autenticação JWT
-- ✅ OAuth2 (Google, Microsoft)
-- ✅ Roteamento básico
-- ✅ Rate limiting
-- ✅ Proxy para microsserviços
-- ✅ Email Service
-- ✅ Password Recovery Flow
-- 🚧 Testes de integração
-- 🚧 Documentação Swagger
-
-#### Serviço de Clientes (90% completo)
-- ✅ CRUD de clientes
-- ✅ Validação de CPF
-- ✅ Gestão de endereços
-- ✅ Controle de crédito
-- ✅ Bloqueio/desbloqueio
-- ✅ Soft delete
-- ✅ Transações ACID
-- 🟡 Integração com ViaCEP (frontend implementado, backend pendente)
-- 🚧 Histórico de alterações
-- 🚧 Testes unitários
-
-#### Serviço de Produtos (95% completo)
-- ✅ CRUD de produtos
-- ✅ CRUD de categorias
-- ✅ Sistema de variantes
-- ✅ Atributos de variantes
-- ✅ Cálculo de markup
-- ✅ Soft delete
-- ✅ Transações ACID
-- ✅ Multi-tenancy 100%
-- ✅ Loja online (API pública)
-- ✅ Gestão de fornecedores
-- ✅ Upload de fotos
-- 🚧 Histórico de preços
-- 🚧 Produtos compostos (kits)
-- 🚧 Testes unitários
-
-#### Serviço de Estoque (95% completo)
-- ✅ Controle de estoque
-- ✅ Movimentações (entrada, saída, ajuste, devolução, perda)
-- ✅ Gestão de lotes
-- ✅ Inventário físico
-- ✅ Estoque mínimo/máximo
-- ✅ Reserva de estoque
-- ✅ Localização física
-- ✅ Transações ACID
-- ✅ Multi-tenancy 100%
-- ✅ Integração com Vendas (reserva/baixa automática)
-- ✅ Relatórios (geral, movimentações, baixo, zerado)
-- 🚧 Notificações automáticas (estoque baixo, lotes vencendo)
-- 🚧 Bloqueio de lotes vencidos
-- 🚧 FIFO/FEFO
-- 🚧 Testes unitários
-
-#### Serviço de Vendas (90% completo)
-- ✅ Modelos completos (Venda, ItemVenda, PagamentoVenda, ReservaEstoqueVenda)
-- ✅ CRUD de vendas completo
-- ✅ Workflow completo (6 estados)
-- ✅ Múltiplas formas de pagamento
-- ✅ Validação de crédito
-- ✅ Reserva/liberação/baixa de estoque (integração HTTP)
-- ✅ Multi-tenancy 100% nativo
-- ✅ Cliente opcional (vendas de balcão)
-- ✅ Número de venda único por empresa
-- ✅ Snapshot de dados do produto
-- ✅ Migration completa
-- ✅ Seed com 6 cenários
-- 🚧 Integração com Financeiro (ContaReceber para FIADO)
-- 🚧 Devolução (nova entidade)
-- 🚧 Carrinho de compras (sessão para loja online)
-- 🚧 Checkout (loja online)
-- 🚧 Testes unitários
-
-#### Serviço Financeiro (5% completo)
-- 🚧 Contas a receber
-- 🚧 Contas a pagar
-- 🚧 Pagamentos
-- 🚧 Jobs de cobrança
-- 🚧 Cálculo de juros/multa
-- 🚧 Testes unitários
-
-#### Serviço de Notificações (75% completo)
-- ✅ Email Service implementado
-- ✅ Estrutura base de notificações
-- 🚧 Integração Evolution API (WhatsApp)
-- 🚧 Consumidor de eventos
-- 🚧 Retry automático
-- 🚧 Templates de mensagens
-- 🚧 Testes unitários
-
-**Prazo**: 30 de Junho de 2026  
-**Progresso Geral**: 75% completo (↑13% - Multi-tenancy + Vendas implementados)
+### Dashboard com dados reais
+- **Evidência**: `frontend/src/pages/Dashboard/DashboardPage.tsx:30` abre a seção `// ── MOCK DATA ──`.
+  `mockStats` (`:32`, consumido em `:201`), `lineChartData` (`:122`) e `doughnutData` (`:162`) são
+  constantes de módulo com números escritos à mão. A página não tem **nenhuma** chamada de API:
+  zero ocorrências de `fetch`, `axios`, `useQuery` ou service no arquivo inteiro.
+- **Escopo**: os componentes Chart.js estão montados e funcionando — falta ligar a fonte de dados,
+  tanto dos cards quanto dos dois gráficos.
 
 ---
 
-## 📅 Fase 2: MVP Frontend (Julho 2026)
+## ⚠️ Aberto — Prioridade 2 (qualidade e dívida)
 
-### Objetivos
-- Implementar interface completa
-- Integrar com backend
-- Garantir responsividade
+### Dívida arquitetural do frontend
+Rastreada em `docs/05-frontend/frontend-architectural-debt-log.md`. **Não duplicar aqui** —
+o log é a fonte. Itens que valem como marco de roadmap:
 
-### Entregas
+| ID | Item | Evidência re-medida hoje |
+|----|------|--------------------------|
+| C4 | Quebrar o god component `CheckoutPage` | `frontend/src/pages/LojaOnlinePublico/CheckoutPage.tsx` = **1507 linhas** (o log registrou 1.381 — piorou) |
+| H5 | Code splitting por rota | `lazy(` em `frontend/src/App.tsx` = 0 ocorrências |
+| C6 | Placeholders de módulo | cobre Vendas e Financeiro, já detalhados na Prioridade 1 |
 
-#### Infraestrutura (90% completo)
-- ✅ Setup Vite + React + TypeScript
-- ✅ Configuração de rotas
-- ✅ Design system base
-- ✅ Autenticação (Login, Register, OAuth)
-- ✅ Password Recovery
-- ✅ Interceptors HTTP
-- ✅ Configuração Docker
-- ✅ Cloudflare Tunnel para acesso externo
-- 🚧 Testes E2E
+Os demais IDs (C1, C2, C3, C5, H1–H4, H6, H7) seguem no log e valem a revisita —
+vários foram parcial ou totalmente resolvidos desde a auditoria; conferir lá antes de agir.
 
-#### Módulos
-- ✅ Dashboard (página inicial)
-- ✅ Autenticação completa
-- 🟡 Clientes (85% - falta histórico)
-  - ✅ Lista com filtros
-  - ✅ Cadastro
-  - ✅ Edição
-  - ✅ Gestão de endereços
-  - ✅ Gestão de crédito
-  - 🚧 Histórico de compras
-- ✅ Produtos (90% - falta histórico de preços, kits)
-  - ✅ Lista com filtros
-  - ✅ Cadastro
-  - ✅ Edição
-  - ✅ Detalhes
-  - ✅ Gestão de variantes
-  - ✅ Gestão de categorias
-  - ✅ Upload de fotos
-  - ✅ Gestão de fornecedores
-  - 🚧 Histórico de preços
-  - 🚧 Produtos compostos (kits)
-- 🟡 Loja Online / E-commerce (50%)
-  - ✅ Vitrine de produtos (lista pública)
-  - ✅ Detalhes do produto
-  - ✅ Filtros e busca
-  - ✅ Design responsivo
-  - ✅ Compartilhamento (WhatsApp, link)
-  - 🚧 Carrinho de compras
-  - 🚧 Checkout
-  - 🚧 Área do cliente
-  - 🚧 Rastreamento de pedidos
-- 🔴 Estoque (0%)
-  - 🚧 Visão geral
-  - 🚧 Movimentações
-  - 🚧 Lotes
-  - 🚧 Inventário
-  - 🚧 Alertas
-- 🔴 Vendas (0%)
-  - 🚧 PDV
-  - 🚧 Lista de vendas
-  - 🚧 Detalhes
-  - 🚧 Devolução
-- 🔴 Financeiro (0%)
-  - 🚧 Dashboard
-  - 🚧 Contas a receber
-  - 🚧 Contas a pagar
-  - 🚧 Fluxo de caixa
+### Página 404 de verdade
+- **Evidência**: `frontend/src/App.tsx:244` — `<Route path="*" element={<Navigate to="/dashboard" replace />} />`.
+  Qualquer URL errada vira redirecionamento silencioso para o dashboard.
 
-#### Componentes
-- ✅ Componentes comuns (Button, Input, Card, etc.)
-- ✅ Formulários reutilizáveis
-- ✅ Tabelas com paginação
-- ✅ Modais
-- 🚧 Gráficos e dashboards
-- 🚧 Upload de arquivos
-
-**Prazo**: 31 de Julho de 2026  
-**Progresso Geral**: 52% completo (↑8% - Loja Online iniciada)
+### Cobertura de testes
+- **Situação real**: 62 arquivos `test_*.py` versionados, rodando no CI
+  (`.github/workflows/ci.yml`, leg `tests/unit` + matriz por serviço) mais a suíte vitest do frontend.
+- **Aberto**: não existe medição de cobertura publicada, e não há teste E2E de verdade.
+- Meta mantida: 80% de cobertura medida, não estimada.
 
 ---
 
-## 🧪 Fase 3: Testes e Qualidade (Agosto 2026)
+## 📌 Aberto — Prioridade 3 (melhorias de domínio já especificadas)
 
-### Objetivos
-- Atingir 80% de cobertura de testes
-- Corrigir bugs identificados
-- Otimizar performance
-
-### Entregas
-- 🔴 Testes unitários (backend)
-- 🔴 Testes de integração (backend)
-- 🔴 Testes E2E (frontend)
-- 🔴 Testes de carga
-- 🔴 Correção de bugs
-- 🔴 Otimizações de performance
-
-**Prazo**: 31 de Agosto de 2026
+- **Produtos**: histórico de preços e produtos compostos (kits).
+  *Evidência*: nenhum arquivo em `services/produtos/` menciona `HistoricoPreco`, `kit` ou `composto`.
+- **Estoque**: FIFO/FEFO e bloqueio de lote vencido.
+  *Evidência*: nenhuma ocorrência de `fifo`/`fefo` em `services/estoque/`.
+- **Estoque**: alertas automáticos de estoque mínimo e de lote vencendo —
+  o campo existe (`services/estoque/models/estoque.py`), o disparo depende do serviço de Notificações acima.
+- **Vendas**: devolução como entidade própria.
+  *Evidência*: nenhuma ocorrência de `devolucao` em `services/vendas/models/`.
+  (O *tipo* de movimentação "devolução" já existe no Estoque; falta o fluxo de venda.)
+- **Clientes**: histórico de compras na tela do cliente.
 
 ---
 
-## 🚀 Fase 4: Deploy e Lançamento (Setembro 2026)
+## ✅ Entregue (não é mais roadmap)
 
-### Objetivos
-- Preparar ambiente de produção
-- Realizar deploy inicial
-- Monitorar estabilidade
+Registrado aqui só para impedir que volte à lista de pendências:
 
-### Entregas
-- 🔴 Configuração de servidor
-- 🔴 CI/CD pipeline
-- 🔴 Monitoramento (logs, métricas)
-- 🔴 Backup automático
-- 🔴 Documentação de deploy
-- 🔴 Treinamento de usuários
-- 🔴 Lançamento beta
-
-**Prazo**: 30 de Setembro de 2026
-
----
-
-## 📈 Fase 5: Pós-MVP - Melhorias (Outubro-Dezembro 2026)
-
-### Objetivos
-- Coletar feedback de usuários
-- Implementar melhorias prioritárias
-- Adicionar funcionalidades complementares
-
-### Entregas Planejadas
-
-#### Melhorias de UX
-- 🔴 Onboarding interativo
-- 🔴 Tutoriais in-app
-- 🔴 Atalhos de teclado
-- 🔴 Modo offline (PWA)
-- 🔴 Tema escuro/claro
-
-#### Funcionalidades Novas
-- 🔴 Relatórios avançados
-- 🔴 Exportação de dados (PDF, Excel)
-- 🔴 Importação em lote
-- 🔴 Etiquetas e tags personalizadas
-- 🔴 Notas e anexos
-- 🔴 Histórico de alterações completo
-- 🔴 Auditoria de ações
-
-#### Integrações
-- 🔴 Nota Fiscal Eletrônica (NF-e)
-- 🔴 Integração com marketplaces
-- 🔴 API pública para terceiros
-- 🟡 ViaCEP para validação de endereços (frontend ✅, backend 🚧)
-- 🔴 WhatsApp Business (Evolution API)
-- 🔴 Mercado Pago
-- 🔴 Correios (cálculo de frete)
-
-#### Performance
-- 🔴 Cache avançado
-- 🔴 Otimização de queries
-- 🔴 Lazy loading
-- 🔴 Compressão de imagens
-
-**Prazo**: 31 de Dezembro de 2026
+- **Estoque, ponta a ponta** — `frontend/src/pages/Estoque/EstoquePage.tsx` (336 linhas),
+  `EstoqueDetalhePage.tsx`, `hooks/useEstoque.ts`, backend com movimentações, lotes,
+  inventário, reserva e integração com Vendas.
+- **Loja Online completa** — `frontend/src/pages/LojaOnlinePublico/` com vitrine, detalhe,
+  `CarrinhoPage`, `CheckoutPage`, `ClienteLoginPage`, `ClientePerfilPage`, `MeusPedidosPage`
+  e `RastreamentoPedidoPage`; backend em `services/vendas/routers/loja.py` (25 KB).
+- **Plataforma (plano de controle SaaS)** — `frontend/src/pages/Plataforma/{PlataformaPage.tsx, TenantDetalhe.tsx}`,
+  `api-gateway/routers/plataforma.py`, `services/empresas/`.
+- **Configurações** — `frontend/src/pages/Configuracoes/{EmpresaPage, IntegracoesPage, UsuariosPage}.tsx`.
+- **Mercado Pago (PIX)** — `services/vendas/routers/admin_pagamento.py` e `webhook.py`.
+- **ViaCEP no backend** — `services/vendas/services/entrega_service.py:27` e `:49` validam CEP
+  pela API. *(Constava como "backend pendente"; não procede mais.)*
+- **Multi-tenancy**, soft delete e transações ACID em Clientes, Produtos, Estoque e Vendas.
+- **CI/CD e operação** — 5 workflows em `.github/workflows/` (ci, deploy, uptime, landing,
+  graphify-update), deploy via Coolify, Cloudflare Tunnel, backup `pg_dump` antes de cada deploy
+  e readiness profundo em `/health/ready` (`api-gateway/main.py`).
+- **Autenticação** — JWT, OAuth2 (Google, Microsoft), recuperação de senha, rate limiting,
+  idempotência centralizada no gateway (`api-gateway/proxy/idempotency.py`).
 
 ---
 
-## 🎯 Fase 6: Expansão (2027)
+## 🔮 Pós-MVP (sem data, sem compromisso)
 
-### Objetivos
-- Expandir funcionalidades
-- Suportar novos tipos de negócio
-- Internacionalização
+Nada abaixo tem escopo fechado nem foi iniciado. É intenção de produto, não backlog.
 
-### Entregas Planejadas
-
-#### Novos Módulos
-- 🔴 Compras e Fornecedores
-- 🔴 Produção e Manufatura
-- 🔴 Recursos Humanos
-- 🔴 CRM Avançado
-- 🔴 Marketing e Campanhas
-
-#### Multi-tenant
-- 🔴 Suporte a múltiplas empresas
-- 🔴 Isolamento de dados
-- 🔴 Planos e assinaturas
-
-#### Internacionalização
-- 🔴 Suporte a múltiplos idiomas
-- 🔴 Múltiplas moedas
-- 🔴 Fusos horários
-- 🔴 Localização de datas e números
-
-#### Mobile
-- 🔴 App iOS nativo
-- 🔴 App Android nativo
-- 🔴 Sincronização offline
-
-**Prazo**: Dezembro de 2027
+**UX**: onboarding interativo, tutoriais in-app, atalhos de teclado, PWA offline.
+**Funcionalidades**: relatórios avançados, exportação PDF/Excel, importação em lote,
+tags personalizadas, anexos, auditoria de ações.
+**Integrações**: NF-e, marketplaces, API pública para terceiros, Correios (frete).
+**Novos módulos**: Compras, Produção, RH, CRM avançado, Marketing.
+**Internacionalização**: múltiplos idiomas, moedas e fusos.
+**Mobile**: apps nativos com sincronização offline.
+**Escala**: Kubernetes, event sourcing, CQRS — hoje a comunicação entre serviços é
+100% HTTP síncrono via `httpx`. A mensageria está **escrita mas desligada**: os 7 serviços têm
+`events/publisher.py` com a classe `EventPublisher` (conecta no RabbitMQ, declara o exchange
+tópico `erp.events`) e `aio-pika==10.0.1` + `celery==5.6.3` nos `requirements.txt`, mas nenhum
+arquivo importa o publisher — zero chamadas a `publish()` em todo o repositório. Ligar isso é
+trabalho de integração, não de implementação do zero.
 
 ---
 
-## 🔮 Futuro (2028+)
+## 🔄 Como manter este arquivo honesto
 
-### Visão de Longo Prazo
-
-#### Inteligência Artificial
-- Previsão de demanda
-- Sugestão de preços
-- Detecção de fraudes
-- Chatbot de atendimento
-
-#### Analytics Avançado
-- Business Intelligence
-- Dashboards personalizáveis
-- Análise preditiva
-- Benchmarking
-
-#### Ecossistema
-- Marketplace de plugins
-- API pública robusta
-- Webhooks customizáveis
-- Integrações com ERPs legados
-
-#### Escalabilidade
-- Kubernetes
-- Microserviços adicionais
-- Event sourcing
-- CQRS
+1. Item só entra em "Aberto" com `arquivo:linha` que prove que está aberto.
+2. Item concluído **sai** da lista de aberto e ganha uma linha em "Entregue" com o arquivo que o prova.
+3. Sem percentuais de progresso. Percentual não é verificável; arquivo é.
+4. Dívida de frontend mora em `docs/05-frontend/frontend-architectural-debt-log.md` —
+   aqui só se referencia por ID.
 
 ---
 
-## 📊 Métricas de Sucesso
-
-### MVP (Fase 1-4)
-- 🟡 62% das funcionalidades backend core implementadas
-- 🟡 44% das funcionalidades frontend implementadas
-- 🎯 80% de cobertura de testes
-- 🎯 < 2s tempo de resposta médio
-- 🎯 99% uptime
-- 🎯 10 clientes beta ativos
-
-### Progresso Atual (Junho 2026)
-- ✅ API Gateway: 85% completo
-- ✅ Clientes Backend: 90% completo
-- ✅ Produtos Backend: 95% completo (↑10% - Multi-tenancy, fornecedores, fotos)
-- ✅ Estoque Backend: 95% completo (↑5% - Multi-tenancy, integração Vendas)
-- ✅ Vendas Backend: 90% completo (↑85% - Implementação completa)
-- ✅ Notificações: 75% completo
-- 🔴 Financeiro Backend: 0% completo
-- ✅ Frontend Infraestrutura: 90% completo
-- ✅ Frontend Clientes: 85% completo
-- ✅ Frontend Produtos: 90% completo (↑10%)
-- 🟡 Frontend Loja Online: 50% completo (↑50% - Vitrine implementada)
-- 🔴 Frontend Estoque: 0% completo
-- 🔴 Frontend Vendas: 0% completo
-- 🔴 Frontend Financeiro: 0% completo
-
-**Destaques da Última Atualização (09/06/2026)**:
-- ✅ Multi-tenancy 100% implementado em Produtos, Estoque, Vendas
-- ✅ Serviço de Vendas implementado completamente do zero (~2.620 linhas)
-- ✅ Workflow de vendas: 6 estados com transições automáticas
-- ✅ Integração Vendas ↔ Estoque (reserva, liberação, baixa automáticas)
-- ✅ Loja Online: Vitrine pública de produtos implementada
-- ✅ 4 commits de funcionalidades (Produtos, Estoque, Vendas multi-tenancy, bug fix)
-
-### Pós-MVP (Fase 5-6)
-- 🎯 100 clientes ativos
-- 🎯 NPS > 50
-- 🎯 < 5% churn mensal
-- 🎯 > 80% satisfação de usuários
-- 🎯 < 1% taxa de bugs críticos
-
-### Longo Prazo (2028+)
-- 🎯 1.000+ clientes ativos
-- 🎯 NPS > 70
-- 🎯 < 2% churn mensal
-- 🎯 > 90% satisfação de usuários
-- 🎯 Líder de mercado no segmento
-
----
-
-## 🔄 Processo de Atualização
-
-Este roadmap é revisado e atualizado:
-- **Mensalmente**: Ajustes de prioridades e prazos
-- **Trimestralmente**: Revisão de fases e objetivos
-- **Anualmente**: Planejamento estratégico de longo prazo
-
----
-
-## 💡 Como Contribuir
-
-Tem sugestões para o roadmap? 
-
-1. Abra uma issue no GitHub com a tag `roadmap`
-2. Descreva a funcionalidade ou melhoria
-3. Explique o valor para os usuários
-4. A equipe avaliará e priorizará
-
----
-
-## 📞 Contato
-
-Dúvidas sobre o roadmap?
-- **Email**: product@denebcorp.com
-- **Discord**: [Link do servidor]
-
----
-
-**Projeto:** Runas  
-**Equipe:** Equipe DenebCorp  
-**Data:** 26 de Maio de 2026  
-**Versão:** 1.2.0  
-**Última Atualização**: 09 de Junho de 2026  
-**Progresso Geral**: Backend 75% | Frontend 52% | Sistema 64%  
-**Commits Recentes**: 5 (Multi-tenancy Produtos, Estoque, Vendas + Checklist atualizado + Bug fix catálogo)
+**Projeto**: Runas · **Equipe**: DenebCorp · **Contato**: product@denebcorp.com
