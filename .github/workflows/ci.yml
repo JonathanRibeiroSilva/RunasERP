@@ -202,7 +202,9 @@ jobs:
   # demand without waiting for the next push.
   migration-replay:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    # TEMP(dcce585): sem o `if` pra rodar de verdade neste PR e medir custo
+    # real, como o usuario pediu. Repor `if: github.event_name != 'pull_request'`
+    # antes do merge -- ver a descricao do PR.
     steps:
       - uses: actions/checkout@v7
 
