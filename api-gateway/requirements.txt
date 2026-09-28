@@ -8,7 +8,7 @@ passlib[bcrypt]==1.7.4
 # login 500s. Unpin only together with passlib.
 bcrypt==4.0.1
 python-multipart==0.0.32
-sqlalchemy[asyncio]==2.0.54
+sqlalchemy[asyncio]==2.1.0
 asyncpg==0.31.0
 alembic==1.20.0
 pydantic==2.13.5
