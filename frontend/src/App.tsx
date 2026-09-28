@@ -1,5 +1,7 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { ehPainelPlataforma, separarPorHost, escolherPorta } from '@/config/host';
 import LoginPage from '@/pages/Login/LoginPage';
 import GoogleCallback from '@/pages/Auth/GoogleCallback';
 import MicrosoftCallback from '@/pages/Auth/MicrosoftCallback';
@@ -15,12 +17,16 @@ import { ProdutosPage, ProdutoFormPage, ProdutoDetalhesPage, ProdutoVariantesPag
 import { LojaOnlinePublicoPage, ProdutoDetalhePage, CarrinhoPage, CheckoutPage, RastreamentoPedidoPage, MeusPedidosPage, ClientePerfilPage, ClienteLoginPage } from '@/pages/LojaOnlinePublico';
 import { PedidosOnlinePage, ConfiguracoesLojaPage } from '@/pages/LojaOnline';
 import { EmpresaPage, UsuariosPage, IntegracoesPage } from '@/pages/Configuracoes';
-import PlataformaPage from '@/pages/Plataforma/PlataformaPage';
 import { EstoquePage, EstoqueDetalhePage } from '@/pages/Estoque';
 import { VendasPage } from '@/pages/Vendas';
 import { FinanceiroPage } from '@/pages/Financeiro';
 import MainLayout from '@/components/layout/MainLayout/MainLayout';
 import RoleProtectedRoute from '@/components/common/RoleProtectedRoute';
+
+// O painel da plataforma só é baixado no subdomínio dele: lazy separa o chunk,
+// e o host decide se alguma rota chega a pedi-lo.
+const PlataformaPage = lazy(() => import('@/pages/Plataforma/PlataformaPage'));
+const PlataformaDashboard = lazy(() => import('@/pages/Plataforma/PlataformaDashboard'));
 
 // Loading component
 const LoadingScreen = () => (
@@ -60,19 +66,40 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // SUPER_ADMIN é papel de plataforma e não tem empresa_id: toda tela de tenant
-  // consultaria uma empresa que ele não tem. Uma porta só, em vez de um guard por
-  // rota — tela nova nasce fechada para ele sem ninguém lembrar de fechá-la.
-  // /perfil fica de fora: é onde ele troca a própria senha.
-  if (
-    user?.role === 'SUPER_ADMIN' &&
-    !pathname.startsWith('/plataforma') &&
-    !pathname.startsWith('/perfil')
-  ) {
-    return <Navigate to="/plataforma" replace />;
+  // Uma porta só, em vez de um guard por rota: tela nova nasce fechada para quem
+  // não é daquele host sem ninguém lembrar de fechá-la.
+  switch (escolherPorta(user?.role, ehPainelPlataforma, pathname, separarPorHost)) {
+    case 'para-plataforma':
+      return <Navigate to="/plataforma" replace />;
+    case 'para-dashboard':
+      return <Navigate to="/dashboard" replace />;
+    case 'porta-errada':
+      return <PortaErrada />;
   }
 
   return <>{children}</>;
+};
+
+/**
+ * Conta certa, endereço errado — o super admin no domínio do lojista, ou o
+ * lojista no domínio do painel. Uma tela, e não um redirect, porque redirecionar
+ * para o outro host levaria a sessão junto: o cookie é host-only e não existe lá.
+ */
+const PortaErrada: React.FC = () => {
+  const { user, logout } = useAuth();
+  const ehSuper = user?.role === 'SUPER_ADMIN';
+
+  return (
+    <div className="empty-state" style={{ minHeight: '100vh', display: 'grid', placeContent: 'center', textAlign: 'center', gap: '1rem', padding: '2rem' }}>
+      <h2>Endereço errado</h2>
+      <p>
+        {ehSuper
+          ? 'Esta conta administra a plataforma. Entre pelo subdomínio de administração.'
+          : 'Este endereço é o painel da plataforma. Entre pelo endereço do seu ERP.'}
+      </p>
+      <button className="btn btn-primary" onClick={logout}>Sair</button>
+    </div>
+  );
 };
 
 // Public Route Component (redirect if authenticated)
@@ -93,6 +120,7 @@ const PublicRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<LoadingScreen />}>
       <Routes>
         {/* Public Routes */}
         <Route
@@ -226,6 +254,14 @@ function App() {
             path="plataforma"
             element={
               <RoleProtectedRoute requiredRole={['SUPER_ADMIN']}>
+                <PlataformaDashboard />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path="plataforma/tenants"
+            element={
+              <RoleProtectedRoute requiredRole={['SUPER_ADMIN']}>
                 <PlataformaPage />
               </RoleProtectedRoute>
             }
@@ -243,6 +279,7 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
