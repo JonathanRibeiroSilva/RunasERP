@@ -436,7 +436,7 @@ respondendo (`:79`).
 do host, não por scheduler residente — decisão explícita para não manter um beat worker
 comendo RAM 24 h por dia numa VPS de 1 vCPU (`plataforma.py:486-489`).
 
-**Sem esse cron, a régua de inadimplência não roda.** Sugestão que está no `.env.example:120-123`:
+**Sem esse cron, a régua de inadimplência não roda.** Sugestão que está no `.env.example:164-168`:
 
 ```cron
 0 3 * * * curl -fsS -X POST -H "X-Job-Token: SEU_TOKEN" http://localhost:8000/plataforma/jobs/regua
@@ -477,7 +477,7 @@ Quando alguém perguntar "por que está assim?", a resposta já está escrita:
 | Backup fail-closed antes de qualquer migration | `docker-compose.prod.yml:85-102` |
 | `start_interval` nos healthchecks (e os 89% de CPU do dockerd) | `docker-compose.prod.yml:335-356` |
 | `cloudflared` sem `depends_on`: 502 é melhor que 530 | `docker-compose.prod.yml:560-570` |
-| `external: true` no `db_data` e o que o Coolify faz com ele | `docker-compose.prod.yml:98-102`, `:573-584` |
+| `external: true` no `db_data` e o que o Coolify faz com ele | `docker-compose.prod.yml:98-102`, `:577-588` |
 | `resolver` no nginx: o IP do gateway muda a cada deploy | `frontend/nginx.conf:26-37` |
 | Migration como subprocesso, e por que a falha é fatal | `api-gateway/database.py:47-66` |
 | 503 nomeando quem caiu, em vez de 200 degradado | `api-gateway/health.py:20-36` |

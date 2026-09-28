@@ -13,7 +13,7 @@ cadastro de produto sem categoria existente.
 ## Acesso
 
 - Rota: `/categorias` (`frontend/src/App.tsx:198`)
-- Menu lateral: **Produtos → Categorias** (`Sidebar.tsx:82`)
+- Menu lateral: **Produtos → Categorias** (`Sidebar.tsx:84`)
 - Sem `RoleProtectedRoute`: qualquer usuário autenticado que chegue ao
   `MainLayout` alcança a página.
 

@@ -118,7 +118,7 @@ x-limits: &limits
 
 O anchor alcança o `api-gateway`, os 7 microsserviços (via `x-service`,
 `docker-compose.prod.yml:25`), `redis` (`:258`), `rabbitmq` (`:280`),
-`frontend` (`:519`) e `cloudflared` (`:569`). O `db` **não** usa o anchor, mas
+`frontend` (`:519`) e `cloudflared` (`:573`). O `db` **não** usa o anchor, mas
 também não é ilimitado: tem o próprio bloco com `cpus: '1.0'` e `memory: 1G`
 (`docker-compose.prod.yml:79-83`) — 1.0 porque o Docker recusa um limite de
 CPU acima do total de cores do host.

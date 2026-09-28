@@ -21,8 +21,8 @@ merecem atenção:
 - `SERVICO_INTERNO_TOKEN` e `PLATAFORMA_INTERNO_TOKEN` vêm **vazios** de
   propósito. Vazio = *fail-open*: a validação loga a ausência e deixa passar.
   Para exercitar a prova de origem interna, gere com `openssl rand -hex 32` e
-  use o **mesmo valor** em todos os containers (`.env.example:136,142`).
-- `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`.env.example:61-62`) definem o usuário que
+  use o **mesmo valor** em todos os containers (`.env.example:182,188`).
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`.env.example:93-94`) definem o usuário que
   o gateway cria sozinho no boot.
 
 ---
@@ -168,7 +168,7 @@ docker logs erp-cloudflared -f | Select-String "Registered tunnel connection"
 
 Produção **não** usa arquivo de credencial. O container `erp-cloudflared-prod`
 roda `tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}`
-(`docker-compose.prod.yml:547`), porque um deploy gerenciado pelo Coolify não
+(`docker-compose.prod.yml:551`), porque um deploy gerenciado pelo Coolify não
 monta arquivo de credencial de forma limpa. O ingress é configurado no painel do
 Cloudflare Zero Trust, não em arquivo no repositório.
 

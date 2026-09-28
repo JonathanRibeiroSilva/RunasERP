@@ -29,7 +29,7 @@ cp .env.example .env
 
 O `.env` não é opcional: `docker-compose.dev.yml` lê variáveis **sem default**,
 como `DATABASE_URL_GATEWAY` e `SERVICO_INTERNO_TOKEN`. Sem ele o gateway não
-sobe (`docker-compose.dev.yml:190` e `:193`, `.env.example:35`).
+sobe (`docker-compose.dev.yml:190` e `:193`, `.env.example:60` e `:182`).
 
 ### Passo 2: Subir o frontend
 

@@ -106,8 +106,8 @@ PR #114 (merge `1df3a0f`).
 entra (`/plataforma`, `/plataforma/tenants`, `/perfil`); fora dele o
 SUPER_ADMIN vê a tela "Endereço errado", assim como qualquer outro papel no
 host do painel — tela e não redirect, porque o cookie de sessão é host-only.
-Fora do host do painel as rotas `/plataforma*` nem são registradas, e o
-`nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.`.
+Em produção, fora do host do painel, as rotas `/plataforma*` nem são
+registradas (em dev, em `localhost`, continuam), e o `nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.`.
 Em dev (`npm run dev`) as duas aplicações convivem em `localhost:3000`; use
 `admin.localhost:3000` para exercitar o caminho de produção. O backend não
 separa nada: `/api/plataforma/*` responde nos dois hosts, protegido por
@@ -142,7 +142,7 @@ rotas `/auth/callback/google` e `/auth/callback/microsoft`. Eles chamam
 do operador não tem botão social.
 Variáveis: `VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID`,
 `VITE_MICROSOFT_TENANT_ID` (default `common`) e `VITE_OAUTH_REDIRECT_URI`
-(`.env.example:53-56`).
+(`.env.example:88-91`).
 
 Como configurar do lado dos provedores:
 [docs/05-frontend/oauth/oauth-summary.md](../docs/05-frontend/oauth/oauth-summary.md).

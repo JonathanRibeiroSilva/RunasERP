@@ -212,7 +212,9 @@ producao (`docker-compose.build.yml:94-112`). Na pratica `frontend/Dockerfile` n
 declara nenhum `ARG`, entao nenhum desses build args chega ao `npm run build` e o
 bundle sai com os defaults do codigo — inclusive `VITE_HOST_PLATAFORMA`, que nem e
 passada e vale `admin` (`frontend/src/config/host.ts:16`). Mudar o rotulo do host do
-painel exige declarar o `ARG` no Dockerfile.
+painel exige declarar o `ARG` no Dockerfile, passá-lo em `docker-compose.build.yml` e
+trocar o `^admin\.` fixo em `frontend/nginx.conf:72` (senão o próprio host novo do
+painel recebe 404 em `/plataforma`).
 
 ---
 

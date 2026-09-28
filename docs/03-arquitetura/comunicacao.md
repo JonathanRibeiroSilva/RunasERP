@@ -260,7 +260,7 @@ por serviço**:
   `CREATE SCHEMA`.
 - Cada serviço recebe sua própria variável (`DATABASE_URL_CLIENTES`,
   `DATABASE_URL_VENDAS`, …), mas todas apontam para o mesmo
-  `postgresql+asyncpg://…@db:5432/erp` (`.env.example:35-42`).
+  `postgresql+asyncpg://…@db:5432/erp` (`.env.example:60-67`).
 
 O isolamento é **lógico (schema + `X-Empresa-Id`)**, não físico.
 
@@ -275,7 +275,7 @@ O isolamento é **lógico (schema + `X-Empresa-Id`)**, não físico.
 - **Produção**: `docker-compose.prod.yml` **não publica nenhuma porta**. O único
   ingress é o `cloudflared` (`docker-compose.prod.yml:539`), que aponta para
   `frontend-prod:80` (o nginx do frontend repassa `/api/` ao gateway); o comentário do
-  compose lista ainda uma rota para o Coolify no host (`:545-546`). Os serviços só se alcançam pela rede
+  compose lista ainda uma rota para o Coolify no host (`:547`). Os serviços só se alcançam pela rede
   `erp-network`.
 - **Desenvolvimento**: os serviços internos publicam apenas em loopback
   (`127.0.0.1:8001:8001` … `127.0.0.1:8007:8007`), garantido por

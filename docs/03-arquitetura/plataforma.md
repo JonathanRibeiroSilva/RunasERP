@@ -106,7 +106,7 @@ e apagar empresa. O próprio docstring registra o furo
 (`services/empresas/routers/empresas.py:55-59`).
 
 O `SERVICO_INTERNO_TOKEN` **não fecha isso**: ele é o *mesmo valor nos 8 containers*
-(`.env.example:132-136`), então prova apenas "a chamada veio de algum dos 8". Para
+(`.env.example:178-182`), então prova apenas "a chamada veio de algum dos 8". Para
 rotas que apagam tenant, isso não basta.
 
 ### 3.2 O carimbo (gateway)
@@ -268,8 +268,11 @@ Em vez de um guard por rota, há **uma porta só**, dentro do `ProtectedRoute`
 | Super admin fora do host `admin`, ou não-super no host `admin` | `porta-errada` — tela "Endereço errado" com botão Sair |
 | Super admin no host certo, em `/plataforma*` ou `/perfil` | `ok` |
 | Super admin no host certo, em qualquer outra rota | redireciona para `/plataforma` |
-| Não-super no host certo, em `/plataforma*` | redireciona para `/dashboard` (só alcançável em dev; ver abaixo) |
 | Não-super no host certo, em qualquer outra rota | `ok` |
+
+Sem separação (dev, em `localhost`), o não-super que pede `/plataforma*` é redirecionado
+para `/dashboard` (`host.ts:55`). Com separação, no host `app` essas rotas nem existem
+(ver abaixo): a navegação no SPA cai no catch-all e a carga direta recebe o 404 do nginx.
 
 O efeito é que **tela nova nasce fechada para quem não é daquele host sem ninguém
 precisar lembrar de fechá-la**; `/perfil` vale nos dois lados porque é onde cada um
@@ -516,9 +519,10 @@ padrão, e o lojista abre o catálogo quando terminar de configurar (`:116-117`)
 | `PLATAFORMA_MP_ACCESS_TOKEN` | gateway | `RuntimeError` ao gerar/cancelar assinatura |
 | `PLATAFORMA_JOB_TOKEN` | gateway + cron do host | **403** no job — fail closed |
 
-Referência comentada em `.env.example:103-142` e `.env.production.example:184-223`
+Referência comentada em `.env.example:147-188` e `.env.production.example:261-308`
 (o bloco `SUPER_ADMIN` vem antes do de cobrança nos dois arquivos).
-O cron sugerido está nos dois arquivos (`.env.example:122`):
+O cron sugerido está nos dois arquivos (`.env.example:167`; em `.env.production.example:285`
+ele roda via `docker exec erp-api-gateway-prod`):
 
 ```cron
 0 3 * * * curl -fsS -X POST -H "X-Job-Token: SEU_TOKEN" http://localhost:8000/plataforma/jobs/regua
@@ -540,11 +544,11 @@ trabalhar 200 ms).
 - **`SERVICO_INTERNO_TOKEN` idem**, para o middleware de `interno.py`: verificar
   `servico_interno.ausente`.
 - **O cron da régua está instalado no host, e por qual endereço?** Não há nada no
-  repositório que o instale — só a sugestão comentada no `.env.example`, que aponta para
-  `http://localhost:8000`. Em produção o `docker-compose.prod.yml` não publica porta
-  nenhuma (`:10`), então esse endereço não existe no host: o cron teria de rodar dentro
-  da rede Docker ou o gateway teria de expor uma porta. Não foi possível verificar o
-  crontab da VPS daqui.
+  repositório que o instale — só as sugestões comentadas nos templates. A do `.env.example`
+  aponta para `http://localhost:8000`, endereço que não existe no host de produção (o
+  `docker-compose.prod.yml` não publica porta nenhuma, `:10`); a do
+  `.env.production.example:285` entra no container com `docker exec erp-api-gateway-prod`.
+  Não foi possível verificar o crontab da VPS daqui.
 - **Onde o webhook do MP é registrado na conta do dono da plataforma** (a URL pública
   configurada no painel do Mercado Pago) — não há registro disso no repositório.
 

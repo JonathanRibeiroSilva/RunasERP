@@ -160,5 +160,6 @@ Baseline for percentages: `frontend/src` totals **16,330 lines** across `.ts`/`.
 ### M1 — No real 404 page; unknown routes silently become the dashboard — Medium · Manual
 - **Problem:** The application has no 404 screen. Any unmatched URL is redirected to the dashboard instead of reporting that the route does not exist.
 - **Evidence summary (2026-09-25):** `App.tsx:244` — `<Route path="*" element={<Navigate to="/dashboard" replace />} />`, the only catch-all in the router, under a `{/* 404 */}` comment. There is no `NotFound`/`404` page component anywhere in `frontend/src/pages/`.
+- **Re-medido em 2026-09-28 (depois do commit `045c0c0`):** o catch-all agora está em `App.tsx:292`, sem mudança de comportamento. Em produção, fora do host do painel, `/plataforma*` também cai nele, porque essas rotas não são registradas ali. A única resposta 404 de verdade é a do `frontend/nginx.conf:71-76`, e vale só para `/plataforma` fora de `admin.*`.
 - **Impact:** A typo'd or dead link looks like a successful navigation, so broken links are invisible in use and in bug reports; storefront visitors with no session are bounced through the dashboard route into the login redirect, losing the URL they asked for. `replace` also erases the bad URL from history, so Back cannot recover it for debugging.
 - **Status:** OPEN — new entry, added 2026-09-25

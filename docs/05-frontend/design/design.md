@@ -79,7 +79,7 @@ Não existe Footer nem Breadcrumbs. Rotas desconhecidas redirecionam para `/dash
 
 `ProtectedRoute` decide o destino com `escolherPorta()` (`frontend/src/config/host.ts`): o `SUPER_ADMIN` vai para `/plataforma` em qualquer rota que não comece com `/plataforma` ou `/perfil`, os outros papéis vão para `/dashboard` se pedirem `/plataforma*` (só em dev: em produção essas rotas nem são registradas fora do host do painel), e quem está no host errado vê a tela "Endereço errado" (`PortaErrada`, em `App.tsx`).
 
-**Separação por host.** O mesmo bundle serve o ERP dos lojistas e o painel da plataforma. `ehPainelPlataforma` é verdadeiro quando o primeiro label de `window.location.hostname` é `VITE_HOST_PLATAFORMA` (padrão `admin`). Com a separação ativa, SUPER_ADMIN fora do host do painel ou outro papel dentro dele recebe `PortaErrada` — uma tela, não um redirect, porque o cookie de sessão é host-only e não iria para o outro host. `/perfil` vale nos dois lados. Fora do host do painel as rotas `/plataforma*` não são registradas, e o `nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.`. Em dev (`import.meta.env.DEV`) a separação só liga quando o host já é o do painel: as duas aplicações convivem em `localhost` e `admin.localhost:3000` exercita o caminho de produção. A separação é só da interface: `/api` é relativo (same-origin em qualquer host) e `/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`. Em produção desde 2026-09-28 (o PR #113 chegou à `main` pelo PR #114).
+**Separação por host.** O mesmo bundle serve o ERP dos lojistas e o painel da plataforma. `ehPainelPlataforma` é verdadeiro quando o primeiro label de `window.location.hostname` é `VITE_HOST_PLATAFORMA` (padrão `admin`). Com a separação ativa, SUPER_ADMIN fora do host do painel ou outro papel dentro dele recebe `PortaErrada` — uma tela, não um redirect, porque o cookie de sessão é host-only e não iria para o outro host. `/perfil` vale nos dois lados. Em produção, fora do host do painel, as rotas `/plataforma*` não são registradas (em dev, em `localhost`, continuam), e o `nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.`. Em dev (`import.meta.env.DEV`) a separação só liga quando o host já é o do painel: as duas aplicações convivem em `localhost` e `admin.localhost:3000` exercita o caminho de produção. A separação é só da interface: `/api` é relativo (same-origin em qualquer host) e `/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`. Em produção desde 2026-09-28 (o PR #113 chegou à `main` pelo PR #114).
 
 Rotas com restrição de papel usam `RoleProtectedRoute` (`frontend/src/components/common/RoleProtectedRoute.tsx`):
 
@@ -483,7 +483,7 @@ Lidas em `frontend/src/config/env.ts`, `frontend/src/config/host.ts` e `frontend
 | `VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID` | vazio |
 | `VITE_MICROSOFT_TENANT_ID` | `common` |
 | `VITE_OAUTH_REDIRECT_URI` | `http://localhost:3000/auth/callback` |
-| `VITE_HOST_PLATAFORMA` | `admin` (primeiro label do hostname que monta o painel; lida em `host.ts`, ausente do `.env.example`) |
+| `VITE_HOST_PLATAFORMA` | `admin` (primeiro label do hostname que monta o painel; lida em `host.ts`; comentada no `.env.example`) |
 
 ### Docker
 
