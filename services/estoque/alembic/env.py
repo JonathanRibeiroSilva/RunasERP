@@ -12,7 +12,7 @@ from models import *
 
 config = context.config
 # Convert async URL to sync URL for Alembic (Alembic doesn't support async drivers)
-url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+url = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
 url = url.replace("%", "%%")  # Escape % for configparser
 config.set_main_option("sqlalchemy.url", url)
 

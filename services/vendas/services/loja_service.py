@@ -36,6 +36,7 @@ from services.email_service import enviar_email_credenciais
 from repositories.venda_repository import VendaRepository
 from utils.tenant import get_empresa_slug_by_id
 from config import settings
+from interno import auth_interno
 
 log = structlog.get_logger()
 
@@ -175,7 +176,7 @@ class LojaService:
                             response = await client.post(
                                 f"{settings.CLIENTES_URL}/clientes",
                                 json=cliente_payload,
-                                headers={"X-Empresa-Id": str(empresa_id)},
+                                headers=auth_interno({"X-Empresa-Id": str(empresa_id)}),
                                 timeout=10.0
                             )
                             
@@ -208,7 +209,9 @@ class LojaService:
                                 auth_response = await client.post(
                                     f"{settings.API_GATEWAY_URL}/auth/cliente/registrar-interno",
                                     json=auth_payload,
-                                    headers={"X-Registro-Interno-Token": settings.REGISTRO_INTERNO_TOKEN},
+                                    headers=auth_interno(
+                                        {"X-Registro-Interno-Token": settings.REGISTRO_INTERNO_TOKEN}
+                                    ),
                                     timeout=10.0
                                 )
                                 
@@ -242,7 +245,7 @@ class LojaService:
                                         # Buscar nome da empresa para o email
                                         empresa_response = await client.get(
                                             f"{settings.CLIENTES_URL}/../empresas/empresas/{empresa_id}",
-                                            headers={"X-Empresa-Id": str(empresa_id)},
+                                            headers=auth_interno({"X-Empresa-Id": str(empresa_id)}),
                                             timeout=5.0
                                         )
                                         empresa_nome = "Loja Online"

@@ -289,6 +289,12 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_GATEWAY:?set DATABASE_URL_GATEWAY in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
+      # Escopo menor: so estes DOIS containers. Ver
+      # services/empresas/routers/empresas.py:exigir_plataforma.
+      PLATAFORMA_INTERNO_TOKEN: ${PLATAFORMA_INTERNO_TOKEN}
       ALGORITHM: ${ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
@@ -359,6 +365,12 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_EMPRESAS:?set DATABASE_URL_EMPRESAS in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
+      # Escopo menor: so estes DOIS containers. Ver
+      # services/empresas/routers/empresas.py:exigir_plataforma.
+      PLATAFORMA_INTERNO_TOKEN: ${PLATAFORMA_INTERNO_TOKEN}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
       interval: 60s
@@ -372,6 +384,9 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_CLIENTES:?set DATABASE_URL_CLIENTES in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 60s
@@ -385,6 +400,9 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_PRODUTOS:?set DATABASE_URL_PRODUTOS in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 60s
@@ -398,6 +416,9 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_ESTOQUE:?set DATABASE_URL_ESTOQUE in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
       PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos-prod:8002}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
@@ -412,6 +433,9 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_VENDAS:?set DATABASE_URL_VENDAS in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
       ALGORITHM: ${ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
@@ -448,6 +472,9 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_FINANCEIRO:?set DATABASE_URL_FINANCEIRO in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
       interval: 60s
@@ -461,6 +488,9 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_NOTIFICACOES:?set DATABASE_URL_NOTIFICACOES in .env}
+      # Prova de origem interna, o MESMO valor nos 8
+      # containers. Ver services/*/interno.py.
+      SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}
       # evolution-api is not deployed (image pulled from Docker Hub); WhatsApp
       # calls fail closed until it returns. See docker-compose.cloudflare.yml.
       EVOLUTION_URL: ${EVOLUTION_URL:-http://evolution-api:8080}

@@ -52,6 +52,7 @@ from schemas.estoque import (
     RelatorioMovimentacoes,
 )
 from config import settings
+from interno import auth_interno
 
 log = structlog.get_logger()
 
@@ -78,7 +79,7 @@ class EstoqueService:
         estoque para produtos válidos ficaria impossível). Enviar o header também garante
         isolamento de tenant: um produto de outra empresa retorna 404 e é rejeitado.
         """
-        headers = {"X-Empresa-Id": str(empresa_id)}
+        headers = auth_interno({"X-Empresa-Id": str(empresa_id)})
         try:
             async with httpx.AsyncClient() as client:
                 produto = await client.get(
