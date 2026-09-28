@@ -20,13 +20,13 @@ Versões conforme `frontend/package.json` (faixas semver declaradas, não a vers
 |------|-----------|------------------|
 | UI | `react`, `react-dom` | ^19.3.0 |
 | Linguagem | `typescript` | ^5.2.2 |
-| Build/dev server | `vite` | ^8.3.0 |
+| Build/dev server | `vite` | ^8.3.1 |
 | Roteamento | `react-router-dom` | ^7.18.4 |
 | CSS | `bootstrap` | ^5.3.2 |
 | Componentes | `react-bootstrap` | ^2.9.1 |
 | Ícones | `react-icons` (conjunto `fi`) | ^5.7.0 |
-| Pré-processador | `sass` | ^1.104.1 |
-| Server state | `@tanstack/react-query` | ^5.103.1 |
+| Pré-processador | `sass` | ^1.105.0 |
+| Server state | `@tanstack/react-query` | ^5.103.2 |
 | Formulários | `react-hook-form` + `@hookform/resolvers` | ^7.88.0 / ^5.9.1 |
 | Validação | `zod` | ^4.6.5 |
 | HTTP | `axios` | ^1.20.0 |
