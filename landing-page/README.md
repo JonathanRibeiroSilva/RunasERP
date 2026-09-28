@@ -17,17 +17,27 @@ python -m http.server 8000
 
 ## Deploy
 
-Cloudflare Pages, projeto `runas-landing` (Direct Upload — não é conectado ao
-GitHub, push não publica nada):
+Cloudflare Pages, projeto `runas-landing`. **Um push em `main` que toque
+`landing-page/**` publica sozinho**, por `.github/workflows/landing.yml`
+(`npx wrangler@4 pages deploy dist --project-name runas-landing --branch main`;
+é o `--branch main` que faz disso deploy de produção, e não preview). O mesmo
+workflow tem `workflow_dispatch`, para republicar sem commit.
+
+`tools/deploy.ps1` continua existindo como via **manual** — publicar da máquina,
+sem commitar, ou com o Actions fora do ar:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/deploy.ps1
 ```
 
-O script copia `index.html`, `.image-slots.state.json` e `assets/` para uma
-pasta temporária e sobe só isso. **Não troque por `wrangler pages deploy .`**:
-o comando manda a pasta inteira — `README.md`, `tools/` e `.design/` foram todos
-ao ar no primeiro deploy. `.assetsignore` não é lido por esse comando.
+Os dois fazem o mesmo staging: copiam `index.html`, `404.html`,
+`.image-slots.state.json` e `assets/` para uma pasta separada e sobem só isso.
+Mudar o staging de um lado pede a mesma mudança no outro — o workflow diz
+literalmente "This mirrors `tools/deploy.ps1` — keep the two in step".
+
+**Não troque por `wrangler pages deploy .`**: o comando manda a pasta inteira —
+`README.md`, `tools/` e `.design/` foram todos ao ar no primeiro deploy.
+`.assetsignore` não é lido por esse comando.
 `.design/source/index.original.html` é a página duplicada; indexada, vira
 duplicate content.
 
@@ -37,29 +47,38 @@ lá que moram a capa e o avatar da loja, em base64 — esses dois slots não tê
 atributo `src`. Deixar de fora publica a página com o placeholder tracejado de
 "solte uma imagem" no lugar das duas. Já aconteceu.
 
+⚠️ `404.html` também faz parte do conjunto publicado. É ele que faz o Pages
+responder 404 de verdade; sem ele, todo caminho inexistente devolve a home com
+200 e cada URL errada que o Google acha vira uma cópia indexável da home — o
+mesmo problema que excluir `index.original.html` tenta evitar. A página traz
+`<meta name="robots" content="noindex">`.
+
 ## Estrutura
 
 ```
 index.html                      markup + lógica do componente
+404.html                        página de erro do Pages (vai no deploy)
 README.md
+.gitignore
 assets/
   css/main.css                  toda a folha de estilo (mobile-first)
   js/
     support.js                  runtime do Design Component
     image-slot.js               <image-slot> — slots de imagem editáveis
-    glitter-warp.js             <glitter-warp> — partículas do CTA final
+    glitter-warp.js             <glitter-warp> — NÃO é carregado nem usado hoje (a seção de CTA final saiu do index.html)
   img/
     brand/                      logotipos
     products/                   fotos dos produtos da loja de exemplo
 tools/
   originals/                    fotos de produto antes do tratamento
   clean_products.py             script que trata as fotos
+  check_faq.py                  confere FAQ do componente x JSON-LD
+  check_type_scale.py           confere a escala fluida (clamp) do main.css
+  deploy.ps1                    publicação manual no Pages
   restore.ps1                   desfaz um reset da ferramenta de design
 .design/                        material de trabalho da ferramenta
   source/index.original.html    versão original, antes da refatoração
-  uploads/  screenshots/
 .image-slots.state.json         estado dos <image-slot> (o componente escreve aqui — manter na raiz)
-.thumbnail
 ```
 
 ## ⚠️ A ferramenta de design reescreve a raiz
@@ -68,15 +87,19 @@ Já aconteceu uma vez: a ferramenta regenerou o projeto, renomeou `index.html`
 para `*.dc.html`, devolveu `support.js` / `image-slot.js` / `glitter-warp.js`
 para a raiz, restaurou as fotos com o xadrez e apagou as pastas.
 
-Por isso o projeto está sob **git** — essa é a rede de segurança. Se acontecer
-de novo:
+Por isso o projeto está sob **git** (`landing-page/` faz parte do repositório do
+ERP) — essa é a rede de segurança. Se acontecer de novo:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/restore.ps1
 ```
 
-O script restaura os arquivos rastreados e lista o que a ferramenta recriou
-fora do lugar. Se o runtime tiver mudado de versão, mova por cima:
+O script roda `git checkout -- .` (restaura os arquivos rastreados) e lista o
+que a ferramenta recriou fora do lugar. Atenção: ele começa checando `.git` em
+`landing-page/`, e aqui o `.git` está na raiz do monorepo — nesse layout o
+script aborta com "Sem repositorio git aqui". A CONFIRMAR: se ainda é usável;
+enquanto isso, `git checkout -- landing-page/` a partir da raiz do repo faz o
+mesmo. Se o runtime tiver mudado de versão, mova por cima:
 
 ```powershell
 Move-Item -Force support.js, image-slot.js, glitter-warp.js assets/js/
@@ -94,7 +117,7 @@ reset reversível.
 ## CSS
 
 `assets/css/main.css` é mobile-first: o estilo base atende telefone e cada
-`@media (min-width: …)` só acrescenta para telas maiores. Breakpoints:
+`@media (min-width: …)` só acrescenta para telas maiores. Breakpoints principais (há outros pontuais: 900px, 980px e um `max-width: 359px`):
 
 | Largura | O que muda |
 |---------|------------|
@@ -103,9 +126,9 @@ reset reversível.
 | 600px   | rodapé em 2 colunas |
 | 640px   | tipografia e espaçamentos maiores |
 | 680/720px | listas de módulos e passos em 2 colunas |
-| 768px   | mock do dashboard ganha sidebar e 4 KPIs |
-| 960px   | seção da Loja Online em 2 colunas; rodapé em 4 |
-| 1024px  | navegação completa no lugar do hambúrguer |
+| 768px   | navegação completa no lugar do hambúrguer; mock do dashboard ganha sidebar |
+| 960px   | seção da Loja Online em 2 colunas; rodapé em 3 (2fr 1fr 1.2fr) |
+| 1024px  | mock do dashboard com 4 KPIs e painéis lado a lado |
 | 1440px  | container vai a 1320px (senão sobra vazio nas laterais) |
 | 1800px  | container a 1480px e seções mais espaçadas |
 
@@ -121,7 +144,7 @@ Convenções:
 - `@media (prefers-reduced-motion: reduce)` desliga marquee, scroll suave e
   transições.
 
-Verificado sem overflow horizontal de **280px a 2560px**.
+Sem overflow horizontal: A CONFIRMAR (a faixa "280px a 2560px" que constava aqui não tem teste nem script no repo).
 
 ### Cuidado: o header sticky depende de um override no wrapper
 
@@ -138,10 +161,11 @@ Se o header voltar a sumir ao rolar, é esse override que se perdeu.
 ### Cuidado: custom elements não recebem `class`
 
 O runtime **não repassa o atributo `class`** para custom elements
-(`<image-slot>`, `<glitter-warp>`) — a classe simplesmente não chega no DOM.
-Esses elementos precisam de `style` inline, e não é só cosmético: os dois medem
-o próprio `clientWidth`/`clientHeight` para dimensionar o canvas/imagem, então
-sem tamanho inline eles nascem 0×0 e não aparecem. Para elementos HTML normais,
+(`<image-slot>`) — a classe simplesmente não chega no DOM (A CONFIRMAR: o
+comportamento vem de `support.js`, não localizei o trecho). Esses elementos
+precisam de `style` inline, e não é só cosmético: o `<image-slot>` mede o
+próprio `clientWidth`/`clientHeight` (`image-slot.js:885,962`), então sem
+tamanho inline ele nasce 0×0 e não aparece. Para elementos HTML normais,
 `class` funciona sem problema.
 
 ### Cuidado: SEO fica no `<head>` estático, não no `<helmet>`
@@ -185,9 +209,10 @@ o branco do `.store-thumb`, o que dá exatamente essa cor — assim a faixa late
 do `object-fit: contain` some.
 
 A saída é **WebP de no máximo 320px** de lado (`OUT_SIZE`/`QUALITY` no topo do
-script). O thumb da loja renderiza a ~118px, então 320 já cobre telas 2x. Antes
-o teto era 800px em PNG e uma das fotos saía com 501 KB para ocupar 118px na
-tela — as quatro somavam 710 KB, hoje somam 38 KB.
+script). O thumb da loja renderiza a ~118px, então 320 já cobre telas 2x. As quatro
+fotos em `assets/img/products/` somam hoje ~38 KB. A CONFIRMAR: os números do
+"antes" (teto de 800px em PNG, 501 KB numa foto, 710 KB no total) — não achei os
+PNGs antigos no histórico do git.
 
 O script nunca amplia: fotos cujo recorte é menor que o teto ficam no tamanho
 nativo, para não borrar.

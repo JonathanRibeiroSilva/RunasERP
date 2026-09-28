@@ -1,288 +1,245 @@
-# 🐳 Docker Quick Start - Frontend
+# Docker Quick Start - Frontend
 
-**Data:** 2026-05-25  
-**Versão:** 1.0.0  
-**Status:** ✅ Recomendado
+**Atualizado:** 2026-09-26
+**Escopo:** subir o frontend (Vite) e o api-gateway em desenvolvimento, via `docker-compose.dev.yml`
 
 ---
 
-## 🚀 Início Rápido com Docker (5 minutos)
+## Início rápido
 
-### Pré-requisito
+### Pré-requisitos
 
 ```bash
-# Verificar Docker
 docker --version
-docker-compose --version
+docker compose version
 ```
 
-Se não tiver Docker instalado, acesse: https://www.docker.com/products/docker-desktop
+Todos os comandos abaixo usam `docker compose` (plugin v2). Se a sua máquina só
+tem o binário antigo `docker-compose`, troque o comando — o resto é igual.
 
-### Passo 1: Clonar/Atualizar Repositório
+Sem Docker: https://www.docker.com/products/docker-desktop
+
+### Passo 1: Repositório e `.env`
 
 ```bash
-cd c:\Users\jonat\Documents\GitHub\ERP\RunasERP
-git pull origin main
+cd <caminho-do-seu-clone>/RunasERP
+git pull
+cp .env.example .env
 ```
 
-### Passo 2: Iniciar Backend
+O `.env` não é opcional: `docker-compose.dev.yml` lê variáveis **sem default**,
+como `DATABASE_URL_GATEWAY` e `SERVICO_INTERNO_TOKEN`. Sem ele o gateway não
+sobe (`docker-compose.dev.yml:190` e `:193`, `.env.example:60` e `:182`).
+
+### Passo 2: Subir o frontend
 
 ```bash
-docker-compose -f docker-compose.dev.yml up api-gateway
+docker compose -f docker-compose.dev.yml up frontend-dev
 ```
+
+Um comando basta: `frontend-dev` tem `depends_on: api-gateway`, e o gateway
+depende de `db` e `redis` com `condition: service_healthy`. Subir o frontend
+sobe a cadeia inteira.
 
 **Esperado:**
 ```
-api-gateway_1  | INFO:     Uvicorn running on http://0.0.0.0:8000
+erp-frontend-dev  | VITE v8.x.x  ready in xxx ms
+erp-frontend-dev  | ➜  Local:   http://localhost:3000/
 ```
 
-**Verificar:** http://localhost:8000/docs
+(Vite `^8.3.0` — `frontend/package.json:53`.)
 
-### Passo 3: Iniciar Frontend (em outro terminal)
+**Verificar:**
+- Frontend: http://localhost:3000
+- Gateway: http://localhost:8000/health → `{"status":"healthy","service":"api-gateway"}`
+- Stack completa (banco, Redis e os 7 serviços): http://localhost:8000/health/ready
 
-```bash
-docker-compose -f docker-compose.dev.yml up frontend-dev
-```
+O Swagger em `/docs` **não** está ligado por padrão: `DOCS_ENABLED` é `False`
+em `api-gateway/config.py:84` e o compose de dev não define essa variável.
+Para habilitar, ponha `DOCS_ENABLED=true` no `.env` e recrie o gateway.
 
-**Esperado:**
-```
-frontend-dev_1  | VITE v4.x.x  ready in xxx ms
-frontend-dev_1  | ➜  Local:   http://localhost:3000/
-```
+### Passo 3: Entrar
 
-**Verificar:** http://localhost:3000
+Abra http://localhost:3000 e faça login com o admin semeado no boot do gateway
+(`api-gateway/main.py:46` chama `seed_admin()`):
 
-### Passo 4: Testar
-
-Abra http://localhost:3000 e faça login:
 ```
 Email: admin@runas.com
 Senha: Admin@123
 ```
 
----
-
-## 📊 Comandos Úteis
-
-### Iniciar Tudo
-
-```bash
-# Iniciar backend e frontend
-docker-compose -f docker-compose.dev.yml up
-
-# Ou em background
-docker-compose -f docker-compose.dev.yml up -d
-```
-
-### Parar Tudo
-
-```bash
-# Parar todos os containers
-docker-compose -f docker-compose.dev.yml down
-
-# Parar e remover volumes
-docker-compose -f docker-compose.dev.yml down -v
-```
-
-### Ver Logs
-
-```bash
-# Ver logs do frontend
-docker-compose -f docker-compose.dev.yml logs -f frontend-dev
-
-# Ver logs do backend
-docker-compose -f docker-compose.dev.yml logs -f api-gateway
-
-# Ver logs de tudo
-docker-compose -f docker-compose.dev.yml logs -f
-```
-
-### Executar Comandos
-
-```bash
-# Executar comando no frontend
-docker-compose -f docker-compose.dev.yml exec frontend-dev npm run build
-
-# Executar comando no backend
-docker-compose -f docker-compose.dev.yml exec api-gateway python -m pytest
-```
-
-### Reconstruir Imagens
-
-```bash
-# Reconstruir imagens
-docker-compose -f docker-compose.dev.yml build
-
-# Reconstruir e iniciar
-docker-compose -f docker-compose.dev.yml up --build
-```
+São os defaults de `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`api-gateway/seed.py:27-28`).
+Se você mudou essas variáveis no `.env`, use os seus valores.
 
 ---
 
-## 🔍 Troubleshooting
+## Comandos úteis
+
+### Subir / parar
+
+```bash
+# Stack inteira
+docker compose -f docker-compose.dev.yml up
+
+# Em background
+docker compose -f docker-compose.dev.yml up -d
+
+# Parar
+docker compose -f docker-compose.dev.yml down
+
+# Parar e apagar volumes (perde o banco de dev)
+docker compose -f docker-compose.dev.yml down -v
+```
+
+### Logs
+
+```bash
+docker compose -f docker-compose.dev.yml logs -f frontend-dev
+docker compose -f docker-compose.dev.yml logs -f api-gateway
+docker compose -f docker-compose.dev.yml logs -f
+```
+
+### Executar comandos dentro dos containers
+
+```bash
+# Build de produção do frontend (script "build" de frontend/package.json)
+docker compose -f docker-compose.dev.yml exec frontend-dev npm run build
+
+# psql no banco de dev (usuário e base default: erp)
+docker compose -f docker-compose.dev.yml exec db psql -U erp -d erp
+```
+
+Não rode `pytest` dentro do container do gateway: `api-gateway/requirements.txt`
+não instala pytest — a imagem só tem as dependências de runtime. Os testes
+rodam no CI / no ambiente local de Python, não no container.
+
+### Rebuild
+
+```bash
+docker compose -f docker-compose.dev.yml build
+docker compose -f docker-compose.dev.yml up --build
+```
+
+### Depois de mexer no `.env`
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --force-recreate frontend-dev
+```
+
+`docker restart` **não** relê o `.env` (comentário em `docker-compose.dev.yml:542`).
+
+---
+
+## Troubleshooting
 
 ### "Cannot connect to Docker daemon"
 
-**Solução:**
-1. Abra Docker Desktop
-2. Aguarde inicializar (pode levar alguns minutos)
-3. Tente novamente
+Abra o Docker Desktop, espere terminar de inicializar e repita o comando.
 
-### "Port 3000 already in use"
+### "Port 3000 already in use" / "Port 8000 already in use"
 
-**Solução:**
 ```bash
-# Parar containers anteriores
-docker-compose -f docker-compose.dev.yml down
-
-# Ou usar porta diferente
-docker-compose -f docker-compose.dev.yml up -e VITE_PORT=3001
+docker compose -f docker-compose.dev.yml down
 ```
 
-### "Port 8000 already in use"
-
-**Solução:**
-```bash
-# Parar containers anteriores
-docker-compose -f docker-compose.dev.yml down
-
-# Ou usar porta diferente
-docker-compose -f docker-compose.dev.yml up -e API_PORT=8001
-```
+As portas são fixas no compose (`"3000:3000"` no `frontend-dev`, `"8000:8000"`
+no `api-gateway`) e não há variável de ambiente para trocá-las — não existe
+`VITE_PORT` nem `API_PORT` no projeto. Para usar outra porta no host, edite o
+lado esquerdo do mapeamento em `docker-compose.dev.yml` (ex.: `"3001:3000"`).
 
 ### "Out of memory"
 
-**Solução:**
-1. Abra Docker Desktop
-2. Vá em Settings > Resources
-3. Aumente a memória disponível
-4. Reinicie Docker
+Docker Desktop > Settings > Resources > aumentar memória. O `frontend-dev` é o
+container mais pesado da stack: 1.5 CPU e 1536M de limite
+(`docker-compose.dev.yml:561-563`).
 
 ### "Build failed"
 
-**Solução:**
 ```bash
-# Limpar cache e reconstruir
-docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml build --no-cache
-docker-compose -f docker-compose.dev.yml up
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml build --no-cache
+docker compose -f docker-compose.dev.yml up
 ```
+
+### Hot reload não dispara
+
+O watch usa polling (`CHOKIDAR_USEPOLLING=true`, intervalo de 1000ms) porque
+inotify não atravessa bind mounts no Docker/Windows. Só `frontend/src`,
+`frontend/public` e `vite.config.ts` estão montados — mudança em qualquer outro
+arquivo do frontend exige rebuild da imagem.
 
 ---
 
-## 📁 Estrutura Docker
+## O que o compose de dev define (trechos reais)
 
-### docker-compose.dev.yml
+`docker-compose.dev.yml` não tem chave `version:` (formato Compose Spec).
 
 ```yaml
-version: '3.8'
-
 services:
-  # Frontend (React + Vite)
   frontend-dev:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+    container_name: erp-frontend-dev
     ports:
       - "3000:3000"
     volumes:
       - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+      - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
+      VITE_API_URL: ${VITE_API_URL:-/api}
+      VITE_USE_PROXY: "true"
+    depends_on:
+      - api-gateway
 
-  # Backend (FastAPI)
   api-gateway:
     build:
       context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: erp-api-gateway-dev
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://...
-      - SECRET_KEY=...
     depends_on:
-      - postgres
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  # Database (PostgreSQL)
-  postgres:
-    image: postgres:15
+  db:
+    image: postgres:15-alpine
+    container_name: erp-db-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erp}
+      POSTGRES_DB: ${POSTGRES_DB:-erp}
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_DB=erp_runas
-      - POSTGRES_PASSWORD=...
 ```
 
----
+Detalhe importante: `VITE_API_URL` é `/api` (caminho relativo), não uma URL
+absoluta. O Vite faz proxy de `/api/*` para `http://api-gateway:8000`, tirando
+o prefixo `/api` no caminho (`frontend/vite.config.ts`, bloco `server.proxy`).
+Isso vale enquanto `VITE_USE_PROXY` não for `false`.
 
-## 🎯 Vantagens do Docker
-
-✅ **Sem Instalações Manuais**
-- Não precisa instalar Node.js, Python, PostgreSQL
-- Tudo vem pronto na imagem
-
-✅ **Ambiente Consistente**
-- Funciona igual em qualquer máquina
-- Sem problemas de versão
-
-✅ **Fácil de Compartilhar**
-- Compartilhe o docker-compose.yml
-- Todos têm o mesmo ambiente
-
-✅ **Pronto para Produção**
-- Mesma imagem em dev e prod
-- Sem surpresas ao fazer deploy
-
-✅ **Hot Reload**
-- Mudanças no código refletem automaticamente
-- Não precisa reiniciar container
-
-✅ **Isolado**
-- Não afeta seu sistema
-- Fácil de limpar (docker-compose down -v)
+O serviço do banco chama-se `db` (não `postgres`), e o nome da base é `erp`.
 
 ---
 
-## 🚀 Próximos Passos
+## Por que Docker aqui
 
-1. ✅ Iniciar com Docker
-2. ✅ Testar autenticação
-3. ✅ Consultar [QUICK-TEST-GUIDE.md](./QUICK-TEST-GUIDE.md)
-4. ✅ Configurar OAuth (se necessário)
+- Não precisa instalar Node, Python ou PostgreSQL na máquina.
+- Mesmas versões para todo mundo: Python 3.12-slim, postgres:15-alpine, redis:7-alpine.
+- Hot reload funciona (com polling, ver Troubleshooting).
+- `down -v` limpa tudo sem deixar resto no sistema.
 
----
-
-## 📞 Suporte
-
-### Documentação Relacionada
-
-- [QUICK-TEST-GUIDE.md](./QUICK-TEST-GUIDE.md) - Guia de testes
-- [PREREQUISITES.md](./PREREQUISITES.md) - Pré-requisitos
-- [DOCKER.md](./DOCKER.md) - Documentação completa de Docker
-
-### Comandos Rápidos
-
-```bash
-# Iniciar tudo
-docker-compose -f docker-compose.dev.yml up
-
-# Ver logs
-docker-compose -f docker-compose.dev.yml logs -f
-
-# Parar tudo
-docker-compose -f docker-compose.dev.yml down
-```
+A imagem de dev **não** é a de produção: o frontend usa `Dockerfile.dev` em dev
+e o deploy de produção tem compose próprio (`docker-compose.prod.yml`).
 
 ---
 
-**Última Atualização:** 2026-05-25  
-**Versão:** 1.0.0
+## Documentação relacionada
 
----
-
-<div align="center">
-
-**[QUICK-TEST-GUIDE.md](./QUICK-TEST-GUIDE.md) → [PREREQUISITES.md](./PREREQUISITES.md) → [DOCKER.md](./DOCKER.md)**
-
-Feito com ❤️ pela equipe Deneb Corp
-
-</div>
+- [prerequisites.md](./prerequisites.md) - pré-requisitos do ambiente
+- [docker.md](./docker.md) - documentação Docker mais longa (este arquivo é o caminho curto)

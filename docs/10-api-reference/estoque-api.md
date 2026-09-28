@@ -1,351 +1,364 @@
 # API de Estoque - Runas
 
-> **Referência completa** da API do serviço de Estoque
+> **Referência** da API do serviço de Estoque, conferida contra `services/estoque/routers/estoque.py`, `schemas/estoque.py`, `services/estoque_service.py` e `repositories/estoque_repository.py`.
 
 ---
 
 ## 📋 Visão Geral
 
-**Base URL**: `http://localhost:8003`  
-**Autenticação**: Bearer Token (JWT)  
+**Porta do serviço**: `8003` (`services/estoque/Dockerfile`; no compose de dev fica em `127.0.0.1:8003`)
+**Prefixo**: todas as rotas ficam sob `/estoque` (mais `/health`)
 **Formato**: JSON
+
+### Autenticação e tenant
+
+O serviço **não valida JWT**. Quem autentica é o api-gateway, e o serviço confia em headers:
+
+| Header | Obrigatório | Função |
+|--------|-------------|--------|
+| `X-Empresa-Id` | Sim, em todas as rotas de `/estoque` | ID da empresa (tenant). Ausente: 422 do FastAPI. Menor ou igual a zero: 400. |
+| `X-Servico-Interno-Token` | Só quando `SERVICO_INTERNO_TOKEN` estiver configurado | Prova de origem interna (`interno.py`). Sem a variável, o serviço aceita a chamada e apenas loga. `/health` é isento. |
+
+Pelo gateway (`api-gateway/routers/proxy.py`), todo `/estoque` exige usuário **ADMIN ou OPERADOR** (`require_admin_or_operador`), e o gateway injeta `X-Empresa-Id`. Os exemplos abaixo chamam o serviço direto (dev), por isso mostram os headers.
+
+Rotas que recebem `empresa_id` no corpo (`POST /estoque`, `/entrada`, `/saida`, `/baixar-venda`, `/estornar-venda`, `/reservar`, `/liberar-reserva`) respondem **403** se ele diferir do header. `POST /estoque/ajuste` não tem `empresa_id` no corpo.
+
+### Convenções
+
+- Quantidades são `float` (não inteiro).
+- Listagens retornam **array simples**, paginado por `skip`/`limit` (padrão `limit=100`, máximo `1000`). Não existe envelope `items/total/page`.
+- Datas de criação/atualização se chamam `created_at` / `updated_at`.
 
 ---
 
 ## 📍 Endpoints
 
-### Listar Estoque
+| Verbo | Caminho | Status | Descrição |
+|-------|---------|--------|-----------|
+| POST | `/estoque` | 201 | Cria registro de estoque |
+| GET | `/estoque` | 200 | Lista estoques (com alertas) |
+| GET | `/estoque/baixo` | 200 | Atalho: só estoque baixo |
+| GET | `/estoque/zerado` | 200 | Atalho: só zerado |
+| GET | `/estoque/disponibilidade` | 200 | Disponibilidade de produto/variante |
+| GET | `/estoque/{estoque_id}` | 200 | Busca por ID do registro de estoque |
+| PUT | `/estoque/{estoque_id}` | 200 | Atualiza mínimo, máximo, localização, ativo |
+| POST | `/estoque/entrada` | 201 | Entrada de mercadoria |
+| POST | `/estoque/saida` | 200 | Saída de mercadoria |
+| POST | `/estoque/baixar-venda` | 200 | Baixa atômica e idempotente dos itens de uma venda |
+| POST | `/estoque/estornar-venda` | 200 | Estorno atômico e idempotente de uma venda |
+| POST | `/estoque/ajuste` | 200 | Ajuste de inventário (define a quantidade) |
+| POST | `/estoque/reservar` | 200 | Reserva quantidade |
+| POST | `/estoque/liberar-reserva` | 200 | Libera reserva |
+| GET | `/estoque/{estoque_id}/movimentacoes` | 200 | Histórico do registro |
+| GET | `/estoque/{estoque_id}/lotes` | 200 | Lotes do registro |
+| GET | `/estoque/lotes/vencendo` | 200 | Lotes que vencem em até 30 dias |
+| GET | `/estoque/relatorios/geral` | 200 | Relatório geral |
+| GET | `/estoque/relatorios/movimentacoes` | 200 | Relatório por período (ver aviso abaixo) |
+
+O identificador do estoque é o `id` do **registro de estoque**, não o `variante_id`. Para achar o estoque de um produto/variante use `GET /estoque/disponibilidade` ou filtre a listagem.
+
+---
+
+### Criar Estoque
 ```http
-GET /estoque
+POST /estoque
 ```
 
-**Query Parameters:**
-- `page` (int): Número da página (padrão: 1)
-- `size` (int): Itens por página (padrão: 20)
-- `variante_id` (uuid, opcional): Filtrar por variante
-- `abaixo_minimo` (boolean, opcional): Apenas itens abaixo do mínimo
-
-**Response 200:**
 ```json
 {
-  "items": [
-    {
-      "id": "uuid",
-      "variante_id": "uuid",
-      "quantidade": 50,
-      "quantidade_minima": 10,
-      "atualizado_em": "2026-05-26T10:00:00Z"
-    }
-  ],
-  "total": 100,
-  "page": 1,
-  "size": 20,
-  "pages": 5
+  "empresa_id": 1,
+  "produto_id": "uuid",
+  "variante_id": "uuid-ou-null",
+  "quantidade": 0,
+  "estoque_minimo": 10,
+  "estoque_maximo": null,
+  "localizacao": "Prateleira A1"
+}
+```
+
+Apenas `empresa_id` e `produto_id` são obrigatórios; `quantidade` e `estoque_minimo` têm padrão `0`. Antes de criar, o serviço consulta o serviço de Produtos (`GET /produtos/{id}` e, se houver, `/variantes/{id}`) com o tenant correto: produto inexistente, de outra empresa ou **inativo** resulta em **400** `Produto ou variante não encontrado`. Já existir estoque para o par produto/variante: **400**.
+
+**Response 201** (`EstoqueResponse`):
+```json
+{
+  "id": "uuid",
+  "empresa_id": 1,
+  "produto_id": "uuid",
+  "variante_id": null,
+  "quantidade": 0.0,
+  "estoque_minimo": 10.0,
+  "estoque_maximo": null,
+  "localizacao": "Prateleira A1",
+  "quantidade_reservada": 0.0,
+  "quantidade_disponivel": 0.0,
+  "ativo": true,
+  "created_at": "2026-05-26T10:00:00",
+  "updated_at": "2026-05-26T10:00:00"
 }
 ```
 
 ---
 
-### Consultar Estoque de Variante
+### Listar Estoque
 ```http
-GET /estoque/{variante_id}
+GET /estoque?skip=0&limit=100&apenas_baixo=false&apenas_zerado=false
 ```
 
-**Response 200:**
+Retorna só registros com `ativo = true`, ordenados por `produto_id`. Cada item é um `EstoqueResponse` acrescido de:
+
+- `alerta_estoque_baixo`: `quantidade <= estoque_minimo` **e** `quantidade > 0`
+- `alerta_estoque_zerado`: `quantidade == 0`
+
+Os alertas usam a quantidade **física** (`quantidade`), não a `quantidade_disponivel`. O filtro `apenas_baixo` (e `GET /estoque/baixo`) usa `quantidade <= estoque_minimo` sem excluir zero, então itens zerados com mínimo maior ou igual a zero também entram.
+
+`GET /estoque/{estoque_id}` devolve o mesmo formato de um item (404 `Estoque não encontrado` se não existir na empresa).
+
+---
+
+### Disponibilidade
+```http
+GET /estoque/disponibilidade?produto_id=<uuid>&variante_id=<uuid opcional>
+```
+
+`produto_id` é obrigatório. Nunca dá 404:
+
 ```json
 {
-  "id": "uuid",
-  "variante_id": "uuid",
-  "quantidade": 50,
-  "quantidade_minima": 10,
-  "atualizado_em": "2026-05-26T10:00:00Z"
+  "produto_id": "uuid",
+  "variante_id": null,
+  "quantidade": 50.0,
+  "quantidade_reservada": 5.0,
+  "quantidade_disponivel": 45.0,
+  "existe": true
 }
 ```
 
-**Exemplo cURL:**
-```bash
-curl -X GET "http://localhost:8003/estoque/{variante_id}" \
-  -H "Authorization: Bearer <token>"
+Sem registro de estoque, retorna tudo zerado e `existe: false`.
+
+---
+
+### Atualizar Configuração
+```http
+PUT /estoque/{estoque_id}
 ```
+
+Corpo parcial (`EstoqueUpdate`): `estoque_minimo`, `estoque_maximo`, `localizacao`, `ativo`. Não altera quantidade (use entrada/saída/ajuste). 404 se não existir.
 
 ---
 
 ### Registrar Entrada
 ```http
-POST /estoque/{variante_id}/entrada
+POST /estoque/entrada
 ```
 
-**Request Body:**
 ```json
 {
+  "empresa_id": 1,
+  "produto_id": "uuid",
+  "variante_id": null,
   "quantidade": 100,
   "motivo": "Compra do fornecedor ABC",
-  "referencia_id": "uuid-nota-fiscal"
+  "documento": "NF-12345",
+  "custo_unitario": 4.5,
+  "criar_lote": true,
+  "codigo_lote": "LOTE-2026-001",
+  "data_fabricacao": "2026-05-01",
+  "data_validade": "2027-05-01",
+  "fornecedor": "ABC",
+  "nota_fiscal": "12345"
 }
 ```
 
-**Response 201:**
-```json
-{
-  "id": "uuid",
-  "variante_id": "uuid",
-  "tipo": "ENTRADA",
-  "quantidade": 100,
-  "motivo": "Compra do fornecedor ABC",
-  "referencia_id": "uuid-nota-fiscal",
-  "criado_em": "2026-05-26T10:00:00Z"
-}
-```
+Obrigatórios: `empresa_id`, `produto_id`, `quantidade` (> 0). Se ainda não existe estoque do produto/variante, ele é **criado na primeira entrada**, depois de validar produto ativo no serviço de Produtos. O lote só é criado se `criar_lote` for `true` **e** `codigo_lote` vier preenchido.
 
-**Exemplo cURL:**
+**Response 201:** o `EstoqueResponse` atualizado (não a movimentação). A movimentação (`tipo: ENTRADA`) é gravada com `quantidade_anterior`/`quantidade_posterior`.
+
 ```bash
-curl -X POST "http://localhost:8003/estoque/{variante_id}/entrada" \
-  -H "Authorization: Bearer <token>" \
+curl -X POST "http://localhost:8003/estoque/entrada" \
+  -H "X-Empresa-Id: 1" \
   -H "Content-Type: application/json" \
-  -d '{
-    "quantidade": 100,
-    "motivo": "Compra do fornecedor ABC"
-  }'
+  -d '{"empresa_id": 1, "produto_id": "<uuid>", "quantidade": 100, "motivo": "Compra do fornecedor ABC"}'
 ```
 
 ---
 
 ### Registrar Saída
 ```http
-POST /estoque/{variante_id}/saida
+POST /estoque/saida
 ```
 
-**Request Body:**
 ```json
 {
+  "empresa_id": 1,
+  "produto_id": "uuid",
+  "variante_id": null,
   "quantidade": 10,
   "motivo": "Venda balcão",
-  "referencia_id": "uuid-pedido"
+  "documento": "PEDIDO-789",
+  "lote_id": "uuid-opcional"
 }
 ```
 
-**Response 201:** Movimentação criada
+**Response 200:** `EstoqueResponse` atualizado. Erros são **400** (não 422):
 
-**Erro 422:** Estoque insuficiente
+- `Estoque não encontrado para este produto/variante`
+- `Quantidade disponível insuficiente. Disponível: 5.0, Solicitado: 10.0` (compara com `quantidade_disponivel`, ou seja, descontando reservas)
+- com `lote_id`: lote de outro estoque, lote `BLOQUEADO`, ou quantidade maior que a do lote. Lote `VENCIDO` **pode** sair (é a forma de dar baixa em vencido).
+
+---
+
+### Baixar Venda
+```http
+POST /estoque/baixar-venda
+```
+
 ```json
 {
-  "detail": "Estoque insuficiente. Disponível: 5, Solicitado: 10"
+  "empresa_id": 1,
+  "documento": "VND-2026-0001",
+  "itens": [
+    {"produto_id": "uuid", "variante_id": null, "quantidade": 2}
+  ]
 }
 ```
+
+`documento` (número da venda) é **obrigatório na prática**: sem ele o serviço recusa. `itens` exige pelo menos 1.
+
+- Atômico: se qualquer item faltar, nada é baixado. Valida a quantidade **física** (`quantidade`), não a disponível, porque converte a reserva do checkout em saída (`quantidade_reservada` diminui, sem ficar negativa).
+- Idempotente por `(empresa_id, documento)` (tabela `baixas_venda_processadas`): repetir a chamada não baixa de novo e devolve o estado atual dos itens.
+- Trava as linhas com `SELECT ... FOR UPDATE` em ordem determinística por `(produto_id, variante_id)` e refaz até 3 tentativas em deadlock (`40P01`) ou falha de serialização (`40001`).
+- Não toca em lotes.
+- Qualquer `ValueError` (sem estoque, item inexistente, sem `documento`) vira **409**.
+
+**Response 200:** array de `EstoqueResponse`, um por item.
+
+### Estornar Venda
+```http
+POST /estoque/estornar-venda
+```
+
+Mesmo corpo de `baixar-venda`. Devolve a quantidade física de cada item (movimentação `DEVOLUCAO`, motivo `Venda reembolsada`), de forma atômica e idempotente por `(empresa_id, documento)` (tabela `estornos_venda_processados`). Não exige que a baixa tenha existido. Erros de validação: **400**.
 
 ---
 
 ### Ajuste de Inventário
 ```http
-POST /estoque/{variante_id}/ajuste
+POST /estoque/ajuste
 ```
 
-**Request Body:**
 ```json
 {
-  "quantidade": 45,
-  "motivo": "Inventário mensal - contagem física"
-}
-```
-
-**Response 201:**
-```json
-{
-  "id": "uuid",
-  "variante_id": "uuid",
-  "tipo": "AJUSTE",
-  "quantidade": -5,
+  "estoque_id": "uuid",
+  "quantidade_nova": 45,
   "motivo": "Inventário mensal - contagem física",
-  "criado_em": "2026-05-26T10:00:00Z"
+  "observacao": null
 }
 ```
 
-**Nota:** O sistema calcula automaticamente a diferença:
-- Estoque atual: 50
-- Quantidade informada: 45
-- Ajuste registrado: -5
+O corpo usa `estoque_id` e `quantidade_nova` (a **nova quantidade total**, `>= 0`), não a diferença. O serviço grava uma movimentação `AJUSTE` com `quantidade = abs(nova - atual)` (sempre positiva; o sinal se deduz de `quantidade_anterior` e `quantidade_posterior`). `motivo` é obrigatório (máx. 200).
+
+**Response 200:** `EstoqueResponse` atualizado. **400** se o estoque não existir ou se `quantidade_nova` for menor que a `quantidade_reservada` (`Libere as reservas antes.`).
+
+---
+
+### Reservar / Liberar
+```http
+POST /estoque/reservar
+POST /estoque/liberar-reserva
+```
+
+Corpo: `empresa_id`, `produto_id`, `variante_id` (opcional), `quantidade` (> 0), `documento` (opcional, só logado). Resposta 200: `EstoqueResponse`.
+
+- Reservar não altera `quantidade`; aumenta `quantidade_reservada` e reduz `quantidade_disponivel`. **400** `Quantidade disponível insuficiente para reserva` se passar do estoque.
+- Liberar: **400** `Quantidade reservada insuficiente` se liberar mais do que está reservado.
+- Este serviço **não expira** reservas. A expiração de 15 minutos do carrinho é do serviço de Vendas (`reserva_temporaria_service.py`, Redis).
 
 ---
 
 ### Histórico de Movimentações
 ```http
-GET /estoque/{variante_id}/movimentacoes
+GET /estoque/{estoque_id}/movimentacoes?tipo=ENTRADA&skip=0&limit=100
 ```
 
-**Query Parameters:**
-- `page` (int): Número da página
-- `size` (int): Itens por página
-- `tipo` (string, opcional): ENTRADA, SAIDA, AJUSTE, DEVOLUCAO
+`tipo` (opcional) aceita `ENTRADA`, `SAIDA`, `AJUSTE`, `DEVOLUCAO`, `PERDA`, `TRANSFERENCIA`. Ordenado do mais recente ao mais antigo. Array de:
 
-**Response 200:**
 ```json
 {
-  "items": [
-    {
-      "id": "uuid",
-      "variante_id": "uuid",
-      "tipo": "ENTRADA",
-      "quantidade": 100,
-      "motivo": "Compra do fornecedor ABC",
-      "referencia_id": "uuid",
-      "criado_em": "2026-05-26T10:00:00Z"
-    },
-    {
-      "id": "uuid",
-      "variante_id": "uuid",
-      "tipo": "SAIDA",
-      "quantidade": -10,
-      "motivo": "Venda pedido #123",
-      "referencia_id": "uuid-pedido",
-      "criado_em": "2026-05-26T11:00:00Z"
-    }
-  ],
-  "total": 50,
-  "page": 1,
-  "size": 20,
-  "pages": 3
+  "id": "uuid",
+  "estoque_id": "uuid",
+  "lote_id": null,
+  "tipo": "SAIDA",
+  "quantidade": 10.0,
+  "quantidade_anterior": 60.0,
+  "quantidade_posterior": 50.0,
+  "motivo": "Venda confirmada",
+  "observacao": null,
+  "documento": "VND-2026-0001",
+  "custo_unitario": null,
+  "custo_total": null,
+  "usuario_id": null,
+  "created_at": "2026-05-26T11:00:00"
 }
 ```
 
+`quantidade` é sempre positiva; o sentido vem do `tipo`. Hoje só `ENTRADA`, `SAIDA`, `AJUSTE` e `DEVOLUCAO` (estorno de venda) são gravados por rotas; `PERDA` e `TRANSFERENCIA` existem no enum mas nenhuma rota os produz.
+
 ---
 
-### Alertas de Estoque Mínimo
+### Lotes
 ```http
-GET /estoque/alertas/minimo
+GET /estoque/{estoque_id}/lotes?skip=0&limit=100
+GET /estoque/lotes/vencendo?skip=0&limit=100
 ```
 
-**Response 200:**
-```json
-[
-  {
-    "variante_id": "uuid",
-    "sku": "COCA-2L",
-    "produto_nome": "Coca-Cola",
-    "quantidade_atual": 5,
-    "quantidade_minima": 10,
-    "diferenca": -5
-  }
-]
-```
+Não existe rota para criar ou editar lote: ele nasce numa entrada com `criar_lote`. Cada item traz os campos do lote (`codigo`, `quantidade`, `quantidade_inicial`, `data_fabricacao`, `data_validade`, `fornecedor`, `nota_fiscal`, `custo_unitario`, `status`: `ATIVO`/`VENCIDO`/`BLOQUEADO`) e os alertas `dias_para_vencer`, `alerta_vencimento` (vence em 1 a 30 dias) e `vencido` (`dias < 0`).
 
-**Exemplo cURL:**
-```bash
-curl -X GET "http://localhost:8003/estoque/alertas/minimo" \
-  -H "Authorization: Bearer <token>"
-```
+`/lotes/vencendo` lista lotes `ATIVO` com `data_validade` até hoje + 30 dias (inclui os já vencidos ainda marcados `ATIVO`), ordenados por validade.
 
 ---
 
-## 💡 Casos de Uso
-
-### Caso 1: Receber Mercadoria do Fornecedor
-
-```bash
-# 1. Registrar entrada para cada produto
-curl -X POST "http://localhost:8003/estoque/{variante_id}/entrada" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quantidade": 100,
-    "motivo": "NF 12345 - Fornecedor ABC",
-    "referencia_id": "uuid-nota-fiscal"
-  }'
-
-# 2. Verificar estoque atualizado
-curl -X GET "http://localhost:8003/estoque/{variante_id}" \
-  -H "Authorization: Bearer $TOKEN"
+### Relatórios
+```http
+GET /estoque/relatorios/geral
+GET /estoque/relatorios/movimentacoes?data_inicio=...&data_fim=...
 ```
 
----
+`/relatorios/geral` retorna `total_produtos`, `total_em_estoque`, `produtos_estoque_baixo`, `produtos_sem_estoque` e `valor_total_estoque` (sempre `null` hoje). `total_em_estoque` soma no máximo os 10.000 primeiros registros.
 
-### Caso 2: Inventário Mensal
+`/relatorios/movimentacoes` (`data_inicio` e `data_fim` obrigatórios) devolve `total_entradas`, `total_saidas`, `quantidade_entrada`, `quantidade_saida`.
 
-```python
-import requests
-
-TOKEN = "seu_token_aqui"
-BASE_URL = "http://localhost:8003"
-
-# Lista de contagem física
-inventario = [
-    {"variante_id": "uuid-1", "quantidade_contada": 45},
-    {"variante_id": "uuid-2", "quantidade_contada": 120},
-    {"variante_id": "uuid-3", "quantidade_contada": 8}
-]
-
-# Ajustar cada item
-for item in inventario:
-    response = requests.post(
-        f"{BASE_URL}/estoque/{item['variante_id']}/ajuste",
-        headers={"Authorization": f"Bearer {TOKEN}"},
-        json={
-            "quantidade": item["quantidade_contada"],
-            "motivo": "Inventário mensal - 26/05/2026"
-        }
-    )
-    print(f"Ajustado: {item['variante_id']}")
-```
-
----
-
-### Caso 3: Monitorar Estoque Baixo
-
-```bash
-# Verificar alertas
-curl -X GET "http://localhost:8003/estoque/alertas/minimo" \
-  -H "Authorization: Bearer $TOKEN" | jq '.'
-
-# Resultado:
-# [
-#   {
-#     "sku": "COCA-2L",
-#     "quantidade_atual": 5,
-#     "quantidade_minima": 10
-#   }
-# ]
-
-# Fazer pedido ao fornecedor...
-```
+> **Aviso (defeito no código):** `EstoqueService.gerar_relatorio_movimentacoes` chama `MovimentacaoRepository.contar_por_tipo(db, empresa_id, tipo, ...)`, mas o repositório só aceita `(db, tipo, data_inicio, data_fim)` e não filtra por empresa. Pela leitura do código a rota falha com erro 500. A CONFIRMAR em execução; não use como fonte até corrigir.
 
 ---
 
 ## 🚨 Regras Importantes
 
-### 1. Movimentações são Imutáveis
-- ❌ Não é possível editar ou deletar movimentações
-- ✅ Para corrigir, faça um novo ajuste
-
-### 2. Quantidade Nunca Negativa
-- Sistema impede saídas maiores que estoque disponível
-- Retorna erro 422 se tentar
-
-### 3. Alertas Automáticos
-- Quando `quantidade <= quantidade_minima`
-- Evento `estoque.minimo` publicado no RabbitMQ
-- Notificação WhatsApp enviada automaticamente
-
-### 4. Transações Atômicas
-- Movimentação + Atualização de estoque = 1 transação
-- Se falhar, nada é salvo
+1. **Movimentações são imutáveis pela API**: não há rota para editar ou apagar. Corrige-se com um novo ajuste.
+2. **Quantidade nunca negativa**: além das validações do serviço, o banco tem o CHECK `ck_estoque_quantidades_nao_negativas` (`quantidade`, `quantidade_reservada` e `quantidade_disponivel` `>= 0`).
+3. **Concorrência**: entrada, saída, ajuste, reserva, liberação, baixa e estorno leem a linha com `FOR UPDATE` dentro da transação, evitando atualização perdida.
+4. **Transação atômica**: movimentação + atualização de quantidade (+ lote) na mesma transação; falhou, nada é salvo.
+5. **Não há eventos nem alertas automáticos**: o `EventPublisher` (RabbitMQ) existe em `events/publisher.py`, mas nenhum código de estoque o chama; não há evento `estoque.minimo` nem notificação WhatsApp. Os alertas só aparecem nos campos das listagens.
 
 ---
 
 ## 🚨 Códigos de Erro
 
-| Código | Descrição |
-|--------|-----------|
-| 400 | Requisição inválida |
-| 401 | Não autenticado |
-| 404 | Variante não encontrada |
-| 422 | Estoque insuficiente / Quantidade inválida |
-| 500 | Erro interno |
+| Código | Quando |
+|--------|--------|
+| 400 | `ValueError` do serviço (estoque não encontrado na operação, quantidade insuficiente, produto inválido, `X-Empresa-Id` <= 0). Vale para criar, entrada, saída, estorno, ajuste, reservar e liberar |
+| 403 | `empresa_id` do corpo diferente de `X-Empresa-Id` |
+| 404 | `GET`/`PUT /estoque/{estoque_id}` com ID inexistente na empresa |
+| 409 | `POST /estoque/baixar-venda` com falha de validação (sem estoque suficiente, item inexistente, sem `documento`) |
+| 422 | Validação do Pydantic (campo faltando, quantidade `<= 0`, `X-Empresa-Id` ausente) |
+| 500 | Erro interno (`{"detail": "Erro interno do servidor"}`) |
+
+O 401 é do gateway, não deste serviço.
 
 ---
 
 ## 📚 Documentação Relacionada
 
 - [Regras de Negócio - Estoque](../11-regras-negocio/estoque.md)
-- [Diagramas de Sequência - Estoque](../03-arquitetura/diagramas/sequencia/estoque.md)
 - [Mapeamento Completo de Rotas](./mapeamento-rotas.md)
 - [OpenAPI Specification](./openapi.yaml)
 
@@ -353,5 +366,4 @@ curl -X GET "http://localhost:8003/estoque/alertas/minimo" \
 
 **Projeto:** Runas  
 **Equipe:** Equipe DenebCorp  
-**Data:** 26 de Maio de 2026  
-**Versão:** 1.0.0
+**Última revisão de conteúdo:** contra o código em 2026-09-26

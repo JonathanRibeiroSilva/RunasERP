@@ -1,237 +1,192 @@
 # Cores e Tipografia - Design System Runas
 
-> **Paleta de cores, tipografia, espaçamentos e sombras**
+> **Paleta de cores, tipografia, espaçamentos, raios, sombras e transições.**
+
+Fonte única de verdade: `frontend/src/styles/variables.scss`. Os valores abaixo foram copiados de lá; se divergirem, vale o arquivo. Componentes que usam estes tokens: ver [componentes.md](componentes.md).
 
 ---
 
-## 🎨 Paleta de Cores - Runas Identity
+## 🎨 Paleta de cores
 
-> **Filosofia:** Clareza, inteligência e controle. Inspirado em Linear, Vercel, Stripe e Notion.
+O tema é **dark-first** e só existe o modo escuro (não há tema claro nem alternância).
 
-### Cores Base (Dark Mode First)
-
-```scss
-// Background - Base escura sofisticada
-$background: #0F1115;           // Fundo principal
-$surface: #171A21;              // Cards, modais, painéis
-$surface-hover: #1F2430;        // Hover states
-
-// Primary - Azul (ações principais, confiança)
-$primary: #3B82F6;              // Azul vibrante mas profissional
-$primary-hover: #2563EB;        // Hover mais escuro
-$primary-active: #1D4ED8;       // Active state
-$primary-light: rgba(59, 130, 246, 0.1);   // Backgrounds sutis
-$primary-glow: rgba(59, 130, 246, 0.2);    // Glow suave
-
-// Secondary - Ciano (modernidade, clareza)
-$secondary: #22D3EE;            // Ciano vibrante
-$secondary-hover: #06B6D4;      // Hover
-$secondary-light: rgba(34, 211, 238, 0.1);
-$secondary-glow: rgba(34, 211, 238, 0.15);
-
-// Accent - Dourado (RARO - apenas destaques importantes)
-$accent-gold: #D4A017;          // Dourado sofisticado
-$accent-gold-hover: #B8860B;    // Hover
-$accent-gold-light: rgba(212, 160, 23, 0.1);
-$accent-gold-glow: rgba(212, 160, 23, 0.15);
-
-// Text - Hierarquia clara
-$text-primary: #E5E7EB;         // Texto principal (alta legibilidade)
-$text-secondary: #94A3B8;       // Texto secundário
-$text-tertiary: #64748B;        // Texto terciário (labels, hints)
-$text-disabled: #475569;        // Disabled states
-
-// Semantic Colors (ajustados para dark mode)
-$success: #10B981;              // Verde - confirmações
-$success-light: rgba(16, 185, 129, 0.1);
-
-$warning: #F59E0B;              // Laranja - avisos (não amarelo)
-$warning-light: rgba(245, 158, 11, 0.1);
-
-$error: #EF4444;                // Vermelho - APENAS erros críticos
-$error-light: rgba(239, 68, 68, 0.1);
-
-$info: #22D3EE;                 // Usa o ciano secundário
-$info-light: rgba(34, 211, 238, 0.1);
-```
-
-### Regras de Uso das Cores
-
-#### 🔵 **Azul Primary (#3B82F6)**
-**Usar para:**
-- ✅ Botões de ação principal (Salvar, Confirmar, Criar)
-- ✅ Links e navegação ativa
-- ✅ Progress bars
-- ✅ Badges de status positivo
-
-**NÃO usar para:**
-- ❌ Backgrounds grandes
-- ❌ Textos longos
-
-#### 🔷 **Ciano Secondary (#22D3EE)**
-**Usar para:**
-- ✅ Informações e dicas
-- ✅ Badges informativos
-- ✅ Ícones de ajuda
-- ✅ Highlights sutis
-
-**NÃO usar para:**
-- ❌ Ações críticas
-- ❌ Botões primários
-
-#### 🟡 **Dourado Accent (#D4A017) - RARO!**
-**Usar APENAS para:**
-- ✅ Destaques premium (ex: "Plano Pro")
-- ✅ Conquistas e marcos importantes
-- ✅ CTAs especiais (ex: "Upgrade")
-- ✅ Badges de destaque (ex: "Novo", "Popular")
-- ✅ Números importantes (ex: "R$ 10.000 em vendas")
-
-**NUNCA usar para:**
-- ❌ Botões comuns
-- ❌ Backgrounds
-- ❌ Textos corridos
-- ❌ Elementos repetitivos
-
-**Regra de ouro:** Se você usa dourado mais de 3 vezes na mesma tela, está usando demais.
-
-#### 🔴 **Vermelho Error (#EF4444) - CRÍTICO APENAS**
-**Usar APENAS para:**
-- ✅ Erros de validação
-- ✅ Mensagens de erro críticas
-- ✅ Ações destrutivas (deletar, cancelar)
-- ✅ Alertas de segurança
-
-**NUNCA usar para:**
-- ❌ Destaques visuais
-- ❌ Badges de status
-- ❌ Decoração
-
-### Cores Neutras (Dark Mode)
+### Fundo e superfícies
 
 ```scss
-// Borders e Dividers
-$border-subtle: rgba(255, 255, 255, 0.05);
-$border-default: rgba(255, 255, 255, 0.1);
-$border-strong: rgba(255, 255, 255, 0.2);
-
-// Overlays
-$overlay-light: rgba(0, 0, 0, 0.5);
-$overlay-heavy: rgba(0, 0, 0, 0.8);
-
-// Glassmorphism (uso sutil)
-$glass-bg: rgba(23, 26, 33, 0.8);
-$glass-border: rgba(255, 255, 255, 0.1);
-$glass-blur: blur(10px);
+$background: #080A0F;         // fundo principal
+$surface: #10141D;            // cards, modais, painéis
+$surface-hover: #171C28;      // hover
+$surface-elevated: #1A202C;
 ```
 
-### Cores Semânticas por Contexto
+O `body` (`global.scss`) usa `$background` com dois `radial-gradient` muito sutis (primary e secondary a 2%) sobre `linear-gradient(135deg, #080A0F 0%, #040508 100%)`, com `background-attachment: fixed`.
 
-> **Importante:** Vermelho APENAS para erros críticos. Use azul/ciano para status neutros/positivos.
+### Primary: ciano/azul elétrico
 
 ```scss
-// Status de Pedidos (comunicam progresso, não urgência)
-$status-pendente: #94A3B8;      // Cinza - aguardando ação
-$status-confirmado: #3B82F6;    // Azul - confirmado
-$status-separando: #22D3EE;     // Ciano - em processo
-$status-enviado: #8B5CF6;       // Roxo - em trânsito
-$status-entregue: #10B981;      // Verde - concluído
-$status-cancelado: #EF4444;     // Vermelho - erro/cancelado
-
-// Status de Estoque (clareza operacional)
-$estoque-ok: #10B981;           // Verde - estoque saudável
-$estoque-baixo: #F59E0B;        // Laranja - atenção necessária
-$estoque-zerado: #EF4444;       // Vermelho - crítico
-$estoque-excesso: #22D3EE;      // Ciano - acima do ideal
-
-// Status Financeiro (inteligência, não alarme)
-$conta-quitada: #10B981;        // Verde - pago
-$conta-parcial: #22D3EE;        // Ciano - pagamento parcial
-$conta-aberta: #3B82F6;         // Azul - em aberto (normal)
-$conta-vencida: #F59E0B;        // Laranja - vencida (atenção)
-$conta-inadimplente: #EF4444;   // Vermelho - inadimplência crítica
-
-// Status de Cliente (relacionamento)
-$cliente-ativo: #10B981;        // Verde - ativo
-$cliente-novo: #22D3EE;         // Ciano - novo cliente
-$cliente-vip: #D4A017;          // Dourado - cliente premium (RARO)
-$cliente-inativo: #64748B;      // Cinza - inativo
-$cliente-bloqueado: #EF4444;    // Vermelho - bloqueado
-
-// Prioridades (quando necessário)
-$prioridade-baixa: #64748B;     // Cinza
-$prioridade-media: #3B82F6;     // Azul
-$prioridade-alta: #F59E0B;      // Laranja
-$prioridade-urgente: #EF4444;   // Vermelho
+$primary: #0EA5E9;
+$primary-hover: #38BDF8;      // hover é MAIS CLARO que a base
+$primary-active: #0284C7;
+$primary-light: rgba(14, 165, 233, 0.15);
+$primary-glow: rgba(14, 165, 233, 0.3);
 ```
 
-### Badges de Status - Exemplos de Uso
+### Secondary: índigo
 
-```tsx
-// ✅ CORRETO - Status de pedido
-<Badge variant="confirmed">Confirmado</Badge>      // Azul
-<Badge variant="delivered">Entregue</Badge>        // Verde
-<Badge variant="cancelled">Cancelado</Badge>       // Vermelho
-
-// ✅ CORRETO - Cliente VIP (uso raro de dourado)
-<Badge variant="vip">Cliente VIP</Badge>           // Dourado
-
-// ❌ ERRADO - Não use vermelho para status neutros
-<Badge variant="error">Pendente</Badge>            // NÃO!
-
-// ✅ CORRETO - Use cinza para status neutros
-<Badge variant="neutral">Pendente</Badge>          // Cinza
+```scss
+$secondary: #6366F1;
+$secondary-hover: #818CF8;
+$secondary-light: rgba(99, 102, 241, 0.15);
+$secondary-glow: rgba(99, 102, 241, 0.25);
 ```
+
+### Texto
+
+```scss
+$text-primary: #FFFFFF;
+$text-secondary: #94A3B8;     // também é a cor padrão de <p> em global.scss
+$text-tertiary: #64748B;      // labels, hints, placeholders
+$text-disabled: #475569;
+```
+
+### Semânticas
+
+```scss
+$success: #10B981;
+$success-light: rgba(16, 185, 129, 0.15);
+$success-border: rgba(16, 185, 129, 0.3);
+
+$warning: #F59E0B;
+$warning-light: rgba(245, 158, 11, 0.15);
+$warning-border: rgba(245, 158, 11, 0.3);
+
+$error: #EF4444;
+$error-light: rgba(239, 68, 68, 0.15);
+$error-border: rgba(239, 68, 68, 0.3);
+
+$info: #3B82F6;
+$info-light: rgba(59, 130, 246, 0.15);
+
+// Aliases de erro
+$danger: $error;
+$danger-light: $error-light;
+$danger-dark: #dc2626;
+```
+
+### Bordas, overlays e glass
+
+```scss
+$border-subtle: rgba(255, 255, 255, 0.04);
+$border-default: rgba(255, 255, 255, 0.08);
+$border-hover: rgba(255, 255, 255, 0.15);
+$border-strong: rgba(255, 255, 255, 0.25);
+
+$overlay-heavy: rgba(8, 10, 15, 0.9);   // fundo do Modal
+$overlay-light: rgba(8, 10, 15, 0.5);
+
+$glass-bg: rgba(16, 20, 29, 0.65);
+$glass-bg-hover: rgba(23, 28, 40, 0.75);
+$glass-border: rgba(255, 255, 255, 0.08);
+$glass-border-highlight: rgba(255, 255, 255, 0.15);
+$glass-blur: blur(16px);
+```
+
+### Aliases legados
+
+```scss
+$primary-dark: #0284c7;
+$glow-primary: $shadow-glow-primary;
+```
+
+### O que NÃO existe
+
+- Não há cor de destaque dourada (`$accent-gold`) nem tokens de status por domínio (`$status-*`, `$estoque-*`, `$conta-*`, `$cliente-*`, `$prioridade-*`). Cores de status são definidas no `.scss` de cada página (ex.: `pages/Dashboard/DashboardPage.scss`, `pages/LojaOnlinePublico/RastreamentoPedidoPage.scss`).
+- Não há componente `Badge` com `variant`. Para badges, use as classes `.badge-success`, `.badge-warning`, `.badge-error` e `.badge-info` de `global.scss` (detalhes em [componentes.md](componentes.md), seção Badges).
+- Contraste: A CONFIRMAR. Nenhuma razão de contraste WCAG foi medida para estes tokens.
 
 ---
 
 ## 📝 Tipografia
 
-### Fonte
+### Famílias
 
 ```scss
-$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 
-                   'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 
-                   'Droid Sans', 'Helvetica Neue', sans-serif;
-
-$font-family-monospace: 'Fira Code', 'Courier New', monospace;
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+$font-family-monospace: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 ```
+
+**Carregamento:** a primeira linha de `frontend/src/styles/global.scss` importa do Google Fonts:
+
+```scss
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+```
+
+- Inter: pesos 400, 500, 600 e 700.
+- JetBrains Mono: pesos 400 e 500. Use a classe `.font-mono` para aplicar a monoespaçada a dados.
+- `index.html` e `main.tsx` não carregam fontes; `main.tsx` só importa o CSS do Bootstrap, `global.scss` e o CSS do react-toastify.
+- `Fira Code` não é carregada: só entra se estiver instalada na máquina.
 
 ### Tamanhos
 
 ```scss
-// Base
-$font-size-base: 1rem;          // 16px
-$font-size-sm: 0.875rem;        // 14px
-$font-size-lg: 1.125rem;        // 18px
-$font-size-xs: 0.75rem;         // 12px
-
-// Headings
-$h1-font-size: 2.5rem;          // 40px
-$h2-font-size: 2rem;            // 32px
-$h3-font-size: 1.75rem;         // 28px
-$h4-font-size: 1.5rem;          // 24px
-$h5-font-size: 1.25rem;         // 20px
-$h6-font-size: 1rem;            // 16px
-
-// Display (títulos grandes)
-$display-1: 6rem;               // 96px
-$display-2: 5.5rem;             // 88px
-$display-3: 4.5rem;             // 72px
-$display-4: 3.5rem;             // 56px
+$font-size-xs: 0.75rem;       // 12px
+$font-size-sm: 0.875rem;      // 14px
+$font-size-base: 0.9375rem;   // 15px (tamanho do body)
+$font-size-lg: 1.0625rem;     // 17px
+$font-size-xl: 1.25rem;       // 20px
+$font-size-2xl: 1.5rem;       // 24px
+$font-size-3xl: 2rem;         // 32px
 ```
+
+Base de cálculo: `html { font-size: 16px; }` em `global.scss`.
+
+### Títulos
+
+Os títulos em `global.scss` usam a escala acima, não os tokens `$hN-font-size`:
+
+| Elemento | Token | Tamanho |
+|----------|-------|---------|
+| `h1` | `$font-size-3xl` | 32px |
+| `h2` | `$font-size-2xl` | 24px |
+| `h3` | `$font-size-xl` | 20px |
+| `h4` | `$font-size-lg` | 17px |
+
+Todos os `h1`–`h6`: peso `$font-weight-semibold` (600), `letter-spacing: $letter-spacing-tight`, `line-height: 1.2`, cor `$text-primary`.
+
+Tokens legados que continuam definidos (usados, por exemplo, em `ResponsiveCard.scss`):
+
+```scss
+$h1-font-size: 2.5rem;    // 40px
+$h2-font-size: 2rem;      // 32px
+$h3-font-size: 1.75rem;   // 28px
+$h4-font-size: 1.5rem;    // 24px
+$h5-font-size: 1.25rem;   // 20px
+$h6-font-size: 1rem;      // 16px
+```
+
+Não há tokens de display (`$display-1` etc.).
 
 ### Pesos
 
 ```scss
-$font-weight-light: 300;
-$font-weight-normal: 400;
+$font-weight-light: 300;      // legado; Inter 300 NÃO é carregada do Google Fonts
+$font-weight-regular: 400;
+$font-weight-normal: 400;     // legado, igual a regular
 $font-weight-medium: 500;
 $font-weight-semibold: 600;
 $font-weight-bold: 700;
 ```
 
-### Line Height
+### Letter spacing
+
+```scss
+$letter-spacing-tight: -0.02em;   // títulos
+$letter-spacing-normal: 0;
+$letter-spacing-wide: 0.025em;    // badges, cabeçalhos de tabela admin
+$letter-spacing-caps: 0.05em;     // mixin text-overline
+```
+
+### Line height
 
 ```scss
 $line-height-base: 1.5;
@@ -239,239 +194,149 @@ $line-height-sm: 1.25;
 $line-height-lg: 2;
 ```
 
+O `body` usa `line-height: 1.6` fixo, não `$line-height-base`.
+
 ---
 
 ## 📏 Espaçamento
 
-### Sistema de Espaçamento (8px base)
+Tokens individuais (não há mapa `$spacers` nem `$spacer` único):
 
 ```scss
-$spacer: 1rem;  // 16px
-
-$spacers: (
-  0: 0,                    // 0px
-  1: $spacer * 0.25,       // 4px
-  2: $spacer * 0.5,        // 8px
-  3: $spacer,              // 16px
-  4: $spacer * 1.5,        // 24px
-  5: $spacer * 3,          // 48px
-  6: $spacer * 4,          // 64px
-  7: $spacer * 5,          // 80px
-);
+$spacer-0: 0;
+$spacer-1: 0.25rem;   // 4px
+$spacer-2: 0.5rem;    // 8px
+$spacer-3: 0.75rem;   // 12px
+$spacer-4: 1rem;      // 16px
+$spacer-5: 1.5rem;    // 24px
+$spacer-6: 2rem;      // 32px
+$spacer-7: 5rem;      // 80px (legado; fora da sequência)
+$spacer-8: 3rem;      // 48px
+$spacer-10: 4rem;     // 64px
 ```
 
-### Uso
+`global.scss` redefine só três utilitários com estes tokens: `.mb-3` (12px), `.mb-4` (16px) e `.mt-3` (12px), todos com `!important`. Os demais utilitários de margem/padding (`.px-2`, `.gap-3` etc.) vêm do Bootstrap e seguem a escala dele.
+
+---
+
+## 🔘 Raios de borda
 
 ```scss
-// Margin
-.mt-3 { margin-top: 16px; }
-.mb-4 { margin-bottom: 24px; }
-.mx-2 { margin-left: 8px; margin-right: 8px; }
-
-// Padding
-.pt-3 { padding-top: 16px; }
-.pb-4 { padding-bottom: 24px; }
-.px-2 { padding-left: 8px; padding-right: 8px; }
-
-// Gap (flexbox/grid)
-.gap-3 { gap: 16px; }
+$border-radius-sm: 6px;
+$border-radius-md: 10px;
+$border-radius-lg: 16px;
+$border-radius-xl: 24px;
+$border-radius-full: 9999px;
+$border-radius: $border-radius-md;   // alias legado (10px)
 ```
 
 ---
 
-## 🎭 Sombras (Dark Mode)
+## 🎭 Sombras
 
 ```scss
-// Sombras sutis para dark mode (mais escuras e pronunciadas)
-$box-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-$box-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
-$box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-$box-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.6);
-$box-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.7);
+$shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+$shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+$shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+$shadow-glow-primary: 0 0 15px rgba(14, 165, 233, 0.4);
+$shadow-glow-success: 0 0 15px rgba(16, 185, 129, 0.4);
 
-// Glow effects (uso sutil)
-$glow-primary: 0 0 20px rgba(59, 130, 246, 0.3);
-$glow-secondary: 0 0 20px rgba(34, 211, 238, 0.25);
-$glow-gold: 0 0 20px rgba(212, 160, 23, 0.2);  // RARO
-
-// Inner shadows (depth)
-$inner-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+// Aliases legados
+$box-shadow-xs: $shadow-sm;
+$box-shadow-sm: $shadow-sm;
+$box-shadow: $shadow-md;
+$box-shadow-lg: $shadow-lg;
+$box-shadow-xl: $shadow-lg;
 ```
 
-### Quando Usar Glow
-
-```scss
-// ✅ CORRETO - Hover em botões primários
-.btn-primary:hover {
-  box-shadow: $glow-primary;
-}
-
-// ✅ CORRETO - Destaque em cards importantes (RARO)
-.card-featured {
-  box-shadow: $glow-gold;  // Apenas para cards premium
-}
-
-// ❌ ERRADO - Não use glow em tudo
-.card {
-  box-shadow: $glow-primary;  // NÃO! Muito exagerado
-}
-```
+Não existem `$glow-secondary`, `$glow-gold` nem `$inner-shadow`.
 
 ---
 
 ## 🔄 Transições
 
 ```scss
-$transition-base: all 0.2s ease-in-out;
-$transition-fast: all 0.15s ease-in-out;
-$transition-slow: all 0.3s ease-in-out;
-$transition-fade: opacity 0.2s ease-in-out;
-$transition-collapse: height 0.35s ease;
-$transition-transform: transform 0.2s ease-in-out;
+$transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-bounce: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 ```
 
-### Animações Suaves
+Atenção: mais abaixo no mesmo arquivo há `$transition-bounce: $transition-slow;`. Como é SCSS sem `!default`, a segunda atribuição vence, e na prática `$transition-bounce` vale o mesmo que `$transition-slow`.
+
+As transições guardam só duração e curva; o uso é `transition: all $transition-base` ou `transition: color $transition-fast`.
+
+### Animações (`mixins.scss`)
 
 ```scss
-// Hover states
-.interactive-element {
-  transition: $transition-base;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: $box-shadow-lg;
-  }
+@keyframes fadeSlideUp {
+  0%   { opacity: 0; transform: translateY(15px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
+@mixin animate-entrance($delay: 0s) { animation: fadeSlideUp $transition-slow forwards; ... }
 
-// Fade in
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+// Legados
+@mixin fade-in  { animation: legacyFadeIn 0.2s ease-in-out forwards; }
+@mixin slide-in { animation: legacySlideIn 0.2s ease-in-out forwards; }  // translateY(10px) -> 0
+```
 
-// Slide in
-@keyframes slideIn {
-  from { 
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to { 
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+`prefers-reduced-motion` não é tratado em nenhum arquivo de `src/`.
+
+---
+
+## 🧱 Z-index
+
+```scss
+$z-index-dropdown: 100;
+$z-index-sticky: 200;
+$z-index-fixed: 300;
+$z-index-modal-backdrop: 400;
+$z-index-modal: 500;
+$z-index-tooltip: 600;
 ```
 
 ---
 
-## 🌈 Gradientes (Uso Minimalista)
-
-> **Importante:** Gradientes sutis, não arco-íris. Pense Linear/Vercel, não anos 90.
+## 📱 Breakpoints
 
 ```scss
-// Gradientes sutis para backgrounds
-$gradient-primary: linear-gradient(135deg, 
-  rgba(59, 130, 246, 0.1) 0%, 
-  rgba(34, 211, 238, 0.05) 100%
-);
-
-$gradient-surface: linear-gradient(180deg,
-  rgba(23, 26, 33, 1) 0%,
-  rgba(15, 17, 21, 1) 100%
-);
-
-// Gradiente dourado (RARO - apenas para destaques premium)
-$gradient-gold: linear-gradient(135deg,
-  rgba(212, 160, 23, 0.2) 0%,
-  rgba(212, 160, 23, 0.05) 100%
-);
-
-// Gradiente para texto (uso muito raro)
-$gradient-text-primary: linear-gradient(135deg,
-  #3B82F6 0%,
-  #22D3EE 100%
-);
+$breakpoint-xs: 0;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
 ```
 
-### Quando Usar Gradientes
+Mixins em `mixins.scss`: `media-xs` (`max-width: 575px`), `media-sm` (`min-width: 576px`), `media-md` (768px), `media-lg` (992px), `media-xl` (1200px).
 
-```tsx
-// ✅ CORRETO - Background sutil em hero sections
-<HeroSection style={{ background: gradientPrimary }}>
-  <HeroContent />
-</HeroSection>
+---
 
-// ✅ CORRETO - Card premium (RARO)
-<PremiumCard style={{ background: gradientGold }}>
-  <UpgradeOffer />
-</PremiumCard>
+## 🌈 Gradientes
 
-// ✅ CORRETO - Texto de destaque (muito raro)
-<h1 style={{ 
-  background: gradientTextPrimary,
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent'
-}}>
-  Bem-vindo ao Runas
-</h1>
+Não há tokens de gradiente. O que existe:
 
-// ❌ ERRADO - Não use gradientes vibrantes demais
-<Card style={{ 
-  background: 'linear-gradient(red, blue, green)'  // NÃO!
-}}>
-```
-
-### Regras de Gradientes
-
-1. **Máximo 2 cores** por gradiente
-2. **Opacidade baixa** (0.05 a 0.2)
-3. **Transições suaves** (não abruptas)
-4. **Uso estratégico** (não em todo lugar)
-5. **Teste o contraste** (texto deve ser legível)
+- Mixin `text-gradient($color1: $primary, $color2: $secondary)`: `linear-gradient(135deg, ...)` aplicado ao texto; exposto na classe `.text-gradient` de `global.scss`.
+- O fundo do `body` descrito em "Fundo e superfícies", acima.
+- Gradientes escritos direto em páginas, como `linear-gradient(135deg, $primary 0%, #8B5CF6 100%)` em `pages/Auth/ForgotPasswordPage.scss` e `pages/Auth/ResetPasswordPage.scss`.
 
 ---
 
 ## 🎨 Ícones
 
-### React Icons
+Biblioteca: `react-icons` (conjunto Feather, `react-icons/fi`; a única exceção é `FaGoogle`/`FaMicrosoft` de `react-icons/fa` em `pages/LojaOnlinePublico/ClienteLoginPage.tsx`). Ícones da navegação principal, conforme `components/layout/Sidebar/Sidebar.tsx`:
 
-```typescript
-import {
-  FiHome,           // Home
-  FiUsers,          // Clientes
-  FiPackage,        // Produtos
-  FiShoppingCart,   // Vendas
-  FiBox,            // Estoque
-  FiDollarSign,     // Financeiro
-  FiSettings,       // Configurações
-  FiLogOut,         // Logout
-  FiPlus,           // Adicionar
-  FiEdit,           // Editar
-  FiTrash2,         // Deletar
-  FiEye,            // Visualizar
-  FiSearch,         // Buscar
-  FiFilter,         // Filtrar
-  FiDownload,       // Download
-  FiUpload,         // Upload
-  FiCheck,          // Confirmar
-  FiX,              // Cancelar
-  FiAlertCircle,    // Alerta
-  FiInfo,           // Info
-} from 'react-icons/fi';
-```
+| Ícone | Item |
+|-------|------|
+| `FiHome` | Dashboard |
+| `FiUsers` | Clientes |
+| `FiGlobe` | Loja Online |
+| `FiPackage` | Produtos |
+| `FiTag` | Categorias |
+| `FiBox` | Estoque |
+| `FiShoppingCart` | Vendas |
+| `FiDollarSign` | Financeiro |
+| `FiGrid` | Plataforma |
+| `FiSettings` | Configurações |
+| `FiUser` | Meu Perfil |
 
-### Tamanhos
-
-```typescript
-<FiHome size={16} />  // Pequeno
-<FiHome size={20} />  // Médio (padrão)
-<FiHome size={24} />  // Grande
-<FiHome size={32} />  // Extra grande
-```
-
----
-
-**Projeto:** Runas  
-**Equipe:** Equipe DenebCorp  
-**Data:** 26 de Maio de 2026  
-**Versão:** 2.0.0
+`FiLogOut` (sair) fica na `Navbar`. A maioria dos ícones não recebe `size` e herda o tamanho da fonte (`1em`); não há escala de tamanhos padronizada.

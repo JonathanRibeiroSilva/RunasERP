@@ -1,424 +1,328 @@
-# 🎨 Documentação do Frontend - Runas
+# Documentação do Frontend — Runas
 
-> Documentação completa do frontend do sistema Runas
+> Índice da pasta `docs/05-frontend/`. Todo número, porta e comando abaixo foi lido de `frontend/` em 2026-09-25; onde não deu para confirmar, está marcado como **A CONFIRMAR** em vez de preenchido.
 
-**Última atualização**: 23 de Junho de 2026  
-**Status**: Loja Online completa | Vendas/PDV e Estoque pendentes
-
----
-
-## 📋 Índice
-
-### 🚀 Setup e Configuração
-Guias para configurar o ambiente de desenvolvimento do frontend.
-
-- **[Prerequisites](./setup/prerequisites.md)** - Pré-requisitos e dependências
-- **[Docker](./setup/docker.md)** - Configuração completa com Docker
-- **[Docker Quick Start](./setup/docker-quick-start.md)** - Início rápido com Docker
-
-### 🎨 Design e UI
-Documentação do design system e interface do usuário.
-
-- **[Design](./design/design.md)** - Guia de design e padrões visuais
-- **[Componentes](./design/componentes.md)** - Biblioteca de componentes
-- **[Cores e Tipografia](./design/cores-tipografia.md)** - Paleta de cores e fontes
-- **[Layouts](./design/layouts.md)** - Estruturas de layout
-
-### 🔐 OAuth e Autenticação
-Documentação sobre autenticação e OAuth.
-
-- **[OAuth Summary](./oauth/oauth-summary.md)** - Resumo da implementação OAuth
-- **[OAuth Fix Summary](./oauth/oauth-fix-summary.md)** - Correções aplicadas no OAuth
-- **[Debug OAuth Redirect](./oauth/debug-oauth-redirect.md)** - Guia de debug de redirecionamentos
-
-### 🛒 Features Implementadas
-Documentação das funcionalidades prontas.
-
-- **[Loja Online](./features/loja-online.md)** - ✅ Catálogo, carrinho, checkout (100% completo)
-- **[Categorias](./features/categorias.md)** - Gestão de categorias de produtos
-
-### 📚 Guias de Desenvolvimento
-Guias práticos para desenvolvimento.
-
-- **[API Examples](./guias/api-examples.md)** - Exemplos de uso da API
-- **[Quick Test Guide](./guias/quick-test-guide.md)** - Guia rápido de testes
-- **[Índice de Testes](./guias/indice-testes.md)** - Índice completo de testes
-
-### 🚀 Deploy e Produção
-Guias para deploy e produção.
-
-- **[Production Checklist](./deployment/production-checklist.md)** - Checklist para produção
+**Última atualização**: 25 de Setembro de 2026
 
 ---
 
-## 🏗️ Arquitetura do Frontend
+## Índice da pasta
 
-### Stack Tecnológico
+### Estado atual (leia primeiro)
 
-| Categoria | Tecnologia | Versão | Status |
-|-----------|-----------|--------|--------|
-| **Framework** | React | 18.2.0 | ✅ |
-| **Linguagem** | TypeScript | 5.2.2 | ✅ |
-| **Build Tool** | Vite | 5.0.8 | ✅ |
-| **Roteamento** | React Router | 6.20.0 | ✅ |
-| **Estado Servidor** | TanStack Query (React Query) | 5.12.2 | ✅ |
-| **UI Library** | React Bootstrap | 2.9.1 | ✅ |
-| **Estilização** | Bootstrap + SASS | 5.3.2 | ✅ |
-| **Formulários** | React Hook Form | 7.49.2 | ✅ |
-| **Validação** | Zod | 3.22.4 | ✅ |
-| **HTTP Client** | Axios | 1.6.2 | ✅ |
-| **Notificações** | React Toastify | 9.1.3 | ✅ |
-| **Ícones** | React Icons | 4.12.0 | ✅ |
-| **Gráficos** | Chart.js + React ChartJS 2 | 4.4.1 / 5.2.0 | ✅ |
-| **Datas** | date-fns | 2.30.0 | ✅ |
-| **Autenticação** | OAuth2 + JWT | - | ✅ |
+- **[Estado Atual do Frontend](./frontend-current-state.md)** — retrato factual medido em `frontend/src`: clientes HTTP, React Query, error boundaries, god components.
+- **[Architectural Debt Log](./frontend-architectural-debt-log.md)** — dívidas C1–C6 / H1–H7 registradas a partir do AUD-2026-06-29.
+- **[Auditoria AUD-2026-06-29](./audits/AUD-2026-06-29.md)** e **[planos de fase](./plans/)** — histórico. Descrevem o estado de junho/2026, não o de hoje.
 
-### Estrutura de Pastas
+### Setup
+
+- **[Pré-requisitos](./setup/prerequisites.md)**
+- **[Docker](./setup/docker.md)**
+- **[Docker Quick Start](./setup/docker-quick-start.md)**
+
+### Design e UI
+
+- **[Design](./design/design.md)** — guia de design e padrões visuais
+- **[Componentes](./design/componentes.md)** — biblioteca de componentes
+- **[Cores e Tipografia](./design/cores-tipografia.md)** — paleta e fontes
+- **[Layouts](./design/layouts.md)** — estruturas de layout
+
+> ⚠️ Os valores de cor em `design/cores-tipografia.md` (`$background: #0F1115`, `$primary: #3B82F6`) **divergem** do código em `frontend/src/styles/variables.scss` (`$background: #080A0F` linha 9, `$primary: #0EA5E9` linha 15, `$secondary: #6366F1` linha 22). A fonte da verdade é o `.scss`. **A CONFIRMAR**: qual dos dois deve ser corrigido — não foi decidido aqui.
+
+### OAuth e autenticação
+
+- **[OAuth Summary](./oauth/oauth-summary.md)** — implementação de Google e Microsoft no gateway e no frontend
+
+### Features
+
+- **[Categorias](./features/categorias.md)** — gestão de categorias de produtos
+
+### Guias
+
+- **[API Examples](./guias/api-examples.md)** — exemplos de uso da API
+
+### Deploy
+
+- **[Production Checklist](./deployment/production-checklist.md)**
+- **[Deploy](../06-operacao/deploy.md)** e **[Runbook de Produção](../06-operacao/runbook-producao.md)** — processo real de deploy da stack
+
+---
+
+## Stack
+
+Versões lidas de `frontend/package.json` (declaradas com `^`, ou seja, o instalado pode ser maior dentro do mesmo major).
+
+| Categoria | Tecnologia | Versão declarada |
+|-----------|-----------|------------------|
+| Framework | React / React DOM | `^19.3.0` |
+| Linguagem | TypeScript | `^5.2.2` |
+| Build | Vite | `^8.3.0` |
+| Plugin React | @vitejs/plugin-react | `^6.1.1` |
+| Roteamento | react-router-dom | `^7.18.4` |
+| Estado de servidor | @tanstack/react-query | `^5.103.1` |
+| UI | react-bootstrap | `^2.9.1` |
+| Estilo | bootstrap / sass | `^5.3.2` / `^1.104.1` |
+| Formulários | react-hook-form + @hookform/resolvers | `^7.88.0` / `^5.9.1` |
+| Validação | zod | `^4.6.5` |
+| HTTP | axios | `^1.20.0` |
+| Notificações | react-toastify | `^11.1.0` |
+| Ícones | react-icons | `^5.7.0` |
+| Gráficos | chart.js / react-chartjs-2 | `^4.4.1` / `^5.2.0` |
+| Datas | date-fns | `^4.4.0` |
+| Testes | vitest + @testing-library/react + jsdom | `^5.0.1` / `^16.3.3` / `^30.1.0` |
+
+O projeto **não usa Material-UI** — nunca esteve em `package.json`.
+
+---
+
+## Estrutura de pastas
+
+Lida de `frontend/` em 2026-09-25.
 
 ```
 frontend/
-├── public/                 # Arquivos estáticos
-│   └── test.html          # Página de teste
+├── public/                     # favicons + test.html
 ├── src/
-│   ├── assets/            # Imagens, fontes, etc
-│   ├── components/        # Componentes reutilizáveis
-│   │   ├── common/       # Componentes comuns
-│   │   ├── forms/        # Componentes de formulário
-│   │   ├── layout/       # Componentes de layout
-│   │   └── loja/         # Componentes da loja online
-│   ├── pages/            # Páginas da aplicação
-│   │   ├── auth/         # Páginas de autenticação
-│   │   ├── clientes/     # Páginas de clientes
-│   │   ├── produtos/     # Páginas de produtos
-│   │   ├── loja/         # Páginas da loja online
-│   │   ├── dashboard/    # Dashboard principal
-│   │   ├── vendas/       # Páginas de vendas (🔴 Pendente)
-│   │   └── estoque/      # Páginas de estoque (🔴 Pendente)
-│   ├── services/         # Serviços e API calls
-│   │   ├── api/         # Cliente Axios configurado
-│   │   └── auth/        # Serviços de autenticação
-│   ├── hooks/            # Custom hooks
-│   │   ├── useCarrinho  # ✅ Hook do carrinho (loja)
-│   │   └── usePDV       # 🔴 Hook do PDV (pendente)
-│   ├── contexts/         # Context providers
-│   ├── types/            # TypeScript types
-│   ├── utils/            # Utilitários e helpers
-│   ├── config/           # Configurações
-│   ├── styles/           # Estilos globais (SASS)
-│   ├── App.tsx           # Componente principal
-│   └── main.tsx          # Entry point
-├── Dockerfile            # Docker para produção
-├── Dockerfile.dev        # Docker para desenvolvimento
-├── docker-compose.yml    # Docker Compose
-├── package.json          # Dependências
-├── tsconfig.json         # Config TypeScript
-├── vite.config.ts        # Config Vite
-└── README.md             # Este arquivo
+│   ├── components/
+│   │   ├── clientes/  common/  estoque/  financeiro/
+│   │   ├── layout/    produtos/  vendas/
+│   │   └── common/{ErrorBoundary,MaskedInput,Modal,
+│   │                ResponsiveCard,ResponsiveContainer,ResponsiveTable}
+│   ├── pages/                  # 13 pastas, capitalizadas:
+│   │   ├── Auth/  Clientes/  Configuracoes/  Dashboard/  Estoque/
+│   │   ├── Financeiro/  Login/  LojaOnline/  LojaOnlinePublico/
+│   │   └── Perfil/  Plataforma/  Produtos/  Vendas/
+│   ├── services/
+│   │   ├── api/                # axios.ts, apiPublica.ts + 8 serviços de domínio
+│   │   └── auth/               # authService.ts, tokenService.ts
+│   ├── hooks/                  # 10 hooks (8 de React Query + useAuth, useCarrinho)
+│   ├── contexts/  types/  utils/  styles/  img/  test/
+│   ├── config/                 # env.ts, host.ts (painel x lojista por hostname)
+│   ├── App.tsx                 # tabela de rotas (lazy só nas 2 páginas da Plataforma)
+│   └── main.tsx                # entry point + QueryClientProvider
+├── Dockerfile                  # build + nginx (EXPOSE 80)
+├── Dockerfile.dev              # vite dev (EXPOSE 3000)
+├── index.html
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
 ```
+
+Não existem `src/assets/`, `components/forms/` nem `components/loja/`. Os arquivos `docker-compose*.yml` ficam na **raiz do repositório**, não em `frontend/`.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Desenvolvimento Local
+### Local, sem Docker
 
 ```bash
-# 1. Instalar dependências
 cd frontend
 npm install
-
-# 2. Configurar variáveis de ambiente
-cp .env.example .env
-
-# 3. Iniciar servidor de desenvolvimento
+cp .env.example .env.local     # ver o cabeçalho do .env.example
 npm run dev
-
-# Acesse: http://localhost:5173
-```
-
-### Com Docker
-
-```bash
-# Subir frontend com Docker
-docker-compose up -d frontend
 
 # Acesse: http://localhost:3000
 ```
 
-📖 **Guia completo**: [Setup com Docker](./setup/docker.md)
+A porta 3000 vem de `frontend/vite.config.ts` (`server.port: 3000`, `preview.port: 3000`) — não é a 5173 padrão do Vite.
 
----
-
-## 🔐 Autenticação
-
-O frontend utiliza **OAuth2 com JWT** para autenticação.
-
-### Fluxo de Login
-
-1. Usuário clica em "Login com Google/Microsoft"
-2. Redirecionamento para provedor OAuth
-3. Usuário autoriza a aplicação
-4. Callback com código de autorização
-5. Troca do código por tokens (access + refresh)
-6. Armazenamento seguro dos tokens
-7. Redirecionamento para dashboard
-
-### Armazenamento de Tokens
-
-- **Access Token**: `localStorage` (expira em 30 minutos)
-- **Refresh Token**: `httpOnly cookie` (expira em 7 dias)
-
-📖 **Documentação completa**: [OAuth Summary](./oauth/oauth-summary.md)
-
----
-
-## 🎨 Design System
-
-### Cores Principais
-
-```css
-/* Cores primárias */
---primary: #1976d2;
---secondary: #dc004e;
---success: #4caf50;
---warning: #ff9800;
---error: #f44336;
---info: #2196f3;
-
-/* Cores neutras */
---gray-50: #fafafa;
---gray-100: #f5f5f5;
---gray-200: #eeeeee;
---gray-300: #e0e0e0;
---gray-400: #bdbdbd;
---gray-500: #9e9e9e;
---gray-600: #757575;
---gray-700: #616161;
---gray-800: #424242;
---gray-900: #212121;
-```
-
-### Tipografia
-
-```css
-/* Fontes */
---font-primary: 'Inter', sans-serif;
---font-secondary: 'Roboto', sans-serif;
-
-/* Tamanhos */
---text-xs: 0.75rem;    /* 12px */
---text-sm: 0.875rem;   /* 14px */
---text-base: 1rem;     /* 16px */
---text-lg: 1.125rem;   /* 18px */
---text-xl: 1.25rem;    /* 20px */
---text-2xl: 1.5rem;    /* 24px */
---text-3xl: 1.875rem;  /* 30px */
---text-4xl: 2.25rem;   /* 36px */
-```
-
-📖 **Design System completo**: [Design System](./design/design-system.md)
-
----
-
-## 📚 Componentes Principais
-
-### Componentes de Layout
-
-- **AppLayout** - Layout principal da aplicação
-- **Sidebar** - Menu lateral
-- **Header** - Cabeçalho com navegação
-- **Footer** - Rodapé
-
-### Componentes de Formulário
-
-- **Input** - Campo de texto
-- **Select** - Seleção
-- **Checkbox** - Caixa de seleção
-- **Radio** - Botão de rádio
-- **DatePicker** - Seletor de data
-- **FileUpload** - Upload de arquivos
-
-### Componentes de Dados
-
-- **Table** - Tabela de dados
-- **DataGrid** - Grid de dados avançado
-- **Card** - Cartão de informações
-- **List** - Lista de itens
-
-### Componentes de Feedback
-
-- **Alert** - Alertas
-- **Toast** - Notificações temporárias
-- **Modal** - Janelas modais
-- **Loader** - Indicadores de carregamento
-
----
-
-## 🧪 Testes
-
-### Executar Testes
+### Com Docker
 
 ```bash
-# Testes unitários
-npm run test
+# Na raiz do repositório
+docker compose -f docker-compose.dev.yml up -d frontend-dev
 
-# Testes com coverage
-npm run test:coverage
-
-# Testes E2E
-npm run test:e2e
+# Acesse: http://localhost:3000
 ```
 
-### Estrutura de Testes
+O serviço de desenvolvimento chama-se `frontend-dev` (`docker-compose.dev.yml:527`, mapeamento `3000:3000`); em produção é `frontend-prod` (`docker-compose.prod.yml:510`), servido por nginx na porta 80 dentro do container.
 
-```
-src/
-├── components/
-│   └── Button/
-│       ├── Button.tsx
-│       └── Button.test.tsx
-├── pages/
-│   └── Login/
-│       ├── Login.tsx
-│       └── Login.test.tsx
-└── services/
-    └── api/
-        ├── api.ts
-        └── api.test.ts
-```
-
-📖 **Guia de testes**: [Quick Test Guide](./guias/quick-test-guide.md)
+Guia completo: [Setup com Docker](./setup/docker.md)
 
 ---
 
-## 🚀 Build e Deploy
+## Autenticação
 
-### Build para Produção
+O frontend usa **OAuth2 (Google e Microsoft) com JWT**.
 
-```bash
-# Build otimizado
-npm run build
+### Armazenamento de tokens
 
-# Preview do build
-npm run preview
-```
+Os tokens vivem em **cookies HTTP-only**, emitidos e limpos pelo backend. O frontend nunca os lê:
 
-### Deploy com Docker
+- `services/api/axios.ts:23` — `withCredentials: true`; o navegador envia os cookies automaticamente.
+- `services/auth/tokenService.ts` — inteiro marcado como DEPRECATED: `getAccessToken()` e `getRefreshToken()` retornam `null`, os setters só emitem `console.warn`, e `clearTokens()` apenas remove chaves de `localStorage` legadas.
+- Em um 401 que não seja de `/auth/login`, `/auth/register` ou `/auth/me`, o interceptor de response limpa o legado e redireciona para `/login` (`axios.ts:60-82`).
 
-```bash
-# Build da imagem
-docker build -t runas-frontend:latest .
+**A CONFIRMAR**: tempos de expiração de access e refresh token — são definidos no backend, não no frontend, e não foram lidos aqui.
 
-# Run container
-docker run -p 3000:80 runas-frontend:latest
-```
-
-### Deploy em Produção
-
-```bash
-# Com Docker Compose
-docker-compose -f docker-compose.prod.yml up -d
-
-# Com Nginx
-npm run build
-cp -r dist/* /var/www/html/
-```
-
-📖 **Checklist de produção**: [Production Checklist](./deployment/production-checklist.md)
+Detalhes do fluxo: [OAuth Summary](./oauth/oauth-summary.md)
 
 ---
 
-## 🔧 Configuração
+## Contrato do cliente HTTP
 
-### Variáveis de Ambiente
+Dois comportamentos de `services/api/axios.ts` valem para qualquer tela nova.
+
+### Idempotency-Key nas escritas
+
+`axios.ts:42-44` gera um `Idempotency-Key` (via `crypto.randomUUID()`) para todo `POST`, `PUT`, `PATCH` e `DELETE`, usando `??=` para **não** regerar a chave em um reenvio — chave nova a cada passagem seria uma operação nova aos olhos do gateway. O gateway reserva a chave no Redis antes de encaminhar a escrita (`api-gateway/proxy/idempotency.py`), então um duplo-clique em "finalizar pedido" recebe a resposta da primeira venda em vez de criar uma segunda. `GET`/`HEAD`/`OPTIONS` não recebem chave.
+
+### Retry de janela de deploy
+
+`axios.ts:97-110` repete a requisição em `502`, `503` e `504` — **apenas** para `GET`, `HEAD` e `OPTIONS` — até 3 vezes, com espera de 1s, 2s e 3s. Cobre os segundos em que um deploy troca o container do gateway. Escritas ficam de fora de propósito: elas já carregam chave de idempotência, mas uma chave reservada cuja primeira tentativa ainda está em voo responde 409, e o retry mostraria esse 409 no lugar do resultado real.
+
+---
+
+## Módulos e seu estado
+
+Medido por LOC das páginas em `frontend/src/pages/`.
+
+| Módulo | Páginas | Estado |
+|--------|---------|--------|
+| Loja Online pública | `LojaOnlinePublico/` | Implementada — inclui `CheckoutPage.tsx` com 1.507 LOC, o maior arquivo do frontend |
+| Estoque | `Estoque/EstoquePage.tsx` (336 LOC), `EstoqueDetalhePage.tsx` (239 LOC) | Implementado |
+| Plataforma | `Plataforma/PlataformaDashboard.tsx` (`/plataforma`), `PlataformaPage.tsx` (`/plataforma/tenants`), `TenantDetalhe.tsx` | Implementado — visão geral, administração de tenants e assinaturas |
+| Vendas | `Vendas/VendasPage.tsx` (47 LOC) | Stub |
+| Financeiro | `Financeiro/FinanceiroPage.tsx` (47 LOC) | Stub |
+
+Coerente com o stub: `services/api/` não tem `vendasApi.ts` nem `financeiroApi.ts`.
+
+### Plataforma
+
+O módulo de administração multi-tenant tem documentação própria fora desta pasta:
+
+- **[Arquitetura da Plataforma](../03-arquitetura/plataforma.md)**
+- **[API da Plataforma](../10-api-reference/plataforma-api.md)**
+
+No frontend: `pages/Plataforma/` (páginas, schemas Zod e `__tests__/`), `hooks/usePlataforma.ts`, `services/api/plataformaApi.ts` e `config/host.ts`.
+
+Rotas: `/plataforma` é a visão geral (`PlataformaDashboard`) e `/plataforma/tenants` a lista de lojistas (`PlataformaPage`: provisionar, plano, suspender, cobrança, auditoria). As duas são `lazy()` e exigem `SUPER_ADMIN`; no `Sidebar` o item "Plataforma" é um submenu com esses dois subitens.
+
+O painel e o ERP dos lojistas saem do **mesmo bundle** e do mesmo container; quem decide qual aplicação monta é o hostname. `config/host.ts` compara o primeiro label de `window.location.hostname` com `VITE_HOST_PLATAFORMA` (padrão `admin`), e `escolherPorta()` mostra a tela "Endereço errado" (sem redirect: o cookie de sessão é host-only) para o SUPER_ADMIN fora do host do painel ou para outro papel dentro dele. `/perfil` vale nos dois lados. Em produção, fora do host do painel, as rotas `/plataforma*` nem são registradas (em dev, em `localhost`, continuam), e o `nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.`. Em dev as duas aplicações convivem em `localhost`; `admin.localhost:3000` exercita o caminho de produção. A separação é só do frontend: `/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`. Em produção desde 2026-09-28 (o PR #113 chegou à `main` pelo PR #114).
+
+---
+
+## Design System
+
+Fonte da verdade: `frontend/src/styles/variables.scss`. É **dark-first**.
+
+```scss
+// Base (variables.scss:9-12)
+$background: #080A0F;
+$surface: #10141D;
+$surface-hover: #171C28;
+$surface-elevated: #1A202C;
+
+// Primary — cyan/azul elétrico (:15-17)
+$primary: #0EA5E9;
+$primary-hover: #38BDF8;
+$primary-active: #0284C7;
+
+// Secondary — índigo (:22-23)
+$secondary: #6366F1;
+$secondary-hover: #818CF8;
+
+// Texto (:28-31)
+$text-primary: #FFFFFF;
+$text-secondary: #94A3B8;
+$text-tertiary: #64748B;
+
+// Semânticas (:34-47)
+$success: #10B981;
+$warning: #F59E0B;
+$error:   #EF4444;
+$info:    #3B82F6;
+```
+
+Tipografia (`variables.scss:66-82`):
+
+```scss
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+$font-family-monospace: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+
+$font-size-base: 0.9375rem;  // 15px
+$font-size-sm:   0.875rem;   // 14px
+$font-size-lg:   1.0625rem;  // 17px
+$font-size-3xl:  2rem;       // 32px
+```
+
+As duas famílias são carregadas do Google Fonts por um `@import url(...)` no topo de `src/styles/global.scss` (linha 3: `https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap`) — e **não** por `<link>` no `index.html`, que só declara favicons, viewport, description e o `<script>` de `/src/main.tsx`. Como é um `@import` de CSS dentro do bundle, o download das fontes só começa depois que a folha de estilo é baixada; até lá vale o fallback (`-apple-system`, `Segoe UI`, `Roboto`).
+
+Detalhes: [Design](./design/design.md) · [Cores e Tipografia](./design/cores-tipografia.md) (ver a ressalva no índice acima).
+
+---
+
+## Testes
+
+Scripts reais de `frontend/package.json`:
+
+```bash
+npm run test            # vitest
+npm run test:watch      # vitest --watch
+npm run test:coverage   # vitest --coverage
+```
+
+Não existe script `test:e2e`.
+
+Os testes ficam em pastas `__tests__/` ao lado do código. Os 10 arquivos `*.test.ts` de hoje:
+
+```
+components/layout/Sidebar/__tests__/podeVer.test.ts
+config/__tests__/host.test.ts
+pages/Configuracoes/__tests__/{empresaSchema,integracoesSchema,usuarioSchema}.test.ts
+pages/Plataforma/__tests__/{assinaturaSchema,resumirTenants,tenantSchema}.test.ts
+services/api/__tests__/axios.test.ts
+utils/__tests__/errorLogger.test.ts
+```
+
+O setup global fica em `src/test/setup.ts`.
+
+---
+
+## Build e deploy
+
+```bash
+npm run build     # tsc && vite build -> dist/
+npm run preview   # serve o build em :3000
+npm run lint      # eslint, --max-warnings 115
+npm run format    # prettier
+```
+
+A imagem de produção (`frontend/Dockerfile`) faz o build em `node:22-alpine` e serve `dist/` com `nginx:alpine` na porta 80. As variáveis `VITE_*` são embutidas no bundle **em tempo de build**; os build args ficam em `docker-compose.build.yml`.
+
+Checklist: [Production Checklist](./deployment/production-checklist.md) · Processo: [Deploy](../06-operacao/deploy.md)
+
+---
+
+## Variáveis de ambiente
+
+Lidas de `frontend/.env.example`. Sob Docker elas **não** vêm desse arquivo: vêm da seção `environment:` do compose.
 
 ```env
-# API
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=/api                 # /api sob Cloudflare; http://localhost:8000 direto no backend
 VITE_API_TIMEOUT=30000
+VITE_USE_PROXY=true               # true = Vite faz proxy de /api; false = proxy externo
 
-# OAuth
-VITE_GOOGLE_CLIENT_ID=your-google-client-id
-VITE_MICROSOFT_CLIENT_ID=your-microsoft-client-id
-VITE_OAUTH_REDIRECT_URI=http://localhost:5173/auth/callback
+VITE_APP_NAME=Runas ERP
+VITE_APP_VERSION=1.0.0
 
-# Features
+VITE_ENABLE_DEVTOOLS=true
 VITE_ENABLE_ANALYTICS=false
-VITE_ENABLE_SENTRY=false
-```
 
-### Configuração do Vite
+VITE_TOKEN_REFRESH_THRESHOLD=300000
 
-```typescript
-// vite.config.ts
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
-  },
-})
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+VITE_MICROSOFT_CLIENT_ID=your-microsoft-client-id
+VITE_MICROSOFT_TENANT_ID=common
+VITE_OAUTH_REDIRECT_URI=http://localhost:3000/auth/callback
 ```
 
 ---
 
-## 📖 Recursos Adicionais
+## Documentação relacionada
 
-### Documentação Externa
-
-- **React**: https://react.dev
-- **TypeScript**: https://www.typescriptlang.org
-- **Vite**: https://vitejs.dev
-- **Material-UI**: https://mui.com
-- **React Router**: https://reactrouter.com
-
-### Documentação Interna
-
-- **[API Reference](../10-api-reference/README.md)** - Referência da API
-- **[Regras de Negócio](../11-regras-negocio/README.md)** - Regras de negócio
-- **[Arquitetura](../03-arquitetura/README.md)** - Arquitetura do sistema
-
----
-
-## 🤝 Contribuindo
-
-Para contribuir com o frontend:
-
-1. Crie uma branch: `git checkout -b feature/nova-feature`
-2. Siga o guia de estilo do projeto
-3. Escreva testes para novas funcionalidades
-4. Commit suas mudanças: `git commit -m 'Add nova feature'`
-5. Push para a branch: `git push origin feature/nova-feature`
-6. Abra um Pull Request
-
----
-
-## 📞 Suporte
-
-Para dúvidas sobre o frontend:
-
-- **Email**: frontend@runas.com
-- **Documentação**: [docs/05-frontend/](.)
-- **Issues**: Abra uma issue no repositório
-
----
-
-**Última atualização**: 26 de Maio de 2026  
-**Versão**: 1.0.0-MVP  
-**Desenvolvido por**: Equipe DenebCorp
-
----
-
-<div align="center">
-
-**[⬆ Voltar ao topo](#-documentação-do-frontend---runas)**
-
-</div>
+- **[API Reference](../10-api-reference/README.md)**
+- **[Regras de Negócio](../11-regras-negocio/README.md)**
+- **[Arquitetura](../03-arquitetura/README.md)**
+- **[Como contribuir](../../.github/CONTRIBUTING.md)**

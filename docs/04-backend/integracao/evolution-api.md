@@ -1,410 +1,135 @@
-# 📱 Configuração da Evolution API (WhatsApp)
+# 📱 Evolution API (WhatsApp)
 
-Guia completo para configurar a Evolution API para envio de notificações via WhatsApp.
+Como o ERP envia notificações de WhatsApp pela Evolution API: quem chama, quando, com qual credencial, e como subir a Evolution no ambiente de desenvolvimento.
 
-## 📋 Sobre a Evolution API
+## 📋 Estado atual (conferido no código)
 
-A Evolution API é uma solução open-source para integração com WhatsApp Business API, permitindo:
-- ✅ Envio de mensagens de texto
-- ✅ Envio de imagens e documentos
-- ✅ Webhooks para recebimento de mensagens
-- ✅ Múltiplas instâncias
-- ✅ QR Code para autenticação
+- **Quem envia é o serviço de vendas, direto.** O envio está em `services/vendas/services/notificacao_service.py` (`NotificacaoService._enviar_mensagem`, linhas 338-389), que faz um `POST` HTTP para a Evolution API com `httpx`.
+- **O serviço `notificacoes` não participa.** O `services/notificacoes/main.py` só expõe `GET /health`; não há router, cliente Evolution nem consumidor de fila. O arquivo `services/notificacoes/integrations/evolution.py` citado em versões antigas deste guia **não existe**.
+- **Só texto.** O código chama um único endpoint da Evolution (`/message/sendText/{instance}`). Não há envio de imagem/documento nem recebimento de mensagens (webhook).
+- **A Evolution não roda em produção.** `docker-compose.prod.yml` não tem o serviço `evolution-api` (comentário nas linhas 494-495). No dev, ela fica atrás do profile `whatsapp`, porque a imagem `atendai/evolution-api` saiu do Docker Hub (`docker-compose.dev.yml:133-134`).
 
-## 🚀 Setup Inicial
+## 📨 Mensagens enviadas e quando
 
-### 1. A Evolution API já está no Docker Compose
+Todas são texto, montadas em `services/vendas/services/notificacao_service.py`. Uma falha no envio só gera log e não interrompe a operação que a disparou.
 
-O serviço já está configurado no `docker-compose.yml`:
+| Método | Disparado em | Telefone usado | Passa `empresa_id`? |
+|---|---|---|---|
+| `enviar_confirmacao_pedido` | Checkout da loja: `LojaService.processar_checkout` (`services/loja_service.py:530`) | `cliente_info['telefone']` | Sim |
+| `enviar_pagamento_confirmado` | `VendaService.confirmar_venda` (`services/venda_service.py:954`) | `venda.cliente_convidado_telefone` | Sim |
+| `enviar_pedido_separado` | `VendaService.separar_venda` (`services/venda_service.py:1127`) | `venda.cliente_convidado_telefone` | Sim |
+| `enviar_pedido_entregue` | `VendaService.entregar_venda` (`services/venda_service.py:1217`) | `venda.cliente_convidado_telefone` | Sim |
+| `enviar_pedido_cancelado` | Cancelamento automático por timeout de pagamento: `jobs/verificar_pagamentos_pendentes.py:227` | `venda.cliente_convidado_telefone` | **Não** (só a credencial global vale) |
+| `enviar_pedido_cancelado` | `jobs/verificar_timeouts_separacao.py:109`. Esse script não é agendado por nada (ver [jobs/README.md](../../../services/vendas/jobs/README.md)) | `venda.cliente_convidado_telefone` | **Não** |
 
-```yaml
-evolution-api:
-  image: atendai/evolution-api:latest
-  container_name: erp-evolution-api
-  environment:
-    DATABASE_PROVIDER: postgresql
-    DATABASE_CONNECTION_URI: postgresql://erp:erp@db-evolution:5432/evolution
-    AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
-  ports:
-    - "8080:8080"
-```
+Os caminhos da tabela são relativos a `services/vendas/`. Nenhum outro cancelamento (manual, por exemplo) envia WhatsApp.
 
-### 2. Configurar API Key
+O telefone é reduzido a dígitos e recebe o prefixo `55` quando não começa com ele (`_formatar_telefone`, linhas 20-37).
 
-No arquivo `.env`, defina uma API Key segura:
+## 🔑 De onde vem a credencial
+
+`credenciais_whatsapp(empresa_id)` em `services/vendas/services/configuracao_integracao_service.py:85` resolve, nesta ordem:
+
+1. **Credencial do tenant**: se existe `configuracao_integracao` da empresa com `whatsapp_ativo = true`, `evolution_url` e `evolution_api_key_enc`, usa essa URL, a chave (decifrada com `INTEGRACOES_SECRET_KEY`, ver `services/vendas/utils/crypto.py`) e `evolution_instance`.
+2. **Fallback global**: `EVOLUTION_API_URL` + `EVOLUTION_API_KEY` (+ `EVOLUTION_INSTANCE`) do `Settings` do vendas (`services/vendas/config.py:28-30`).
+3. Nenhuma das duas: log `evolution_api_nao_configurada` e a mensagem não sai.
+
+### Configuração por tenant (tela e API)
+
+- Tela: **Configurações > Integrações** (`/configuracoes/integracoes`, `frontend/src/pages/Configuracoes/IntegracoesPage.tsx`).
+- API: `GET`, `PUT` e `DELETE /integracoes` no gateway, só para admin (`api-gateway/routers/proxy.py:508-519`, `require_admin`), repassados ao router `services/vendas/routers/admin_integracao.py`.
+- Campos do `PUT`: `evolution_url`, `evolution_api_key`, `evolution_instance`, `whatsapp_ativo` (mais os campos de SMTP). O `GET` nunca devolve a chave; devolve só `evolution_api_key_configurado: bool`.
+- `DELETE` apaga a configuração, e o tenant volta ao fallback global.
+
+### Variáveis de ambiente: atenção aos nomes
+
+| Variável | Quem lê | Observação |
+|---|---|---|
+| `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE` | vendas (`config.py:28-30`) | Nenhum compose repassa essas ao container do vendas. |
+| `EVOLUTION_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE` | ninguém | O compose as injeta no **notificacoes** (`docker-compose.dev.yml:462-464`, `docker-compose.prod.yml:496-498`), cujo `Settings` não as declara. |
+| `EVOLUTION_API_KEY` | container `evolution-api` | Vira `AUTHENTICATION_API_KEY` (`docker-compose.dev.yml:158`, default `change-me`). |
+| `EVOLUTION_SERVER_URL` | container `evolution-api` | Vira `SERVER_URL` (`docker-compose.dev.yml:160`, default `http://localhost:8080`). |
+
+Na prática, o fallback global só funciona se `EVOLUTION_API_URL` e `EVOLUTION_API_KEY` chegarem ao processo do vendas por outro caminho. O `Settings` do vendas também lê um `.env` no diretório de trabalho (`env_file=".env"`). A CONFIRMAR: se algum ambiente fornece essas variáveis ao vendas. Sem isso, só funciona a credencial por tenant.
+
+## 🚀 Subir a Evolution no desenvolvimento
+
+O serviço `evolution-api` (`docker-compose.dev.yml:135-176`):
+
+- imagem `atendai/evolution-api:latest`, container `erp-evolution-api-dev`, profile `whatsapp`;
+- banco: o Postgres compartilhado `db`, schema `evolution` (`postgresql://erp:erp@db:5432/erp?schema=evolution`; o schema é criado por `postgres/init-schemas.sql`);
+- cache: Redis `redis://redis:6379/2`, prefixo `evolution`;
+- porta `8080:8080` publicada em todas as interfaces do host;
+- healthcheck: `wget` em `http://localhost:8080/`.
 
 ```bash
-# Gerar uma API Key
+# Chave da Evolution: defina EVOLUTION_API_KEY no .env da raiz (o .env.example mostra o formato)
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 
-# Adicionar no .env
-EVOLUTION_API_KEY=sua-api-key-aqui
-EVOLUTION_INSTANCE=runas
+# Subir (a imagem precisa estar disponível localmente ou em outro registry)
+docker compose -f docker-compose.dev.yml --profile whatsapp up -d evolution-api
+
+# Logs
+docker compose -f docker-compose.dev.yml logs -f evolution-api
 ```
 
-### 3. Subir a Evolution API
+De dentro da rede `erp-network`, a URL da Evolution é `http://evolution-api:8080`. É ela que vai em `evolution_url` na tela de Integrações (ou em `EVOLUTION_API_URL`, para o fallback global).
+
+## 📱 Conectar um número (API da própria Evolution)
+
+Os comandos abaixo usam endpoints da Evolution API, não do ERP. O código do ERP não os chama. A CONFIRMAR: o formato exato contra a versão da imagem em uso (`latest`), porque a v2 da Evolution exige campos extras em `instance/create`, como `integration`. Confira na [documentação oficial](https://doc.evolution-api.com/).
 
 ```bash
-# Subir apenas a Evolution API e seu banco
-docker-compose up -d evolution-api db-evolution
-
-# Verificar logs
-docker-compose logs -f evolution-api
-
-# Aguardar até ver: "Server started on port 8080"
-```
-
-### 4. Acessar a Interface
-
-Abra no navegador: http://localhost:8080
-
-## 📱 Conectar WhatsApp
-
-### Método 1: Via Interface Web
-
-1. Acesse http://localhost:8080
-2. Clique em "Create Instance"
-3. Nome da instância: `runas`
-4. Clique em "Create"
-5. Será exibido um QR Code
-6. Abra o WhatsApp no celular
-7. Vá em: **Configurações > Aparelhos conectados > Conectar um aparelho**
-8. Escaneie o QR Code
-9. Aguarde a conexão
-
-### Método 2: Via API
-
-```bash
-# 1. Criar instância
+# Criar instância
 curl -X POST http://localhost:8080/instance/create \
-  -H "apikey: sua-api-key-aqui" \
+  -H "apikey: SUA_CHAVE" \
   -H "Content-Type: application/json" \
-  -d '{
-    "instanceName": "runas",
-    "qrcode": true
-  }'
+  -d '{"instanceName": "runas", "qrcode": true}'
 
-# 2. Obter QR Code
-curl -X GET http://localhost:8080/instance/connect/runas \
-  -H "apikey: sua-api-key-aqui"
+# Obter o QR Code (base64) para escanear em WhatsApp > Aparelhos conectados
+curl http://localhost:8080/instance/connect/runas -H "apikey: SUA_CHAVE"
 
-# Resposta incluirá o QR Code em base64
+# Estado da conexão
+curl http://localhost:8080/instance/connectionState/runas -H "apikey: SUA_CHAVE"
+
+# Listar instâncias (também serve para testar a chave)
+curl http://localhost:8080/instance/fetchInstances -H "apikey: SUA_CHAVE"
 ```
 
-## 🧪 Testar Envio de Mensagem
+A CONFIRMAR: se a imagem em uso tem interface web (manager) e em qual caminho.
 
-### Via cURL
+## 🧪 Testar o envio (mesma chamada que o vendas faz)
+
+`_enviar_mensagem` faz exatamente isto: `POST {url}/message/sendText/{instance}`, header `apikey`, corpo `{"number", "text"}`, timeout de 10s. Só `200` ou `201` contam como sucesso (`notificacao_service.py:359-378`).
 
 ```bash
 curl -X POST http://localhost:8080/message/sendText/runas \
-  -H "apikey: sua-api-key-aqui" \
+  -H "apikey: SUA_CHAVE" \
   -H "Content-Type: application/json" \
-  -d '{
-    "number": "5511999999999",
-    "text": "Olá! Esta é uma mensagem de teste do ERP Runas."
-  }'
-```
-
-### Via Python
-
-```python
-import httpx
-import asyncio
-
-async def testar_envio():
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "http://localhost:8080/message/sendText/runas",
-            headers={
-                "apikey": "sua-api-key-aqui",
-                "Content-Type": "application/json"
-            },
-            json={
-                "number": "5511999999999",
-                "text": "Teste do ERP Runas"
-            }
-        )
-        print(response.json())
-
-asyncio.run(testar_envio())
-```
-
-## 📝 Templates de Mensagens
-
-### Pedido Confirmado
-
-```python
-def mensagem_pedido_confirmado(pedido_id: str, total: float) -> str:
-    return f"""
-🎉 *Pedido Confirmado!*
-
-Seu pedido #{pedido_id} foi confirmado com sucesso!
-
-💰 Total: R$ {total:.2f}
-
-Obrigado por comprar conosco! 🛒
-    """.strip()
-```
-
-### Pedido Cancelado
-
-```python
-def mensagem_pedido_cancelado(pedido_id: str, motivo: str) -> str:
-    return f"""
-❌ *Pedido Cancelado*
-
-Seu pedido #{pedido_id} foi cancelado.
-
-Motivo: {motivo}
-
-Se tiver dúvidas, entre em contato conosco.
-    """.strip()
-```
-
-### Lembrete de Cobrança
-
-```python
-def mensagem_cobranca_lembrete(valor: float, data_vencimento: str) -> str:
-    return f"""
-📅 *Lembrete de Pagamento*
-
-Olá! Seu pagamento de *R$ {valor:.2f}* vence em 3 dias.
-
-📆 Data de vencimento: {data_vencimento}
-
-Para evitar bloqueios, realize o pagamento até a data.
-
-Obrigado! 🙏
-    """.strip()
-```
-
-### Cobrança Vencida
-
-```python
-def mensagem_cobranca_vencida(valor: float, dias_atraso: int) -> str:
-    return f"""
-⚠️ *Pagamento Vencido*
-
-Seu pagamento de *R$ {valor:.2f}* está vencido há {dias_atraso} dia(s).
-
-Por favor, regularize sua situação o quanto antes para evitar bloqueios.
-
-Entre em contato para mais informações.
-    """.strip()
-```
-
-### Conta Quitada
-
-```python
-def mensagem_conta_quitada(valor: float) -> str:
-    return f"""
-✅ *Pagamento Confirmado!*
-
-Recebemos seu pagamento de *R$ {valor:.2f}*.
-
-Sua conta está quitada! 🎉
-
-Obrigado pela confiança! 💚
-    """.strip()
-```
-
-### Estoque Mínimo (Alerta Interno)
-
-```python
-def mensagem_estoque_minimo(sku: str, quantidade: int, minimo: int) -> str:
-    return f"""
-⚠️ *ALERTA DE ESTOQUE*
-
-Produto: {sku}
-Quantidade atual: {quantidade}
-Quantidade mínima: {minimo}
-
-Reabastecer urgentemente!
-    """.strip()
-```
-
-## 🔧 Configuração no Serviço de Notificações
-
-O cliente Evolution já está implementado em:
-`services/notificacoes/integrations/evolution.py`
-
-### Uso no Service
-
-```python
-from integrations.evolution import EvolutionAPIClient
-
-class NotificacaoService:
-    def __init__(self):
-        self.evolution = EvolutionAPIClient()
-    
-    async def enviar_notificacao(
-        self,
-        tipo: TipoNotificacao,
-        destinatario: str,
-        dados: dict
-    ):
-        # Gerar mensagem baseada no tipo
-        mensagem = self._gerar_mensagem(tipo, dados)
-        
-        # Enviar via Evolution API
-        try:
-            await self.evolution.enviar_mensagem(
-                numero=destinatario,
-                mensagem=mensagem
-            )
-            return True
-        except Exception as e:
-            log.error("evolution.send_failed", error=str(e))
-            return False
-```
-
-## 🔄 Webhooks (Opcional)
-
-Para receber mensagens dos clientes:
-
-### 1. Configurar Webhook
-
-```bash
-curl -X POST http://localhost:8080/webhook/set/runas \
-  -H "apikey: sua-api-key-aqui" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "http://api-gateway:8000/webhooks/whatsapp",
-    "events": ["messages.upsert"]
-  }'
-```
-
-### 2. Criar Endpoint no Gateway
-
-```python
-@app.post("/webhooks/whatsapp")
-async def webhook_whatsapp(request: Request):
-    """Recebe mensagens do WhatsApp."""
-    data = await request.json()
-    
-    # Processar mensagem
-    if data.get("event") == "messages.upsert":
-        message = data["data"]["message"]
-        from_number = message["key"]["remoteJid"]
-        text = message["message"]["conversation"]
-        
-        # Processar comando
-        # Ex: "SALDO" -> retorna saldo do cliente
-        
-    return {"status": "ok"}
+  -d '{"number": "5511999999999", "text": "Teste do ERP Runas"}'
 ```
 
 ## 🐛 Troubleshooting
 
-### Problema: QR Code não aparece
+Eventos de log do vendas, emitidos por `notificacao_service.py`:
 
-**Solução**:
-```bash
-# Verificar logs
-docker-compose logs evolution-api
+| Log | Significado |
+|---|---|
+| `evolution_api_nao_configurada` | Nem credencial do tenant nem fallback global. Configure em Integrações, com `whatsapp_ativo` ligado. |
+| `evolution_api_erro` | A Evolution respondeu com status diferente de 200/201 (`status_code` e `response` vêm no log). |
+| `erro_enviar_mensagem_evolution` | Exceção de rede ou timeout (ex.: container `evolution-api` fora do ar, que é o caso em produção). |
 
-# Recriar instância
-curl -X DELETE http://localhost:8080/instance/delete/runas \
-  -H "apikey: sua-api-key-aqui"
-
-curl -X POST http://localhost:8080/instance/create \
-  -H "apikey: sua-api-key-aqui" \
-  -H "Content-Type: application/json" \
-  -d '{"instanceName": "runas", "qrcode": true}'
-```
-
-### Problema: Mensagens não são enviadas
-
-**Solução**:
-```bash
-# 1. Verificar se instância está conectada
-curl -X GET http://localhost:8080/instance/connectionState/runas \
-  -H "apikey: sua-api-key-aqui"
-
-# Deve retornar: {"state": "open"}
-
-# 2. Verificar logs
-docker-compose logs -f evolution-api
-
-# 3. Reconectar WhatsApp
-# Escanear QR Code novamente
-```
-
-### Problema: Instância desconecta frequentemente
-
-**Solução**:
-- Certifique-se de que o celular está com internet estável
-- Não use o WhatsApp Web em outro lugar simultaneamente
-- Mantenha o WhatsApp atualizado no celular
-
-### Problema: Erro de autenticação
-
-**Solução**:
-```bash
-# Verificar se API Key está correta no .env
-cat .env | grep EVOLUTION_API_KEY
-
-# Testar API Key
-curl -X GET http://localhost:8080/instance/fetchInstances \
-  -H "apikey: sua-api-key-aqui"
-```
-
-## 📊 Monitoramento
-
-### Verificar Status da Instância
-
-```bash
-curl -X GET http://localhost:8080/instance/connectionState/runas \
-  -H "apikey: sua-api-key-aqui"
-```
-
-### Listar Todas as Instâncias
-
-```bash
-curl -X GET http://localhost:8080/instance/fetchInstances \
-  -H "apikey: sua-api-key-aqui"
-```
-
-### Logs em Tempo Real
-
-```bash
-docker-compose logs -f evolution-api
-```
+- Cancelamento por timeout não notificou, mas o tenant tem WhatsApp configurado: esperado. Os jobs chamam `enviar_pedido_cancelado` sem `empresa_id`, então só o fallback global é tentado.
+- Cliente logado não recebeu "pagamento confirmado", "separado" ou "entregue": essas mensagens usam só `cliente_convidado_telefone` da venda.
+- Para conferir a chave, não abra o `.env`. Teste com `instance/fetchInstances` (acima).
 
 ## 🔐 Segurança
 
-### Boas Práticas
+- A chave por tenant é gravada cifrada (`evolution_api_key_enc`). Sem `INTEGRACOES_SECRET_KEY`, a gravação falha em vez de salvar texto plano (`services/vendas/utils/crypto.py`).
+- A API nunca devolve a chave. A tela mostra só se há uma configurada.
+- No dev, a porta 8080 fica publicada em todas as interfaces do host (`"8080:8080"`). Não exponha a máquina com a chave padrão `change-me`.
 
-1. **Nunca exponha a API Key**
-   - Use variáveis de ambiente
-   - Não commite no Git
-   - Rotacione periodicamente
+## 📚 Documentação oficial
 
-2. **Restrinja acesso à porta 8080**
-   - Em produção, use apenas rede interna
-   - Configure firewall
-
-3. **Use HTTPS em produção**
-   - Configure reverse proxy (Nginx)
-   - Obtenha certificado SSL
-
-4. **Valide números de telefone**
-   - Sempre use formato E.164
-   - Valide antes de enviar
-
-## 📚 Documentação Oficial
-
-- **Evolution API**: https://doc.evolution-api.com/
-- **GitHub**: https://github.com/EvolutionAPI/evolution-api
-- **WhatsApp Business API**: https://developers.facebook.com/docs/whatsapp
-
-## 🆘 Suporte
-
-Para problemas com a Evolution API:
-- Issues no GitHub: https://github.com/EvolutionAPI/evolution-api/issues
-- Documentação: https://doc.evolution-api.com/
-
----
-
-**Última atualização**: 2026-05-14  
-**Versão**: 1.0.0
+- Evolution API: https://doc.evolution-api.com/
+- GitHub: https://github.com/EvolutionAPI/evolution-api

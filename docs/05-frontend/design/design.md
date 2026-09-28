@@ -2,51 +2,42 @@
 
 ## Overview
 
-O Frontend do ERP Runas é uma aplicação web moderna construída com React, TypeScript e Bootstrap, projetada para fornecer uma interface intuitiva e responsiva para gerenciamento de comércio de alimentos e bebidas.
+O frontend do ERP Runas é uma SPA em React + TypeScript, com Bootstrap/React Bootstrap e SCSS próprio (dark-first), servida pelo Vite na porta 3000 em dev e por nginx (porta 80 do container) em produção, falando com o backend FastAPI exclusivamente pelo API Gateway.
 
-**Características principais:**
-- Design minimalista e UI/UX agradável
-- Totalmente responsivo (mobile-first approach)
-- Autenticação JWT com refresh token automático
-- Suporte a diferentes roles (ADMIN, OPERADOR)
-- Módulos separados por funcionalidade
-- Integração com backend FastAPI via API Gateway
-- Gerenciamento de estado com Context API + React Query
-- Validação de formulários com React Hook Form + Zod
+**Características (conferidas no código):**
+- Tema escuro único, com tokens em `frontend/src/styles/variables.scss`
+- Autenticação por cookie HTTP-only (`withCredentials: true` em `frontend/src/services/api/axios.ts`)
+- Três papéis: `ADMIN`, `OPERADOR` e `SUPER_ADMIN` (`frontend/src/types/auth.ts`)
+- Estado de servidor com TanStack React Query; estado de sessão com Context API (`AuthContext`)
+- Formulários com React Hook Form + Zod
+- Loja online pública em `/c/:empresaSlug`, fora do layout autenticado
 
 ## Tech Stack
 
-### Core
-- **React** 18.2+ - Library UI
-- **TypeScript** 5.0+ - Type safety
-- **Vite** 4.0+ - Build tool e dev server
-- **React Router** 6.0+ - Roteamento
+Versões conforme `frontend/package.json` (faixas semver declaradas, não a versão instalada):
 
-### UI/Styling
-- **Bootstrap** 5.3+ - Framework CSS
-- **React Bootstrap** 2.8+ - Componentes React
-- **React Icons** 4.10+ - Ícones
-- **SASS** - Preprocessador CSS
+| Área | Biblioteca | Versão declarada |
+|------|-----------|------------------|
+| UI | `react`, `react-dom` | ^19.3.0 |
+| Linguagem | `typescript` | ^5.2.2 |
+| Build/dev server | `vite` | ^8.3.0 |
+| Roteamento | `react-router-dom` | ^7.18.4 |
+| CSS | `bootstrap` | ^5.3.2 |
+| Componentes | `react-bootstrap` | ^2.9.1 |
+| Ícones | `react-icons` (conjunto `fi`) | ^5.7.0 |
+| Pré-processador | `sass` | ^1.104.1 |
+| Server state | `@tanstack/react-query` | ^5.103.1 |
+| Formulários | `react-hook-form` + `@hookform/resolvers` | ^7.88.0 / ^5.9.1 |
+| Validação | `zod` | ^4.6.5 |
+| HTTP | `axios` | ^1.20.0 |
+| Datas | `date-fns` | ^4.4.0 |
+| Toasts | `react-toastify` | ^11.1.0 |
+| Gráficos | `chart.js` + `react-chartjs-2` | ^4.4.1 / ^5.2.0 |
+| Testes | `vitest` + Testing Library + `jsdom` | ^5.0.1 |
 
-### State Management
-- **React Query** 4.0+ - Server state
-- **Context API** - Global state (auth, theme)
-- **Zustand** (opcional) - Client state complexo
-
-### Forms & Validation
-- **React Hook Form** 7.45+ - Gerenciamento de formulários
-- **Zod** 3.21+ - Schema validation
-- **@hookform/resolvers** - Integração RHF + Zod
-
-### HTTP & API
-- **Axios** 1.4+ - HTTP client
-- **Axios Interceptors** - Token refresh automático
-
-### Utils
-- **date-fns** 2.30+ - Manipulação de datas
-- **react-toastify** 9.1+ - Notificações toast
-- **react-loading-skeleton** 3.3+ - Loading states
-- **chart.js** + **react-chartjs-2** - Gráficos dashboard
+Observações:
+- Não há Zustand nem outra lib de estado cliente.
+- `react-loading-skeleton` está nas dependências, mas nenhum arquivo em `frontend/src/` o importa.
 
 ## Architecture
 
@@ -55,285 +46,192 @@ O Frontend do ERP Runas é uma aplicação web moderna construída com React, Ty
 ```
 Browser
   ↓
-React App (Port 3000)
+Frontend (dev: Vite na porta 3000; prod: nginx na porta 80 do container frontend-prod)
+  ↓  /api/*
+API Gateway (porta 8000)
   ↓
-API Client (Axios)
-  ↓
-API Gateway (Port 8000)
-  ↓
-Microsserviços (8001-8006)
+Microsserviços (8001-8007)
 ```
+
+O `baseURL` do axios vem de `VITE_API_URL`, com padrão `/api` (`frontend/src/config/env.ts`). Em dev, o Vite faz proxy de `/api` para `VITE_API_GATEWAY_TARGET` (padrão `http://api-gateway:8000`), removendo o prefixo `/api`; `VITE_USE_PROXY=false` desliga o proxy (`frontend/vite.config.ts`). Em produção quem faz esse papel é o `frontend/nginx.conf`: `location /api/` tira o prefixo e encaminha para `api-gateway-prod:8000`.
 
 ### Component Architecture
 
+Composição real de `frontend/src/main.tsx` e `frontend/src/App.tsx`:
+
 ```
-App
+QueryClientProvider (React Query)
 ├── AuthProvider (Context)
-├── QueryClientProvider (React Query)
-├── ToastContainer
-└── Router
-    ├── PublicRoute (Login)
-    └── PrivateRoute (MainLayout)
-        ├── Navbar
-        ├── Sidebar
-        ├── Content
-        │   ├── Dashboard
-        │   ├── Clientes
-        │   ├── Produtos
-        │   ├── Vendas
-        │   ├── Estoque
-        │   └── Financeiro
-        └── Footer
+│   ├── ErrorBoundary
+│   │   └── App → BrowserRouter → Suspense (fallback LoadingScreen)
+│   │       ├── Rotas públicas: /login, /forgot-password (PublicRoute), /reset-password
+│   │       ├── Loja pública: /c/:empresaSlug/...
+│   │       ├── Callbacks OAuth: /auth/callback/google, /auth/callback/microsoft
+│   │       └── "/" → ProtectedRoute → MainLayout
+│   │           ├── Navbar
+│   │           ├── Sidebar
+│   │           └── main.main-content → ErrorBoundary → <Outlet />
+│   └── ToastContainer (theme="dark", autoClose 3000)
+└── ReactQueryDevtools (só com VITE_ENABLE_DEVTOOLS=true)
 ```
+
+Não existe Footer nem Breadcrumbs. Rotas desconhecidas redirecionam para `/dashboard` (não há página 404).
+
+`ProtectedRoute` decide o destino com `escolherPorta()` (`frontend/src/config/host.ts`): o `SUPER_ADMIN` vai para `/plataforma` em qualquer rota que não comece com `/plataforma` ou `/perfil`, os outros papéis vão para `/dashboard` se pedirem `/plataforma*` (só em dev: em produção essas rotas nem são registradas fora do host do painel), e quem está no host errado vê a tela "Endereço errado" (`PortaErrada`, em `App.tsx`).
+
+**Separação por host.** O mesmo bundle serve o ERP dos lojistas e o painel da plataforma. `ehPainelPlataforma` é verdadeiro quando o primeiro label de `window.location.hostname` é `VITE_HOST_PLATAFORMA` (padrão `admin`). Com a separação ativa, SUPER_ADMIN fora do host do painel ou outro papel dentro dele recebe `PortaErrada` — uma tela, não um redirect, porque o cookie de sessão é host-only e não iria para o outro host. `/perfil` vale nos dois lados. Em produção, fora do host do painel, as rotas `/plataforma*` não são registradas (em dev, em `localhost`, continuam), e o `nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.`. Em dev (`import.meta.env.DEV`) a separação só liga quando o host já é o do painel: as duas aplicações convivem em `localhost` e `admin.localhost:3000` exercita o caminho de produção. A separação é só da interface: `/api` é relativo (same-origin em qualquer host) e `/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`. Em produção desde 2026-09-28 (o PR #113 chegou à `main` pelo PR #114).
+
+Rotas com restrição de papel usam `RoleProtectedRoute` (`frontend/src/components/common/RoleProtectedRoute.tsx`):
+
+| Rota | Papéis |
+|------|--------|
+| `/estoque`, `/estoque/:id`, `/vendas` | ADMIN, OPERADOR |
+| `/financeiro`, `/configuracoes/empresa`, `/configuracoes/usuarios`, `/configuracoes/integracoes` | ADMIN |
+| `/plataforma`, `/plataforma/tenants` | SUPER_ADMIN |
 
 ### Data Flow
 
 ```
-Component
-  ↓ (useQuery/useMutation)
+Componente
+  ↓ useQuery / useMutation (hooks em src/hooks/)
 React Query
-  ↓ (API call)
-API Service
-  ↓ (axios)
-Axios Interceptor (add token)
+  ↓
+Serviço (src/services/api/*Api.ts)
+  ↓ instância `api` (axios, withCredentials)
+Interceptor de request (Idempotency-Key em POST/PUT/PATCH/DELETE)
   ↓
 API Gateway
+  ↓ resposta
+Interceptor de response (401 → /login; 502/503/504 em GET/HEAD/OPTIONS → até 3 retries)
   ↓
-Backend
-  ↓ (response)
-React Query Cache
-  ↓ (auto update)
-Component Re-render
+Cache do React Query → re-render
 ```
 
 ## Folder Structure
 
+Estrutura real de `frontend/` (resumida):
+
 ```
 frontend/
-├── public/
-│   ├── index.html
-│   ├── favicon.ico
-│   └── logo.png
+├── public/                 # favicon-32/48/180.png, test.html
 ├── src/
 │   ├── components/
-│   │   ├── common/
-│   │   │   ├── Button/
-│   │   │   │   ├── Button.tsx
-│   │   │   │   ├── Button.module.scss
-│   │   │   │   └── index.ts
-│   │   │   ├── Input/
-│   │   │   ├── Modal/
-│   │   │   ├── Table/
-│   │   │   ├── Pagination/
-│   │   │   ├── Loading/
-│   │   │   ├── ErrorBoundary/
-│   │   │   ├── Card/
-│   │   │   ├── Badge/
-│   │   │   └── ConfirmDialog/
-│   │   ├── layout/
-│   │   │   ├── Navbar/
-│   │   │   ├── Sidebar/
-│   │   │   ├── Footer/
-│   │   │   ├── MainLayout/
-│   │   │   └── Breadcrumbs/
-│   │   ├── clientes/
-│   │   │   ├── ClienteForm/
-│   │   │   ├── ClienteList/
-│   │   │   ├── ClienteCard/
-│   │   │   ├── EnderecoForm/
-│   │   │   └── CreditoManager/
-│   │   ├── produtos/
-│   │   │   ├── ProdutoForm/
-│   │   │   ├── ProdutoList/
-│   │   │   ├── VarianteForm/
-│   │   │   ├── CategoriaSelect/
-│   │   │   └── FornecedorManager/
-│   │   ├── vendas/
-│   │   │   ├── PedidoList/
-│   │   │   ├── PedidoDetail/
-│   │   │   ├── StatusBadge/
-│   │   │   └── PagamentoForm/
-│   │   ├── estoque/
-│   │   │   ├── EstoqueList/
-│   │   │   ├── MovimentacaoForm/
-│   │   │   ├── InventarioForm/
-│   │   │   └── AlertaEstoque/
-│   │   └── financeiro/
-│   │       ├── ContaList/
-│   │       ├── ContaDetail/
-│   │       ├── PagamentoForm/
-│   │       └── ContasVencidas/
-│   ├── pages/
-│   │   ├── Login/
-│   │   ├── Dashboard/
-│   │   ├── Clientes/
-│   │   │   ├── ClientesPage.tsx
-│   │   │   ├── ClienteDetailPage.tsx
-│   │   │   └── ClienteFormPage.tsx
-│   │   ├── Produtos/
-│   │   ├── Vendas/
-│   │   ├── Estoque/
-│   │   ├── Financeiro/
-│   │   └── NotFound/
+│   │   ├── common/         # ErrorBoundary, MaskedInput, Modal, ResponsiveCard,
+│   │   │                   # ResponsiveContainer, ResponsiveTable, RoleProtectedRoute.tsx
+│   │   ├── layout/         # MainLayout, Navbar, Sidebar
+│   │   └── clientes/ produtos/ estoque/ vendas/ financeiro/   # (vazias)
+│   ├── pages/              # Auth, Clientes, Configuracoes, Dashboard, Estoque, Financeiro,
+│   │                       # Login, LojaOnline, LojaOnlinePublico, Perfil, Plataforma,
+│   │                       # Produtos, Vendas
 │   ├── services/
-│   │   ├── api/
-│   │   │   ├── axios.ts
-│   │   │   ├── clientesApi.ts
-│   │   │   ├── produtosApi.ts
-│   │   │   ├── vendasApi.ts
-│   │   │   ├── estoqueApi.ts
-│   │   │   └── financeiroApi.ts
-│   │   └── auth/
-│   │       ├── authService.ts
-│   │       └── tokenService.ts
-│   ├── hooks/
-│   │   ├── useAuth.ts
-│   │   ├── useClientes.ts
-│   │   ├── useProdutos.ts
-│   │   ├── useVendas.ts
-│   │   ├── useEstoque.ts
-│   │   ├── useFinanceiro.ts
-│   │   ├── useDebounce.ts
-│   │   └── usePermissions.ts
-│   ├── contexts/
-│   │   ├── AuthContext.tsx
-│   │   └── ThemeContext.tsx
-│   ├── types/
-│   │   ├── cliente.ts
-│   │   ├── produto.ts
-│   │   ├── venda.ts
-│   │   ├── estoque.ts
-│   │   ├── financeiro.ts
-│   │   ├── auth.ts
-│   │   └── common.ts
-│   ├── utils/
-│   │   ├── validators.ts
-│   │   ├── formatters.ts
-│   │   ├── constants.ts
-│   │   └── helpers.ts
-│   ├── config/
-│   │   └── env.ts
-│   ├── styles/
-│   │   ├── global.scss
-│   │   ├── variables.scss
-│   │   └── mixins.scss
+│   │   ├── api/            # axios.ts, apiPublica.ts, clientesApi.ts, empresaApi.ts,
+│   │   │                   # estoqueApi.ts, integracoesApi.ts, lojaOnlineApi.ts,
+│   │   │                   # plataformaApi.ts, produtosApi.ts, usuariosApi.ts
+│   │   └── auth/           # authService.ts, tokenService.ts
+│   ├── hooks/              # useAuth, useCarrinho, useClientes, useEmpresa, useEstoque,
+│   │                       # useIntegracoes, useLojaOnline, usePlataforma, useProdutos, useUsuarios
+│   ├── contexts/           # AuthContext.tsx
+│   ├── types/              # auth, clientes, common, empresa, estoque, integracao,
+│   │                       # plataforma, produtos, usuario
+│   ├── utils/              # errorLogger.ts, masks.ts, toast.ts, validators.ts
+│   ├── config/             # env.ts, host.ts (+ __tests__/host.test.ts)
+│   ├── styles/             # global.scss, variables.scss, mixins.scss
+│   ├── img/                # logo.png, logo1.png, background.png
+│   ├── test/setup.ts
 │   ├── App.tsx
 │   ├── main.tsx
 │   └── vite-env.d.ts
 ├── .env.example
-├── .env.development
-├── .env.production
-├── .gitignore
+├── Dockerfile / Dockerfile.dev / nginx.conf
+├── eslint.config.js / .prettierrc
+├── index.html
 ├── package.json
-├── tsconfig.json
+├── tsconfig.json / tsconfig.node.json
 ├── vite.config.ts
-└── README.md
+└── vitest.config.ts
 ```
+
+As pastas de domínio em `components/` não têm arquivos; os componentes de cada módulo vivem dentro de `pages/<Módulo>/`. Não há `ThemeContext` nem `usePermissions`; não há `vendasApi.ts` nem `financeiroApi.ts`.
 
 ## Core Patterns
 
-### 1. Authentication Flow
+### 1. Autenticação
 
 ```typescript
-// AuthContext.tsx
-interface AuthContextType {
+// frontend/src/types/auth.ts
+export interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  setAuthUser: (user: User) => void;
+  hasRole: (role: UserRole) => boolean;
 }
-
-// Token refresh automático via Axios Interceptor
-axios.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      const refreshed = await refreshToken();
-      if (refreshed) {
-        return axios(error.config);
-      }
-      logout();
-    }
-    return Promise.reject(error);
-  }
-);
 ```
 
-### 2. API Service Pattern
+- No boot, `AuthProvider` chama `GET /auth/me` (exceto em `/c/*`, a loja pública).
+- `authService` usa `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/forgot-password` e `POST /auth/reset-password`.
+- Os tokens ficam em cookies HTTP-only definidos pelo backend. Em `tokenService`, a única função com efeito é `clearTokens()` (limpa chaves legadas do `localStorage`); os getters devolvem `null`, os setters só emitem aviso e estão marcados como deprecated.
+- Em 401 (fora de `/auth/login`, `/auth/register` e `/auth/me`) o interceptor limpa o `localStorage` legado e redireciona para `/login`. O frontend **não** chama `POST /auth/refresh`, embora a rota exista no gateway (`api-gateway/routers/auth.py`).
+
+### 2. Serviço de API
+
+Cada módulo tem um objeto de serviço que é o único lugar que conhece URLs. Exemplo real (`frontend/src/services/api/clientesApi.ts`, trecho):
 
 ```typescript
-// clientesApi.ts
 export const clientesApi = {
-  list: (params: ListParams) => 
-    axios.get<PaginatedResponse<Cliente>>('/clientes', { params }),
-  
-  getById: (id: string) => 
-    axios.get<Cliente>(`/clientes/${id}`),
-  
-  create: (data: ClienteCreate) => 
-    axios.post<Cliente>('/clientes', data),
-  
-  update: (id: string, data: ClienteUpdate) => 
-    axios.patch<Cliente>(`/clientes/${id}`, data),
-  
-  delete: (id: string) => 
-    axios.delete(`/clientes/${id}`),
+  listar(params: ListarClientesParams, config?: AxiosRequestConfig) {
+    return api.get<ClientesListResult>('/clientes', { params, ...config }).then((r) => r.data);
+  },
+  obter(id: string) {
+    return api.get<Cliente>(`/clientes/${id}`).then((r) => r.data);
+  },
+  criar(data: Partial<Cliente>) {
+    return api.post<Cliente>('/clientes', data).then((r) => r.data);
+  },
+  atualizar(id: string, data: Partial<Cliente>) {
+    return api.patch<Cliente>(`/clientes/${id}`, data).then((r) => r.data);
+  },
+  desativar(id: string) {
+    return api.delete(`/clientes/${id}`).then(() => undefined);
+  },
+  // ... reativar, endereços, crédito, bloquear/desbloquear
 };
 ```
 
-### 3. React Query Hook Pattern
+### 3. Hook React Query
 
 ```typescript
-// useClientes.ts
-export const useClientes = (params: ListParams) => {
-  return useQuery({
+// frontend/src/hooks/useClientes.ts
+export const useClientes = (params: ListarClientesParams) =>
+  useQuery({
     queryKey: ['clientes', params],
-    queryFn: () => clientesApi.list(params),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: ({ signal }) => clientesApi.listar(params, { signal }),
+    placeholderData: keepPreviousData,
   });
-};
 
-export const useCreateCliente = () => {
+export const useDesativarCliente = () => {
   const queryClient = useQueryClient();
-  
   return useMutation({
-    mutationFn: clientesApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['clientes']);
-      toast.success('Cliente criado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
+    mutationFn: (id: string) => clientesApi.desativar(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['clientes'] }),
   });
 };
 ```
 
-### 4. Form Validation Pattern
+### 4. Validação de formulário
 
-```typescript
-// ClienteForm.tsx
-const clienteSchema = z.object({
-  nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-  cpf: z.string().refine(validateCPF, 'CPF inválido'),
-  telefone: z.string().refine(validatePhone, 'Telefone inválido'),
-  email: z.string().email('Email inválido').optional(),
-});
-
-type ClienteFormData = z.infer<typeof clienteSchema>;
-
-const { register, handleSubmit, formState: { errors } } = useForm<ClienteFormData>({
-  resolver: zodResolver(clienteSchema),
-});
-```
+React Hook Form + `zodResolver` nas páginas de Login, Perfil, Clientes (form, endereços, crédito), Produtos (form), Configurações (empresa, usuários, integrações) e Plataforma. Em Configurações e Plataforma os schemas ficam em arquivos próprios (`empresaSchema.ts`, `usuarioSchema.ts`, `integracoesSchema.ts`, `tenantSchema.ts`, `assinaturaSchema.ts`), com testes em `__tests__/`.
 
 ## UI/UX Design Principles
 
-> **Importante:** Consulte o **Design System completo** para detalhes sobre cores, tipografia, componentes e filosofia visual:
-> - **[Cores e Tipografia](./cores-tipografia.md)** - Paleta, tipografia, espaçamentos, sombras
-> - **[Componentes](./componentes.md)** - Botões, cards, inputs, modais, tabelas, badges
-> - **[Layouts e Responsividade](./layouts.md)** - Breakpoints, grid, mobile first, filosofia visual
+> Detalhes do design system nos documentos irmãos:
+> - **[Cores e Tipografia](./cores-tipografia.md)**
+> - **[Componentes](./componentes.md)**
+> - **[Layouts e Responsividade](./layouts.md)**
+>
+> A fonte da verdade é o SCSS em `frontend/src/styles/`; se um documento divergir dele, vale o código.
 
 ### Runas Brand Identity
 
@@ -351,220 +249,175 @@ const { register, handleSubmit, formState: { errors } } = useForm<ClienteFormDat
 
 ### Color Palette (Dark Mode First)
 
+Valores de `frontend/src/styles/variables.scss`:
+
 ```scss
 // Background
-$background: #0F1115;           // Fundo principal
-$surface: #171A21;              // Cards, modais
-$surface-hover: #1F2430;        // Hover states
+$background: #080A0F;
+$surface: #10141D;
+$surface-hover: #171C28;
+$surface-elevated: #1A202C;
 
-// Primary - Azul (ações principais)
-$primary: #3B82F6;              // Azul vibrante
-$primary-hover: #2563EB;
-$primary-light: rgba(59, 130, 246, 0.1);
+// Primary - ciano/azul
+$primary: #0EA5E9;
+$primary-hover: #38BDF8;
+$primary-active: #0284C7;
+$primary-light: rgba(14, 165, 233, 0.15);
 
-// Secondary - Ciano (modernidade)
-$secondary: #22D3EE;            // Ciano vibrante
-$secondary-light: rgba(34, 211, 238, 0.1);
-
-// Accent - Dourado (RARO - máximo 3x por tela)
-$accent-gold: #D4A017;          // Apenas destaques importantes
-$accent-gold-light: rgba(212, 160, 23, 0.1);
+// Secondary - índigo
+$secondary: #6366F1;
+$secondary-hover: #818CF8;
+$secondary-light: rgba(99, 102, 241, 0.15);
 
 // Text
-$text-primary: #E5E7EB;         // Texto principal
-$text-secondary: #94A3B8;       // Texto secundário
-$text-tertiary: #64748B;        // Labels, hints
+$text-primary: #FFFFFF;
+$text-secondary: #94A3B8;
+$text-tertiary: #64748B;
+$text-disabled: #475569;
 
 // Semantic
-$success: #10B981;              // Verde - confirmações
-$warning: #F59E0B;              // Laranja - avisos
-$error: #EF4444;                // Vermelho - APENAS erros críticos
-$info: #22D3EE;                 // Ciano
+$success: #10B981;
+$warning: #F59E0B;
+$error: #EF4444;   // alias: $danger
+$info: #3B82F6;
+
+// Bordas
+$border-subtle: rgba(255, 255, 255, 0.04);
+$border-default: rgba(255, 255, 255, 0.08);
+$border-hover: rgba(255, 255, 255, 0.15);
+$border-strong: rgba(255, 255, 255, 0.25);
+
+// Glassmorphism
+$glass-bg: rgba(16, 20, 29, 0.65);
+$glass-border: rgba(255, 255, 255, 0.08);
+$glass-blur: blur(16px);
 ```
 
-**Regras importantes:**
-- Dourado: máximo 3 usos por tela, apenas para destaques premium
-- Vermelho: APENAS para erros críticos, não para decoração
-- Use azul/ciano para status neutros e positivos
+**Regras:**
+- Vermelho (`$error`) apenas para erros e ações destrutivas, não para decoração.
+- Não existe token de dourado em `variables.scss`; um acento dourado não faz parte da paleta atual.
 
 ### Typography
 
 ```scss
-$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-$font-size-base: 1rem;      // 16px
-$font-size-sm: 0.875rem;    // 14px
-$font-size-lg: 1.125rem;    // 18px
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+$font-family-monospace: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 
-$h1-font-size: 2.5rem;      // 40px
-$h2-font-size: 2rem;        // 32px
-$h3-font-size: 1.75rem;     // 28px
-$h4-font-size: 1.5rem;      // 24px
+$font-size-xs: 0.75rem;     // 12px
+$font-size-sm: 0.875rem;    // 14px
+$font-size-base: 0.9375rem; // 15px
+$font-size-lg: 1.0625rem;   // 17px
+$font-size-xl: 1.25rem;     // 20px
+$font-size-2xl: 1.5rem;     // 24px
+$font-size-3xl: 2rem;       // 32px
+
+$h1-font-size: 2.5rem;
+$h2-font-size: 2rem;
+$h3-font-size: 1.75rem;
+$h4-font-size: 1.5rem;
 ```
+
+Inter e JetBrains Mono são carregadas do Google Fonts no topo de `frontend/src/styles/global.scss`.
 
 ### Spacing
 
 ```scss
-$spacer: 1rem;  // 16px
-$spacers: (
-  0: 0,
-  1: $spacer * 0.25,  // 4px
-  2: $spacer * 0.5,   // 8px
-  3: $spacer,         // 16px
-  4: $spacer * 1.5,   // 24px
-  5: $spacer * 3,     // 48px
-);
+$spacer-0: 0;
+$spacer-1: 0.25rem; // 4px
+$spacer-2: 0.5rem;  // 8px
+$spacer-3: 0.75rem; // 12px
+$spacer-4: 1rem;    // 16px
+$spacer-5: 1.5rem;  // 24px
+$spacer-6: 2rem;    // 32px
+$spacer-7: 5rem;    // 80px
+$spacer-8: 3rem;    // 48px
+$spacer-10: 4rem;   // 64px
 ```
+
+Atenção: `$spacer-7` (80px) é maior que `$spacer-8` (48px); é definido no bloco "Missing Spacers", dentro da seção de aliases legados de `variables.scss`.
 
 ### Responsive Breakpoints
 
+Mixins de `frontend/src/styles/mixins.scss` (não há `xxl`):
+
 ```scss
-$grid-breakpoints: (
-  xs: 0,
-  sm: 576px,
-  md: 768px,
-  lg: 992px,
-  xl: 1200px,
-  xxl: 1400px
-);
+@mixin media-xs { @media (max-width: 575px) { @content; } }
+@mixin media-sm { @media (min-width: 576px) { @content; } }
+@mixin media-md { @media (min-width: 768px) { @content; } }
+@mixin media-lg { @media (min-width: 992px) { @content; } }
+@mixin media-xl { @media (min-width: 1200px) { @content; } }
 ```
+
+Detalhes de layout em [layouts.md](./layouts.md).
 
 ### Component States
 
-- **Loading**: Skeleton loaders
-- **Empty**: Ilustração + mensagem + ação
-- **Error**: Mensagem clara + ação de retry
-- **Success**: Toast notification (3s)
+- **Loading**: spinner do Bootstrap (`spinner-border` / `<Spinner>`) na tela de carregamento de `App.tsx` e nas páginas de Clientes, Produtos e Estoque; não há skeleton loaders em uso.
+- **Erro de renderização**: `ErrorBoundary` global e outro por rota dentro do `MainLayout` (com `key={location.pathname}`, reseta ao navegar).
+- **Feedback**: toasts via `react-toastify` (canto superior direito, 3s, tema escuro).
 
 ### Accessibility
 
+Diretrizes (não há auditoria automatizada no repositório):
 - Contraste mínimo 4.5:1 (WCAG AA)
-- Foco visível em todos os elementos interativos
+- Foco visível: mixins `focus-ring`, `focus-glow` e `focus-ring-shadow`
 - Labels em todos os inputs
 - Navegação por teclado
 - Mensagens de erro associadas aos campos
 
 ## Key Features Design
 
-### 1. Dashboard
+Estado atual de cada módulo, conferido nas páginas:
 
-**Layout:**
-- Grid 3 colunas (desktop) / 1 coluna (mobile)
-- Cards com métricas principais
-- Gráfico de vendas (últimos 7 dias)
-- Lista de alertas (estoque baixo, contas vencidas)
+### 1. Dashboard (`pages/Dashboard/DashboardPage.tsx`)
 
-**Métricas:**
-- Vendas do dia/mês
-- Clientes ativos
-- Produtos com estoque baixo
-- Contas vencidas
+- **Dados 100% mockados** (`mockStats`, `vendasRecentes`, `topProdutos`, `categoriasVendas`); a página não chama nenhuma API.
+- Cards de métrica em `.stats-grid` (`repeat(auto-fit, minmax(240px, 1fr))`).
+- Gráfico de linha "Vendas dos Últimos 7 Dias" e rosca "Vendas por Categoria" (react-chartjs-2).
+- Tabela "Vendas Recentes" e lista "Top Produtos".
+- Linhas em `1.8fr 1fr` que viram 1 coluna abaixo de 1024px.
 
-### 2. Clientes
+### 2. Clientes (`pages/Clientes/`)
 
-**Lista:**
-- Tabela responsiva com paginação
-- Filtros: nome, CPF, status
-- Busca com debounce (300ms)
-- Ações: visualizar, editar, desativar
+- Lista com paginação (`ClientesPage`), formulário de criar/editar (`ClienteFormPage`), endereços (`ClienteEnderecosPage`) e crédito (`ClienteCreditoPage`).
+- Busca de endereço por CEP no ViaCEP (`https://viacep.com.br/ws/{cep}/json/`), no form do cliente e na página de endereços.
+- Ações de desativar/reativar e bloquear/desbloquear via `clientesApi`.
 
-**Formulário:**
-- Validação em tempo real
-- Máscara de CPF e telefone
-- Busca de endereço por CEP (ViaCEP)
-- Gestão de múltiplos endereços
+### 3. Produtos (`pages/Produtos/`)
 
-**Detalhes:**
-- Tabs: Dados, Endereços, Crédito, Pedidos, Contas
-- Histórico de movimentações
-- Ações rápidas
+- Lista, formulário, detalhes, variantes (`ProdutoVariantesPage`) e categorias (`CategoriasPage`).
 
-### 3. Produtos
+### 4. Estoque (`pages/Estoque/`)
 
-**Lista:**
-- Cards com imagem (desktop) / Lista (mobile)
-- Filtros: categoria, status
-- Busca por nome/SKU
+- Lista (`EstoquePage`), detalhe por item (`EstoqueDetalhePage`), modal de operação (`EstoqueOperacaoModal`) e timeline de movimentações (`MovimentacaoTimeline`).
 
-**Formulário:**
-- Wizard: Dados → Variantes → Catálogo
-- Upload de imagens (drag & drop)
-- Gestão de variantes dinâmica
-- Cálculo automático de preço
+### 5. Vendas e 6. Financeiro
 
-### 4. Estoque
+- **Placeholders**: `VendasPage.tsx` e `FinanceiroPage.tsx` só exibem "Esta funcionalidade está em desenvolvimento e será implementada em breve."
 
-**Dashboard:**
-- Alertas de estoque baixo
-- Movimentações recentes
-- Ação rápida: entrada/saída
+### Outros módulos
 
-**Movimentação:**
-- Formulário com seleção de produto
-- Validação de quantidade disponível
-- Confirmação antes de salvar
-
-**Inventário:**
-- Wizard: Criar → Adicionar itens → Contar → Finalizar
-- Cálculo automático de diferenças
-- Ajuste automático ao finalizar
-
-### 5. Vendas
-
-**Lista:**
-- Filtros: status, período, cliente
-- Badges coloridos por status
-- Ações conforme status
-
-**Detalhes:**
-- Timeline de status
-- Itens do pedido
-- Dados de pagamento e entrega
-- Ações: avançar status, cancelar, ajustar frete
-
-### 6. Financeiro
-
-**Dashboard:**
-- Total a receber
-- Contas vencidas (destaque)
-- Contas a vencer (próximos 7 dias)
-
-**Conta:**
-- Detalhes completos
-- Histórico de pagamentos
-- Ação: registrar pagamento
-
-**Pagamento:**
-- Modal com formulário
-- Cálculo automático de saldo
-- Confirmação
+- **Loja Online (admin)**: pedidos online e configurações da loja (`pages/LojaOnline/`).
+- **Loja Online pública**: vitrine, produto, carrinho, checkout, rastreamento, login e área do cliente (`pages/LojaOnlinePublico/`).
+- **Configurações** (ADMIN): empresa, usuários e integrações.
+- **Plataforma** (SUPER_ADMIN): visão geral em `/plataforma` (`PlataformaDashboard`) e gestão de tenants em `/plataforma/tenants` (`PlataformaPage`, `TenantDetalhe`).
+- **Perfil**: dados do usuário e troca de senha.
 
 ## Performance Optimization
 
 ### Code Splitting
 
-```typescript
-// Lazy loading de páginas
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Clientes = lazy(() => import('./pages/Clientes'));
-const Produtos = lazy(() => import('./pages/Produtos'));
-
-// Suspense com fallback
-<Suspense fallback={<Loading />}>
-  <Routes>
-    <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/clientes" element={<Clientes />} />
-  </Routes>
-</Suspense>
-```
+Parcial. Só as duas páginas do painel da plataforma são `lazy()` (`PlataformaPage` e `PlataformaDashboard`, `App.tsx:28-29`), sob um `Suspense` com `LoadingScreen` que envolve as rotas; no host do lojista nenhuma rota pede esses chunks. As demais páginas, inclusive todo o storefront, continuam importadas estaticamente em `App.tsx`.
 
 ### React Query Configuration
 
 ```typescript
+// frontend/src/main.tsx
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,      // 5 minutes
-      cacheTime: 10 * 60 * 1000,     // 10 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000,   // 10 minutes
       refetchOnWindowFocus: false,
       retry: 1,
     },
@@ -572,231 +425,89 @@ const queryClient = new QueryClient({
 });
 ```
 
-### Image Optimization
+### Resiliência a deploy
 
-- Lazy loading de imagens
-- Placeholder durante carregamento
-- Compressão automática
-- Formato WebP quando suportado
+O interceptor de response repete GET/HEAD/OPTIONS que recebem 502/503/504 até 3 vezes, esperando 1s, 2s e 3s (`frontend/src/services/api/axios.ts`). Escritas não são repetidas.
 
-### Bundle Optimization
+### Build
 
-- Tree shaking automático (Vite)
-- Minificação de CSS e JS
-- Compressão gzip/brotli
-- Análise de bundle (vite-bundle-visualizer)
+`npm run build` roda `tsc && vite build`, saída em `dist/` com `sourcemap: true` (`frontend/vite.config.ts`). Em produção o `frontend/nginx.conf` liga `gzip` (sem brotli).
 
 ## Security
 
-### Token Storage
+### Sessão
 
-```typescript
-// Opção 1: httpOnly Cookie (mais seguro)
-// Configurado no backend
+- Tokens em cookies HTTP-only, enviados pelo navegador (`withCredentials: true`); o JavaScript não lê nem grava tokens.
+- O header `X-Empresa-Id` não é enviado pelo frontend; o gateway o deriva do JWT (comentário em `axios.ts`).
 
-// Opção 2: localStorage (MVP)
-const tokenService = {
-  getAccessToken: () => localStorage.getItem('access_token'),
-  setAccessToken: (token: string) => localStorage.setItem('access_token', token),
-  getRefreshToken: () => localStorage.getItem('refresh_token'),
-  setRefreshToken: (token: string) => localStorage.setItem('refresh_token', token),
-  clearTokens: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-  },
-};
-```
+### Idempotência
 
-### Input Sanitization
+Toda escrita (POST/PUT/PATCH/DELETE) recebe um `Idempotency-Key` (`crypto.randomUUID()`), preservado em reenvios, que o gateway usa para não duplicar operações (`api-gateway/proxy/idempotency.py`).
 
-```typescript
-import DOMPurify from 'dompurify';
+### Sanitização
 
-const sanitizeInput = (input: string): string => {
-  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
-};
-```
-
-### HTTPS Only
-
-- Produção: HTTPS obrigatório
-- Desenvolvimento: HTTP permitido
-- Redirect automático HTTP → HTTPS
+Não há DOMPurify nem sanitização de HTML no frontend. Em produção o `frontend/nginx.conf` envia um `Content-Security-Policy` restritivo (`script-src 'self'`, `connect-src 'self' https://viacep.com.br`, `frame-ancestors 'none'`).
 
 ## Testing Strategy
 
-### Unit Tests (Vitest)
-
-```typescript
-// Button.test.tsx
-describe('Button', () => {
-  it('renders correctly', () => {
-    render(<Button>Click me</Button>);
-    expect(screen.getByText('Click me')).toBeInTheDocument();
-  });
-
-  it('calls onClick when clicked', () => {
-    const handleClick = vi.fn();
-    render(<Button onClick={handleClick}>Click me</Button>);
-    fireEvent.click(screen.getByText('Click me'));
-    expect(handleClick).toHaveBeenCalledOnce();
-  });
-});
-```
-
-### Integration Tests (React Testing Library)
-
-```typescript
-// ClienteForm.test.tsx
-describe('ClienteForm', () => {
-  it('submits form with valid data', async () => {
-    const onSubmit = vi.fn();
-    render(<ClienteForm onSubmit={onSubmit} />);
-    
-    await userEvent.type(screen.getByLabelText('Nome'), 'João Silva');
-    await userEvent.type(screen.getByLabelText('CPF'), '12345678909');
-    await userEvent.click(screen.getByText('Salvar'));
-    
-    await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith({
-        nome: 'João Silva',
-        cpf: '12345678909',
-      });
-    });
-  });
-});
-```
-
-### E2E Tests (Playwright - Opcional)
-
-```typescript
-test('login flow', async ({ page }) => {
-  await page.goto('http://localhost:3000');
-  await page.fill('[name="email"]', 'admin@runas.com');
-  await page.fill('[name="password"]', 'Admin@123');
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL('/dashboard');
-});
-```
+- Runner: Vitest com ambiente `jsdom` (`frontend/vitest.config.ts`), setup em `frontend/src/test/setup.ts`.
+- Scripts: `npm run test`, `npm run test:watch`, `npm run test:coverage`.
+- Testes existentes em `__tests__/`: `services/api/__tests__/axios.test.ts`, `components/layout/Sidebar/__tests__/podeVer.test.ts`, `config/__tests__/host.test.ts` (`escolherPorta`), `utils/__tests__/errorLogger.test.ts`, schemas de Configurações e Plataforma e `resumirTenants.test.ts`.
+- Não há testes E2E (sem Playwright/Cypress).
 
 ## Deployment
 
 ### Build
 
 ```bash
+cd frontend
 npm run build
-# Output: dist/
+# Saída: dist/
 ```
 
 ### Environment Variables
 
-```env
-# .env.production
-VITE_API_URL=https://api.runas.com
-VITE_APP_NAME=ERP Runas
-VITE_APP_VERSION=1.0.0
-```
+Lidas em `frontend/src/config/env.ts`, `frontend/src/config/host.ts` e `frontend/vite.config.ts` (modelo em `frontend/.env.example`):
+
+| Variável | Padrão no código |
+|----------|------------------|
+| `VITE_API_URL` | `/api` |
+| `VITE_API_TIMEOUT` | `30000` |
+| `VITE_USE_PROXY` | proxy ativo, exceto se `false` |
+| `VITE_API_GATEWAY_TARGET` | `http://api-gateway:8000` |
+| `VITE_APP_NAME` | `Runas` |
+| `VITE_APP_VERSION` | `1.0.0` |
+| `VITE_ENABLE_DEVTOOLS` | desligado |
+| `VITE_ENABLE_ANALYTICS` | desligado |
+| `VITE_TOKEN_REFRESH_THRESHOLD` | `300000` |
+| `VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID` | vazio |
+| `VITE_MICROSOFT_TENANT_ID` | `common` |
+| `VITE_OAUTH_REDIRECT_URI` | `http://localhost:3000/auth/callback` |
+| `VITE_HOST_PLATAFORMA` | `admin` (primeiro label do hostname que monta o painel; lida em `host.ts`; comentada no `.env.example`) |
 
 ### Docker
 
-```dockerfile
-FROM node:18-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
+`frontend/Dockerfile` é multi-stage: `node:22-alpine` roda `npm ci` e `npm run build`; `nginx:alpine` serve `dist/` com `frontend/nginx.conf`, expõe a porta 80 e tem `HEALTHCHECK` via `wget` em `http://127.0.0.1/` (em produção o `docker-compose.prod.yml` sobrescreve para `http://127.0.0.1/health`). Para desenvolvimento há `frontend/Dockerfile.dev`.
 
 ### CI/CD
 
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy Frontend
-on:
-  push:
-    branches: [main]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: npm ci
-      - run: npm run build
-      - run: npm run test
-      - name: Deploy to production
-        run: |
-          # Deploy script
-```
+- `.github/workflows/ci.yml`, job `frontend`: Node 22, `npm ci`, `npm run lint`, `npm run build`, `npm run test -- --run`.
+- `.github/workflows/deploy.yml`: gera e publica as imagens no ghcr e dispara o deploy no Coolify, que puxa as imagens e reinicia a stack.
 
 ## Monitoring
 
-### Error Tracking
+- `frontend/src/utils/errorLogger.ts`: log estruturado de erros no console.
+- `VITE_ENABLE_ANALYTICS` vira `env.enableAnalytics` em `env.ts`, mas nenhum código lê essa flag.
+- Não há Sentry, Google Analytics nem Web Vitals integrados.
 
-- Sentry (opcional)
-- Console.error em desenvolvimento
-- Log estruturado em produção
+## API Documentation
 
-### Analytics
+- Swagger UI do gateway em `http://localhost:8000/docs`, apenas quando `DOCS_ENABLED` está ligado (`api-gateway/main.py`).
+- Mapeamento de rotas: [docs/10-api-reference/mapeamento-rotas.md](../../10-api-reference/mapeamento-rotas.md).
 
-- Google Analytics (opcional)
-- Eventos customizados para ações principais
+## Pendências conhecidas
 
-### Performance Monitoring
-
-- Web Vitals (LCP, FID, CLS)
-- React DevTools Profiler
-- Lighthouse CI
-
-## Documentation
-
-### Component Documentation
-
-```typescript
-/**
- * Button component
- * 
- * @param variant - Button style variant
- * @param size - Button size
- * @param disabled - Disable button
- * @param loading - Show loading state
- * @param onClick - Click handler
- * 
- * @example
- * <Button variant="primary" size="lg" onClick={handleClick}>
- *   Click me
- * </Button>
- */
-```
-
-### API Documentation
-
-- Swagger UI do backend: http://localhost:8000/docs
-- Documentação de rotas: `/docs/MAPEAMENTO-ROTAS.md`
-
-## Next Steps
-
-1. Setup inicial do projeto (Vite + React + TypeScript)
-2. Configuração de linting e formatting (ESLint + Prettier)
-3. Estrutura de pastas e arquivos base
-4. Configuração de rotas e layout
-5. Implementação de autenticação
-6. Desenvolvimento de componentes comuns
-7. Implementação de módulos (Clientes, Produtos, etc)
-8. Testes
-9. Deploy
-
----
-
-**Versão:** 1.0.0  
-**Data:** 2026-05-25  
-**Status:** ✅ Design Completo
+1. Dashboard ligado a dados reais (hoje é mock).
+2. Telas de Vendas e Financeiro (hoje são placeholders).
+3. Renovação de sessão via `POST /auth/refresh` no frontend.
+4. Code splitting das rotas (hoje só as páginas da Plataforma são `lazy()`).

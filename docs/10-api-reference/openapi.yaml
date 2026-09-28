@@ -2,35 +2,125 @@ openapi: 3.0.3
 info:
   title: Runas API
   description: |
-    API completa do sistema ERP Runas para gestão de pequenos comércios.
-    
+    # ATENÇÃO: SPEC CONGELADA E DESSINCRONIZADA
+
+    Este arquivo foi **escrito à mão**, não é gerado a partir do código e não
+    acompanha o roteamento atual. Ele está **congelado**: não use como fonte de
+    verdade e não gere cliente a partir dele sem revisar rota por rota.
+
+    Fonte de verdade do roteamento:
+
+    - `api-gateway/proxy/service_proxy.py` (mapa `SERVICE_URLS`)
+    - `api-gateway/routers/proxy.py`
+    - `docs/10-api-reference/mapeamento-rotas.md`
+
+    O caminho correto para uma spec confiável é **gerar** a partir do
+    `/openapi.json` do próprio FastAPI (exige `DOCS_ENABLED=true`, veja
+    "Documentação interativa" abaixo), não continuar editando este YAML à mão.
+
+    ## Divergências confirmadas no código (2026-09-26)
+
+    Paths declarados aqui que **não existem**:
+
+    - `/catalogo` — o serviço de produtos expõe `/catalogo-publico` e
+      `/loja-online` (`services/produtos/routers/produtos.py`).
+    - `/pedidos` — o serviço de vendas tem `/vendas`
+      (`services/vendas/routers/vendas.py`), mas `/vendas` não consta em
+      `SERVICE_URLS` nem tem rota em `api-gateway/routers/proxy.py`: A CONFIRMAR
+      se é alcançável pelo gateway. Pelo gateway existe
+      `GET /loja/meus-pedidos` (`api-gateway/routers/proxy.py`).
+    - `/carrinho`, `/carrinho/{token}` e `/carrinho/{token}/checkout` — o
+      serviço de vendas só expõe carrinho e checkout sob `/loja`
+      (`GET /loja/carrinho`, `POST /loja/carrinho/itens`, `POST /loja/checkout`
+      em `services/vendas/routers/loja.py`). Nenhum router de vendas usa o
+      prefixo `/carrinho`, embora o gateway repasse `/carrinho/*` para o
+      serviço. A loja identifica a empresa pelo query param `empresaSlug`.
+    - `POST /estoque/{variante_id}/entrada` — o real é `POST /estoque/entrada`
+      (`services/estoque/routers/estoque.py`).
+    - `/contas` e `/contas/{id}/pagamentos` — o serviço financeiro **não
+      registra nenhum router**: `services/financeiro/main.py` expõe apenas
+      `GET /health`. O gateway encaminha `/contas` para ele, mas não existe
+      handler do outro lado.
+
+    Rotas que existem no código e **faltam** aqui:
+
+    - Clientes (`services/clientes/routers/clientes.py`):
+      `POST /clientes/oauth`, `GET /clientes/{id}/completo`,
+      `GET /clientes/cpf/{cpf}`, `POST /clientes/{id}/ativar`,
+      `PUT /clientes/{id}/credito`, `POST /clientes/{id}/credito/ajustar`,
+      `POST /clientes/{id}/bloquear` e `POST /clientes/{id}/desbloquear`.
+    - Endereços (`services/clientes/routers/enderecos.py`): CRUD sob
+      `/clientes/{cliente_id}/enderecos`.
+    - Não existe `/clientes/{id}/historico-credito` no código; se você viu essa
+      rota em alguma doc antiga, ela nunca existiu.
+    - As rotas de `/plataforma` (multi-tenancy e billing) ficam **fora** desta
+      spec de propósito: veja `docs/10-api-reference/plataforma-api.md`.
+
+    Schemas divergentes (amostra conferida em 2026-09-26, não é lista completa):
+
+    - `TokenResponse` declara `expires_in`, mas o `Token` real
+      (`api-gateway/schemas/usuario.py`) só tem `access_token`, `refresh_token`
+      e `token_type`; `POST /auth/login` responde `LoginResponse` (tokens mais
+      dados do usuário).
+    - `ProdutoCreate` real (`services/produtos/schemas/produtos.py`) tem também
+      `preco`, `custo`, `preco_promocional` e `promocao_fim`, ausentes aqui.
+    - `ClienteResponse` real traz `empresa_id`, e `cpf`/`telefone` podem ser
+      nulos (clientes OAuth).
+    - A CONFIRMAR: os demais schemas (Estoque, Movimentacao, Carrinho, Pedido,
+      ContaReceber...) não foram conferidos campo a campo.
+
+    Paginação: o código usa `skip`/`limit` (`limit` no máximo 100), não
+    `page`/`size` como os parâmetros reutilizáveis desta spec declaram. O
+    envelope real de `GET /clientes` é
+    `{"clientes": [...], "total": N, "skip": N, "limit": N}`, não `items`.
+
     ## Autenticação
-    A maioria dos endpoints requer autenticação via Bearer Token (JWT).
-    
-    Para obter um token:
-    1. Faça login em `POST /auth/login`
-    2. Use o `access_token` retornado no header `Authorization: Bearer <token>`
-    
+
+    A maioria dos endpoints requer Bearer Token (JWT).
+
+    1. `POST /auth/login` — corpo `application/x-www-form-urlencoded` com os
+       campos `username` e `password` (OAuth2 password flow).
+    2. Use o `access_token` retornado no header `Authorization: Bearer <token>`.
+
+    O login também grava `access_token` e `refresh_token` como cookies
+    HTTP-only (`api-gateway/routers/auth.py`).
+
     ## Ambientes
-    - **Desenvolvimento**: http://localhost:8000
-    - **Produção**: https://api.runas.com
-    
-    ## Rate Limiting
-    - Anônimo: 100 requisições/minuto
-    - Autenticado: 500 requisições/minuto
-    
+
+    - **Desenvolvimento**: `http://localhost:8000` (container `api-gateway`,
+      porta 8000 em `docker-compose.dev.yml`)
+    - **Produção**: `https://app.runaserp.com.br/api` (Cloudflare na frente; é a
+      URL que o workflow `Uptime` sonda)
+
+    ## Documentação interativa
+
+    `DOCS_ENABLED` é `False` por padrão (`api-gateway/config.py`), então
+    `/docs`, `/redoc` e `/openapi.json` respondem **404** até ser ligado
+    explicitamente.
+
+    ## Rate limiting
+
+    Teto global de **300 requisições/minuto por IP**
+    (`api-gateway/middleware/rate_limit.py` — `slowapi` com
+    `get_remote_address`). Não há limite diferente para anônimo e autenticado.
+    Rotas sensíveis têm limite próprio (`api-gateway/routers/auth.py`):
+
+    - `POST /auth/login`: 10/minuto
+    - `POST /auth/forgot-password`: 5/minuto
+    - `POST /auth/reset-password`: 10/minuto
   version: 1.0.0
+  x-spec-status: congelada-dessincronizada
+  x-fonte-de-verdade: api-gateway/proxy/service_proxy.py
   contact:
     name: Equipe DenebCorp
     email: dev@denebcorp.com
   license:
     name: Proprietary
-    url: https://runas.com/license
 
 servers:
   - url: http://localhost:8000
     description: Desenvolvimento
-  - url: https://api.runas.com
+  - url: https://app.runaserp.com.br/api
     description: Produção
 
 tags:
