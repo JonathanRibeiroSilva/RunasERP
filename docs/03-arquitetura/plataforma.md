@@ -351,6 +351,9 @@ Há **dois** Mercado Pago no sistema, e confundi-los cobra a pessoa errada:
 (`preapproval_service.py:4-9`) e falha alto com `RuntimeError` se a env estiver vazia
 (`:32-33`). A assinatura é um *preapproval* recorrente mensal em BRL (`:42-56`),
 gravado em `gateway.assinaturas` com `ON CONFLICT (empresa_id) DO UPDATE` (`:61-74`).
+Quem abre o link e assina é o lojista, então a `back_url` é `{FRONTEND_URL}/dashboard`
+(`:48`), o ERP dele no host `app`. Ela apontava para `/plataforma`, que no host `app`
+passou a responder 404 com o commit `045c0c0` (seção 5.2).
 
 ---
 
@@ -544,13 +547,6 @@ trabalhar 200 ms).
   crontab da VPS daqui.
 - **Onde o webhook do MP é registrado na conta do dono da plataforma** (a URL pública
   configurada no painel do Mercado Pago) — não há registro disso no repositório.
-- **A `back_url` do preapproval aponta para `{FRONTEND_URL}/plataforma`**
-  (`preapproval_service.py:48`), isto é, para a rota do painel do dono, não para uma tela
-  do lojista. Como `FRONTEND_URL` é o host `app`, depois da separação por host (seção
-  5.2) um lojista que volte por ali pede `/plataforma` no host `app`. Até o commit
-  `045c0c0` isso redirecionava para `/dashboard`; com ele, o nginx responde **404** nesse
-  endereço, então quem acabou de assinar cai numa página de erro. Não foi possível
-  confirmar para onde o lojista deveria voltar depois de assinar.
 
 ---
 

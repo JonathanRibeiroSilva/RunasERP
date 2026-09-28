@@ -45,7 +45,7 @@ async def criar_assinatura(
             json={
                 "reason": f"Runas ERP — plano {plano}",
                 "payer_email": email_pagador,
-                "back_url": f"{settings.FRONTEND_URL}/plataforma",
+                "back_url": f"{settings.FRONTEND_URL}/dashboard",  # volta o lojista, no host app
                 "auto_recurring": {
                     "frequency": 1,
                     "frequency_type": "months",

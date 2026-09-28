@@ -422,6 +422,8 @@ POST /plataforma/tenants/{empresa_id}/assinatura
 { "preapproval_id": "...", "init_point": "https://www.mercadopago.com.br/..." }
 ```
 (`preapproval_service.py:78`.) `init_point` é o link que o lojista abre para assinar.
+Depois de assinar, o Mercado Pago o devolve para `{FRONTEND_URL}/dashboard` (`back_url`,
+`preapproval_service.py:48`).
 
 Efeito no banco: grava/atualiza `gateway.assinaturas` com `status = 'PENDENTE'`,
 `vence_em` em 30 dias e `carencia_ate` 5 dias depois disso
