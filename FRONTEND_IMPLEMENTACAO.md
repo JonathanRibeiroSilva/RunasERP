@@ -168,20 +168,20 @@ A cobertura concentra-se em schemas Zod, no interceptador axios e em funções p
 
 - React `^19.3.0` e React DOM `^19.3.0` - https://react.dev
 - React Router DOM `^7.18.4` - https://reactrouter.com
-- TanStack Query `^5.103.1` - https://tanstack.com/query
+- TanStack Query `^5.103.2` - https://tanstack.com/query
 - React Bootstrap `^2.9.1` + Bootstrap `^5.3.2`
 - React Hook Form `^7.88.0` + `@hookform/resolvers` `^5.9.1`
 - Zod `^4.6.5`
 - Axios `^1.20.0`
 - Chart.js `^4.4.1` + react-chartjs-2 `^5.2.0`
-- date-fns `^4.4.0`, react-icons `^5.7.0`, react-toastify `^11.1.0`, react-loading-skeleton `^3.3.1`, sass `^1.104.1`
+- date-fns `^4.4.0`, react-icons `^5.7.0`, react-toastify `^11.1.0`, react-loading-skeleton `^3.3.1`, sass `^1.105.0`
 
 **Desenvolvimento**
 
-- Vite `^8.3.0` - https://vite.dev
+- Vite `^8.3.1` - https://vite.dev
 - TypeScript `^5.2.2`
-- Vitest `^5.0.1` + jsdom `^30.1.0` + Testing Library (`react` `^16.3.3`, `jest-dom` `^7.0.1`, `user-event` `^14.6.7`, `dom` `^10.4.2`)
-- ESLint `^10.10.0` + typescript-eslint `~8.70.0`, Prettier `^3.9.8`
+- Vitest `^5.0.1` + jsdom `^30.1.1` + Testing Library (`react` `^16.3.3`, `jest-dom` `^7.0.1`, `user-event` `^14.6.7`, `dom` `^10.4.2`)
+- ESLint `^10.11.0` + typescript-eslint `~8.70.1`, Prettier `^3.9.9`
 
 ---
 

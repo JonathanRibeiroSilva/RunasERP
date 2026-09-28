@@ -47,7 +47,7 @@ erp-frontend-dev  | VITE v8.x.x  ready in xxx ms
 erp-frontend-dev  | ➜  Local:   http://localhost:3000/
 ```
 
-(Vite `^8.3.0` — `frontend/package.json:53`.)
+(Vite `^8.3.1` — `frontend/package.json:53`.)
 
 **Verificar:**
 - Frontend: http://localhost:3000

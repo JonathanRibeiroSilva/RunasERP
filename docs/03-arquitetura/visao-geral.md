@@ -34,7 +34,7 @@ serviços conversam: [`comunicacao.md`](comunicacao.md).
 | Containerização | Docker + Docker Compose | dev, prod, cloudflare e build (4 arquivos na raiz) |
 | Testes | Pytest + pytest-asyncio + pytest-cov | 9.1.1 / 1.4.0 / 7.1.0 (`tests/requirements.txt`) |
 | Validação | Pydantic | 2.13.5 |
-| Frontend | React + TypeScript + Vite | react ^19.3.0, vite ^8.3.0 (`frontend/package.json`) |
+| Frontend | React + TypeScript + Vite | react ^19.3.0, vite ^8.3.1 (`frontend/package.json`) |
 
 ---
 

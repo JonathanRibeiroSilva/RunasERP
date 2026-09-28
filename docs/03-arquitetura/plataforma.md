@@ -312,8 +312,8 @@ que terminou com sucesso. A rota do túnel
 `admin.runaserp.com.br -> frontend-prod:80` e um Cloudflare Access (policy Allow por
 e-mail) na frente do host `admin` estão configurados **fora do repositório** (painel
 da Cloudflare), segundo verificação de 2026-09-28; nada no código comprova isso. O registro condicional das rotas, o 404 do nginx e o
-texto novo da tela `PortaErrada` vêm do commit `045c0c0`, que em 2026-09-28 estava no
-`Developer` e **ainda não na `main`**.
+texto novo da tela `PortaErrada` vêm do commit `045c0c0`, que chegou à `main` pelo
+PR #117 (merge `8c0f25d`) e está no ar desde o deploy de 2026-09-28 que terminou com sucesso.
 
 ### 5.4 As telas
 
