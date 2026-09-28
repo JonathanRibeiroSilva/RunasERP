@@ -12,7 +12,7 @@ Características factuais do frontend, medidas diretamente em `frontend/src` em 
 
 > Este documento substitui a versão anterior, que descrevia o estado do AUD-2026-06-29 e ficou desatualizada: a camada de serviços, os hooks React Query e o ErrorBoundary foram implementados depois da auditoria. Os 4 planos em `plans/` e o audit em `audits/` continuam apontando para o estado original — leia-os como histórico, não como retrato de hoje.
 
-**Formato atual:** `App.tsx` (tabela de rotas estática, sem `React.lazy`/`Suspense`) → componentes de página → hooks React Query (`hooks/use*.ts`) → serviços de domínio (`services/api/*Api.ts`) → Axios. `AuthContext` guarda o estado global de autenticação. O fluxo Componente → hook React Query → serviço de API → Axios **existe** para clientes, empresa, estoque, integrações, loja online, plataforma, produtos e usuários; as páginas da loja pública ainda não seguem esse caminho.
+**Formato atual:** `App.tsx` (tabela de rotas estática; `React.lazy` só nas 2 páginas do painel da plataforma, dentro de um `Suspense` — ver "Code splitting") → componentes de página → hooks React Query (`hooks/use*.ts`) → serviços de domínio (`services/api/*Api.ts`) → Axios. `AuthContext` guarda o estado global de autenticação. O fluxo Componente → hook React Query → serviço de API → Axios **existe** para clientes, empresa, estoque, integrações, loja online, plataforma, produtos e usuários; as páginas da loja pública ainda não seguem esse caminho.
 
 Total medido: 15.340 LOC em `.ts`/`.tsx` fora de `__tests__/`.
 
@@ -54,12 +54,16 @@ Total medido: 15.340 LOC em `.ts`/`.tsx` fora de `__tests__/`.
 
 ## God component
 
-- `pages/LojaOnlinePublico/CheckoutPage.tsx` — **1.507 LOC** (era 1.381 no AUD-2026-06-29: **piorou**). É o maior arquivo do frontend por 3,3× sobre o segundo (`Plataforma/PlataformaPage.tsx`, 460 LOC) e concentra ~10% de todo o código do frontend.
+- `pages/LojaOnlinePublico/CheckoutPage.tsx` — **1.507 LOC** (era 1.381 no AUD-2026-06-29: **piorou**). É o maior arquivo do frontend por 3,4× sobre o segundo (`Produtos/ProdutoFormPage.tsx`, 440 LOC; `Plataforma/PlataformaPage.tsx` era o segundo com 460 LOC até o PR #113, que tirou os cartões de resumo dele — hoje tem 396) e concentra ~10% de todo o código do frontend.
   - 27 declarações `useState` no mesmo componente.
   - Cliente `apiPublica` e interceptor próprios, inline (ver "Clientes HTTP").
   - 7 tipos declarados inline: `ClienteNovo` (`:35`), `Endereco` (`:42`), `Pagamento` (`:52`), `TipoEntrega` (`:58`), `Step` (`:59`), `ModoCheckout` (`:60`), `Cliente` (`:63`).
   - Responsabilidades acumuladas: carrinho, login, cadastro, retorno de OAuth, checkout como convidado, busca de CEP, frete, pagamento e um wizard de 3 etapas.
-- Arquivos acima de 300 LOC: **17**. Depois do Checkout: `Plataforma/PlataformaPage.tsx` 460, `Produtos/ProdutoFormPage.tsx` 440, `Clientes/ClienteEnderecosPage.tsx` 382, `LojaOnlinePublico/ClienteLoginPage.tsx` 374, `Clientes/ClienteCreditoPage.tsx` 369, `Clientes/ClientesPage.tsx` 365.
+- Arquivos acima de 300 LOC (fora de `__tests__/`): **18** (eram 17; o PR #113 levou `components/layout/Sidebar/Sidebar.tsx` a 306). Depois do Checkout: `Produtos/ProdutoFormPage.tsx` 440, `Plataforma/PlataformaPage.tsx` 396, `Clientes/ClienteEnderecosPage.tsx` 382, `LojaOnlinePublico/ClienteLoginPage.tsx` 374, `Clientes/ClienteCreditoPage.tsx` 369, `Clientes/ClientesPage.tsx` 365.
+
+## Code splitting
+
+- Medido em 2026-09-28, depois do PR #113: `lazy(` → **2 ocorrências**, ambas em `App.tsx:28-29` (`PlataformaPage` e `PlataformaDashboard`), com um único `<Suspense fallback={<LoadingScreen />}>` envolvendo as `<Routes>` (`App.tsx:123`). As outras 33 páginas continuam importadas estaticamente (`App.tsx:5-22`), inclusive todo o storefront e o `CheckoutPage`. Situação: **parcial** — ver H5 em `frontend-architectural-debt-log.md`.
 
 ## Módulos incompletos
 

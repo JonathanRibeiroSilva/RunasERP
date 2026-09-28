@@ -3,7 +3,7 @@
 > Retrato do que está implementado em `frontend/` e do que ainda falta.
 > Todo dado abaixo foi lido do código; nada aqui é estimativa de progresso.
 
-**Última verificação**: 25/09/2026 (contra a branch `feat/g1b-plataforma-com-prova`)
+**Última verificação**: 25/09/2026 (contra a branch `feat/g1b-plataforma-com-prova`); módulo Plataforma, testes e `config/` re-verificados em 28/09/2026 contra o `Developer` (PR #113)
 
 ---
 
@@ -17,7 +17,7 @@
 | Estoque | Entregue | `pages/Estoque/` (`EstoquePage.tsx` 336 linhas, `EstoqueDetalhePage.tsx` 239 linhas, 4 componentes), `hooks/useEstoque.ts`, `services/api/estoqueApi.ts` |
 | Loja Online (vitrine pública) | Entregue | `pages/LojaOnlinePublico/` (8 páginas), `hooks/useCarrinho.ts`, `services/api/apiPublica.ts` |
 | Loja Online (administração) | Parcial | `pages/LojaOnline/ConfiguracoesLojaPage.tsx` entregue; `PedidosOnlinePage.tsx` é placeholder "em breve" |
-| Plataforma (SUPER_ADMIN) | Entregue | `pages/Plataforma/` (`PlataformaPage.tsx` 460 linhas, `TenantDetalhe.tsx` 327 linhas), `hooks/usePlataforma.ts`, `services/api/plataformaApi.ts` |
+| Plataforma (SUPER_ADMIN) | Entregue | `pages/Plataforma/` (`PlataformaDashboard.tsx` 105 linhas, `PlataformaPage.tsx` 396 linhas, `TenantDetalhe.tsx` 327 linhas), `config/host.ts`, `hooks/usePlataforma.ts`, `services/api/plataformaApi.ts` |
 | Configurações | Entregue | `pages/Configuracoes/` (`EmpresaPage.tsx` 305, `IntegracoesPage.tsx` 322, `UsuariosPage.tsx` 273 linhas) |
 | Perfil | Entregue | `pages/Perfil/PerfilPage.tsx` |
 | Dashboard | Só interface | `pages/Dashboard/DashboardPage.tsx` (326 linhas) - gráficos Chart.js reais alimentados por dados fixos no próprio arquivo |
@@ -61,12 +61,25 @@ Substituir por chamadas reais é trabalho pendente.
 
 Painel multi-tenant, ausente das versões anteriores deste documento.
 
-- `pages/Plataforma/PlataformaPage.tsx` (460 linhas) - lista de tenants, criação, suspensão/reativação, troca de plano, auditoria, dumps e assinatura.
+- `pages/Plataforma/PlataformaDashboard.tsx` (105 linhas) - rota `/plataforma`, visão geral: cartões de lojistas, receita mensal (só assinaturas `ATIVA`), a cobrar e sem assinatura, calculados por `resumirTenants` sobre a mesma lista de `GET /plataforma/tenants` (sem endpoint próprio).
+- `pages/Plataforma/PlataformaPage.tsx` (396 linhas) - rota `/plataforma/tenants`, lista de lojistas: criação (provisionar), suspensão/reativação, troca de plano, auditoria, dumps e assinatura (cobrança).
 - `pages/Plataforma/TenantDetalhe.tsx` (327 linhas) - painel de detalhe de um tenant, renderizado dentro da `PlataformaPage` (não é rota própria).
 - `hooks/usePlataforma.ts` e `services/api/plataformaApi.ts`.
-- Rota `plataforma` em `App.tsx`, protegida por `RoleProtectedRoute requiredRole={['SUPER_ADMIN']}`.
+- Rotas `plataforma` e `plataforma/tenants` em `App.tsx`, ambas protegidas por `RoleProtectedRoute requiredRole={['SUPER_ADMIN']}`. As duas páginas são carregadas com `lazy()` (chunks próprios), dentro de um `Suspense` que envolve as rotas.
+- No `Sidebar`, "Plataforma" é um submenu com "Visão Geral" (`/plataforma`, com `end`, para não ficar ativo junto com `/plataforma/tenants`) e "Lojistas" (`/plataforma/tenants`); os subitens repetem `requiredRole: ['SUPER_ADMIN']` porque `podeVer()` trata item sem lista como item de tenant.
 
-**Guard global** em `App.tsx` (dentro de `ProtectedRoute`): todo usuário com `role === 'SUPER_ADMIN'` cujo caminho não comece por `/plataforma` nem `/perfil` é redirecionado para `/plataforma`. O motivo está comentado no código: SUPER_ADMIN não tem `empresa_id`, então qualquer tela de tenant consultaria uma empresa inexistente. Uma porta só, em vez de um guard por rota - tela nova nasce fechada para ele.
+**Separação por host** (`config/host.ts`, só no frontend): o mesmo bundle serve o ERP dos lojistas e o painel da plataforma. `ehPainelPlataforma` é verdadeiro quando o primeiro label de `window.location.hostname` é `VITE_HOST_PLATAFORMA` (padrão `admin`). Em dev (`import.meta.env.DEV`) a separação só vale se o host já for o do painel, então as duas aplicações convivem em `localhost` e `admin.localhost:3000` exercita o caminho de produção.
+
+**Guard global** em `App.tsx` (dentro de `ProtectedRoute`), decidido pela função pura `escolherPorta()` (testada em `config/__tests__/host.test.ts`):
+
+- com separação ativa, SUPER_ADMIN fora do host do painel, ou qualquer outro papel no host do painel, recebe a tela `PortaErrada` ("Endereço errado", com botão Sair) - uma tela e não um redirect, porque o cookie de sessão é host-only e não iria junto para o outro host;
+- SUPER_ADMIN em caminho que não comece por `/plataforma` nem `/perfil` é redirecionado para `/plataforma` (SUPER_ADMIN não tem `empresa_id`, então qualquer tela de tenant consultaria uma empresa inexistente);
+- os demais papéis em `/plataforma*` são redirecionados para `/dashboard`;
+- `/perfil` vale nos dois lados.
+
+Uma porta só, em vez de um guard por rota - tela nova nasce fechada para quem não é daquele host.
+
+O backend não muda com isso: `/api` é relativo (same-origin nos dois hosts) e `/api/plataforma/*` responde em qualquer host, protegido só por `require_super_admin`. A separação é da interface, não do servidor. Está em produção desde 2026-09-28: o PR #113 chegou à `main` pelo PR #114 (merge `1df3a0f`) e o deploy desse push terminou com sucesso. O hostname `admin.runaserp.com.br` e o Cloudflare Access na frente dele estão configurados fora do repositório (túnel e painel da Cloudflare), segundo verificação de 2026-09-28.
 
 Rotas consumidas por `plataformaApi` (base `VITE_API_URL`, por padrão `/api`):
 
@@ -130,10 +143,11 @@ Não existe tela de inventário físico (contagem) no frontend.
 
 ## Testes
 
-Existe suíte Vitest configurada: `frontend/vitest.config.ts` e 9 arquivos de teste.
+Existe suíte Vitest configurada: `frontend/vitest.config.ts` e 10 arquivos de teste.
 
 ```
 src/components/layout/Sidebar/__tests__/podeVer.test.ts
+src/config/__tests__/host.test.ts
 src/pages/Configuracoes/__tests__/empresaSchema.test.ts
 src/pages/Configuracoes/__tests__/integracoesSchema.test.ts
 src/pages/Configuracoes/__tests__/usuarioSchema.test.ts
@@ -191,7 +205,7 @@ frontend/src/
 │                     usuariosApi
 ├── utils/            masks, validators, toast, errorLogger
 ├── types/
-└── config/env.ts
+└── config/           env.ts, host.ts (separação painel/lojista por hostname)
 ```
 
 Componentes de módulo ficam ao lado da página que os usa (ex.: `pages/Estoque/components/`); os diretórios em `components/<modulo>/` estão vazios e não representam nada implementado.

@@ -62,8 +62,8 @@ Atenção: `docker-compose.build.yml` passa `VITE_API_URL`,
 `VITE_OAUTH_REDIRECT_URI` e as `VITE_*` de OAuth como `args:` do build, mas
 `frontend/Dockerfile` não declara nenhum `ARG`. Build arg não declarado não
 chega ao `RUN npm run build`, então o bundle de produção sai com os defaults de
-`env.ts`. Hoje isso não muda nada (o default de `VITE_API_URL` já é `/api` e as
-outras não são usadas), mas quem precisar de uma `VITE_*` nova em produção tem
+`env.ts` e `host.ts`. Hoje isso não muda nada (o default de `VITE_API_URL` já é `/api`,
+`VITE_HOST_PLATAFORMA` nem é passada e vale `admin`, e as outras não são usadas), mas quem precisar de uma `VITE_*` nova em produção tem
 de declarar o `ARG`/`ENV` no Dockerfile.
 
 No backend, a que importa para o frontend é `FRONTEND_URL`

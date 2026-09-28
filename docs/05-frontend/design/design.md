@@ -63,7 +63,7 @@ Composição real de `frontend/src/main.tsx` e `frontend/src/App.tsx`:
 QueryClientProvider (React Query)
 ├── AuthProvider (Context)
 │   ├── ErrorBoundary
-│   │   └── App → BrowserRouter
+│   │   └── App → BrowserRouter → Suspense (fallback LoadingScreen)
 │   │       ├── Rotas públicas: /login, /forgot-password (PublicRoute), /reset-password
 │   │       ├── Loja pública: /c/:empresaSlug/...
 │   │       ├── Callbacks OAuth: /auth/callback/google, /auth/callback/microsoft
@@ -77,13 +77,17 @@ QueryClientProvider (React Query)
 
 Não existe Footer nem Breadcrumbs. Rotas desconhecidas redirecionam para `/dashboard` (não há página 404).
 
-`ProtectedRoute` manda o `SUPER_ADMIN` para `/plataforma` em qualquer rota que não comece com `/plataforma` ou `/perfil`. Rotas com restrição de papel usam `RoleProtectedRoute` (`frontend/src/components/common/RoleProtectedRoute.tsx`):
+`ProtectedRoute` decide o destino com `escolherPorta()` (`frontend/src/config/host.ts`): o `SUPER_ADMIN` vai para `/plataforma` em qualquer rota que não comece com `/plataforma` ou `/perfil`, os outros papéis vão para `/dashboard` se pedirem `/plataforma*`, e quem está no host errado vê a tela "Endereço errado" (`PortaErrada`, em `App.tsx`).
+
+**Separação por host.** O mesmo bundle serve o ERP dos lojistas e o painel da plataforma. `ehPainelPlataforma` é verdadeiro quando o primeiro label de `window.location.hostname` é `VITE_HOST_PLATAFORMA` (padrão `admin`). Com a separação ativa, SUPER_ADMIN fora do host do painel ou outro papel dentro dele recebe `PortaErrada` — uma tela, não um redirect, porque o cookie de sessão é host-only e não iria para o outro host. `/perfil` vale nos dois lados. Em dev (`import.meta.env.DEV`) a separação só liga quando o host já é o do painel: as duas aplicações convivem em `localhost` e `admin.localhost:3000` exercita o caminho de produção. A separação é só da interface: `/api` é relativo (same-origin em qualquer host) e `/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`. Em produção desde 2026-09-28 (o PR #113 chegou à `main` pelo PR #114).
+
+Rotas com restrição de papel usam `RoleProtectedRoute` (`frontend/src/components/common/RoleProtectedRoute.tsx`):
 
 | Rota | Papéis |
 |------|--------|
 | `/estoque`, `/estoque/:id`, `/vendas` | ADMIN, OPERADOR |
 | `/financeiro`, `/configuracoes/empresa`, `/configuracoes/usuarios`, `/configuracoes/integracoes` | ADMIN |
-| `/plataforma` | SUPER_ADMIN |
+| `/plataforma`, `/plataforma/tenants` | SUPER_ADMIN |
 
 ### Data Flow
 
@@ -130,7 +134,7 @@ frontend/
 │   ├── types/              # auth, clientes, common, empresa, estoque, integracao,
 │   │                       # plataforma, produtos, usuario
 │   ├── utils/              # errorLogger.ts, masks.ts, toast.ts, validators.ts
-│   ├── config/env.ts
+│   ├── config/             # env.ts, host.ts (+ __tests__/host.test.ts)
 │   ├── styles/             # global.scss, variables.scss, mixins.scss
 │   ├── img/                # logo.png, logo1.png, background.png
 │   ├── test/setup.ts
@@ -396,14 +400,14 @@ Estado atual de cada módulo, conferido nas páginas:
 - **Loja Online (admin)**: pedidos online e configurações da loja (`pages/LojaOnline/`).
 - **Loja Online pública**: vitrine, produto, carrinho, checkout, rastreamento, login e área do cliente (`pages/LojaOnlinePublico/`).
 - **Configurações** (ADMIN): empresa, usuários e integrações.
-- **Plataforma** (SUPER_ADMIN): gestão de tenants (`PlataformaPage`, `TenantDetalhe`).
+- **Plataforma** (SUPER_ADMIN): visão geral em `/plataforma` (`PlataformaDashboard`) e gestão de tenants em `/plataforma/tenants` (`PlataformaPage`, `TenantDetalhe`).
 - **Perfil**: dados do usuário e troca de senha.
 
 ## Performance Optimization
 
 ### Code Splitting
 
-Não há. Todas as páginas são importadas estaticamente em `App.tsx` (sem `React.lazy`/`Suspense`).
+Parcial. Só as duas páginas do painel da plataforma são `lazy()` (`PlataformaPage` e `PlataformaDashboard`, `App.tsx:28-29`), sob um `Suspense` com `LoadingScreen` que envolve as rotas; no host do lojista nenhuma rota pede esses chunks. As demais páginas, inclusive todo o storefront, continuam importadas estaticamente em `App.tsx`.
 
 ### React Query Configuration
 
@@ -448,7 +452,7 @@ Não há DOMPurify nem sanitização de HTML no frontend. Em produção o `front
 
 - Runner: Vitest com ambiente `jsdom` (`frontend/vitest.config.ts`), setup em `frontend/src/test/setup.ts`.
 - Scripts: `npm run test`, `npm run test:watch`, `npm run test:coverage`.
-- Testes existentes em `__tests__/`: `services/api/__tests__/axios.test.ts`, `components/layout/Sidebar/__tests__/podeVer.test.ts`, `utils/__tests__/errorLogger.test.ts`, schemas de Configurações e Plataforma e `resumirTenants.test.ts`.
+- Testes existentes em `__tests__/`: `services/api/__tests__/axios.test.ts`, `components/layout/Sidebar/__tests__/podeVer.test.ts`, `config/__tests__/host.test.ts` (`escolherPorta`), `utils/__tests__/errorLogger.test.ts`, schemas de Configurações e Plataforma e `resumirTenants.test.ts`.
 - Não há testes E2E (sem Playwright/Cypress).
 
 ## Deployment
@@ -463,7 +467,7 @@ npm run build
 
 ### Environment Variables
 
-Lidas em `frontend/src/config/env.ts` e `frontend/vite.config.ts` (modelo em `frontend/.env.example`):
+Lidas em `frontend/src/config/env.ts`, `frontend/src/config/host.ts` e `frontend/vite.config.ts` (modelo em `frontend/.env.example`):
 
 | Variável | Padrão no código |
 |----------|------------------|
@@ -479,6 +483,7 @@ Lidas em `frontend/src/config/env.ts` e `frontend/vite.config.ts` (modelo em `fr
 | `VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID` | vazio |
 | `VITE_MICROSOFT_TENANT_ID` | `common` |
 | `VITE_OAUTH_REDIRECT_URI` | `http://localhost:3000/auth/callback` |
+| `VITE_HOST_PLATAFORMA` | `admin` (primeiro label do hostname que monta o painel; lida em `host.ts`, ausente do `.env.example`) |
 
 ### Docker
 
@@ -505,4 +510,4 @@ Lidas em `frontend/src/config/env.ts` e `frontend/vite.config.ts` (modelo em `fr
 1. Dashboard ligado a dados reais (hoje é mock).
 2. Telas de Vendas e Financeiro (hoje são placeholders).
 3. Renovação de sessão via `POST /auth/refresh` no frontend.
-4. Code splitting das rotas.
+4. Code splitting das rotas (hoje só as páginas da Plataforma são `lazy()`).

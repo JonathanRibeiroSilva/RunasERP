@@ -60,14 +60,14 @@ o log é a fonte. Itens que valem como marco de roadmap:
 | ID | Item | Evidência re-medida hoje |
 |----|------|--------------------------|
 | C4 | Quebrar o god component `CheckoutPage` | `frontend/src/pages/LojaOnlinePublico/CheckoutPage.tsx` = **1507 linhas** (o log registrou 1.381 — piorou) |
-| H5 | Code splitting por rota | `lazy(` em `frontend/src/App.tsx` = 0 ocorrências |
+| H5 | Code splitting por rota | **Parcial**: `lazy(` em `frontend/src/App.tsx` = 2 ocorrências (`:28-29`), só as duas páginas do painel da plataforma (PR #113); o resto das rotas segue em import estático |
 | C6 | Placeholders de módulo | cobre Dashboard, Vendas e Financeiro, já detalhados na Prioridade 1 |
 
 Os demais IDs (C1, C2, C3, C5, H1–H4, H6, H7) seguem no log e valem a revisita —
 vários foram parcial ou totalmente resolvidos desde a auditoria; conferir lá antes de agir.
 
 ### Página 404 de verdade
-- **Evidência**: `frontend/src/App.tsx:244` — `<Route path="*" element={<Navigate to="/dashboard" replace />} />`.
+- **Evidência**: `frontend/src/App.tsx:280` — `<Route path="*" element={<Navigate to="/dashboard" replace />} />`.
   Qualquer URL errada vira redirecionamento silencioso para o dashboard.
 
 ### Cobertura de testes
@@ -111,8 +111,12 @@ Registrado aqui só para impedir que volte à lista de pendências:
 - **Loja Online completa** — `frontend/src/pages/LojaOnlinePublico/` com vitrine, detalhe,
   `CarrinhoPage`, `CheckoutPage`, `ClienteLoginPage`, `ClientePerfilPage`, `MeusPedidosPage`
   e `RastreamentoPedidoPage`; backend em `services/vendas/routers/loja.py` (25 KB).
-- **Plataforma (plano de controle SaaS)** — `frontend/src/pages/Plataforma/{PlataformaPage.tsx, TenantDetalhe.tsx}`,
+- **Plataforma (plano de controle SaaS)** — `frontend/src/pages/Plataforma/{PlataformaDashboard.tsx, PlataformaPage.tsx, TenantDetalhe.tsx}`,
   `api-gateway/routers/plataforma.py`, `services/empresas/`.
+- **Painel da plataforma em subdomínio próprio** (PR #113, commit `4643422`) — rotas
+  `/plataforma` (visão geral) e `/plataforma/tenants` (lojistas), separação por hostname
+  em `frontend/src/config/host.ts` (`admin.*` monta o painel). Só de UI: a API não mudou.
+  Chegou à `main` pelo PR #114 (merge `1df3a0f`, 2026-09-28).
 - **Configurações** — `frontend/src/pages/Configuracoes/{EmpresaPage, IntegracoesPage, UsuariosPage}.tsx`.
 - **Mercado Pago (PIX)** — `services/vendas/routers/admin_pagamento.py` e `webhook.py`.
 - **ViaCEP no backend** — `services/vendas/services/entrega_service.py:27` e `:49` validam CEP

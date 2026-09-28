@@ -109,7 +109,7 @@ Grandezas medidas que existem no repositório:
 |---|---|---|
 | Deploy só do frontend | ~3 s de 502 (medido em 2026-08-24) | `uptime.yml:44-46` |
 | Cadeia de healthcheck antes do ajuste de `start_interval` | ~90 s de site fora por deploy | `docker-compose.prod.yml:335-339` |
-| Boot frio (túnel sobe antes do frontend existir) | ~20 s de 502 | `docker-compose.prod.yml:565-566` |
+| Boot frio (túnel sobe antes do frontend existir) | ~20 s de 502 | `docker-compose.prod.yml:569-570` |
 | "~2m26s" que o CI reporta | é o tempo do Coolify, **não** o que o visitante viu | `scripts/medir-downtime.sh:5-7` |
 
 > **A CONFIRMAR:** a janela de ~80 s de indisponibilidade por deploy citada na
@@ -156,7 +156,7 @@ Os dumps ficam em **`/data/erp/backups`** na VPS — bind mount absoluto
 (`docker-compose.prod.yml:116`), e não volume nomeado, porque o Coolify reescreve a
 seção `volumes` e descarta `external:` (`docker-compose.prod.yml:98-102`). Consequência
 direta: a proteção que o `external: true` do `db_data` aparenta dar
-(`docker-compose.prod.yml:579-584`) **não existe em produção**.
+(`docker-compose.prod.yml:583-588`) **não existe em produção**.
 
 Limite conhecido: mesmo disco do banco. Cobre migration ruim ou escrita ruim —
 **não** cobre perder a VPS. Off-site continua em aberto (`docker-compose.prod.yml:100-102`).
@@ -177,7 +177,7 @@ docker logs erp-db-backup-prod        # imprime "backup ok: <arquivo> (<tamanho>
 O dump está no host (`/data/erp/backups`) e **não** está montado dentro de
 `erp-db-prod`; quem tinha o mount foi o `erp-db-backup-prod`, que já saiu. Rode um
 container descartável na mesma rede (`runaserp_erp-network`,
-`docker-compose.prod.yml:594-596`), com o mesmo mount:
+`docker-compose.prod.yml:598-600`), com o mesmo mount:
 
 ```bash
 # 1. PARE quem escreve no banco: o gateway, os 7 serviços e o frontend
@@ -251,8 +251,8 @@ Tabela de leitura dos códigos, como o próprio medidor documenta
 
 | Código | O que provavelmente é | Como confirmar | Como resolver |
 |---|---|---|---|
-| **530** | `cloudflared` caiu — Cloudflare error 1033, **não há origin registrado** | `docker logs erp-cloudflared-prod \| grep "Registered tunnel connection"` (imagem distroless, sem shell: é a única verificação possível — `docker-compose.prod.yml:570-571`) | Se for durante um deploy, espere. Senão: `docker start erp-cloudflared-prod` |
-| **502/504** | Túnel de pé, container do **frontend** não existe naquele instante | `docker ps -a \| grep erp-frontend-prod` | Durante deploy: esperado (`docker-compose.prod.yml:561-566`). Fora de deploy: ver [crashloop](#container-em-crashloop) |
+| **530** | `cloudflared` caiu — Cloudflare error 1033, **não há origin registrado** | `docker logs erp-cloudflared-prod \| grep "Registered tunnel connection"` (imagem distroless, sem shell: é a única verificação possível — `docker-compose.prod.yml:574-575`) | Se for durante um deploy, espere. Senão: `docker start erp-cloudflared-prod` |
+| **502/504** | Túnel de pé, container do **frontend** não existe naquele instante | `docker ps -a \| grep erp-frontend-prod` | Durante deploy: esperado (`docker-compose.prod.yml:565-570`). Fora de deploy: ver [crashloop](#container-em-crashloop) |
 | **503** | Veio do **readiness**, e o corpo nomeia quem caiu | leia o `"down":[...]` da resposta | trate o serviço nomeado |
 | **403** | **WAF do Cloudflare**, não o backend | header `Cf-Mitigated: challenge` na resposta | refaça com `-A 'Mozilla/5.0'` |
 | **000** | a sonda não conectou (rede local / DNS) — **não é downtime do site** | — | conserte sua rede |
@@ -263,7 +263,7 @@ serviços. Com `frontend-prod: {condition: service_healthy}` ali, recriar o fron
 recriava o túnel junto: ele desregistrava e o Cloudflare servia a própria página 530
 durante toda a cadeia `api-gateway -> frontend`. Sem isso, o pior que um deploy faz é
 502 pelos segundos em que o container do frontend não existe
-(`docker-compose.prod.yml:556-566`).
+(`docker-compose.prod.yml:560-570`).
 
 ### `/` responde 200 mas `/api` responde 502
 
@@ -304,6 +304,33 @@ UA Mozilla → resposta real do backend, mesma URL e mesmo método.
 > (PUT/PATCH/DELETE) não está documentada em nenhum arquivo do repositório — só a regra
 > de User-Agent está. Se o `Cf-Mitigated` aparecer com UA de navegador, registre aqui
 > qual regra da zona disparou.
+
+### Tela "Endereço errado" depois do login
+
+**O que é:** não é falha. O painel da plataforma e o ERP dos lojistas são o mesmo
+bundle, e o hostname decide qual aplicação ele monta (`frontend/src/config/host.ts`).
+`escolherPorta()` mostra a tela `PortaErrada` (`frontend/src/App.tsx:88-103`) quando a
+conta entrou pelo host errado:
+
+- **super admin** entrando por `app.runaserp.com.br` → tem de entrar por
+  `admin.runaserp.com.br`;
+- **lojista** (ADMIN/OPERADOR) entrando por `admin.runaserp.com.br` → tem de entrar por
+  `app.runaserp.com.br`.
+
+**Como resolver:** clicar em **Sair** e fazer login de novo no host certo. É tela e
+não redirect de propósito: o cookie de sessão é host-only (`set_auth_cookies` não
+passa `domain=`, `api-gateway/routers/auth.py:29`), então a sessão de um host não
+existe no outro. `/perfil` funciona nos dois.
+
+**Antes do login do app, o `admin` exige o login do Cloudflare Access** (302 para
+`*.cloudflareaccess.com`). Quem não passa dali não está na policy Allow por e-mail,
+configurada fora do repositório (painel da Cloudflare), segundo verificação de
+2026-09-28 — isso não é problema do app, e o log do gateway não terá nada.
+
+A separação é só de UI: `/api/plataforma/*` responde nos dois hosts e continua
+protegido por `require_super_admin`. Em dev (`localhost`) a tela não aparece — as duas
+aplicações convivem; use `admin.localhost:3000` para reproduzir o comportamento de
+produção.
 
 ### Container em crashloop
 
@@ -443,7 +470,7 @@ Quando alguém perguntar "por que está assim?", a resposta já está escrita:
 | `db-init`: por que os schemas são criados inline e não por arquivo montado | `docker-compose.prod.yml:130-139` |
 | Backup fail-closed antes de qualquer migration | `docker-compose.prod.yml:85-102` |
 | `start_interval` nos healthchecks (e os 89% de CPU do dockerd) | `docker-compose.prod.yml:335-356` |
-| `cloudflared` sem `depends_on`: 502 é melhor que 530 | `docker-compose.prod.yml:556-566` |
+| `cloudflared` sem `depends_on`: 502 é melhor que 530 | `docker-compose.prod.yml:560-570` |
 | `external: true` no `db_data` e o que o Coolify faz com ele | `docker-compose.prod.yml:98-102`, `:573-584` |
 | `resolver` no nginx: o IP do gateway muda a cada deploy | `frontend/nginx.conf:26-37` |
 | Migration como subprocesso, e por que a falha é fatal | `api-gateway/database.py:47-66` |

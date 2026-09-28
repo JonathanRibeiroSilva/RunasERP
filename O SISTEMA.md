@@ -19,7 +19,12 @@ Este arquivo é o panorama do sistema. Para instalar e rodar, vá direto ao
 O **Runas** é um ERP multi-tenant: uma instalação atende várias lojas, com os
 dados isolados por `empresa_id`. Um módulo de **Plataforma**, exclusivo do
 `SUPER_ADMIN`, administra os tenants (criação, suspensão, plano e cobrança) sem
-ler dado de negócio de nenhum deles.
+ler dado de negócio de nenhum deles. Na interface, o painel da plataforma e o ERP
+dos lojistas são duas aplicações do mesmo bundle, separadas pelo hostname
+(`frontend/src/config/host.ts`): `admin.runaserp.com.br` monta o painel
+(`/plataforma` e `/plataforma/tenants`), `app.runaserp.com.br` o ERP. É separação
+só de UI: a API `/api/plataforma/*` responde nos dois hosts, protegida por
+`require_super_admin`.
 
 Domínios cobertos hoje pelo backend:
 

@@ -27,7 +27,7 @@ Baseline for percentages: `frontend/src` totals **16,330 lines** across `.ts`/`.
 | H2 | RESOLVED for Produtos (others A CONFIRMAR) |
 | H3 | OPEN |
 | H4 | OPEN — re-scoped |
-| H5 | OPEN |
+| H5 | PARTIAL (2026-09-28, PR #113: só o painel da plataforma) |
 | H6 | OPEN — reduced |
 | H7 | RESOLVED (duplication residual) |
 | M1 | OPEN — new 2026-09-25 |
@@ -66,8 +66,8 @@ Baseline for percentages: `frontend/src` totals **16,330 lines** across `.ts`/`.
 ### C4 — `CheckoutPage.tsx` is a god component — Critical · Manual
 - **Problem:** `CheckoutPage.tsx` is a god component holding all checkout concerns.
 - **Evidence summary (2026-06-29):** 1,381 LOC, 28 useState, inline `apiPublica` + interceptor, inline types, 3-step wizard.
-- **Re-measured 2026-09-25 — this got worse:** **1,507 LOC** (was 1,381, +126). It is the largest file in `frontend/src` by 3.3× (next: `PlataformaPage.tsx` at 460 LOC) and is 9.2% of the 16,330-line frontend. It holds **27 `useState` declarations** and still creates its own Axios client plus response interceptor at `:14-31`, despite `services/api/apiPublica.ts` existing since the C3 consolidation.
-- **Correction to the 2026-06-29 evidence:** the "423-LOC test file" claimed for CheckoutPage does not exist. `frontend/src` has nine test files and none covers CheckoutPage; the 421-line one is `utils/__tests__/errorLogger.test.ts`. The god component is **untested**, which is worse than the original entry recorded.
+- **Re-measured 2026-09-25 — this got worse:** **1,507 LOC** (was 1,381, +126). It is the largest file in `frontend/src` by 3.3× (next: `PlataformaPage.tsx` at 460 LOC — medição de 2026-09-28, depois do PR #113: `PlataformaPage.tsx` caiu para 396 LOC e o segundo maior passou a ser `ProdutoFormPage.tsx`, 440 LOC, 3,4×) and is 9.2% of the 16,330-line frontend. It holds **27 `useState` declarations** and still creates its own Axios client plus response interceptor at `:14-31`, despite `services/api/apiPublica.ts` existing since the C3 consolidation.
+- **Correction to the 2026-06-29 evidence:** the "423-LOC test file" claimed for CheckoutPage does not exist. `frontend/src` has nine test files (dez desde o PR #113, que acrescentou `config/__tests__/host.test.ts`) and none covers CheckoutPage; the 421-line one is `utils/__tests__/errorLogger.test.ts`. The god component is **untested**, which is worse than the original entry recorded.
 - **Impact:** Untestable, unsafe to change, high render cost, prime defect site — and it is the single file blocking C3's last copy and H5's bundle split.
 - **Status:** OPEN
 
@@ -133,7 +133,8 @@ Baseline for percentages: `frontend/src` totals **16,330 lines** across `.ts`/`.
 - **Problem:** No route-level code splitting; the whole app ships in one bundle.
 - **Evidence summary, re-confirmed 2026-09-25:** `lazy(`/`Suspense` → **0 matches** in all of `frontend/src`. `App.tsx:3-21` statically imports **34 page components** — every admin page, every storefront page, and the 1,507-line `CheckoutPage`. `chart.js` and `react-chartjs-2` (both in `frontend/package.json`) are imported only by `DashboardPage.tsx:3-14`, so the public storefront still pays for the chart libraries.
 - **Impact:** Large first-load payload; public storefront users download the entire admin app.
-- **Status:** OPEN
+- **Re-medido em 2026-09-28 (PR #113, commit `4643422`) — parcial:** `lazy(` → **2 ocorrências** em `frontend/src`, ambas em `App.tsx:28-29` (`PlataformaPage` e `PlataformaDashboard`), com um `<Suspense fallback={<LoadingScreen />}>` em volta das `<Routes>` (`App.tsx:123`). Segundo a mensagem do commit, o build separa `PlataformaPage` (16,8 kB), `PlataformaDashboard` (3,2 kB) e `assinaturaSchema` (2,1 kB) do `index.js` (A CONFIRMAR: tamanhos não re-medidos nesta revisão). `App.tsx:5-22` ainda importa estaticamente **33 páginas**, inclusive todo o storefront e o `CheckoutPage`; o `chart.js` continua no bundle principal via `DashboardPage`. O storefront continua baixando o app administrativo inteiro, menos o painel da plataforma.
+- **Status:** PARTIAL (só as páginas do painel da plataforma são lazy)
 
 ---
 
@@ -150,8 +151,8 @@ Baseline for percentages: `frontend/src` totals **16,330 lines** across `.ts`/`.
 ### H7 — Stub feature routes have no permission protection — High (security) · Manual
 - **Problem:** Stub feature routes (estoque, vendas, financeiro) had no permission protection, and role checks were duplicated.
 - **Evidence summary (2026-06-29):** estoque, vendas and financeiro were reachable by any authenticated user; only `configuracoes/*` was wrapped in `RoleProtectedRoute`.
-- **Re-measured 2026-09-25 — the access hole is closed:** every feature route is now wrapped. `App.tsx:171` (`estoque`) and `:179` (`estoque/:id`) and `:189` (`vendas`) use `<RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>`; `:199` (`financeiro`) uses `requiredRole={['ADMIN']}`. `configuracoes/*` stayed ADMIN-only and `:226` (`plataforma`) is `['SUPER_ADMIN']`. `RoleProtectedRoute` denies with a toast and `<Navigate to="/dashboard" replace />`.
-- **Residual — the duplication was not fixed:** three independent role-check implementations still coexist, with different semantics. `AuthContext.hasRole` (`AuthContext.tsx:71`) is strict equality `user?.role === role`; `RoleProtectedRoute` (`RoleProtectedRoute.tsx:20`) is `requiredRole.includes(user.role)`; `Sidebar.podeVer` (`Sidebar.tsx:136`, exported and covered by `Sidebar/__tests__/podeVer.test.ts`) is a third. The role set has grown to include `SUPER_ADMIN`, so the "ADMIN/OPERADOR only" note no longer holds, and there is still no action-level gating — only route-level.
+- **Re-measured 2026-09-25 — the access hole is closed:** every feature route is now wrapped. `App.tsx:199` (`estoque`) and `:207` (`estoque/:id`) and `:217` (`vendas`) use `<RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}>`; `:227` (`financeiro`) uses `requiredRole={['ADMIN']}`. `configuracoes/*` stayed ADMIN-only and `:254` (`plataforma`) and `:262` (`plataforma/tenants`) are `['SUPER_ADMIN']` (linhas re-medidas em 2026-09-28, depois do PR #113). `RoleProtectedRoute` denies with a toast and `<Navigate to="/dashboard" replace />`.
+- **Residual — the duplication was not fixed:** three independent role-check implementations still coexist, with different semantics. `AuthContext.hasRole` (`AuthContext.tsx:71`) is strict equality `user?.role === role`; `RoleProtectedRoute` (`RoleProtectedRoute.tsx:20`) is `requiredRole.includes(user.role)`; `Sidebar.podeVer` (`Sidebar.tsx:153`, exported and covered by `Sidebar/__tests__/podeVer.test.ts`) is a third. The role set has grown to include `SUPER_ADMIN`, so the "ADMIN/OPERADOR only" note no longer holds, and there is still no action-level gating — only route-level.
 - **Status:** RESOLVED for route protection; duplication residual OPEN
 
 ---

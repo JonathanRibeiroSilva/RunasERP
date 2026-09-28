@@ -80,8 +80,8 @@ Não há footer nem breadcrumbs.
 - Largura **220px**, fundo `rgba(16, 20, 29, 0.6)` com `blur(20px)`, borda direita `$border-default`.
 - Fixa abaixo da navbar (`top: 64px`); abre e fecha por `transform: translateX(...)`.
 - Itens com `min-height: 44px`; item ativo com gradiente `$primary-light` e barra interna de 3px em `$primary`. Subitens com `min-height: 36px`.
-- Menus com submenu: Loja Online, Produtos e Configurações. O estado de expansão é manual; na primeira renderização expande o grupo da rota atual.
-- Visibilidade por papel via `podeVer(role, requiredRole)` (testado em `Sidebar/__tests__/podeVer.test.ts`): item sem `requiredRole` é de tenant e fica oculto para `SUPER_ADMIN`; Financeiro e Configurações só para `ADMIN`; Plataforma só para `SUPER_ADMIN`; Meu Perfil para os três papéis.
+- Menus com submenu: Loja Online, Produtos, Plataforma e Configurações. Plataforma tem "Visão Geral" (`/plataforma`, com `end: true`, para não ficar ativo junto com `/plataforma/tenants`) e "Lojistas" (`/plataforma/tenants`); subitens aceitam o campo opcional `end`, repassado ao `NavLink`. O estado de expansão é manual; na primeira renderização expande o grupo da rota atual.
+- Visibilidade por papel via `podeVer(role, requiredRole)` (testado em `Sidebar/__tests__/podeVer.test.ts`): item sem `requiredRole` é de tenant e fica oculto para `SUPER_ADMIN`; Financeiro e Configurações só para `ADMIN`; Plataforma só para `SUPER_ADMIN` (os subitens repetem `requiredRole: ['SUPER_ADMIN']`, senão seriam tratados como itens de tenant e sumiriam para ele); Meu Perfil para os três papéis.
 - "Minha Loja" abre `/c/<slug>` em nova aba.
 
 ### Área de conteúdo

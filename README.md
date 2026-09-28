@@ -132,8 +132,10 @@ próprio host abriu para fora (Cloudflare Tunnel), e o apex nem chega na VPS.
   ║                                estático, nunca toca a VPS            ║
   ║                                                                      ║
   ║  app.runaserp.com.br      ──┐                                        ║
+  ║  admin.runaserp.com.br    ──┤   (admin: Cloudflare Access antes)     ║
   ║  coolify.runaserp.com.br  ──┴►  Zero Trust · ingress do túnel        ║
   ║                                 app     → frontend-prod:80           ║
+  ║                                 admin   → frontend-prod:80 (o mesmo) ║
   ║                                 coolify → host.docker.internal:8000  ║
   ╚══════════════════════════════╤═══════════════════════════════════════╝
                                  ┊  QUIC — a conexão é SEMPRE iniciada de dentro
@@ -157,6 +159,13 @@ escutando não pode ser varrido. E o gatilho de deploy chega *pelo túnel*: um
 runner do GitHub não abre conexão confiável para o IP da Hostinger (bloco
 `187.127.0.0/18`, reachability instável dependendo do egresso Azure que calhar),
 mas a saída para o anycast da Cloudflare sempre funciona.
+
+**`app` e `admin` são o mesmo container.** Quem decide se o bundle monta o ERP do
+lojista ou o painel da plataforma é o hostname lido no navegador
+(`frontend/src/config/host.ts`), não a imagem. A rota `admin` do túnel e o
+Cloudflare Access na frente dela estão configurados fora do repositório (painel da
+Cloudflare), segundo verificação de 2026-09-28 — ver
+[docs/03-arquitetura/plataforma.md §5](./docs/03-arquitetura/plataforma.md).
 
 | | Dev (sua máquina) | Produção (VPS) |
 |---|---|---|
@@ -391,9 +400,17 @@ Três peças sustentam isso fora do router:
   scheduler residente — um beat worker comeria RAM 24 h por dia para trabalhar 200 ms
   nesta VPS de 1 vCPU.
 
-No frontend, `pages/Plataforma/` (`PlataformaPage.tsx` + `TenantDetalhe.tsx`) atende
-a rota `/plataforma`, exclusiva de SUPER_ADMIN; como esse papel não tem `empresa_id`,
-nenhuma tela de tenant funciona para ele e o `App.tsx` o redireciona para lá.
+No frontend, `pages/Plataforma/` atende duas rotas exclusivas de SUPER_ADMIN:
+`/plataforma`, a visão geral (`PlataformaDashboard.tsx`), e `/plataforma/tenants`, a
+lista de lojistas (`PlataformaPage.tsx` + `TenantDetalhe.tsx`: provisionar, plano,
+suspender, cobrança, auditoria), ambas carregadas com `lazy()`. O painel e o ERP dos
+lojistas são duas aplicações do mesmo bundle, separadas pelo hostname: se o primeiro
+rótulo for `VITE_HOST_PLATAFORMA` (padrão `admin`, ou seja `admin.runaserp.com.br`),
+monta o painel. `escolherPorta()` (`frontend/src/config/host.ts`) mostra a tela
+"Endereço errado" ao super admin fora do host `admin` e ao lojista dentro dele —
+tela, não redirect, porque o cookie de sessão é host-only. `/perfil` vale nos dois
+lados; em dev (`localhost`) as duas aplicações convivem. A separação é só de UI:
+`/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`.
 
 Detalhamento em [docs/03-arquitetura/plataforma.md](./docs/03-arquitetura/plataforma.md)
 e [docs/10-api-reference/plataforma-api.md](./docs/10-api-reference/plataforma-api.md).

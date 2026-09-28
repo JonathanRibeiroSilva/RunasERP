@@ -239,30 +239,79 @@ rota do catálogo público, chamada sem usuário logado; ela só devolve
 ## 5. O guard do frontend
 
 `SUPER_ADMIN` não tem `empresa_id`, então **toda** tela de tenant do React consultaria
-uma empresa que ele não tem. Em vez de um guard por rota, há **uma porta só**, dentro
-do `ProtectedRoute` (`frontend/src/App.tsx:63-73`):
+uma empresa que ele não tem. Por isso o painel da plataforma e o ERP dos lojistas são
+tratados como **duas aplicações servidas pelo mesmo bundle**, separadas pelo hostname.
 
-```tsx
-if (
-  user?.role === 'SUPER_ADMIN' &&
-  !pathname.startsWith('/plataforma') &&
-  !pathname.startsWith('/perfil')
-) {
-  return <Navigate to="/plataforma" replace />;
-}
-```
+### 5.1 Dois hosts, um bundle, um container
 
-Qualquer rota protegida que não seja `/plataforma` nem `/perfil` redireciona. O efeito
-é que **tela nova nasce fechada para o super admin sem ninguém precisar lembrar de
-fechá-la**; `/perfil` fica de fora porque é onde ele troca a própria senha.
+`frontend/src/config/host.ts` lê `window.location.hostname`: se o primeiro rótulo for
+`VITE_HOST_PLATAFORMA` (padrão `admin`), o bundle monta o painel
+(`ehPainelPlataforma`, `host.ts:16-19`). Não há segunda imagem: `admin` e `app`
+apontam para o mesmo container `frontend-prod`, cujo nginx tem `server_name _`
+(`frontend/nginx.conf:5`) — quem separa é o hostname lido no navegador. O comentário
+de ingress do túnel em `docker-compose.prod.yml` já lista
+`admin.runaserp.com.br -> http://frontend-prod:80`.
 
-A rota `/plataforma` tem ainda um `RoleProtectedRoute requiredRole={['SUPER_ADMIN']}`
-(`App.tsx:225-232`) — o caminho inverso: impedir que um ADMIN entre no painel.
+Em dev (`import.meta.env.DEV`) a separação só é aplicada em host `admin.*`
+(`separarPorHost`, `host.ts:26`): em `localhost` as duas aplicações convivem, senão o
+super admin ficaria trancado fora do próprio painel; `admin.localhost:3000` exercita o
+caminho de produção.
 
-O painel em si:
+### 5.2 Uma porta só: `escolherPorta()`
 
-- `frontend/src/pages/Plataforma/PlataformaPage.tsx` — lista de tenants, via
-  `useTenants()` (`PlataformaPage.tsx:85`)
+Em vez de um guard por rota, há **uma porta só**, dentro do `ProtectedRoute`
+(`frontend/src/App.tsx:69-78`), que delega a decisão à função pura `escolherPorta()`
+(`host.ts:38-56`):
+
+| Situação (com separação por host ativa) | Resultado |
+|---|---|
+| Super admin fora do host `admin`, ou não-super no host `admin` | `porta-errada` — tela "Endereço errado" com botão Sair |
+| Super admin no host certo, em `/plataforma*` ou `/perfil` | `ok` |
+| Super admin no host certo, em qualquer outra rota | redireciona para `/plataforma` |
+| Não-super no host certo, em `/plataforma*` | redireciona para `/dashboard` |
+| Não-super no host certo, em qualquer outra rota | `ok` |
+
+O efeito é que **tela nova nasce fechada para quem não é daquele host sem ninguém
+precisar lembrar de fechá-la**; `/perfil` vale nos dois lados porque é onde cada um
+troca a própria senha.
+
+`porta-errada` é uma **tela** (`PortaErrada`, `App.tsx:83-103`) e não um redirect para o
+outro host, por dois motivos: o cookie de sessão é *host-only* (`set_auth_cookies`
+não passa `domain=`), então a sessão não iria junto; e mandar o super admin para
+`/plataforma` num host que não serve `/plataforma`, e de lá de volta, fecharia um laço
+de redirect.
+
+As rotas `/plataforma` e `/plataforma/tenants` têm ainda um
+`RoleProtectedRoute requiredRole={['SUPER_ADMIN']}` (`App.tsx:253-268`) — o caminho
+inverso: impedir que um ADMIN entre no painel.
+
+### 5.3 A separação é só de UI
+
+Nada mudou no backend. O `/api` é relativo, então no subdomínio ele é same-origin e o
+CORS não entra em jogo; o gateway não tem `TrustedHost` nem checagem de `Origin`.
+**`/api/plataforma/*` responde nos dois hosts**, protegido só por
+`require_super_admin` (seção 2.1). O host `admin` é uma fronteira da interface, não do
+servidor.
+
+Produção: o PR que introduziu os dois hosts (#113, commit `4643422`) chegou à
+`main` pelo PR #114 (merge `1df3a0f`) e está no ar desde o deploy de 2026-09-28,
+que terminou com sucesso. A rota do túnel
+`admin.runaserp.com.br -> frontend-prod:80` e um Cloudflare Access (policy Allow por
+e-mail) na frente do host `admin` estão configurados **fora do repositório** (painel
+da Cloudflare), segundo verificação de 2026-09-28; nada no código comprova isso.
+
+### 5.4 As telas
+
+As páginas do painel são carregadas com `lazy()` (`App.tsx:28-29`): no host do lojista
+nenhuma rota chega a pedir esses chunks. No Sidebar, "Plataforma" é um submenu com
+"Visão Geral" (`/plataforma`, com `end`) e "Lojistas" (`/plataforma/tenants`).
+
+- `frontend/src/pages/Plataforma/PlataformaDashboard.tsx` — rota `/plataforma`, visão
+  geral: cartões calculados por `resumirTenants()` sobre `useTenants()`
+  (`PlataformaDashboard.tsx:22-43`)
+- `frontend/src/pages/Plataforma/PlataformaPage.tsx` — rota `/plataforma/tenants`,
+  lista de lojistas (provisionar, plano, suspender, cobrança, auditoria), via
+  `useTenants()` (`PlataformaPage.tsx:59`)
 - `frontend/src/pages/Plataforma/TenantDetalhe.tsx` — abas `auditoria`, `assinatura`,
   `backups` (`TenantDetalhe.tsx:19-24`); `auditoria` e `backups` só consultam a API
   quando a aba está ativa (`:95-96`), `assinatura` é um formulário
@@ -484,9 +533,11 @@ trabalhar 200 ms).
 - **Onde o webhook do MP é registrado na conta do dono da plataforma** (a URL pública
   configurada no painel do Mercado Pago) — não há registro disso no repositório.
 - **A `back_url` do preapproval aponta para `{FRONTEND_URL}/plataforma`**
-  (`preapproval_service.py:48`), isto é, para o painel do dono, não para uma tela do
-  lojista. Não foi possível confirmar se isso é intencional ou se o lojista deveria
-  cair em outro lugar depois de assinar.
+  (`preapproval_service.py:48`), isto é, para a rota do painel do dono, não para uma tela
+  do lojista. Como `FRONTEND_URL` é o host `app`, depois da separação por host (seção
+  5.2) um lojista logado que volte por ali cai em `/plataforma` no host `app` e é
+  redirecionado para `/dashboard`. Não foi possível confirmar se isso é intencional ou
+  se o lojista deveria cair em outro lugar depois de assinar.
 
 ---
 

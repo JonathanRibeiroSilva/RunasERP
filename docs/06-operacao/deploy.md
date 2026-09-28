@@ -208,7 +208,11 @@ entradas de cache em silencio (`docker-compose.build.yml:31-33`).
 
 A imagem do `frontend` e a unica especifica de ambiente: os `VITE_*` sao assados no
 bundle em tempo de build, entao a CI tem de construi-la com os valores reais de
-producao (`docker-compose.build.yml:94-112`).
+producao (`docker-compose.build.yml:94-112`). Na pratica `frontend/Dockerfile` nao
+declara nenhum `ARG`, entao nenhum desses build args chega ao `npm run build` e o
+bundle sai com os defaults do codigo — inclusive `VITE_HOST_PLATAFORMA`, que nem e
+passada e vale `admin` (`frontend/src/config/host.ts:16`). Mudar o rotulo do host do
+painel exige declarar o `ARG` no Dockerfile.
 
 ---
 
@@ -243,7 +247,7 @@ bind mount absoluto `/data/erp/backups` (`docker-compose.prod.yml:115-116`) e o
 deploy que nao consegue fazer backup nao migra. Bind mount absoluto e nao volume
 nomeado porque o Coolify reescreve a secao `volumes` e descarta `external:`
 (`docker-compose.prod.yml:98-102`) — a mesma observacao vale para `db_data`, que
-**parece** protegido por `external: true` em `docker-compose.prod.yml:579-584` e,
+**parece** protegido por `external: true` em `docker-compose.prod.yml:583-588` e,
 segundo o comentario do proprio arquivo, nao esta.
 
 **`db-init`** (`docker-compose.prod.yml:140-238`) cria os 9 schemas — `gateway`,
@@ -292,21 +296,43 @@ e vive sob o profile `proxy` (`docker-compose.cloudflare.yml:50-51`).
 
 **Producao — modo token, gerenciado pelo Coolify.** Nao ha arquivo de credencial para
 montar: roda `tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}`
-(`docker-compose.prod.yml:547`), e o ingress **nao** esta no repo — esta configurado
-no dashboard do Cloudflare Zero Trust (`docker-compose.prod.yml:542-546`):
+(`docker-compose.prod.yml:551`), e o ingress **nao** esta no repo — esta configurado
+no dashboard do Cloudflare Zero Trust (`docker-compose.prod.yml:542-550`):
 
 ```
 app.runaserp.com.br     -> http://frontend-prod:80
+admin.runaserp.com.br   -> http://frontend-prod:80  (painel da plataforma)
 coolify.runaserp.com.br -> http://host.docker.internal:8000
 ```
 
+**`app` e `admin` sao o mesmo container.** Nao ha segunda imagem nem segundo
+servico: o nginx do `frontend-prod` tem `server_name _` e serve o mesmo bundle aos dois
+hosts, e quem decide qual aplicacao montar e o hostname lido no navegador
+(`frontend/src/config/host.ts`; `docker-compose.prod.yml:549-550`). O backend tambem
+nao muda: `/api/plataforma/*` responde nos dois hosts, protegido so por
+`require_super_admin`. Detalhes em
+[docs/03-arquitetura/plataforma.md §5](../03-arquitetura/plataforma.md).
+
+O comentario do compose e so documentacao. A rota `admin.runaserp.com.br ->
+frontend-prod:80` no tunel e o **Cloudflare Access** na frente do `admin` (policy
+Allow por e-mail) estao configurados **fora do repositorio**, no painel da
+Cloudflare, segundo verificacao de 2026-09-28: `admin` responde 302 para o login do
+Access, `app` responde 200. Nada no codigo comprova ou recria isso — se o tunel for
+refeito, a rota e a policy tem de ser refeitas a mao.
+
+Estado em producao: o PR #113 (commit `4643422`) chegou a `main` pelo PR #114 (merge
+`1df3a0f`, 2026-09-28) e o workflow Deploy desse push terminou com sucesso; em
+2026-09-28 o bundle servido por `app.runaserp.com.br` ja continha a tela "Endereco
+errado". **A CONFIRMAR:** o fluxo completo do super admin em `admin.` depois do login
+do Access (nao testado).
+
 O `extra_hosts: host.docker.internal:host-gateway`
-(`docker-compose.prod.yml:553-554`) existe porque o Coolify escuta **no host**, nao na
+(`docker-compose.prod.yml:557-558`) existe porque o Coolify escuta **no host**, nao na
 `erp-network`. E isso que faz o gatilho de deploy chegar pelo tunel em vez de como
 conexao de entrada no IP da VPS.
 
 **O `cloudflared` de producao e o oposto de todos os outros servicos**
-(`docker-compose.prod.yml:555-566`): **sem `depends_on`** e **sem
+(`docker-compose.prod.yml:559-570`): **sem `depends_on`** e **sem
 `pull_policy: always`**, os dois de proposito. Ele e o unico ingress e tem de
 sobreviver aos containers que fronteia. Com `frontend-prod: {condition:
 service_healthy}` ali, recriar o frontend recriava o tunel junto: ele se
@@ -316,7 +342,7 @@ segundos em que o container do frontend nao existe, e o `cloudflared` re-resolve
 `frontend-prod` a cada requisicao.
 
 A imagem e distroless: nao ha shell para healthcheck. A verificacao e pelo log
-(`docker-compose.prod.yml:570-571`):
+(`docker-compose.prod.yml:574-575`):
 
 ```
 docker logs erp-cloudflared-prod | grep "Registered tunnel connection"
@@ -346,7 +372,7 @@ em `run:` e substituicao textual — uma tag contendo `$(...)` executaria no run
 ## 7. A CONFIRMAR
 
 - **A CONFIRMAR:** o valor de `COOLIFY_URL`. E um secret do repositorio, nao esta no
-  codigo. O comentario em `docker-compose.prod.yml:546` mostra
+  codigo. O comentario em `docker-compose.prod.yml:547` mostra
   `coolify.runaserp.com.br -> http://host.docker.internal:8000` como rota do tunel, o
   que torna esse o candidato obvio, mas o valor efetivo do secret nao foi lido.
 - **A CONFIRMAR:** a versao do Coolify em producao. `docker-compose.prod.yml:90` fala

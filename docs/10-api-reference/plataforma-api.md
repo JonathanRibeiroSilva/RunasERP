@@ -31,6 +31,14 @@ Existe um segundo router no mesmo arquivo, **sem** `require_super_admin`
 (`router_publico`, `plataforma.py:438`), com as duas rotas de máquina: webhook do
 Mercado Pago e job do cron. Elas estão na seção "Rotas públicas" no fim.
 
+**O host não faz parte da autorização.** O frontend separa o painel (host `admin.*`)
+do ERP dos lojistas pelo hostname, mas isso é só de interface
+(`frontend/src/config/host.ts`, ver [plataforma.md §5](../03-arquitetura/plataforma.md)).
+As rotas desta página respondem em qualquer host que chegue ao gateway (`app` ou
+`admin`), protegidas só por `require_super_admin`. Não confunda com as **telas**
+`/plataforma` (visão geral) e `/plataforma/tenants` (lista de lojistas) do React: essas
+são rotas do navegador, sem o prefixo `/api`.
+
 ---
 
 ## 📋 Visão geral

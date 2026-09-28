@@ -90,6 +90,27 @@ publica porta no host. O único ingress é o Cloudflare Tunnel, que roteia
 (`docker-compose.prod.yml:545`). Ou seja: em produção não há `http://localhost`
 para abrir.
 
+O mesmo container também atende o painel da plataforma: o comentário de ingress
+(`docker-compose.prod.yml:546`) lista `admin.runaserp.com.br` →
+`http://frontend-prod:80`, e quem separa as duas aplicações é o hostname lido
+pelo bundle (`src/config/host.ts`). A rota no túnel e o Cloudflare Access na
+frente do `admin` estão configurados fora do repositório (túnel em modo token,
+painel da Cloudflare), segundo verificação de 2026-09-28. O código que usa esse
+hostname (PR #113) está em produção desde 2026-09-28: chegou à `main` pelo
+PR #114 (merge `1df3a0f`).
+
+### Painel da plataforma x ERP do lojista
+
+`src/config/host.ts` compara o primeiro label de `window.location.hostname` com
+`VITE_HOST_PLATAFORMA` (default `admin`). No host do painel só o SUPER_ADMIN
+entra (`/plataforma`, `/plataforma/tenants`, `/perfil`); fora dele o
+SUPER_ADMIN vê a tela "Endereço errado", assim como qualquer outro papel no
+host do painel — tela e não redirect, porque o cookie de sessão é host-only.
+Em dev (`npm run dev`) as duas aplicações convivem em `localhost:3000`; use
+`admin.localhost:3000` para exercitar o caminho de produção. O backend não
+separa nada: `/api/plataforma/*` responde nos dois hosts, protegido por
+`require_super_admin`.
+
 Detalhes: [docs/05-frontend/setup/docker.md](../docs/05-frontend/setup/docker.md)
 e [docs/06-operacao/deploy.md](../docs/06-operacao/deploy.md).
 
@@ -140,7 +161,8 @@ frontend/
 │   ├── services/
 │   │   ├── api/            # axios.ts + um *Api.ts por domínio + apiPublica.ts
 │   │   └── auth/           # authService.ts, tokenService.ts
-│   ├── hooks/  contexts/  types/  utils/  config/  styles/  img/
+│   ├── hooks/  contexts/  types/  utils/  styles/  img/
+│   ├── config/             # env.ts, host.ts (painel x lojista por hostname)
 │   ├── test/               # setup.ts do Vitest
 │   ├── App.tsx             # rotas
 │   └── main.tsx            # entry point
@@ -199,9 +221,10 @@ O `--max-warnings 115` é um teto herdado, não uma meta: o lint passa com até
 ## Testes
 
 Vitest + jsdom, setup em `src/test/setup.ts` (`vitest.config.ts:11`).
-**9 arquivos de teste** hoje:
+**10 arquivos de teste** hoje:
 
 - `src/components/layout/Sidebar/__tests__/podeVer.test.ts`
+- `src/config/__tests__/host.test.ts`
 - `src/pages/Configuracoes/__tests__/{empresaSchema,integracoesSchema,usuarioSchema}.test.ts`
 - `src/pages/Plataforma/__tests__/{assinaturaSchema,resumirTenants,tenantSchema}.test.ts`
 - `src/services/api/__tests__/axios.test.ts`
@@ -260,8 +283,9 @@ Referência da API: [docs/10-api-reference/](../docs/10-api-reference/) e
 - **Produtos** — 5 páginas (lista, formulário, detalhes, variantes, categorias)
 - **Estoque** — 2 páginas + 4 componentes (modal de operação, badges, timeline)
 - **Configurações** — empresa, usuários, integrações (com schemas Zod testados)
-- **Plataforma** (super admin) — lista de tenants + detalhe, com auditoria,
-  dumps e assinatura
+- **Plataforma** (super admin) — visão geral (`/plataforma`) e lista de
+  tenants + detalhe (`/plataforma/tenants`), com auditoria, dumps e assinatura;
+  páginas carregadas com `lazy()`
 - **Loja Online** — painel de configuração + loja pública (catálogo, produto,
   carrinho, checkout, login do cliente, meus pedidos, rastreamento)
 - Docker de dev e de produção, nginx na imagem de produção

@@ -96,8 +96,9 @@ frontend/
 │   │   ├── api/                # axios.ts, apiPublica.ts + 8 serviços de domínio
 │   │   └── auth/               # authService.ts, tokenService.ts
 │   ├── hooks/                  # 10 hooks (8 de React Query + useAuth, useCarrinho)
-│   ├── contexts/  types/  utils/  config/  styles/  img/  test/
-│   ├── App.tsx                 # tabela de rotas estática
+│   ├── contexts/  types/  utils/  styles/  img/  test/
+│   ├── config/                 # env.ts, host.ts (painel x lojista por hostname)
+│   ├── App.tsx                 # tabela de rotas (lazy só nas 2 páginas da Plataforma)
 │   └── main.tsx                # entry point + QueryClientProvider
 ├── Dockerfile                  # build + nginx (EXPOSE 80)
 ├── Dockerfile.dev              # vite dev (EXPOSE 3000)
@@ -181,7 +182,7 @@ Medido por LOC das páginas em `frontend/src/pages/`.
 |--------|---------|--------|
 | Loja Online pública | `LojaOnlinePublico/` | Implementada — inclui `CheckoutPage.tsx` com 1.507 LOC, o maior arquivo do frontend |
 | Estoque | `Estoque/EstoquePage.tsx` (336 LOC), `EstoqueDetalhePage.tsx` (239 LOC) | Implementado |
-| Plataforma | `Plataforma/PlataformaPage.tsx`, `TenantDetalhe.tsx` | Implementado — administração de tenants e assinaturas |
+| Plataforma | `Plataforma/PlataformaDashboard.tsx` (`/plataforma`), `PlataformaPage.tsx` (`/plataforma/tenants`), `TenantDetalhe.tsx` | Implementado — visão geral, administração de tenants e assinaturas |
 | Vendas | `Vendas/VendasPage.tsx` (47 LOC) | Stub |
 | Financeiro | `Financeiro/FinanceiroPage.tsx` (47 LOC) | Stub |
 
@@ -194,7 +195,11 @@ O módulo de administração multi-tenant tem documentação própria fora desta
 - **[Arquitetura da Plataforma](../03-arquitetura/plataforma.md)**
 - **[API da Plataforma](../10-api-reference/plataforma-api.md)**
 
-No frontend: `pages/Plataforma/` (páginas, schemas Zod e `__tests__/`), `hooks/usePlataforma.ts` e `services/api/plataformaApi.ts`.
+No frontend: `pages/Plataforma/` (páginas, schemas Zod e `__tests__/`), `hooks/usePlataforma.ts`, `services/api/plataformaApi.ts` e `config/host.ts`.
+
+Rotas: `/plataforma` é a visão geral (`PlataformaDashboard`) e `/plataforma/tenants` a lista de lojistas (`PlataformaPage`: provisionar, plano, suspender, cobrança, auditoria). As duas são `lazy()` e exigem `SUPER_ADMIN`; no `Sidebar` o item "Plataforma" é um submenu com esses dois subitens.
+
+O painel e o ERP dos lojistas saem do **mesmo bundle** e do mesmo container; quem decide qual aplicação monta é o hostname. `config/host.ts` compara o primeiro label de `window.location.hostname` com `VITE_HOST_PLATAFORMA` (padrão `admin`), e `escolherPorta()` mostra a tela "Endereço errado" (sem redirect: o cookie de sessão é host-only) para o SUPER_ADMIN fora do host do painel ou para outro papel dentro dele. `/perfil` vale nos dois lados. Em dev as duas aplicações convivem em `localhost`; `admin.localhost:3000` exercita o caminho de produção. A separação é só do frontend: `/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`. Em produção desde 2026-09-28 (o PR #113 chegou à `main` pelo PR #114).
 
 ---
 
@@ -260,10 +265,11 @@ npm run test:coverage   # vitest --coverage
 
 Não existe script `test:e2e`.
 
-Os testes ficam em pastas `__tests__/` ao lado do código. Os 9 arquivos `*.test.ts` de hoje:
+Os testes ficam em pastas `__tests__/` ao lado do código. Os 10 arquivos `*.test.ts` de hoje:
 
 ```
 components/layout/Sidebar/__tests__/podeVer.test.ts
+config/__tests__/host.test.ts
 pages/Configuracoes/__tests__/{empresaSchema,integracoesSchema,usuarioSchema}.test.ts
 pages/Plataforma/__tests__/{assinaturaSchema,resumirTenants,tenantSchema}.test.ts
 services/api/__tests__/axios.test.ts

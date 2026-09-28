@@ -301,7 +301,9 @@ chore(docker): consolidate postgres containers
 
 ## Infrastructure
 
-**Domains:** app → `https://app.runaserp.com.br` (tunnel) · landing → `https://runaserp.com.br` + `www` (Cloudflare Pages, serves `landing-page/`, outside the tunnel)
+**Domains:** app → `https://app.runaserp.com.br` (tunnel) · platform panel → `https://admin.runaserp.com.br` (tunnel, same `frontend-prod` container; tunnel route and Cloudflare Access configured outside the repo, per a 2026-09-28 check) · landing → `https://runaserp.com.br` + `www` (Cloudflare Pages, serves `landing-page/`, outside the tunnel)
+
+The bundle picks the app from the hostname (`frontend/src/config/host.ts`: first label == `VITE_HOST_PLATAFORMA`, default `admin`). The split is UI-only: `/api/plataforma/*` answers on both hosts, guarded by `require_super_admin`. In dev both apps coexist on `localhost`; `admin.localhost:3000` exercises the production path.
 
 One base file per kind of machine, plus overlays for the one axis that varies.
 Compose files stack: `-f base -f overlay`, where the overlay only restates the
