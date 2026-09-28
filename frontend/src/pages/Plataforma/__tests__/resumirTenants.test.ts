@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { resumirTenants } from '../PlataformaPage';
+import { resumirTenants } from '../PlataformaDashboard';
 import type { Tenant } from '@/types/plataforma';
 
 const tenant = (id: number, ativo: boolean, assinatura: Tenant['assinatura']): Tenant =>
