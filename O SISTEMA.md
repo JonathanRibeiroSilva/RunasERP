@@ -1,27 +1,39 @@
-# 🏪 Runas
+# 🏪 Runas ERP
 
-> Sistema ERP completo para comércio de alimentos e bebidas com arquitetura de microsserviços
+> ERP SaaS multi-tenant para comércio de alimentos e bebidas, em microsserviços FastAPI com frontend React.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.141.1-green)
+![React](https://img.shields.io/badge/React-19-blue)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-![Status](https://img.shields.io/badge/MVP-100%25%20Funcional-success)
+![Deploy](https://img.shields.io/badge/Deploy-Coolify%20%2B%20Cloudflare-orange)
 ![License](https://img.shields.io/badge/License-Proprietary-red)
+
+Este arquivo é o panorama do sistema. Para instalar e rodar, vá direto ao
+[QUICK-START.md](./QUICK-START.md).
 
 ---
 
 ## 📋 Sobre o Projeto
 
-O **Runas** é uma solução completa para gestão de pequenos e médios comércios de alimentos e bebidas, oferecendo:
+O **Runas** é um ERP multi-tenant: uma instalação atende várias lojas, com os
+dados isolados por `empresa_id`. Um módulo de **Plataforma**, exclusivo do
+`SUPER_ADMIN`, administra os tenants (criação, suspensão, plano e cobrança) sem
+ler dado de negócio de nenhum deles. Na interface, o painel da plataforma e o ERP
+dos lojistas são duas aplicações do mesmo bundle, separadas pelo hostname
+(`frontend/src/config/host.ts`): `admin.runaserp.com.br` monta o painel
+(`/plataforma` e `/plataforma/tenants`), `app.runaserp.com.br` o ERP. É separação
+só de UI: a API `/api/plataforma/*` responde nos dois hosts, protegida por
+`require_super_admin`.
 
-- ✅ **Gestão de Clientes** com crédito fiado e múltiplos endereços
-- ✅ **Catálogo de Produtos** com variantes e fornecedores
-- ✅ **Controle de Estoque** em tempo real
-- ✅ **Sistema de Vendas** (balcão e online)
-- ✅ **Gestão Financeira** e cobranças automatizadas
-- ✅ **Notificações via WhatsApp** (Evolution API)
-- ✅ **Pagamentos via PIX** (Mercado Pago)
+Domínios cobertos hoje pelo backend:
+
+- **Empresas** — cadastro dos tenants e multi-tenancy
+- **Clientes** — PF/PJ, endereços e crédito fiado
+- **Produtos** — catálogo, categorias, variantes, fornecedores e loja online
+- **Estoque** — saldos, movimentações e ajustes
+- **Vendas** — carrinho, checkout, pedidos e PDV
+- **Financeiro** e **Notificações** — ver "Status do Sistema", abaixo: ainda são esqueletos
 
 ---
 
@@ -29,44 +41,40 @@ O **Runas** é uma solução completa para gestão de pequenos e médios comérc
 
 ### Pré-requisitos
 
-- Docker 20.10+
-- Docker Compose 2.0+
-- Git Bash (Windows) ou terminal Unix-like
+- Docker 20.10+ com Docker Compose v2
+- PowerShell (o orquestrador local é o `erp.ps1`)
 
-### Instalação em 3 Passos
+### Subir o ambiente local
 
-```bash
-# 1. Clone o repositório
-git clone <repo-url>
-cd erp-runas
+Não existe `docker-compose.yml` na raiz: os arquivos são
+`docker-compose.dev.yml`, `.prod.yml`, `.build.yml` e `.cloudflare.yml`.
+O `erp.ps1` já escolhe o certo (`-f docker-compose.dev.yml`).
 
-# 2. Suba todos os serviços
-docker-compose up -d
-
-# 3. Execute os testes
-bash tests/test-mvp.sh
+```powershell
+.\erp.ps1 up                       # tudo
+.\erp.ps1 up vendas                # gateway + frontend + vendas + dependências
+.\erp.ps1 up clientes -NoFrontend  # só backend, pula o Vite
+.\erp.ps1 up vendas -Cloudflare    # adiciona o overlay do Cloudflare Tunnel
 ```
 
-**Pronto!** O sistema está rodando. 🎉
+### Acessar a aplicação
 
-### Acessar a Aplicação
+| O quê | Onde |
+|-------|------|
+| Frontend (Vite) | http://localhost:3000 |
+| API Gateway | http://localhost:8000 |
+| Swagger do Gateway | http://localhost:8000/docs |
+| Liveness / Readiness | http://localhost:8000/health e `/health/ready` |
 
-**Desenvolvimento Local**:
-- **Frontend**: http://localhost:3000
-- **API Gateway**: http://localhost:8000
-- **Documentação API (Swagger)**: http://localhost:8000/docs
+Em produção o acesso externo passa pelo Cloudflare Tunnel; o nginx do frontend
+recebe `/api/*`, **remove o prefixo `/api`** e repassa ao gateway
+(`frontend/nginx.conf`). Por isso as rotas do gateway não têm `/api` no código.
 
-**Com Cloudflare Tunnel**:
-- **Frontend**: https://www.runaserp.com.br
-- **API Gateway**: https://www.runaserp.com.br/api
-- **Documentação API**: https://www.runaserp.com.br/api/docs
+### Login padrão
 
-### Login Padrão
-
-```
-Email: admin@runas.com
-Senha: Admin@123
-```
+Os valores de seed vêm do `.env` — os exemplos estão no `.env.example`:
+`ADMIN_EMAIL=admin@runas.com` / `ADMIN_PASSWORD=Admin@123` para o admin da loja,
+e `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD` para o dono da plataforma.
 
 📖 **Guia completo**: [QUICK-START.md](./QUICK-START.md)
 
@@ -74,396 +82,372 @@ Senha: Admin@123
 
 ## 🏗️ Arquitetura
 
-O sistema é composto por **8 serviços** (1 API Gateway + 7 microsserviços):
+8 serviços HTTP: 1 API Gateway + 7 microsserviços.
 
 ```
-┌─────────────────┐
-│   API Gateway   │  ← Autenticação JWT + Roteamento + OAuth2
-│   (porta 8000)  │
-└────────┬────────┘
-         │
-    ┌────┴────┬────────┬─────────┬──────────┬────────────┬─────────┐
-    │         │        │         │          │            │         │
-┌───▼───┐ ┌──▼────┐ ┌──▼────┐ ┌──▼───┐ ┌────▼────┐ ┌─────▼─────┐ ┌───▼───┐
-│Empresa│ │Cliente│ │Produto│ │Estoque│ │Financeiro│ │Notificação│ │Vendas │
-│ 8001  │ │ 8002  │ │ 8003  │ │ 8004  │ │  8005   │ │   8006   │ │ 8007  │
-└───────┘ └───────┘ └───────┘ └───────┘ └─────────┘ └──────────┘ └───────┘
-    │         │         │         │          │            │          │
-    └─────────┴─────────┴─────────┴──────────┴────────────┴──────────┘
-                                  │
-                       ┌──────────┴──────────┐
-                       │                     │
-                  ┌────▼────┐          ┌─────▼────┐
-                  │RabbitMQ │          │  Redis   │
-                  └─────────┘          └──────────┘
+                        Internet
+                           │
+                  Cloudflare Tunnel
+                           │
+                  ┌────────▼────────┐
+                  │    frontend     │  nginx no prod (porta 80), Vite no dev
+                  │ 3000 dev/80 prod│  (3000); /api/* → gateway, sem o /api
+                  └────────┬────────┘
+                           │
+                  ┌────────▼────────┐
+                  │   API Gateway   │  OAuth2 + JWT, RBAC, rate limit,
+                  │   porta 8000    │  proxy e /health/ready
+                  └────────┬────────┘
+                           │  httpx (HTTP síncrono)
+   ┌──────────┬──────────┬─┴────────┬──────────┬────────────┬───────────┐
+┌──▼─────┐ ┌──▼─────┐ ┌──▼─────┐ ┌──▼─────┐ ┌──▼───────┐ ┌──▼─────────┐ ┌──▼──────┐
+│clientes│ │produtos│ │estoque │ │vendas  │ │financeiro│ │notificacoes│ │empresas │
+│  8001  │ │  8002  │ │  8003  │ │  8004  │ │   8005   │ │    8006    │ │  8007   │
+└────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └─────┬────┘ └──────┬─────┘ └────┬────┘
+     └──────────┴──────────┴──────────┴──────────┴─────────────┴────────────┘
+                                      │
+                        ┌─────────────┴─────────────┐
+                   ┌────▼─────┐               ┌─────▼────┐
+                   │PostgreSQL│               │  Redis   │
+                   │    15    │               │    7     │
+                   └──────────┘               └──────────┘
 ```
 
-### Características Técnicas
+As portas acima são as do código: o `docker-compose.dev.yml` publica
+`127.0.0.1:8001..8007` para os serviços e `8000` para o gateway, e o
+`docker-compose.prod.yml` usa os mesmos números nas URLs internas
+(`CLIENTES_URL=http://clientes-prod:8001`, …).
 
-- ✅ **8 Serviços** - 1 API Gateway + 7 microsserviços independentes
-- ✅ **Database per Service** - Cada microsserviço tem seu próprio schema PostgreSQL
-- ✅ **Multi-tenancy** - Isolamento de dados por empresa_id
-- ✅ **Event-Driven** - Comunicação assíncrona via RabbitMQ
-- ✅ **Cache Distribuído** - Redis para sessões e blacklist de tokens
-- ✅ **API Gateway** - Ponto único de entrada com autenticação centralizada (OAuth2 + JWT)
-- ✅ **Health Checks** - Monitoramento de saúde de todos os serviços
-- ✅ **Docker Compose** - Orquestração completa de containers
-- ✅ **Cloudflare Tunnel** - Acesso externo seguro (www.runaserp.com.br)
+### Características técnicas
+
+- ✅ **Gateway único** — autenticação OAuth2 + JWT centralizada, RBAC e rate limit
+- ✅ **Multi-tenancy** — isolamento por `empresa_id`
+- ✅ **Um PostgreSQL, schemas separados** — cada serviço com seu `DATABASE_URL_*`
+- ✅ **Comunicação HTTP síncrona** — chamadas serviço-a-serviço via `httpx`
+- ✅ **Prova de origem interna** — `SERVICO_INTERNO_TOKEN`, o mesmo valor nos 8
+  containers (`api-gateway/interno.py` e `services/*/interno.py`), e
+  `PLATAFORMA_INTERNO_TOKEN`, de escopo
+  menor, só no gateway e em empresas
+- ✅ **Cabeçalhos da plataforma** — `X-Plataforma` identifica a chamada e
+  `X-Plataforma-Token` a prova; sem o token, `X-Plataforma` sozinho é afirmação
+  sem prova (`api-gateway/routers/plataforma.py`,
+  `services/empresas/routers/empresas.py`)
+- ✅ **Readiness profundo** — `/health/ready` no gateway verifica banco, Redis e os
+  7 serviços; `/health` é só liveness
+- ✅ **Redis** — blacklist de tokens (`blacklist:{token}`), idempotência do proxy
+  (`api-gateway/proxy/idempotency.py`) e cache curto de inadimplência
+  (`api-gateway/middleware/inadimplencia_middleware.py`). Não há sessão em
+  Redis: o gateway é stateless por JWT. O rate limit é do `slowapi` sem
+  `storage_uri`, ou seja, em memória do processo
+  (`api-gateway/middleware/rate_limit.py`)
+- ✅ **Cloudflare Tunnel** — container `cloudflared` no compose de produção
+- ✅ **Deploy via Coolify** — `.github/workflows/deploy.yml`
+
+### Sobre o RabbitMQ
+
+O RabbitMQ **sobe** (`rabbitmq:3.12-management-alpine` no dev e no prod), o
+`aio-pika==10.0.1` está pinado nos 7 `requirements.txt` e cada serviço tem um
+`events/publisher.py`. Mas **nenhum código de aplicação chama `publish()`**: as
+únicas ocorrências do método são a definição dentro do próprio `publisher.py`.
+Na prática a comunicação entre serviços é 100% HTTP síncrono via `httpx`. Trate a
+camada de eventos como infraestrutura pronta e não usada, não como arquitetura
+viva.
+
+O `celery==5.6.3` está nos `requirements.txt` dos 7 serviços pela mesma razão:
+nenhum arquivo `.py` do repositório importa Celery.
+
+📖 [docs/03-arquitetura/visao-geral.md](./docs/03-arquitetura/visao-geral.md) ·
+[microsservicos.md](./docs/03-arquitetura/microsservicos.md) ·
+[comunicacao.md](./docs/03-arquitetura/comunicacao.md) ·
+[plataforma.md](./docs/03-arquitetura/plataforma.md)
 
 ---
 
-## 📊 Status do Sistema (Junho 2026)
+## 📊 Status do Sistema
 
-### ✅ Componentes Completos (Backend + Frontend)
+Contagem de rotas obtida do código (decoradores `@router.<verbo>` e
+`@app.<verbo>`, fora de `tests/`).
 
-| Componente | Status | Endpoints | Descrição |
-|------------|--------|-----------|-----------|
-| **API Gateway** | 🟢 100% | 15 | Autenticação JWT, OAuth2, RBAC, Proxy, Rate Limiting |
-| **Serviço Empresas** | 🟢 100% | 8 | CRUD de empresas, multi-tenancy |
-| **Serviço Clientes** | 🟢 100% | 12 | CRUD de clientes (PF/PJ), endereços, crédito |
-| **Serviço Produtos** | 🟢 100% | 25 | CRUD de produtos, categorias, variantes, fornecedores |
-| **Loja Online** | 🟢 100% | 26 | Catálogo público, carrinho, checkout, rastreamento |
-| **Infraestrutura** | 🟢 100% | - | PostgreSQL unificado com schemas, Redis, RabbitMQ |
+### Backend
 
-**Total Backend**: 86 endpoints REST funcionais | ~18.000 linhas de código  
-**Total Frontend**: Interface completa com React + TypeScript
+| Serviço | Rotas | Situação |
+|---------|-------|----------|
+| **API Gateway** | 40 | Auth, RBAC, proxy, módulo Plataforma e webhook do MP |
+| **Produtos** | 43 | Produtos, categorias, variantes, fornecedores, loja online |
+| **Vendas** | 43 | Carrinho, checkout, pedidos, PDV |
+| **Estoque** | 20 | Saldos, movimentações e ajustes |
+| **Clientes** | 18 | PF/PJ, endereços e crédito |
+| **Empresas** | 10 | Tenants e multi-tenancy |
+| **Financeiro** | 1 | **Esqueleto**: a única rota vive no `main.py`; `models/`, `routers/`, `services/` e `repositories/` têm apenas `__init__.py` |
+| **Notificações** | 1 | **Esqueleto**: mesma situação do financeiro |
 
-### 🟡 Componentes Backend Completos (Frontend Pendente)
+### Frontend
 
-| Serviço | Backend | Frontend | Prioridade |
-|---------|---------|----------|------------|
-| **Vendas/PDV** | 🟢 100% | 🔴 0% | 🔥 Alta |
-| **Estoque** | 🟢 100% | 🔴 0% | 🔥 Alta |
+Páginas em `frontend/src/pages/`: Auth, Clientes, Configuracoes, Dashboard,
+Estoque, Financeiro, Login, LojaOnline, LojaOnlinePublico, Perfil, Plataforma,
+Produtos, Vendas.
 
-### 🔴 Próximos Módulos
+| Módulo | Estado |
+|--------|--------|
+| **Estoque** | Entregue — `EstoquePage.tsx` (336 linhas), `EstoqueDetalhePage.tsx`, componentes próprios e `hooks/useEstoque.ts` |
+| **Vendas/PDV** | Stub — `VendasPage.tsx` tem 47 linhas |
+| **Financeiro** | Stub — `FinanceiroPage.tsx` tem 47 linhas |
 
-| Serviço | Prioridade | Status |
-|---------|-----------|--------|
-| **Financeiro** | Média | 🔴 Planejado |
-| **Notificações** | Média | 🔴 Planejado |
-| **Testes Unitários** | Alta | 🔴 Planejado |
+📖 Detalhe do frontend:
+[docs/05-frontend/frontend-current-state.md](./docs/05-frontend/frontend-current-state.md)
 
-📖 **Status detalhado**: [docs/mvp/STATUS-FINAL.md](./docs/mvp/STATUS-FINAL.md)
+### Testes
+
+62 arquivos `test_*.py` versionados. A CI (`.github/workflows/ci.yml`) roda
+`pytest -c tests/pytest.ini tests/unit` e `pytest tests`, além de validar os
+composes e construir as imagens de produção. São 5 workflows no total: `ci.yml`,
+`deploy.yml`, `uptime.yml`, `graphify-update.yml` e `landing.yml`.
+
+A CONFIRMAR: percentual de cobertura — não há gate de coverage nos workflows.
 
 ---
 
 ## 🛠️ Tecnologias
 
+Versões lidas dos `requirements.txt`, do `frontend/package.json` e das imagens
+dos composes.
+
 | Categoria | Tecnologia | Versão |
 |-----------|-----------|--------|
-| **Linguagem** | Python | 3.12 |
-| **Framework** | FastAPI | 0.109 |
-| **ORM** | SQLAlchemy (async) | 2.0 |
-| **Banco de Dados** | PostgreSQL | 15 |
-| **Migrations** | Alembic | 1.13 |
-| **Mensageria** | RabbitMQ | 3.12 |
-| **Cache** | Redis | 7 |
-| **Tasks** | Celery | 5.3 |
-| **Validação** | Pydantic | 2.5 |
-| **Autenticação** | OAuth2 + JWT | - |
-| **Notificações** | Evolution API | latest |
-| **Pagamentos** | Mercado Pago | - |
-| **Containerização** | Docker + Compose | - |
-| **Testes** | Pytest | - |
+| **Linguagem** | Python (imagem `python:3.12-slim`) | 3.12 |
+| **Framework** | FastAPI | 0.141.1 |
+| **ORM** | SQLAlchemy (asyncio) | 2.0.54 |
+| **Migrations** | Alembic | 1.20.0 |
+| **Validação** | Pydantic | 2.13.5 |
+| **Banco de Dados** | PostgreSQL | 15-alpine |
+| **Cache / sessões** | Redis (imagem / client) | 7-alpine / 8.1.0 |
+| **Mensageria** | RabbitMQ + aio-pika (presentes, **sem uso** — ver acima) | 3.12 / 10.0.1 |
+| **Frontend** | React + React DOM | 19.3 |
+| **Roteamento** | react-router-dom | 7.18 |
+| **Build** | Vite / TypeScript | 8.3 / 5.2 |
+| **UI** | Bootstrap + Sass | 5.3 / 1.104 |
+| **Testes** | Pytest / Vitest | — / 5.0 |
+| **Notificações** | Evolution API (WhatsApp) | — |
+| **Pagamentos** | Mercado Pago (PIX) | — |
+| **Deploy** | Coolify + Cloudflare Tunnel | — |
 
 ---
 
 ## 📦 Estrutura do Projeto
 
 ```
-erp-runas/
-├── 📄 README.md                    # Documentação principal
-├── 📄 LEIA-ME-PRIMEIRO.md          # Ponto de entrada
-├── 📄 QUICK-START.md               # Guia rápido
-├── 📄 LICENSE.md                   # Licença
-├── 📄 docker-compose.yml           # Orquestração
-├── 📄 Makefile                     # Comandos úteis
-├── 📄 .env                         # Variáveis de ambiente
+RunasERP/
+├── O SISTEMA.md                  # este arquivo
+├── README.md                     # documentação principal
+├── QUICK-START.md                # guia rápido
+├── CLAUDE.md                     # instruções para agentes
+├── LICENSE                       # licença (sem extensão)
+├── erp.ps1                       # orquestrador local
+├── docker-compose.dev.yml        # ambiente de desenvolvimento
+├── docker-compose.prod.yml       # produção (pull-only)
+├── docker-compose.build.yml      # seções de build que o prod não carrega
+├── docker-compose.cloudflare.yml # overlay do túnel
+├── .env.example                  # variáveis de desenvolvimento
 │
-├── 📁 api-gateway/                 # Gateway de autenticação
-│   ├── auth/                       # JWT e OAuth2
-│   ├── middleware/                 # Rate limit e logging
-│   ├── models/                     # Modelo de usuário
-│   ├── routers/                    # Endpoints
-│   └── main.py
+├── api-gateway/                  # auth, RBAC, proxy, plataforma
+│   ├── auth/  middleware/  models/  proxy/  routers/  services/
+│   ├── health.py  interno.py  main.py
+│   └── tests/
 │
-├── 📁 services/                    # Microsserviços
-│   ├── empresas/                   # Multi-tenancy (empresas)
-│   ├── clientes/                   # Gestão de clientes
-│   ├── produtos/                   # Produtos e catálogo
-│   ├── estoque/                    # Controle de estoque
-│   ├── vendas/                     # Carrinho e pedidos
-│   ├── financeiro/                 # Contas a receber
-│   └── notificacoes/               # WhatsApp
+├── services/                     # os 7 microsserviços
+│   ├── empresas/  clientes/  produtos/  estoque/
+│   └── vendas/  financeiro/  notificacoes/
+│       └── cada um: alembic/  models/  repositories/  routers/
+│                    schemas/  services/  events/  interno.py  main.py
 │
-├── 📁 docs/                        # Documentação
-│   ├── mvp/                        # Docs do MVP
-│   ├── historico/                  # Histórico
-│   └── Documentacao-Original/      # Docs originais
+├── frontend/                     # React 19 + Vite
+│   ├── src/pages/  src/components/  src/hooks/  src/services/
+│   └── nginx.conf                # /api/* → gateway, sem o prefixo
 │
-├── 📁 tests/                       # Testes
-│   ├── test-mvp.sh                 # Testes automatizados
-│   └── ...
-│
-├── 📁 scripts/                     # Scripts utilitários
-│   └── ...
-│
-└── 📁 shared/                      # Código compartilhado
-    ├── events/                     # Eventos de domínio
-    ├── exceptions.py               # Exceções customizadas
-    └── pagination.py               # Paginação padrão
+├── docs/                         # documentação (índice mais abaixo)
+├── tests/                        # unit/  integration/  e2e/  performance/
+├── scripts/                      # utilitários
+└── .github/workflows/            # ci, deploy, uptime, graphify, landing
 ```
-
----
-
-## 🧪 Testes
-
-### Testes Automatizados
-
-```bash
-# Executar todos os testes do MVP
-bash tests/test-mvp.sh
-```
-
-O script testa automaticamente:
-- ✅ Health checks de todos os serviços
-- ✅ Autenticação e geração de tokens
-- ✅ CRUD de clientes via gateway
-- ✅ CRUD de produtos via gateway
-- ✅ Logout e blacklist de tokens
-
-### Testes Manuais
-
-Consulte o guia completo com exemplos de cURL:
-- 📖 [docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md)
-- 📋 [docs/mvp/CHECKLIST-VALIDACAO.md](./docs/mvp/CHECKLIST-VALIDACAO.md)
 
 ---
 
 ## 🔐 Autenticação e Autorização
 
-O sistema utiliza **OAuth2 com JWT** e **RBAC (Role-Based Access Control)**.
+OAuth2 + JWT no gateway, com RBAC.
 
-### Roles Disponíveis
+### Roles
 
-| Role | Permissões |
-|------|-----------|
-| **ADMIN** | Acesso total a todos os endpoints |
-| **GERENTE** | Gestão de produtos, clientes, vendas e relatórios |
-| **VENDEDOR** | Criação de vendas, consulta de clientes e produtos |
-| **OPERADOR** | Apenas leitura de produtos e criação de pedidos |
+Definidas em `api-gateway/models/usuario.py` (`RoleEnum`):
 
-### Fluxo de Autenticação
+| Role | Escopo |
+|------|--------|
+| **SUPER_ADMIN** | Dono da plataforma: administra os tenants, não lê dado de negócio deles |
+| **ADMIN** | Administrador de uma loja |
+| **OPERADOR** | Operação do dia a dia dentro de uma loja |
 
-```bash
-# 1. Login
-POST /auth/login
-Body: username=admin@runas.com&password=Admin@123
+### Rotas de autenticação
 
-# 2. Usar token
-GET /api/clientes
-Header: Authorization: Bearer {access_token}
+De `api-gateway/routers/auth.py` (prefixo `/auth`):
 
-# 3. Renovar token (antes de expirar)
+```
+POST /auth/login              # OAuth2 password flow
+GET  /auth/me
 POST /auth/refresh
-Body: refresh_token={refresh_token}
-
-# 4. Logout
 POST /auth/logout
-Header: Authorization: Bearer {access_token}
+POST /auth/forgot-password
+POST /auth/reset-password
+POST /auth/alterar-senha
 ```
 
-**Tokens**:
-- `access_token`: Expira em 30 minutos
-- `refresh_token`: Expira em 7 dias
+Clientes da loja online autenticam por rotas próprias
+(`api-gateway/routers/auth_cliente.py`), separadas das dos operadores.
+
+**Validade dos tokens** (padrões do compose, ajustáveis por variável de
+ambiente): `ACCESS_TOKEN_EXPIRE_MINUTES=30` e `REFRESH_TOKEN_EXPIRE_DAYS=7`.
+
+📖 [docs/10-api-reference/guia-autenticacao.md](./docs/10-api-reference/guia-autenticacao.md)
 
 ---
 
 ## 📝 Comandos Úteis
 
+**Não existe Makefile neste repositório.** O orquestrador é o `erp.ps1`:
+
+```powershell
+.\erp.ps1                     # menu interativo
+.\erp.ps1 up [servicos]       # subir (tudo, ou só os serviços pedidos + deps)
+.\erp.ps1 down                # parar
+.\erp.ps1 restart [servicos]
+.\erp.ps1 ps                  # status dos containers
+.\erp.ps1 health              # health check
+.\erp.ps1 logs vendas         # seguir o log de um serviço (ou de todos)
+.\erp.ps1 rebuild [servicos]  # reconstruir imagens
+.\erp.ps1 shell erp-vendas-dev
+.\erp.ps1 prune               # docker system prune -f
+```
+
+Flags: `-Cloudflare` adiciona o overlay do túnel, `-NoFrontend` pula o Vite.
+Postgres, Redis e RabbitMQ nunca precisam ser listados: todo serviço os declara
+em `depends_on`.
+
+Testes:
+
 ```bash
-# Gerenciamento de Containers
-make up                # Subir todos os serviços
-make down              # Parar todos os serviços
-make restart           # Reiniciar todos os serviços
-make ps                # Ver status dos containers
-make logs              # Ver logs de todos os serviços
-make logs-gateway      # Logs do API Gateway
-make logs-clientes     # Logs do serviço de clientes
-make logs-produtos     # Logs do serviço de produtos
-
-# Testes
-make test              # Executar testes automatizados
-make health            # Verificar saúde dos serviços
-
-# Banco de Dados
-make migrate           # Executar migrations
-make seed              # Popula dados de teste
-make backup-db         # Fazer backup dos bancos
-
-# Limpeza
-make clean             # Remove tudo (containers, volumes, imagens)
-
-# Ajuda
-make help              # Lista todos os comandos disponíveis
+pytest -c tests/pytest.ini tests/unit   # unitários
+pytest tests                            # suíte completa
+bash tests/test-mvp.sh                  # smoke test do MVP via HTTP
 ```
 
 ---
 
 ## 🔄 Fluxos Principais
 
-### Fluxo de Venda à Vista
+### Venda à vista (PIX)
 
-1. Cliente adiciona produtos ao carrinho
-2. Cliente finaliza checkout escolhendo PIX
-3. Sistema gera QR Code do Mercado Pago
+1. Cliente monta o carrinho
+2. Checkout com PIX
+3. Sistema gera o QR Code no Mercado Pago
 4. Cliente paga
-5. Webhook confirma pagamento
-6. Sistema dá baixa no estoque
-7. Notificação enviada via WhatsApp
+5. Webhook do Mercado Pago confirma o pagamento
+6. Baixa no estoque
 
-### Fluxo de Venda Fiada
+### Venda fiada
 
-1. Cliente adiciona produtos ao carrinho
-2. Cliente finaliza checkout escolhendo "Fiado"
-3. Sistema verifica crédito disponível
-4. Sistema debita crédito do cliente
-5. Sistema cria conta a receber
-6. Pedido confirmado automaticamente
-7. Baixa no estoque
-8. Notificação enviada
+1. Cliente monta o carrinho
+2. Checkout com "Fiado"
+3. Sistema verifica o crédito disponível
+4. Debita o crédito do cliente
+5. Pedido confirmado e baixa no estoque
+
+A CONFIRMAR: o disparo de notificação por WhatsApp ao fim dos dois fluxos — o
+serviço de notificações ainda é um esqueleto sem rotas.
+
+📖 Regras de negócio por domínio:
+[docs/11-regras-negocio/README.md](./docs/11-regras-negocio/README.md)
 
 ---
 
 ## 🌐 Integrações
 
-### Mercado Pago (Pagamentos PIX)
+### Mercado Pago (PIX)
 
-- Ambiente: Sandbox (desenvolvimento) / Produção
+- Sandbox e produção
 - Webhook para confirmação automática
-- Validação HMAC-SHA256
+- Conta da plataforma (`PLATAFORMA_MP_ACCESS_TOKEN`) separada da do lojista
+
+📖 [docs/06-operacao/CONFIGURACAO_MERCADO_PAGO.md](./docs/06-operacao/CONFIGURACAO_MERCADO_PAGO.md) ·
+[MERCADOPAGO_PIX_SANDBOX.md](./docs/06-operacao/MERCADOPAGO_PIX_SANDBOX.md)
 
 ### Evolution API (WhatsApp)
 
-- Envio de notificações
-- Confirmação de pedidos
-- Lembretes de cobrança
-- Alertas de estoque
+Container `evolution-api` declarado no `docker-compose.dev.yml` (porta 8080),
+mas **fora do `up` padrão**: está sob `profiles: [whatsapp]`, e o comentário do
+próprio compose registra que a imagem `atendai/evolution-api` saiu do Docker
+Hub. Para subir: `docker compose -f docker-compose.dev.yml --profile whatsapp up
+-d evolution-api` (o `erp.ps1` só expõe o profile `proxy`, do Cloudflare). Em
+produção o container **não existe**: o `docker-compose.prod.yml` define as
+variáveis `EVOLUTION_*` no notificações, mas anota que "evolution-api is not
+deployed" e não declara o serviço.
 
-📖 **Configuração**: [docs/EVOLUTION-API-SETUP.md](./docs/EVOLUTION-API-SETUP.md)
+📖 [docs/04-backend/integracao/evolution-api.md](./docs/04-backend/integracao/evolution-api.md)
 
 ---
 
 ## 📚 Documentação
 
-### Documentação Essencial
+### Começando
 
-- 📖 [LEIA-ME-PRIMEIRO.md](./LEIA-ME-PRIMEIRO.md) - Ponto de entrada
-- ⚡ [QUICK-START.md](./QUICK-START.md) - Guia rápido de 5 minutos
-- 📊 [docs/mvp/RESUMO-EXECUTIVO.md](./docs/mvp/RESUMO-EXECUTIVO.md) - Visão geral do MVP
-- ✅ [docs/mvp/STATUS-FINAL.md](./docs/mvp/STATUS-FINAL.md) - Status detalhado
+- ⚡ [QUICK-START.md](./QUICK-START.md) — instalar e rodar
+- 📚 [docs/README.md](./docs/README.md) — índice completo da documentação
+- 🤝 [.github/CONTRIBUTING.md](./.github/CONTRIBUTING.md) — como contribuir
 
-### Documentação Técnica
+### Arquitetura
 
-- 🏗️ [docs/ARQUITETURA-COMUNICACAO.md](./docs/ARQUITETURA-COMUNICACAO.md) - Arquitetura
-- 📐 [docs/ESPECIFICACAO-TECNICA.md](./docs/ESPECIFICACAO-TECNICA.md) - Especificações
-- 🗺️ [docs/MAPEAMENTO-ROTAS.md](./docs/MAPEAMENTO-ROTAS.md) - Endpoints
-- 💻 [docs/GUIA-IMPLEMENTACAO.md](./docs/GUIA-IMPLEMENTACAO.md) - Guia de desenvolvimento
+- 🏗️ [docs/03-arquitetura/visao-geral.md](./docs/03-arquitetura/visao-geral.md)
+- 🧩 [docs/03-arquitetura/microsservicos.md](./docs/03-arquitetura/microsservicos.md)
+- 🔌 [docs/03-arquitetura/comunicacao.md](./docs/03-arquitetura/comunicacao.md)
+- 🏢 [docs/03-arquitetura/plataforma.md](./docs/03-arquitetura/plataforma.md)
+- 💾 [docs/03-arquitetura/persistencia-e-durabilidade.md](./docs/03-arquitetura/persistencia-e-durabilidade.md)
 
-### Testes
+### API
 
-- 🧪 [docs/mvp/TESTE-MANUAL.md](./docs/mvp/TESTE-MANUAL.md) - Guia de testes
-- 📋 [docs/mvp/CHECKLIST-VALIDACAO.md](./docs/mvp/CHECKLIST-VALIDACAO.md) - Checklist
+- 🗺️ [docs/10-api-reference/mapeamento-rotas.md](./docs/10-api-reference/mapeamento-rotas.md)
+- 🔑 [docs/10-api-reference/guia-autenticacao.md](./docs/10-api-reference/guia-autenticacao.md)
+- 🏢 [docs/10-api-reference/plataforma-api.md](./docs/10-api-reference/plataforma-api.md)
 
----
+### Operação
 
-## 🤝 Contribuindo
+- 🚢 [docs/06-operacao/deploy.md](./docs/06-operacao/deploy.md)
+- 📕 [docs/06-operacao/runbook-producao.md](./docs/06-operacao/runbook-producao.md)
+- 🧯 [docs/06-operacao/troubleshooting.md](./docs/06-operacao/troubleshooting.md)
 
-Este é um projeto proprietário. Para contribuir:
+### Desenvolvimento
 
-1. Crie uma branch: `git checkout -b feature/nova-feature`
-2. Commit suas mudanças: `git commit -m 'Add nova feature'`
-3. Push para a branch: `git push origin feature/nova-feature`
-4. Abra um Pull Request
-
----
-
-## 📄 Licença
-
-**Propriedade de Runas** - Todos os direitos reservados.
-
-Este software é proprietário e confidencial. Uso não autorizado é estritamente proibido.
-
-📖 **Licença completa**: [LICENSE.md](./LICENSE.md)
-
----
-
-## 👥 Equipe
-
-Desenvolvido por **Runas**
-
----
-
-## 📞 Suporte
-
-Para suporte técnico:
-
-- **Email**: suporte@runas.com
-- **Documentação**: [docs/](./docs/)
-- **Issues**: Abra uma issue no repositório
+- ✅ [docs/02-desenvolvimento/CHECKLIST_DESENVOLVIMENTO.md](./docs/02-desenvolvimento/CHECKLIST_DESENVOLVIMENTO.md)
+- 🎨 [docs/05-frontend/frontend-current-state.md](./docs/05-frontend/frontend-current-state.md)
+- 🗓️ [docs/01-visao-geral/roadmap.md](./docs/01-visao-geral/roadmap.md)
 
 ---
 
 ## 🎯 Roadmap
 
-### Q2 2026
-- [x] MVP com Gateway, Clientes e Produtos
-- [x] Loja Online completa (catálogo, carrinho, checkout)
-- [x] API de Vendas completa
-- [x] API de Estoque completa
-- [ ] Frontend Vendas/PDV
-- [ ] Frontend Estoque
-- [ ] Testes unitários (80% coverage)
-
-### Q3 2026
-- [ ] Serviço Financeiro
-- [ ] Serviço de Notificações
-- [ ] Integração Mercado Pago completa
-- [ ] Integração WhatsApp (Evolution API)
-
-### Q4 2026
-- [ ] Dashboard administrativo completo
-- [ ] Relatórios e analytics
-- [ ] App mobile
-- [ ] CI/CD completo
-
-📖 **Estimativas**: [docs/ESTIMATIVA-HORAS-MVP.md](./docs/ESTIMATIVA-HORAS-MVP.md)
+O roadmap vive em um só lugar, mantido à parte deste panorama:
+📖 [docs/01-visao-geral/roadmap.md](./docs/01-visao-geral/roadmap.md)
 
 ---
 
-## 📊 Métricas do Projeto
+## 📄 Licença
 
-- **Linhas de código**: ~18.000 linhas Python
-- **Arquivos criados**: ~200 arquivos
-- **Endpoints REST**: 86 endpoints funcionais
-- **Microsserviços**: 8 serviços (1 Gateway + 7 microsserviços)
-- **Banco de dados**: 1 PostgreSQL com 8 schemas isolados
-- **Frontend**: React + TypeScript com Loja Online completa
-- **Multi-tenancy**: 100% implementado (isolamento por empresa_id)
-- **Cobertura de testes**: Em desenvolvimento
+**Propriedade de Runas** — todos os direitos reservados. Software proprietário e
+confidencial; uso não autorizado é proibido.
 
----
-
-**Versão**: 2.0.0  
-**Última atualização**: 23 de Junho de 2026  
-**Status**: ✅ Sistema Operacional com Loja Online Completa
+📖 [LICENSE](./LICENSE) · [docs/07-legal/EULA-comercial.md](./docs/07-legal/EULA-comercial.md)
 
 ---
 
 <div align="center">
 
-**[⬆ Voltar ao topo](#-runas)**
-
-Desenvolvido por **Equipe DenebCorp**
+**[⬆ Voltar ao topo](#-runas-erp)**
 
 </div>

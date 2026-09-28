@@ -179,14 +179,14 @@ async def entregar_venda(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Marca venda como entregue e BAIXA ESTOQUE definitivamente.
+    Marca venda como entregue. Só logística: NÃO movimenta estoque.
     
     Transição: SEPARADA → ENTREGUE
     
     Ações:
-    - Baixa estoque no serviço de Estoque
-    - Libera reservas (já foram baixadas)
-    - Marca itens como estoque_baixado=True
+    - Nenhuma baixa: o estoque já saiu na confirmação do pagamento
+    - Reservas ainda RESERVADA passam a BAIXADA; registra o histórico
+    - WhatsApp de pedido entregue, se houver telefone do convidado
     """
     try:
         return await VendaService.entregar_venda(db, empresa_id, venda_id)

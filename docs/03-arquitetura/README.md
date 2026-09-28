@@ -1,191 +1,149 @@
-# 🏗️ Arquitetura do Sistema
+# Arquitetura do Sistema
 
-Documentação completa da arquitetura do Runas.
-
-## 📑 Índice
-
-### Visão Geral
-- [Arquitetura de Microserviços](./microservicos.md) - Estrutura e organização dos serviços
-- [Comunicação entre Serviços](./comunicacao.md) - Padrões de comunicação síncrona e assíncrona
-- [Banco de Dados](./banco-dados.md) - Estrutura e modelagem de dados
-- [Sistema de Autenticação](./autenticacao.md) - JWT, OAuth2 e controle de acesso
-
-### Diagramas
-- [Arquitetura Geral](./diagramas/arquitetura-geral.md) - Visão visual da arquitetura
-- [Diagramas de Sequência](./diagramas/sequencia.md) - Fluxos detalhados de operações
-- [Fluxo de Autenticação](./diagramas/fluxo-autenticacao.md) - Processo de login e autorização
+Índice da pasta. O conteúdo extenso vive nos documentos abaixo — aqui ficam
+apenas os ponteiros e os poucos fatos de arquitetura que não têm outro lar.
 
 ---
 
-## 🎯 Visão Geral da Arquitetura
+## Documentos desta pasta
 
-O Runas utiliza uma **arquitetura de microserviços** com os seguintes componentes principais:
+| Documento | Do que trata |
+|---|---|
+| [Visão geral](./visao-geral.md) | Stack, estrutura de pastas e o resumo dos 8 serviços |
+| [Microsserviços](./microsservicos.md) | Detalhe de cada serviço: domínio, modelos e rotas |
+| [Comunicação entre serviços](./comunicacao.md) | Como o gateway fala com os serviços e os serviços entre si |
+| [Plano de controle da plataforma](./plataforma.md) | A camada SaaS (multi-tenant) sobre o ERP |
+| [Persistência e durabilidade](./persistencia-e-durabilidade.md) | Onde o banco vive e como sobrevive a deploys |
+| [Performance e consumo de CPU](./performance-cpu.md) | O aperto de CPU na VPS e o que foi feito a respeito |
 
-### Componentes Principais
+## Relacionados
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend (React)                      │
-│                     http://localhost:3000                    │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    API Gateway (FastAPI)                     │
-│                     http://localhost:8000                    │
-│  • Autenticação JWT                                          │
-│  • Rate Limiting                                             │
-│  • Roteamento para Microserviços                            │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-        ▼                ▼                ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│   Clientes   │  │   Produtos   │  │   Estoque    │
-│   :8001      │  │   :8002      │  │   :8003      │
-└──────────────┘  └──────────────┘  └──────────────┘
-        │                │                │
-        ▼                ▼                ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│    Vendas    │  │  Financeiro  │  │ Notificações │
-│    :8004     │  │   :8005      │  │   :8006      │
-└──────────────┘  └──────────────┘  └──────────────┘
-        │                │                │
-        └────────────────┼────────────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-        ▼                ▼                ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│  PostgreSQL  │  │   RabbitMQ   │  │    Redis     │
-│  (8 bancos)  │  │   :5672      │  │   :6379      │
-└──────────────┘  └──────────────┘  └──────────────┘
-```
-
-### Microserviços
-
-| Serviço | Porta | Responsabilidade | Status |
-|---------|-------|------------------|--------|
-| **API Gateway** | 8000 | Autenticação, roteamento, rate limiting | ✅ 70% |
-| **Clientes** | 8001 | Gestão de clientes, endereços, crédito | ⏳ 5% |
-| **Produtos** | 8002 | Catálogo, variantes, fornecedores | ⏳ 5% |
-| **Estoque** | 8003 | Controle de estoque, movimentações, lotes | ⏳ 5% |
-| **Vendas** | 8004 | Carrinho, pedidos, pagamentos | ⏳ 5% |
-| **Financeiro** | 8005 | Contas a receber, vendas fiadas | ⏳ 5% |
-| **Notificações** | 8006 | WhatsApp via Evolution API | ⏳ 5% |
-
-### Infraestrutura
-
-| Componente | Porta | Função |
-|------------|-------|--------|
-| **PostgreSQL** | 5432 | 8 bancos de dados (1 por serviço + Evolution) |
-| **RabbitMQ** | 5672 | Mensageria assíncrona entre serviços |
-| **Redis** | 6379 | Cache, sessões, rate limiting |
-| **pgAdmin** | 5050 | Interface de administração de bancos |
-| **Evolution API** | 8080 | Integração com WhatsApp |
+- [Regras de negócio](../11-regras-negocio/README.md)
+- [Referência da API da plataforma](../10-api-reference/plataforma-api.md)
+- [Runbook de produção](../06-operacao/runbook-producao.md)
 
 ---
 
-## 🔄 Padrões de Comunicação
+## Serviços e portas
 
-### Comunicação Síncrona (HTTP/REST)
-- Frontend ↔ API Gateway
-- API Gateway ↔ Microserviços
-- Microserviços ↔ Microserviços (quando necessário)
+Portas lidas de `docker-compose.dev.yml` (bloco `ports:` e o `--port` de cada
+`command:`). Em dev, as portas 8001-8007 dos microsserviços são publicadas só em
+`127.0.0.1`; o gateway (8000) e o frontend (3000) são publicados em todas as
+interfaces, assim como o Postgres, o Redis, o RabbitMQ e a Evolution API (ver a
+lista de infraestrutura abaixo).
 
-### Comunicação Assíncrona (RabbitMQ)
-- Eventos de domínio (ex: `estoque.baixo`, `venda.finalizada`)
-- Notificações (ex: envio de WhatsApp)
-- Processamento em background
+| Serviço | Porta | Container (dev) |
+|---|---|---|
+| API Gateway | 8000 | `erp-api-gateway-dev` |
+| Clientes | 8001 | `erp-clientes-dev` |
+| Produtos | 8002 | `erp-produtos-dev` |
+| Estoque | 8003 | `erp-estoque-dev` |
+| Vendas | 8004 | `erp-vendas-dev` |
+| Financeiro | 8005 | `erp-financeiro-dev` |
+| Notificações | 8006 | `erp-notificacoes-dev` |
+| Empresas | 8007 | `erp-empresas-dev` |
 
-### Cache (Redis)
-- Sessões de usuário
-- Rate limiting
-- Cache de dados frequentes
-- Carrinho de compras (TTL 2h)
-
----
-
-## 🔐 Segurança
-
-### Autenticação
-- **JWT** (JSON Web Tokens) para autenticação stateless
-- **OAuth2** com Google e Microsoft
-- **Refresh Tokens** para renovação automática
-- **Redis** para blacklist de tokens revogados
-
-### Autorização
-- **RBAC** (Role-Based Access Control)
-- Roles: `ADMIN`, `GERENTE`, `VENDEDOR`, `CLIENTE`
-- Middlewares de autorização no API Gateway
-
-### Proteção
-- **Rate Limiting** (100 req/min por IP)
-- **CORS** configurado
-- **HTTPS** em produção
-- **Validação de entrada** em todos os endpoints
+Infraestrutura: PostgreSQL 15 em `5432`, Redis 7 em `6379`, RabbitMQ em
+`5672` (painel em `15672`), Evolution API em `8080`, frontend em `3000`.
 
 ---
 
-## 📊 Banco de Dados
+## Três coisas que a documentação antiga afirmava e o código não confirma
 
-### Estratégia: Database per Service
+### 1. A comunicação é 100% HTTP síncrono — não há eventos em uso
 
-Cada microserviço possui seu próprio banco PostgreSQL:
+Existe infraestrutura de eventos: o RabbitMQ sobe em dev e em produção, cada
+um dos 7 microsserviços recebe `RABBITMQ_URL` (em dev o gateway não recebe; em
+produção ele herda a variável pelo anchor `x-service-env`, mas o `config.py` do
+gateway não a lê) e todos os 7 têm um `events/publisher.py` com um método
+`publish()`. **Nenhum desses publishers é chamado por nenhum router, service ou
+repository** — `get_publisher` e `event_publisher` não aparecem fora das
+próprias pastas `events/`.
 
-```
-db_gateway      → API Gateway (usuários, tokens)
-db_clientes     → Serviço de Clientes
-db_produtos     → Serviço de Produtos
-db_estoque      → Serviço de Estoque
-db_vendas       → Serviço de Vendas
-db_financeiro   → Serviço Financeiro
-db_notificacoes → Serviço de Notificações
-db_evolution    → Evolution API
-```
+Na prática, toda integração entre serviços passa por `httpx` a partir de
+`api-gateway/proxy/service_proxy.py`. Trate RabbitMQ como dependência
+provisionada e ainda não usada, não como parte do desenho em funcionamento.
 
-**Vantagens:**
-- Isolamento de dados
-- Escalabilidade independente
-- Falhas isoladas
-- Tecnologias diferentes por serviço (se necessário)
+### 2. `shared/` não é biblioteca compartilhada — é código morto
 
-**Desafios:**
-- Transações distribuídas (Saga Pattern)
-- Consistência eventual
-- Joins entre serviços (via API)
+A pasta `shared/` existe na raiz (`exceptions.py`, `pagination.py`, `events/`),
+mas `from shared` / `import shared` retorna **zero ocorrências** em `services/`,
+`api-gateway/` e `tests/`, e **nenhum Dockerfile a copia** para dentro da
+imagem. Cada serviço que precisa desse código tem a sua própria cópia local
+(por exemplo `services/empresas/exceptions.py`).
 
----
+Alterar `shared/` não muda o comportamento de serviço nenhum.
 
-## 🚀 Escalabilidade
+### 3. Nenhum serviço valida JWT — a identidade chega por header
 
-### Horizontal Scaling
-- Cada microserviço pode escalar independentemente
-- Load balancer (Nginx) distribui requisições
-- Stateless design permite múltiplas instâncias
+O JWT é verificado só no API Gateway. Para os serviços internos, a identidade
+do tenant chega como header `X-Empresa-Id`, injetado pelo gateway em
+`proxy/service_proxy.py`, e o serviço confia nele: em
+`services/produtos/utils/tenant.py`, `get_empresa_id` apenas exige que o header
+exista e seja maior que zero.
 
-### Vertical Scaling
-- Recursos ajustáveis por serviço no Docker Compose
-- Otimização de queries e índices
-- Cache estratégico com Redis
-
-### Performance
-- **Connection Pooling** em todos os serviços
-- **Índices** em colunas frequentemente consultadas
-- **Paginação** em listagens
-- **Cache** de dados estáticos
+O que sustenta o modelo é o gateway descartar os headers de identidade que
+venham do cliente antes de repassar a requisição, somado às portas 8001-8007
+publicadas apenas em `127.0.0.1`. Se um desses serviços ficar exposto na rede,
+qualquer máquina vira qualquer tenant — e o 8007 (empresas) ainda aceita
+`X-Plataforma`. O comentário no bloco `clientes` do `docker-compose.dev.yml`
+registra exatamente isso.
 
 ---
 
-## 📚 Documentos Relacionados
+## Banco de dados
 
-- [Comunicação entre Serviços](./comunicacao.md)
-- [Diagramas de Sequência](./diagramas/sequencia.md)
-- [Especificação Técnica Completa](../01-visao-geral/arquitetura.md)
-- [Regras de Negócio](../11-regras-negocio/)
+**Uma** instância PostgreSQL 15 (banco `erp`), com um schema por serviço, não um
+banco por serviço. Os schemas são criados por `postgres/init-schemas.sql`:
+`gateway`, `empresas`, `clientes`, `produtos`, `estoque`, `vendas`,
+`financeiro`, `notificacoes` e `evolution`. Todas as variáveis
+`DATABASE_URL_*` do `.env.example` apontam para o mesmo banco `erp`.
+
+Isso dá isolamento lógico e migrations independentes por serviço, mas **não** dá
+isolamento de falha nem escala independente: um banco fora do ar derruba os oito.
+
+Detalhes de backup, volume e durabilidade em
+[persistência e durabilidade](./persistencia-e-durabilidade.md).
 
 ---
 
-**Última atualização**: 26 de Maio de 2026  
-**Versão**: 1.0.0 (MVP)
+## Escalabilidade
+
+### O que existe hoje
+
+- **Connection pooling** em todos os oito serviços: `pool_size=10`,
+  `max_overflow=20` em cada `database.py`.
+- **Tetos por container** no Compose: `0.5` CPU e `512M` por serviço em dev
+  (`x-dev-limits`), com `db` e frontend sobrescrevendo para valores maiores.
+  Limite não reserva memória — só impede que um serviço em loop leve a máquina
+  junto.
+- **Rate limiting** no gateway: `300/minute` por IP como padrão
+  (`api-gateway/middleware/rate_limit.py`); login, registro e reset de senha têm
+  limites bem mais apertados aplicados por rota.
+- **Redis** para refresh tokens, blacklist de tokens, tokens de reset de senha e
+  idempotência no gateway. O rate limiting (`slowapi`) não usa Redis: o
+  `Limiter` é criado sem `storage_uri`, então os contadores ficam em memória do
+  processo (comportamento padrão do slowapi; A CONFIRMAR na versão instalada).
+
+### O que não existe
+
+- **Nenhuma réplica.** Não há `replicas:` em nenhum Compose; cada serviço roda
+  em uma instância única.
+- **Nenhum load balancer.** O nginx do projeto (`frontend/nginx.conf`) serve o
+  SPA buildado dentro da imagem do frontend; ele não distribui carga entre
+  instâncias. Em produção o TLS termina na Cloudflare; o único nginx é o do
+  frontend, que repassa `/api/` a uma única instância do gateway
+  (`frontend/nginx.conf:25-37`) e não há nginx na frente dos microsserviços.
+- A VPS de produção é apertada em CPU — ver
+  [performance e consumo de CPU](./performance-cpu.md) antes de propor subir
+  mais containers.
+
+O desenho é stateless o bastante para escalar horizontalmente (a sessão vive no
+Redis, não em memória do processo), mas nada disso está configurado.
+
+A CONFIRMAR: se há índices além das PKs/FKs geradas pelos models, e quais
+listagens já usam paginação — não foi verificado modelo a modelo.
+
+---
+
+**Última verificação contra o código**: 25 de setembro de 2026

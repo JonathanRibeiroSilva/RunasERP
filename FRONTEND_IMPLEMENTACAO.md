@@ -1,643 +1,276 @@
-# 🎨 Guia de Implementação Frontend - Runas ERP
+# Frontend Runas ERP - Estado Atual
 
-> Roteiro completo para desenvolvimento do frontend módulo por módulo
+> Retrato do que está implementado em `frontend/` e do que ainda falta.
+> Todo dado abaixo foi lido do código; nada aqui é estimativa de progresso.
 
-**Última atualização**: Junho 2026  
-**Status**: Loja Online 50% | Vendas/PDV e Estoque pendentes
-
----
-
-## 📋 Visão Geral
-
-Este guia apresenta o **plano de implementação do frontend** do Runas ERP, organizado em **sprints** com prioridades definidas.
-
-### Progresso Atual
-
-| Módulo | Status | Completude | Prioridade |
-|--------|--------|-----------|-----------|
-| 🔐 Autenticação | ✅ Completo | 100% | Alta |
-| 👥 Clientes | 🟡 Quase Completo | 85% | Média |
-| 📦 Produtos | 🟡 Quase Completo | 90% | Alta |
-| 🛒 Loja Online | 🟡 Em Progresso | 50% | Alta |
-| 💰 Vendas/PDV | 🔴 Não Iniciado | 0% | **Crítica** |
-| 📊 Estoque | 🔴 Não Iniciado | 0% | **Crítica** |
-| 💵 Financeiro | 🔴 Não Iniciado | 0% | Média |
-| 📈 Dashboard | 🟡 Básico | 40% | Baixa |
+**Última verificação**: 25/09/2026 (contra a branch `feat/g1b-plataforma-com-prova`); módulo Plataforma, testes e `config/` re-verificados em 28/09/2026 contra o `Developer` (PR #113)
 
 ---
 
-## 🎯 Prioridades de Desenvolvimento
+## Visão geral por módulo
 
-### Sprint 1: PDV/Vendas (PRIORIDADE MÁXIMA)
-**Prazo**: 2 semanas  
-**Objetivo**: Sistema funcional de vendas
-
-
-**Componentes Necessários**:
-
-1. **PDV (Ponto de Venda)**
-   - Busca de produtos (código de barras, nome)
-   - Carrinho de compras
-   - Cálculo automático de totais
-   - Seleção de cliente (opcional para vendas de balcão)
-   - Múltiplas formas de pagamento
-   - Finalização de venda
-
-2. **Lista de Vendas**
-   - Tabela com paginação, filtros e ordenação
-   - Status da venda (rascunho, pendente, confirmada, etc)
-   - Detalhes da venda (itens, pagamentos)
-   - Ações (cancelar, devolver)
-
-3. **Integração com Estoque**
-   - Verificar disponibilidade
-   - Reservar estoque durante venda
-   - Baixar estoque ao confirmar
-
-**APIs Backend Necessárias** (✅ Prontas):
-- `POST /api/vendas` - Criar venda
-- `GET /api/vendas` - Listar vendas
-- `GET /api/vendas/{id}` - Detalhes da venda
-- `PATCH /api/vendas/{id}/status` - Alterar status
-- `GET /api/produtos` - Buscar produtos disponíveis
-
+| Módulo | Estado | Onde está |
+|--------|--------|-----------|
+| Autenticação | Entregue | `pages/Login/`, `pages/Auth/` (forgot/reset, callbacks Google e Microsoft), `hooks/useAuth.ts` |
+| Clientes | Entregue | `pages/Clientes/` (lista, formulário, endereços, crédito), `hooks/useClientes.ts`, `services/api/clientesApi.ts` |
+| Produtos | Entregue | `pages/Produtos/` (lista, formulário, detalhes, variantes, categorias), `hooks/useProdutos.ts`, `services/api/produtosApi.ts` |
+| Estoque | Entregue | `pages/Estoque/` (`EstoquePage.tsx` 336 linhas, `EstoqueDetalhePage.tsx` 239 linhas, 4 componentes), `hooks/useEstoque.ts`, `services/api/estoqueApi.ts` |
+| Loja Online (vitrine pública) | Entregue | `pages/LojaOnlinePublico/` (8 páginas), `hooks/useCarrinho.ts`, `services/api/apiPublica.ts` |
+| Loja Online (administração) | Parcial | `pages/LojaOnline/ConfiguracoesLojaPage.tsx` entregue; `PedidosOnlinePage.tsx` é placeholder "em breve" |
+| Plataforma (SUPER_ADMIN) | Entregue | `pages/Plataforma/` (`PlataformaDashboard.tsx` 105 linhas, `PlataformaPage.tsx` 396 linhas, `TenantDetalhe.tsx` 327 linhas), `config/host.ts`, `hooks/usePlataforma.ts`, `services/api/plataformaApi.ts` |
+| Configurações | Entregue | `pages/Configuracoes/` (`EmpresaPage.tsx` 305, `IntegracoesPage.tsx` 322, `UsuariosPage.tsx` 273 linhas) |
+| Perfil | Entregue | `pages/Perfil/PerfilPage.tsx` |
+| Dashboard | Só interface | `pages/Dashboard/DashboardPage.tsx` (326 linhas) - gráficos Chart.js reais alimentados por dados fixos no próprio arquivo |
+| Vendas / PDV | Não iniciado | `pages/Vendas/VendasPage.tsx` = 47 linhas de tela "em breve" |
+| Financeiro | Não iniciado | `pages/Financeiro/FinanceiroPage.tsx` = 47 linhas de tela "em breve" |
 
 ---
 
-### Sprint 2: Gestão de Estoque (PRIORIDADE MÁXIMA)
-**Prazo**: 2 semanas  
-**Objetivo**: Controle completo de estoque
+## O que ainda falta
 
-**Componentes Necessários**:
+### 1. Vendas / PDV (não iniciado no frontend)
 
-1. **Visão Geral do Estoque**
-   - Dashboard com indicadores (estoque total, baixo, zerado)
-   - Lista de produtos com níveis de estoque
-   - Filtros por categoria, fornecedor
-   - Alertas de estoque baixo/zerado
+`pages/Vendas/VendasPage.tsx` tem 47 linhas: cabeçalho, ícone e três cards de "em desenvolvimento".
+A rota `vendas` existe em `App.tsx` protegida por `RoleProtectedRoute requiredRole={['ADMIN', 'OPERADOR']}`.
+`components/vendas/` existe mas está vazio.
 
-2. **Movimentações de Estoque**
-   - Entrada de mercadorias
-   - Saída manual
-   - Ajustes de inventário
-   - Devoluções
-   - Histórico de movimentações
+O backend de vendas já responde; o frontend não consome nada dele.
 
-3. **Gestão de Lotes**
-   - Controle de lotes por produto
-   - Datas de validade
-   - Rastreabilidade (lote → vendas)
-   - Alertas de lotes próximos ao vencimento
+**A CONFIRMAR**: quais rotas de `services/vendas` estão publicadas pelo api-gateway para uso administrativo (fora do prefixo `/loja`). Este documento não as lista porque não foram verificadas nesta revisão.
 
-4. **Inventário**
-   - Contagem física
-   - Comparação físico vs sistema
-   - Ajustes em lote
+### 2. Financeiro (não iniciado no frontend)
 
-**APIs Backend Necessárias** (✅ Prontas):
-- `GET /api/estoque` - Listar estoque
-- `POST /api/estoque/movimentacoes` - Registrar movimentação
-- `GET /api/estoque/movimentacoes` - Histórico
-- `GET /api/estoque/lotes` - Listar lotes
+`pages/Financeiro/FinanceiroPage.tsx` tem 47 linhas, mesmo padrão de tela "em breve".
+Rota `financeiro` em `App.tsx`, restrita a `ADMIN`. `components/financeiro/` está vazio.
 
+**A CONFIRMAR**: quais endpoints o `services/financeiro` expõe hoje. O documento anterior afirmava `GET /api/financeiro/contas-receber`, `/contas-pagar` e `POST /api/financeiro/baixa` sem evidência; as rotas foram removidas daqui até serem lidas do router.
+
+### 3. Dashboard com dados fixos
+
+`DashboardPage.tsx` não importa nenhum cliente HTTP. Os quatro indicadores (`mockStats`), a lista `vendasRecentes` e `topProdutos` são arrays literais declarados no arquivo, sob o comentário `// ── MOCK DATA ──`. Os gráficos (`react-chartjs-2`, `Line` e `Doughnut`) são reais, mas leem esses mesmos arrays.
+
+Substituir por chamadas reais é trabalho pendente.
+
+### 4. Pedidos Online (administração)
+
+`pages/LojaOnline/PedidosOnlinePage.tsx` é um empty state de 24 linhas. O fluxo de compra do cliente final funciona ponta a ponta; falta a tela do lojista para acompanhar esses pedidos.
 
 ---
 
-### Sprint 3: Loja Online - Finalização (PRIORIDADE ALTA)
-**Prazo**: 1 semana  
-**Objetivo**: E-commerce funcional
+## Módulo Plataforma (SUPER_ADMIN)
 
-**Componentes Já Implementados** (✅):
-- Vitrine de produtos
-- Detalhes do produto
-- Filtros e busca
-- Compartilhamento (WhatsApp, link)
+Painel multi-tenant, ausente das versões anteriores deste documento.
 
-**Componentes a Implementar** (🔴):
+- `pages/Plataforma/PlataformaDashboard.tsx` (105 linhas) - rota `/plataforma`, visão geral: cartões de lojistas, receita mensal (só assinaturas `ATIVA`), a cobrar e sem assinatura, calculados por `resumirTenants` sobre a mesma lista de `GET /plataforma/tenants` (sem endpoint próprio).
+- `pages/Plataforma/PlataformaPage.tsx` (396 linhas) - rota `/plataforma/tenants`, lista de lojistas: criação (provisionar), suspensão/reativação, troca de plano, auditoria, dumps e assinatura (cobrança).
+- `pages/Plataforma/TenantDetalhe.tsx` (327 linhas) - painel de detalhe de um tenant, renderizado dentro da `PlataformaPage` (não é rota própria).
+- `hooks/usePlataforma.ts` e `services/api/plataformaApi.ts`.
+- Rotas `plataforma` e `plataforma/tenants` em `App.tsx`, ambas protegidas por `RoleProtectedRoute requiredRole={['SUPER_ADMIN']}` e **registradas só no host do painel** (`ehPainelPlataforma || !separarPorHost`): no host do lojista elas não existem e caem no catch-all, e o `frontend/nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.` (commit `045c0c0`). As duas páginas são carregadas com `lazy()` (chunks próprios), dentro de um `Suspense` que envolve as rotas.
+- No `Sidebar`, "Plataforma" é um submenu com "Visão Geral" (`/plataforma`, com `end`, para não ficar ativo junto com `/plataforma/tenants`) e "Lojistas" (`/plataforma/tenants`); os subitens repetem `requiredRole: ['SUPER_ADMIN']` porque `podeVer()` trata item sem lista como item de tenant.
 
-1. **Carrinho de Compras**
-   - Adicionar/remover produtos
-   - Atualizar quantidades
-   - Calcular subtotal/total
-   - Persistência (localStorage)
+**Separação por host** (`config/host.ts`, só no frontend): o mesmo bundle serve o ERP dos lojistas e o painel da plataforma. `ehPainelPlataforma` é verdadeiro quando o primeiro label de `window.location.hostname` é `VITE_HOST_PLATAFORMA` (padrão `admin`). Em dev (`import.meta.env.DEV`) a separação só vale se o host já for o do painel, então as duas aplicações convivem em `localhost` e `admin.localhost:3000` exercita o caminho de produção.
 
-2. **Checkout**
-   - Dados do cliente (nome, CPF, telefone)
-   - Endereço de entrega
-   - Forma de pagamento
-   - Confirmação do pedido
+**Guard global** em `App.tsx` (dentro de `ProtectedRoute`), decidido pela função pura `escolherPorta()` (testada em `config/__tests__/host.test.ts`):
 
-3. **Área do Cliente**
-   - Login/cadastro
-   - Meus pedidos
-   - Status de entrega
-   - Histórico de compras
+- com separação ativa, SUPER_ADMIN fora do host do painel, ou qualquer outro papel no host do painel, recebe a tela `PortaErrada` ("Endereço errado", com botão Sair; no host do lojista o texto não nomeia o painel nem o endereço dele) - uma tela e não um redirect, porque o cookie de sessão é host-only e não iria junto para o outro host;
+- SUPER_ADMIN em caminho que não comece por `/plataforma` nem `/perfil` é redirecionado para `/plataforma` (SUPER_ADMIN não tem `empresa_id`, então qualquer tela de tenant consultaria uma empresa inexistente);
+- os demais papéis em `/plataforma*` são redirecionados para `/dashboard` (na prática só em dev, em `localhost`: em produção essas rotas não existem no host do lojista);
+- `/perfil` vale nos dois lados.
 
-**APIs Backend Necessárias**:
-- ✅ `GET /api/loja/produtos` - Produtos públicos (pronta)
-- 🔴 `POST /api/loja/carrinho` - Criar carrinho (a fazer)
-- 🔴 `POST /api/loja/checkout` - Finalizar compra (a fazer)
-- 🔴 `GET /api/loja/pedidos` - Meus pedidos (a fazer)
+Uma porta só, em vez de um guard por rota - tela nova nasce fechada para quem não é daquele host.
 
+O backend não muda com isso: `/api` é relativo (same-origin nos dois hosts) e `/api/plataforma/*` responde em qualquer host, protegido só por `require_super_admin`. A separação é da interface, não do servidor. Está em produção desde 2026-09-28: o PR #113 chegou à `main` pelo PR #114 (merge `1df3a0f`) e o deploy desse push terminou com sucesso. O hostname `admin.runaserp.com.br` e o Cloudflare Access na frente dele estão configurados fora do repositório (túnel e painel da Cloudflare), segundo verificação de 2026-09-28.
 
----
+Rotas consumidas por `plataformaApi` (base `VITE_API_URL`, por padrão `/api`):
 
-### Sprint 4: Melhorias em Clientes e Produtos (PRIORIDADE MÉDIA)
-**Prazo**: 1 semana  
-**Objetivo**: Completar funcionalidades pendentes
+| Método | Rota |
+|--------|------|
+| GET | `/plataforma/tenants` |
+| POST | `/plataforma/tenants` |
+| PATCH | `/plataforma/tenants/{id}/suspender` e `/reativar` |
+| PATCH | `/plataforma/tenants/{id}/plano` |
+| GET | `/plataforma/tenants/{id}/auditoria` |
+| POST | `/plataforma/auditoria/{registro_id}/reverter` |
+| GET | `/plataforma/tenants/{id}/dumps` |
+| POST | `/plataforma/tenants/{id}/assinatura` |
+| DELETE | `/plataforma/tenants/{id}/assinatura` |
+| GET | `/plataforma/tenants/{id}/exportar` (download direto, fora do axios) |
 
-**Clientes** (85% completo):
-- ✅ CRUD completo
-- ✅ Gestão de endereços
-- ✅ Gestão de crédito
-- 🔴 Histórico de compras (integrar com Vendas)
-- 🔴 Relatório de inadimplência
-
-**Produtos** (90% completo):
-- ✅ CRUD completo
-- ✅ Gestão de variantes
-- ✅ Upload de fotos
-- 🔴 Histórico de preços
-- 🔴 Produtos compostos (kits)
-- 🔴 Importação em lote (CSV/Excel)
+Detalhes de arquitetura: [docs/03-arquitetura/plataforma.md](./docs/03-arquitetura/plataforma.md) e [docs/10-api-reference/plataforma-api.md](./docs/10-api-reference/plataforma-api.md).
 
 ---
 
-### Sprint 5: Financeiro (PRIORIDADE MÉDIA)
-**Prazo**: 2 semanas  
-**Objetivo**: Gestão financeira básica
+## Loja Online - fluxo completo
 
-**Componentes Necessários**:
+Todo o fluxo público está implementado, do catálogo ao rastreamento.
 
-1. **Dashboard Financeiro**
-   - Resumo de receitas/despesas
-   - Contas a receber/pagar
-   - Fluxo de caixa
+**Páginas** (`pages/LojaOnlinePublico/`): `LojaOnlinePublicoPage`, `ProdutoDetalhePage`, `CarrinhoPage`, `CheckoutPage`, `ClienteLoginPage`, `ClientePerfilPage`, `MeusPedidosPage`, `RastreamentoPedidoPage`.
 
-2. **Contas a Receber**
-   - Lista de recebíveis
-   - Baixa manual
-   - Envio de cobranças
-   - Relatório de inadimplência
+**Rotas do React Router** (`App.tsx`, públicas): `/c/:empresaSlug`, `/c/:empresaSlug/login`, `/c/:empresaSlug/produto/:produtoId`, `/c/:empresaSlug/carrinho`, `/c/:empresaSlug/checkout`, `/c/:empresaSlug/pedido/:numeroPedido`, `/c/:empresaSlug/minha-conta/pedidos`, `/c/:empresaSlug/minha-conta/perfil`.
 
-3. **Contas a Pagar**
-   - Lista de pagamentos pendentes
-   - Baixa manual
-   - Agendamento de pagamentos
+**Backend**: `services/vendas/routers/loja.py` (752 linhas, prefixo `/loja`) e `services/vendas/services/carrinho_service.py` (437 linhas). Endpoints existentes:
 
-**APIs Backend Necessárias** (🔴 Não implementadas):
-- `GET /api/financeiro/contas-receber`
-- `GET /api/financeiro/contas-pagar`
-- `POST /api/financeiro/baixa`
+| Método | Rota | Consumido por |
+|--------|------|---------------|
+| GET | `/loja/carrinho` | `hooks/useCarrinho.ts` |
+| POST | `/loja/carrinho/itens` | `hooks/useCarrinho.ts` |
+| PUT | `/loja/carrinho/itens/{produto_id}` | `hooks/useCarrinho.ts` |
+| DELETE | `/loja/carrinho/itens/{produto_id}` | `hooks/useCarrinho.ts` |
+| DELETE | `/loja/carrinho` | `hooks/useCarrinho.ts` |
+| POST | `/loja/checkout` | `CheckoutPage.tsx` |
+| GET | `/loja/meus-pedidos` | `MeusPedidosPage.tsx` |
+| GET | `/loja/rastrear/{numero_venda}` | `RastreamentoPedidoPage.tsx` |
+| POST | `/loja/pedidos/{numero_venda}/retry-payment` | `MeusPedidosPage.tsx` |
+| POST | `/loja/pedidos/{numero_venda}/recuperar-carrinho` | `MeusPedidosPage.tsx` |
 
+O carrinho é mantido por cookie de sessão no backend (`CART_COOKIE_MAX_AGE = 604800`, 7 dias), não por `localStorage`.
+
+A administração da loja (`services/api/lojaOnlineApi.ts`) usa outro prefixo: `GET /loja-online/produtos` e `PUT /loja-online/produtos/{id}/publicar`.
 
 ---
 
-## 🏗️ Padrões de Implementação
+## Estoque - entregue
 
-### Estrutura de Componentes
+- `pages/Estoque/EstoquePage.tsx` (336 linhas) e `EstoqueDetalhePage.tsx` (239 linhas).
+- Componentes: `EstoqueOperacaoModal`, `EstoqueStatusBadge`, `MovimentacaoBadge`, `MovimentacaoTimeline`.
+- `hooks/useEstoque.ts` expõe `useEstoques`, `useEstoque`, `useRelatorioEstoque`, `useMovimentacoes`, `useLotes` e as mutations `useEntradaEstoque`, `useSaidaEstoque`, `useAjusteEstoque`, `useReservarEstoque`, `useLiberarReserva`.
+- `services/api/estoqueApi.ts` consome `/estoque` (GET e POST), `/estoque/{id}` (GET e PUT), `/estoque/relatorios/geral`, `/estoque/{id}/movimentacoes`, `/estoque/{id}/lotes`, `/estoque/disponibilidade`, `/estoque/entrada`, `/estoque/saida`, `/estoque/ajuste`, `/estoque/reservar`, `/estoque/liberar-reserva`.
+- Rotas `estoque` e `estoque/:id` em `App.tsx`, restritas a `ADMIN` e `OPERADOR`.
 
-Cada módulo deve seguir esta estrutura:
+Não existe tela de inventário físico (contagem) no frontend.
 
-```typescript
+---
+
+## Testes
+
+Existe suíte Vitest configurada: `frontend/vitest.config.ts` e 10 arquivos de teste.
+
+```
+src/components/layout/Sidebar/__tests__/podeVer.test.ts
+src/config/__tests__/host.test.ts
+src/pages/Configuracoes/__tests__/empresaSchema.test.ts
+src/pages/Configuracoes/__tests__/integracoesSchema.test.ts
+src/pages/Configuracoes/__tests__/usuarioSchema.test.ts
+src/pages/Plataforma/__tests__/assinaturaSchema.test.ts
+src/pages/Plataforma/__tests__/resumirTenants.test.ts
+src/pages/Plataforma/__tests__/tenantSchema.test.ts
+src/services/api/__tests__/axios.test.ts
+src/utils/__tests__/errorLogger.test.ts
+```
+
+A cobertura concentra-se em schemas Zod, no interceptador axios e em funções puras. Páginas e hooks ainda não têm testes de renderização.
+
+---
+
+## Stack (lida de `frontend/package.json`)
+
+**Runtime**
+
+- React `^19.3.0` e React DOM `^19.3.0` - https://react.dev
+- React Router DOM `^7.18.4` - https://reactrouter.com
+- TanStack Query `^5.103.1` - https://tanstack.com/query
+- React Bootstrap `^2.9.1` + Bootstrap `^5.3.2`
+- React Hook Form `^7.88.0` + `@hookform/resolvers` `^5.9.1`
+- Zod `^4.6.5`
+- Axios `^1.20.0`
+- Chart.js `^4.4.1` + react-chartjs-2 `^5.2.0`
+- date-fns `^4.4.0`, react-icons `^5.7.0`, react-toastify `^11.1.0`, react-loading-skeleton `^3.3.1`, sass `^1.104.1`
+
+**Desenvolvimento**
+
+- Vite `^8.3.0` - https://vite.dev
+- TypeScript `^5.2.2`
+- Vitest `^5.0.1` + jsdom `^30.1.0` + Testing Library (`react` `^16.3.3`, `jest-dom` `^7.0.1`, `user-event` `^14.6.7`, `dom` `^10.4.2`)
+- ESLint `^10.10.0` + typescript-eslint `~8.70.0`, Prettier `^3.9.8`
+
+---
+
+## Estrutura de pastas real
+
+```
 frontend/src/
-├── pages/
-│   └── [Modulo]/
-│       ├── [Modulo]ListPage.tsx      // Lista com tabela
-│       ├── [Modulo]FormPage.tsx      // Cadastro/edição
-│       ├── [Modulo]DetailPage.tsx    // Detalhes (opcional)
-│       └── index.ts                   // Exports
+├── pages/            Auth, Clientes, Configuracoes, Dashboard, Estoque, Financeiro,
+│                     Login, LojaOnline, LojaOnlinePublico, Perfil, Plataforma,
+│                     Produtos, Vendas
 ├── components/
-│   └── [modulo]/
-│       ├── [Modulo]Table.tsx          // Tabela reutilizável
-│       ├── [Modulo]Form.tsx           // Formulário reutilizável
-│       ├── [Modulo]Card.tsx           // Card de resumo
-│       └── index.ts
-├── services/
-│   └── api/
-│       └── [modulo].ts                // API calls
+│   ├── common/       ErrorBoundary, MaskedInput, Modal, ResponsiveCard,
+│   │                 ResponsiveContainer, ResponsiveTable, RoleProtectedRoute.tsx
+│   ├── layout/       MainLayout, Navbar, Sidebar
+│   └── clientes/ estoque/ financeiro/ produtos/ vendas/   (diretórios vazios)
+├── hooks/            useAuth, useCarrinho, useClientes, useEmpresa, useEstoque,
+│                     useIntegracoes, useLojaOnline, usePlataforma, useProdutos,
+│                     useUsuarios
+├── services/api/     axios, apiPublica, clientesApi, empresaApi, estoqueApi,
+│                     integracoesApi, lojaOnlineApi, plataformaApi, produtosApi,
+│                     usuariosApi
+├── utils/            masks, validators, toast, errorLogger
 ├── types/
-│   └── [modulo].ts                    // TypeScript types
-└── hooks/
-    └── use[Modulo].ts                 // Custom hook (opcional)
+└── config/           env.ts, host.ts (separação painel/lojista por hostname)
 ```
 
-### Exemplo: Módulo de Vendas
+Componentes de módulo ficam ao lado da página que os usa (ex.: `pages/Estoque/components/`); os diretórios em `components/<modulo>/` estão vazios e não representam nada implementado.
 
-```typescript
-// types/venda.ts
-export interface Venda {
-  id: number;
-  numero_venda: string;
-  data_venda: string;
-  status: 'RASCUNHO' | 'PENDENTE' | 'CONFIRMADA' | 'CANCELADA';
-  cliente_id?: number;
-  cliente_nome?: string;
-  valor_total: number;
-  itens: ItemVenda[];
-  pagamentos: PagamentoVenda[];
-}
-
-export interface ItemVenda {
-  produto_id: number;
-  produto_nome: string;
-  quantidade: number;
-  preco_unitario: number;
-  subtotal: number;
-}
-```
-
-
-```typescript
-// services/api/vendas.ts
-import { api } from './api';
-import { Venda, VendaCreate } from '@/types/venda';
-
-export const vendasApi = {
-  list: async (params?: any) => {
-    const { data } = await api.get<Venda[]>('/api/vendas', { params });
-    return data;
-  },
-
-  get: async (id: number) => {
-    const { data } = await api.get<Venda>(`/api/vendas/${id}`);
-    return data;
-  },
-
-  create: async (venda: VendaCreate) => {
-    const { data } = await api.post<Venda>('/api/vendas', venda);
-    return data;
-  },
-
-  updateStatus: async (id: number, status: string) => {
-    const { data } = await api.patch<Venda>(`/api/vendas/${id}/status`, { status });
-    return data;
-  }
-};
-```
-
-```typescript
-// hooks/usePDV.ts
-import { useState } from 'react';
-import { ItemVenda } from '@/types/venda';
-import { Produto } from '@/types/produto';
-
-export const usePDV = () => {
-  const [itens, setItens] = useState<ItemVenda[]>([]);
-
-  const adicionarProduto = (produto: Produto, quantidade: number = 1) => {
-    // Verifica se produto já existe no carrinho
-    const existente = itens.find(i => i.produto_id === produto.id);
-
-    if (existente) {
-      setItens(itens.map(i => 
-        i.produto_id === produto.id 
-          ? { ...i, quantidade: i.quantidade + quantidade }
-          : i
-      ));
-    } else {
-      setItens([...itens, {
-        produto_id: produto.id,
-        produto_nome: produto.nome,
-        quantidade,
-        preco_unitario: produto.preco_venda,
-        subtotal: produto.preco_venda * quantidade
-      }]);
-    }
-  };
-
-  const removerProduto = (produtoId: number) => {
-    setItens(itens.filter(i => i.produto_id !== produtoId));
-  };
-
-  const limparCarrinho = () => setItens([]);
-
-  const valorTotal = itens.reduce((acc, item) => acc + item.subtotal, 0);
-
-  return { itens, adicionarProduto, removerProduto, limparCarrinho, valorTotal };
-};
-```
-
+Schemas de validação ficam junto da página (`pages/Configuracoes/empresaSchema.ts`, `pages/Plataforma/tenantSchema.ts`), com teste próprio em `__tests__/`.
 
 ---
 
-## 🎨 Componentes Reutilizáveis
+## Utilitários existentes
 
-### DataTable (Tabela Genérica)
+- `utils/masks.ts` - `maskCPF`, `maskCNPJ`, `maskPhone`, `maskCEP`, `maskCurrency`, `maskDate`, `maskCreditCard`, `unmask`, `unmaskCurrency`.
+- `utils/validators.ts` - `validateCPF`, `validateCNPJ`, `validateEmail`, `validatePhone`, `validateCEP`, `validatePassword`, `validateDate`, `validateRequired`, `validateMinLength`, `validateMaxLength`.
+- `utils/toast.ts` - wrapper `Toast` sobre react-toastify.
+- `utils/errorLogger.ts` - coberto por `utils/__tests__/errorLogger.test.ts`.
+- `services/api/axios.ts` - instância configurada, `getErrorMessage`, `getErrorStatus`; coberto por `services/api/__tests__/axios.test.ts`.
 
-```typescript
-// components/common/DataTable.tsx
-interface DataTableProps<T> {
-  data: T[];
-  columns: Column<T>[];
-  loading?: boolean;
-  onRowClick?: (row: T) => void;
-  pagination?: PaginationProps;
-}
-
-export function DataTable<T>({ data, columns, loading, onRowClick, pagination }: DataTableProps<T>) {
-  // Implementação com Bootstrap Table
-  // - Paginação
-  // - Ordenação
-  // - Loading skeleton
-  // - Empty state
-}
-```
-
-### FormField (Campo de Formulário)
-
-```typescript
-// components/forms/FormField.tsx
-interface FormFieldProps {
-  label: string;
-  name: string;
-  type?: 'text' | 'number' | 'email' | 'tel';
-  mask?: 'cpf' | 'telefone' | 'cep' | 'currency';
-  required?: boolean;
-  error?: string;
-}
-
-export function FormField({ label, name, type, mask, required, error }: FormFieldProps) {
-  // Implementação com React Hook Form
-  // - Validação
-  // - Máscaras
-  // - Mensagens de erro
-}
-```
-
-### StatusBadge (Badge de Status)
-
-```typescript
-// components/common/StatusBadge.tsx
-interface StatusBadgeProps {
-  status: 'RASCUNHO' | 'PENDENTE' | 'CONFIRMADA' | 'CANCELADA';
-}
-
-export function StatusBadge({ status }: StatusBadgeProps) {
-  const variants = {
-    RASCUNHO: 'secondary',
-    PENDENTE: 'warning',
-    CONFIRMADA: 'success',
-    CANCELADA: 'danger'
-  };
-
-  return <Badge bg={variants[status]}>{status}</Badge>;
-}
-```
-
+Não existem `components/common/DataTable.tsx`, `components/forms/FormField.tsx`, `components/common/StatusBadge.tsx` nem `utils/date.ts` / `utils/errors.ts`. Versões anteriores deste documento os descreviam como se existissem.
 
 ---
 
-## 🔧 Utilitários Essenciais
-
-### Máscaras e Validações
-
-```typescript
-// utils/masks.ts
-export const masks = {
-  cpf: (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
-  },
-
-  telefone: (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{2})(\d)/, '($1) $2')
-      .replace(/(\d{5})(\d)/, '$1-$2')
-      .replace(/(-\d{4})\d+?$/, '$1');
-  },
-
-  currency: (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  }
-};
-```
-
-### Formatação de Datas
-
-```typescript
-// utils/date.ts
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
-export const formatDate = (date: string | Date, pattern = 'dd/MM/yyyy') => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return format(dateObj, pattern, { locale: ptBR });
-};
-
-export const formatDateTime = (date: string | Date) => {
-  return formatDate(date, 'dd/MM/yyyy HH:mm');
-};
-```
-
-### Tratamento de Erros
-
-```typescript
-// utils/errors.ts
-import { toast } from 'react-toastify';
-import { AxiosError } from 'axios';
-
-export const handleApiError = (error: unknown) => {
-  if (error instanceof AxiosError) {
-    const message = error.response?.data?.detail || 'Erro ao processar requisição';
-    toast.error(message);
-  } else {
-    toast.error('Erro inesperado');
-  }
-};
-```
-
-
----
-
-## 🎯 Checklist por Feature
-
-### PDV/Vendas
-
-#### Backend (✅ 90% completo)
-- [x] API de vendas implementada
-- [x] Workflow de status (6 estados)
-- [x] Integração com estoque (reserva/baixa)
-- [x] Validação de crédito
-- [x] Múltiplas formas de pagamento
-- [ ] API de carrinho (sessão)
-
-#### Frontend (🔴 0% completo)
-- [ ] Página PDV
-  - [ ] Busca de produtos (código de barras, nome)
-  - [ ] Carrinho de compras
-  - [ ] Seleção de cliente
-  - [ ] Múltiplas formas de pagamento
-  - [ ] Finalização de venda
-- [ ] Página Lista de Vendas
-  - [ ] Tabela com filtros
-  - [ ] Detalhes da venda
-  - [ ] Ações (cancelar, devolver)
-- [ ] Hook `usePDV`
-- [ ] Componente `VendaTable`
-- [ ] Componente `PagamentoForm`
-
----
-
-### Gestão de Estoque
-
-#### Backend (✅ 95% completo)
-- [x] API de estoque implementada
-- [x] Movimentações (entrada, saída, ajuste, devolução)
-- [x] Gestão de lotes
-- [x] Inventário físico
-- [x] Alertas de estoque baixo/zerado
-- [ ] Notificações automáticas (lotes vencendo)
-
-#### Frontend (🔴 0% completo)
-- [ ] Dashboard de Estoque
-  - [ ] Indicadores (total, baixo, zerado)
-  - [ ] Lista de produtos com níveis
-  - [ ] Filtros por categoria/fornecedor
-- [ ] Página Movimentações
-  - [ ] Formulário de entrada/saída
-  - [ ] Histórico de movimentações
-- [ ] Página Lotes
-  - [ ] Lista de lotes
-  - [ ] Alertas de vencimento
-- [ ] Página Inventário
-  - [ ] Formulário de contagem
-  - [ ] Comparação físico vs sistema
-- [ ] Hook `useEstoque`
-
-
----
-
-## 📚 Recursos e Referências
-
-### Documentação Interna
-- [Frontend README](./docs/05-frontend/README.md) - Arquitetura completa
-- [Design System](./docs/05-frontend/design/design.md) - Padrões visuais
-- [Componentes](./docs/05-frontend/design/componentes.md) - Biblioteca de componentes
-- [API Reference](./docs/10-api-reference/README.md) - Endpoints disponíveis
-- [Roadmap](./docs/01-visao-geral/roadmap.md) - Planejamento geral
-
-### Stack Tecnológico
-- **React 18** - https://react.dev
-- **TypeScript** - https://www.typescriptlang.org
-- **Vite** - https://vitejs.dev
-- **React Router** - https://reactrouter.com
-- **React Bootstrap** - https://react-bootstrap.github.io
-- **React Hook Form** - https://react-hook-form.com
-- **TanStack Query** - https://tanstack.com/query
-
-### Ferramentas
-- **Figma** (design) - Layouts e protótipos
-- **Postman** (APIs) - Testar endpoints backend
-- **React DevTools** - Debug de componentes
-- **Redux DevTools** - Debug de estado (se necessário)
-
----
-
-## 🚀 Como Começar
-
-### 1. Setup do Ambiente
+## Como rodar
 
 ```powershell
-# Clone o repositório
-git clone https://github.com/seu-repo/runas-erp.git
-cd runas-erp
+git clone https://github.com/JonathanRibeiroSilva/RunasERP.git
+cd RunasERP/frontend
 
-# Instalar dependências do frontend
-cd frontend
 npm install
-
-# Configurar variáveis de ambiente
 cp .env.example .env
-
-# Iniciar servidor de desenvolvimento
 npm run dev
 ```
 
-### 2. Escolher uma Feature
+`VITE_API_URL` tem `/api` como padrão (Cloudflare faz proxy). Para backend local direto, use `http://localhost:8000`.
 
-Consulte as **Sprints** acima e escolha a feature de maior prioridade:
-- **Sprint 1**: PDV/Vendas (CRÍTICO)
-- **Sprint 2**: Estoque (CRÍTICO)
-- **Sprint 3**: Loja Online (ALTA)
+### Scripts disponíveis (`frontend/package.json`)
 
-### 3. Seguir o Padrão
+| Script | O que faz |
+|--------|-----------|
+| `npm run dev` | `vite` |
+| `npm run build` | `tsc && vite build` (a checagem de tipos acontece aqui) |
+| `npm run preview` | `vite preview` |
+| `npm run lint` | `eslint . --report-unused-disable-directives --max-warnings 115` |
+| `npm run format` | `prettier --write "src/**/*.{ts,tsx,css,scss}"` |
+| `npm test` | `vitest` |
+| `npm run test:coverage` | `vitest --coverage` |
+| `npm run test:watch` | `vitest --watch` |
 
-Use os **exemplos de código** deste guia como referência:
-- Estrutura de pastas
-- Nomenclatura de arquivos
-- Tipos TypeScript
-- API services
-- Custom hooks
-
-
-### 4. Implementar
-
-Siga o **Checklist de Desenvolvimento** em cada etapa:
-- Criar tipos TypeScript
-- Implementar API service
-- Criar componentes
-- Integrar na página
-- Testar manualmente
-- Build sem erros
-
-### 5. Testar
-
-```powershell
-# Verificar tipos
-npm run type-check
-
-# Linter
-npm run lint
-
-# Build
-npm run build
-
-# Testar no navegador
-npm run dev
-```
-
-### 6. Commitar
-
-```bash
-# Conventional Commits (em inglês)
-git add .
-git commit -m "feat(vendas): add PDV page with product search"
-git push origin feat/pdv-implementation
-```
+Não existe `npm run type-check` nem `npm run test:e2e`. Para verificar tipos, rode `npm run build`.
 
 ---
 
-## 📞 Suporte
+## Referências
 
-### Dúvidas sobre o Frontend
+- [docs/05-frontend/README.md](./docs/05-frontend/README.md) - arquitetura do frontend
+- [docs/05-frontend/frontend-current-state.md](./docs/05-frontend/frontend-current-state.md) - estado detalhado
+- [docs/05-frontend/frontend-architectural-debt-log.md](./docs/05-frontend/frontend-architectural-debt-log.md) - dívida arquitetural registrada
+- [docs/05-frontend/design/design.md](./docs/05-frontend/design/design.md) - padrões visuais
+- [docs/05-frontend/design/componentes.md](./docs/05-frontend/design/componentes.md) - biblioteca de componentes
+- [docs/10-api-reference/README.md](./docs/10-api-reference/README.md) - endpoints
+- [docs/01-visao-geral/roadmap.md](./docs/01-visao-geral/roadmap.md) - planejamento geral
+- [docs/02-desenvolvimento/CHECKLIST_DESENVOLVIMENTO.md](./docs/02-desenvolvimento/CHECKLIST_DESENVOLVIMENTO.md) - checklist de desenvolvimento
+- [.github/CONTRIBUTING.md](./.github/CONTRIBUTING.md) - convenções de commit e PR
 
-- **Documentação**: [docs/05-frontend/](./docs/05-frontend/)
-- **Convenções**: [.kiro/steering/git-conventions.md](./.kiro/steering/git-conventions.md)
-- **Checklist**: [CHECKLIST_DESENVOLVIMENTO.md](./CHECKLIST_DESENVOLVIMENTO.md)
+## Problemas comuns
 
-### Problemas Comuns
-
-- **API não responde**: Verificar se backend está rodando (`docker-compose ps`)
-- **CORS error**: Verificar configuração no API Gateway
-- **401 Unauthorized**: Token JWT expirado, fazer login novamente
-- **Build error**: Rodar `npm install` novamente
-
----
-
-<div align="center">
-
-**Runas ERP** | Frontend Implementation Guide  
-**Última atualização**: Junho 2026  
-**Progresso Geral**: 52% completo
-
-</div>
-
+- **API não responde**: verificar se o backend está de pé (`docker compose -f docker-compose.dev.yml ps` - não existe `docker-compose.yml` sem sufixo na raiz).
+- **CORS**: configuração fica no api-gateway.
+- **401 Unauthorized**: token JWT expirado, fazer login novamente.
+- **Build error**: rodar `npm install` novamente.

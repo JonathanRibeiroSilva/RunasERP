@@ -1,6 +1,24 @@
 # 💰 Regras de Negócio - Financeiro
 
-Regras de negócio do serviço Financeiro (Contas a Receber e Vendas Fiadas).
+> **STATUS: NÃO IMPLEMENTADO.** As regras abaixo são **planejadas**, não vigentes.
+> O serviço financeiro hoje expõe apenas `GET /health`. Nenhuma das regras
+> numeradas (`RN-FIN-*`, `RN-PAG-*`, `RN-CRE-*`) tem código que a execute.
+
+**Evidência, lida do código:**
+
+- `services/financeiro/main.py` não tem nenhum `include_router`. A única rota
+  declarada é `@app.get("/health")`, na linha 56.
+- `services/financeiro/routers/__init__.py` e `services/financeiro/models/__init__.py`
+  contêm apenas a docstring do pacote: não existe router nem modelo.
+- O baseline `services/financeiro/alembic/versions/20260919_baseline.py` diz, na
+  própria docstring: *"The service has no models, so there is nothing to
+  create."* Não há tabela de contas nem de pagamentos — `upgrade()` é `pass`.
+- A seção 4 (Jobs Agendados) não tem execução: `celery==5.6.3` aparece em
+  `services/financeiro/requirements.txt`, mas não existe nenhuma app Celery no
+  repositório nem container worker/beat em nenhum `docker-compose*.yml`.
+
+Este documento serve como especificação a implementar. Trate cada regra como
+intenção de projeto, não como comportamento observável do sistema.
 
 ---
 
@@ -283,7 +301,6 @@ Regras de negócio do serviço Financeiro (Contas a Receber e Vendas Fiadas).
 
 ## 📚 Referências
 
-- [Diagramas de Sequência - Financeiro](../03-arquitetura/diagramas/sequencia.md#4-fluxos-integrados)
 - [API Financeiro](../10-api-reference/financeiro-api.md)
 - [Regras de Negócio - Índice](./README.md)
 

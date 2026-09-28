@@ -1,255 +1,174 @@
 # Checklist de Produção - Frontend
 
-Este documento lista todas as verificações necessárias antes de colocar o frontend em produção.
+Verificações para o frontend antes e depois de um deploy. Vale para o deploy
+real deste projeto: o CI constrói as imagens e publica no ghcr, o Coolify faz
+pull na VPS e o Cloudflare Tunnel é a única entrada. Como o fluxo inteiro
+funciona está em [deploy.md](../../06-operacao/deploy.md); incidentes, em
+[runbook-producao.md](../../06-operacao/runbook-producao.md).
 
-## ✅ Segurança
+A landing (`runaserp.com.br`) não passa por aqui: é um site estático no
+Cloudflare Pages com workflow próprio (`.github/workflows/landing.yml`).
 
-- [ ] Remover todos os `console.log` de debug (exceto erros críticos)
-- [ ] Validar que `CLIENT_SECRET` não está exposto no frontend
-- [ ] Configurar HTTPS obrigatório
-- [ ] Implementar Content Security Policy (CSP)
-- [ ] Configurar CORS adequadamente no backend
-- [ ] Validar todos os inputs do usuário
-- [ ] Implementar rate limiting no backend
-- [ ] Configurar tokens com expiração adequada
-- [ ] Implementar refresh token rotation
-- [ ] Adicionar proteção contra XSS
-- [ ] Adicionar proteção contra CSRF (já implementado via state)
+## Como o frontend chega à produção
 
-## ✅ Performance
+1. PR para `main` roda o CI (`.github/workflows/ci.yml`). O job `frontend` faz
+   `npm ci`, `npm run lint`, `npm run build` (`tsc && vite build`) e
+   `npm run test -- --run`; o job `build` constrói as nove imagens de produção.
+2. Merge em `main` dispara `.github/workflows/deploy.yml`, que constrói as
+   imagens no runner com `docker-compose.prod.yml` + `docker-compose.build.yml`,
+   publica `:<sha>` e `:latest` no ghcr e chama o Coolify.
+3. O Coolify lê `docker-compose.prod.yml`, que não tem `build:` por desenho:
+   a VPS (1 vCPU) só faz pull. O deploy.yml espera o registro de deploy do
+   Coolify terminar como `finished`/`success`.
 
-- [ ] Executar build de produção: `npm run build`
-- [ ] Verificar tamanho dos bundles (< 500KB ideal)
-- [ ] Implementar code splitting
-- [ ] Otimizar imagens (WebP, lazy loading)
-- [ ] Configurar cache adequado
-- [ ] Minificar CSS e JavaScript
-- [ ] Remover dependências não utilizadas
-- [ ] Implementar Service Worker (PWA)
-- [ ] Configurar CDN para assets estáticos
+Mudanças só em `docs/**`, `**.md`, `.github/**`, `scripts/**` e
+`landing-page/**` não disparam deploy (`paths-ignore` no deploy.yml).
 
-## ✅ Variáveis de Ambiente
+## Antes do merge em main
 
-### Backend (.env)
+- [ ] CI verde no PR (lint, build, testes do frontend e build das imagens).
+- [ ] O PR tem `Developer` ou `main` como base: o CI só roda em PR para essas
+      branches (`ci.yml`, `on.pull_request.branches`).
+- [ ] Nenhum `console.log` de debug novo. Hoje restam cinco, todos em
+      `frontend/src/pages/LojaOnlinePublico/CheckoutPage.tsx` (linhas 689, 691,
+      734, 748 e 749), um deles imprimindo `document.cookie`. O build não os
+      remove: `vite.config.ts` não configura `drop_console`.
+- [ ] `npm audit` em `frontend/` quando o PR adiciona dependência: o CI não
+      roda auditoria (o Dependabot, em `.github/dependabot.yml`, abre PRs
+      semanais de atualização de versão).
 
-```env
-# Produção
-NODE_ENV=production
-DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db
-REDIS_URL=redis://host:6379
+## Build e imagem
 
-# JWT
-JWT_SECRET=seu-secret-super-seguro-aqui-min-32-chars
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
+- `frontend/Dockerfile`: stage `node:22-alpine` com `npm ci` e
+  `npm run build`; stage `nginx:alpine` servindo `dist/` com
+  `frontend/nginx.conf`.
+- `vite.config.ts` gera o build em `dist/` com `sourcemap: true`.
 
-# OAuth Google
-GOOGLE_CLIENT_ID=seu-client-id-producao
-GOOGLE_CLIENT_SECRET=seu-client-secret-producao
+## Variáveis de ambiente
 
-# OAuth Microsoft
-MICROSOFT_CLIENT_ID=seu-client-id-producao
-MICROSOFT_CLIENT_SECRET=seu-client-secret-producao
-MICROSOFT_TENANT_ID=common
+O Vite embute `VITE_*` no bundle na hora do build. As que o código lê estão em
+`frontend/src/config/env.ts` e `frontend/src/config/host.ts`:
 
-# CORS
-CORS_ORIGINS=https://seu-dominio.com,https://www.seu-dominio.com
-```
+| Variável | Default no código | Uso real |
+|---|---|---|
+| `VITE_API_URL` | `/api` | Base do axios. Em produção precisa ser `/api` (relativo). |
+| `VITE_API_TIMEOUT` | `30000` | Timeout do axios (`services/api/axios.ts`). |
+| `VITE_ENABLE_DEVTOOLS` | desligado | React Query Devtools (`main.tsx`). |
+| `VITE_HOST_PLATAFORMA` | `admin` | Rótulo do host do painel da plataforma (`host.ts`). |
+| `VITE_APP_NAME`, `VITE_APP_VERSION`, `VITE_ENABLE_ANALYTICS`, `VITE_TOKEN_REFRESH_THRESHOLD` | ver `env.ts` | Lidas em `env.ts`, nenhum outro código as usa. |
+| `VITE_GOOGLE_CLIENT_ID`, `VITE_MICROSOFT_CLIENT_ID`, `VITE_MICROSOFT_TENANT_ID`, `VITE_OAUTH_REDIRECT_URI` | ver `env.ts` | Lidas em `env.ts` (`env.oauth`), nenhum código as usa: o OAuth é montado pelo gateway e o `redirect_uri` sai de `window.location.origin`. |
 
-### Frontend (.env.production)
+Atenção: `docker-compose.build.yml` passa `VITE_API_URL`,
+`VITE_OAUTH_REDIRECT_URI` e as `VITE_*` de OAuth como `args:` do build, mas
+`frontend/Dockerfile` não declara nenhum `ARG`. Build arg não declarado não
+chega ao `RUN npm run build`, então o bundle de produção sai com os defaults de
+`env.ts` e `host.ts`. Hoje isso não muda nada (o default de `VITE_API_URL` já é `/api`,
+`VITE_HOST_PLATAFORMA` nem é passada e vale `admin`, e as outras não são usadas), mas quem precisar de uma `VITE_*` nova em produção tem
+de declarar o `ARG`/`ENV` no Dockerfile.
 
-```env
-# API
-VITE_API_URL=https://api.seu-dominio.com
-VITE_API_TIMEOUT=30000
+No backend, a que importa para o frontend é `FRONTEND_URL`
+(`.env.production.example`: `https://app.runaserp.com.br`; obrigatória no
+compose via `${FRONTEND_URL:?}`):
 
-# App
-VITE_APP_NAME=ERP Runas
-VITE_APP_VERSION=1.0.0
-VITE_ENABLE_DEVTOOLS=false
-VITE_ENABLE_ANALYTICS=true
+- CORS do gateway: `allow_origins=[settings.FRONTEND_URL]`
+  (`api-gateway/main.py:81`).
+- Flag `secure` dos cookies: `FRONTEND_URL.startswith("https://")`
+  (`api-gateway/routers/auth.py:39`, `routers/auth_cliente.py:34`,
+  `services/vendas/routers/loja.py:35`).
+- Link de reset de senha (`api-gateway/services/email_service.py:140`), back_url
+  da assinatura e URLs de retorno do Mercado Pago no vendas.
 
-# OAuth
-VITE_GOOGLE_CLIENT_ID=seu-client-id-producao
-VITE_MICROSOFT_CLIENT_ID=seu-client-id-producao
-VITE_OAUTH_REDIRECT_URI=https://seu-dominio.com/auth/callback
-```
+Não aponte `FRONTEND_URL` para `runaserp.com.br` (a landing): isso quebra o
+login. Os valores reais ficam no Coolify (runtime) e no secret `PROD_ENV` do
+GitHub (build); o modelo é `.env.production.example`.
 
-## ✅ OAuth Providers
+## Servir o frontend (nginx dentro da imagem)
 
-### Google OAuth
+Estado atual de `frontend/nginx.conf`:
 
-- [ ] Criar projeto no Google Cloud Console (produção)
-- [ ] Configurar OAuth consent screen
-- [ ] Adicionar redirect URI de produção: `https://seu-dominio.com/auth/callback`
-- [ ] Obter Client ID e Client Secret de produção
-- [ ] Configurar domínios autorizados
-- [ ] Testar fluxo completo em produção
+- [x] gzip para texto, CSS, JS, JSON e SVG (linhas 9-12).
+- [x] `/assets/` com `expires 1y` e `Cache-Control: public, immutable`
+      (linhas 47-55); seguro porque o Vite gera nomes com hash.
+- [x] Fallback de SPA: `try_files $uri $uri/ /index.html` (linha 79).
+- [x] `/plataforma` devolve 404 fora do host `admin.*` (linhas 71-76).
+- [x] `/api/` repassado ao `api-gateway-prod:8000` com o prefixo removido e
+      DNS resolvido por requisição (linhas 25-44), para não ficar preso ao IP
+      de um gateway recriado.
+- [x] `/health` estático, responde `ok` sem tocar no backend (linhas 57-60).
 
-### Microsoft OAuth
+## Segurança
 
-- [ ] Criar aplicação no Azure AD (produção)
-- [ ] Configurar redirect URI de produção: `https://seu-dominio.com/auth/callback`
-- [ ] Obter Application ID e Client Secret de produção
-- [ ] Configurar permissões adequadas
-- [ ] Grant admin consent (se necessário)
-- [ ] Testar fluxo completo em produção
+- [x] Headers `X-Content-Type-Options`, `X-Frame-Options DENY` e
+      `Referrer-Policy` (`nginx.conf:14-16`).
+- [x] CSP com `script-src 'self'` (`nginx.conf:21`). Script, fonte ou API
+      externa nova precisa entrar no CSP, senão o browser bloqueia; o
+      `connect-src` hoje só libera `'self'` e `https://viacep.com.br`.
+- [x] HTTPS na borda pelo Cloudflare; o nginx repassa
+      `X-Forwarded-Proto https` fixo (`nginx.conf:42`).
+- [ ] A CONFIRMAR: HSTS. O `nginx.conf` não envia `Strict-Transport-Security`;
+      se existe, vem de configuração do Cloudflare, que não está no repositório.
+- [x] Rate limiting no gateway com slowapi (`api-gateway/main.py:74-76`).
+- [x] Tokens: `ACCESS_TOKEN_EXPIRE_MINUTES=30` e `REFRESH_TOKEN_EXPIRE_DAYS=7`
+      como default (`api-gateway/config.py:15-16`).
+- [x] Nenhum `CLIENT_SECRET` no frontend (`git grep -i client_secret -- frontend/src`
+      não encontra nada).
+- [ ] Source maps públicos: `sourcemap: true` (`vite.config.ts:95`) publica os
+      `.map` em `/assets/`, com o código-fonte legível por qualquer um. Decidir
+      entre `false`, `'hidden'` (gera sem referenciar) ou manter de propósito.
 
-## ✅ Build e Deploy
+## Performance
 
-### Build
+- [x] Minificação: padrão do `vite build`.
+- [ ] Code splitting: só duas rotas usam `lazy()` (páginas da Plataforma em
+      `frontend/src/App.tsx`); o resto é import estático e entra no bundle
+      principal.
+- [ ] A CONFIRMAR: tamanho do bundle. Não há orçamento nem análise no CI;
+      conferir com `npm run build` (o Vite avisa chunks acima de 500 kB).
 
-```bash
-# Frontend
-cd frontend
-npm run build
+## Observabilidade
 
-# Verificar tamanho dos bundles
-ls -lh dist/assets/
+- [ ] Error reporting do frontend: não existe. `ErrorBoundary.tsx` e
+      `utils/errorLogger.ts` só logam no console; Sentry aparece apenas em
+      comentário como plano futuro.
+- [x] Sonda externa: `.github/workflows/uptime.yml` consulta
+      `https://app.runaserp.com.br/api/health/ready` (cron de 10 min; na
+      prática o GitHub espaça as execuções para até ~30 min) e alerta no
+      Telegram.
 
-# Backend
-cd api-gateway
-# Não precisa build (Python)
-```
+## Depois do deploy
 
-### Docker
-
-```bash
-# Build imagens de produção
-docker-compose -f docker-compose.yml build
-
-# Testar localmente
-docker-compose -f docker-compose.yml up
-
-# Push para registry
-docker tag runaserp-frontend:latest registry.com/runaserp-frontend:1.0.0
-docker push registry.com/runaserp-frontend:1.0.0
-```
-
-## ✅ Monitoramento
-
-- [ ] Configurar Sentry ou similar para error tracking
-- [ ] Implementar logging estruturado
-- [ ] Configurar alertas para erros críticos
-- [ ] Implementar health checks
-- [ ] Configurar métricas (Prometheus, Grafana)
-- [ ] Monitorar performance (Lighthouse, Web Vitals)
-- [ ] Configurar uptime monitoring
-
-## ✅ Testes
-
-- [ ] Executar todos os testes unitários
-- [ ] Executar testes de integração
-- [ ] Testar fluxo OAuth completo (Google e Microsoft)
-- [ ] Testar em diferentes navegadores
-- [ ] Testar em diferentes dispositivos (mobile, tablet, desktop)
-- [ ] Testar com conexão lenta
-- [ ] Testar offline (se PWA)
-- [ ] Testar acessibilidade (WCAG 2.1)
-
-## ✅ SEO e Meta Tags
-
-```html
-<!-- index.html -->
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="ERP Runas - Sistema de gestão para pequenos comércios" />
-  <meta name="keywords" content="erp, gestão, vendas, estoque, financeiro" />
-  <meta name="author" content="Runas" />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="ERP Runas" />
-  <meta property="og:description" content="Sistema de gestão para pequenos comércios" />
-  <meta property="og:image" content="https://seu-dominio.com/og-image.png" />
-  <meta property="og:url" content="https://seu-dominio.com" />
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="ERP Runas" />
-  <meta name="twitter:description" content="Sistema de gestão para pequenos comércios" />
-  <meta name="twitter:image" content="https://seu-dominio.com/twitter-image.png" />
-  
-  <link rel="canonical" href="https://seu-dominio.com" />
-</head>
-```
-
-## ✅ Documentação
-
-- [ ] Atualizar README.md
-- [ ] Documentar API endpoints
-- [ ] Documentar variáveis de ambiente
-- [ ] Criar guia de deploy
-- [ ] Documentar troubleshooting comum
-- [ ] Criar changelog (CHANGELOG.md)
-
-## ✅ Legal e Compliance
-
-- [ ] Adicionar Política de Privacidade
-- [ ] Adicionar Termos de Uso
-- [ ] Implementar LGPD/GDPR compliance
-- [ ] Adicionar cookie consent (se necessário)
-- [ ] Configurar data retention policies
-
-## ✅ Backup e Disaster Recovery
-
-- [ ] Configurar backup automático do banco de dados
-- [ ] Testar restore de backup
-- [ ] Documentar procedimento de disaster recovery
-- [ ] Configurar replicação de dados (se necessário)
-
-## ✅ Pós-Deploy
-
-- [ ] Verificar logs de erro
-- [ ] Monitorar performance
-- [ ] Verificar métricas de uso
-- [ ] Coletar feedback dos usuários
-- [ ] Planejar próximas iterações
-
-## Comandos Úteis
-
-### Build de Produção
+A borda desafia User-Agent com `curl` ou `wget` (regra de WAF), então passe um
+UA de browser, senão a resposta é um 403 do Cloudflare e não do app:
 
 ```bash
-# Frontend
-npm run build
-npm run preview  # Testar build localmente
+UA='Mozilla/5.0 (compatible; verificacao-manual)'
 
-# Analisar bundle size
-npm run build -- --mode production
+# Readiness profunda: gateway + Postgres + Redis + os sete serviços.
+# 503 traz {"down": [...]} com quem caiu.
+curl -s -A "$UA" https://app.runaserp.com.br/api/health/ready
+
+# Liveness do frontend: é o nginx da imagem respondendo "ok",
+# não diz nada sobre o backend.
+curl -s -A "$UA" https://app.runaserp.com.br/health
 ```
 
-### Docker Produção
+- [ ] Job do deploy.yml verde (ele espera o status do deploy no Coolify, não
+      testa HTTP).
+- [ ] `/api/health/ready` com 200. `/health` sozinho não basta: `/` com 200 e
+      `/api/*` com 502 já aconteceu depois de um deploy parcial.
+- [ ] Login e uma tela com dados carregando no app.
+- [ ] Se mexeu em OAuth de cliente: testar Google e Microsoft pela loja
+      online. O frontend envia como `redirect_uri`
+      `${window.location.origin}/auth/callback/google` e
+      `.../auth/callback/microsoft`, que precisam estar cadastrados nos
+      provedores (A CONFIRMAR: o cadastro atual no Google Cloud e no Azure não
+      está no repositório). Problema conhecido: o login pela
+      `ClienteLoginPage.tsx` não grava `oauth_state` nem `oauth_empresa_slug`
+      no `sessionStorage` (o `CheckoutPage.tsx` grava, linhas 385-386 e
+      416-417), e o
+      `GoogleCallback.tsx`/`MicrosoftCallback.tsx` recusa o retorno com
+      "State inválido".
 
-```bash
-# Build
-docker-compose -f docker-compose.yml build
-
-# Deploy
-docker-compose -f docker-compose.yml up -d
-
-# Logs
-docker-compose -f docker-compose.yml logs -f
-
-# Stop
-docker-compose -f docker-compose.yml down
-```
-
-### Verificar Segurança
-
-```bash
-# Audit de dependências
-npm audit
-npm audit fix
-
-# Verificar vulnerabilidades
-npm run security-check
-```
-
-## Recursos
-
-- [Vite Production Build](https://vitejs.dev/guide/build.html)
-- [React Production Build](https://react.dev/learn/start-a-new-react-project#production-grade-react-frameworks)
-- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+Rollback: rodar o deploy.yml manualmente (`workflow_dispatch`) com `tag` = um
+sha que já está no ghcr; ele republica essas imagens como `:latest` sem
+rebuild. Detalhes em [deploy.md](../../06-operacao/deploy.md).
