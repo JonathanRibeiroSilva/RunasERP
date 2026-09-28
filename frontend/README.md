@@ -17,17 +17,17 @@ Versões lidas de `frontend/package.json`:
 |---|---|
 | React + React DOM | `^19.3.0` |
 | TypeScript | `^5.2.2` |
-| Vite | `^8.3.0` (plugin React `^6.1.1`) |
+| Vite | `^8.3.1` (plugin React `^6.1.1`) |
 | React Router DOM | `^7.18.4` |
-| TanStack React Query | `^5.103.1` (+ devtools) |
+| TanStack React Query | `^5.103.2` (+ devtools) |
 | Axios | `^1.20.0` |
 | React Hook Form + Zod | `^7.88.0` + `^4.6.5` (`@hookform/resolvers ^5.9.1`) |
-| Bootstrap / React Bootstrap / Sass | `^5.3.2` / `^2.9.1` / `^1.104.1` |
+| Bootstrap / React Bootstrap / Sass | `^5.3.2` / `^2.9.1` / `^1.105.0` |
 | Chart.js + react-chartjs-2 | `^4.4.1` + `^5.2.0` |
 | React Icons / React Toastify / react-loading-skeleton | `^5.7.0` / `^11.1.0` / `^3.3.1` |
 | date-fns | `^4.4.0` |
-| Vitest + Testing Library + jsdom | `^5.0.1` / `@testing-library/react ^16.3.3` / `^30.1.0` |
-| ESLint + Prettier | `^10.10.0` / `^3.9.8` |
+| Vitest + Testing Library + jsdom | `^5.0.1` / `@testing-library/react ^16.3.3` / `^30.1.1` |
+| ESLint + Prettier | `^10.11.0` / `^3.9.9` |
 
 Não há campo `engines` no `package.json`. As imagens usam **Node 22**
 (`Dockerfile` e `Dockerfile.dev`, ambos `node:22-alpine`), então 22 é a única

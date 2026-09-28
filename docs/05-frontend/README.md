@@ -56,12 +56,12 @@ Versões lidas de `frontend/package.json` (declaradas com `^`, ou seja, o instal
 |-----------|-----------|------------------|
 | Framework | React / React DOM | `^19.3.0` |
 | Linguagem | TypeScript | `^5.2.2` |
-| Build | Vite | `^8.3.0` |
+| Build | Vite | `^8.3.1` |
 | Plugin React | @vitejs/plugin-react | `^6.1.1` |
 | Roteamento | react-router-dom | `^7.18.4` |
-| Estado de servidor | @tanstack/react-query | `^5.103.1` |
+| Estado de servidor | @tanstack/react-query | `^5.103.2` |
 | UI | react-bootstrap | `^2.9.1` |
-| Estilo | bootstrap / sass | `^5.3.2` / `^1.104.1` |
+| Estilo | bootstrap / sass | `^5.3.2` / `^1.105.0` |
 | Formulários | react-hook-form + @hookform/resolvers | `^7.88.0` / `^5.9.1` |
 | Validação | zod | `^4.6.5` |
 | HTTP | axios | `^1.20.0` |
@@ -69,7 +69,7 @@ Versões lidas de `frontend/package.json` (declaradas com `^`, ou seja, o instal
 | Ícones | react-icons | `^5.7.0` |
 | Gráficos | chart.js / react-chartjs-2 | `^4.4.1` / `^5.2.0` |
 | Datas | date-fns | `^4.4.0` |
-| Testes | vitest + @testing-library/react + jsdom | `^5.0.1` / `^16.3.3` / `^30.1.0` |
+| Testes | vitest + @testing-library/react + jsdom | `^5.0.1` / `^16.3.3` / `^30.1.1` |
 
 O projeto **não usa Material-UI** — nunca esteve em `package.json`.
 
