@@ -543,7 +543,11 @@ services:
     # cannot provide cleanly. Ingress is configured in the Cloudflare Zero Trust
     # dashboard:
     #   app.runaserp.com.br     -> http://frontend-prod:80
+    #   admin.runaserp.com.br   -> http://frontend-prod:80  (painel da plataforma)
     #   coolify.runaserp.com.br -> http://host.docker.internal:8000
+    #
+    # admin e app apontam para o MESMO container: quem separa as duas aplicações
+    # é o hostname lido pelo bundle (frontend/src/config/host.ts), não a imagem.
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in Coolify}
     # Coolify listens on the *host*, not on erp-network, so the tunnel needs a
     # route out of the bridge to reach it. This is what lets the deploy trigger

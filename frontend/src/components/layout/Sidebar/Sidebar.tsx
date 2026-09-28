@@ -18,6 +18,7 @@ import {
   FiUserPlus,
   FiZap,
   FiUser,
+  FiActivity,
   FiExternalLink,
   FiGrid,
 } from 'react-icons/fi';
@@ -39,6 +40,7 @@ interface SubMenuItem {
   requiredRole?: UserRole[]; // Roles que podem ver este item
   external?: boolean; // Se é link externo
   openStore?: boolean; // Abre a loja online da empresa em nova aba
+  end?: boolean; // Só fica ativo no path exato (pai de outro subitem, ex: /plataforma)
 }
 
 interface NavItem {
@@ -98,12 +100,27 @@ const navItems: NavItem[] = [
     label: 'Financeiro',
     requiredRole: ['ADMIN'], // ← Apenas ADMIN vê
   },
-  // PLATAFORMA - Apenas SUPER_ADMIN
+  // PLATAFORMA - Apenas SUPER_ADMIN. Os subitens repetem o requiredRole porque
+  // item sem lista é item de tenant (ver podeVer) e sumiria para o super admin.
   {
-    path: '/plataforma',
     icon: <FiGrid />,
     label: 'Plataforma',
     requiredRole: ['SUPER_ADMIN'],
+    submenu: [
+      {
+        path: '/plataforma',
+        icon: <FiActivity />,
+        label: 'Visão Geral',
+        requiredRole: ['SUPER_ADMIN'],
+        end: true,
+      },
+      {
+        path: '/plataforma/tenants',
+        icon: <FiBriefcase />,
+        label: 'Lojistas',
+        requiredRole: ['SUPER_ADMIN'],
+      },
+    ],
   },
   // CONFIGURAÇÕES - Apenas ADMIN
   { 
@@ -254,6 +271,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile = false }) 
                         <NavLink
                           key={subItem.path || index}
                           to={subItem.path!}
+                          end={subItem.end}
                           onClick={handleNavClick}
                           className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}
                         >
