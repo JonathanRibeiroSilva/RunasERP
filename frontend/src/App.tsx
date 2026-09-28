@@ -86,16 +86,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
  * para o outro host levaria a sessão junto: o cookie é host-only e não existe lá.
  */
 const PortaErrada: React.FC = () => {
-  const { user, logout } = useAuth();
-  const ehSuper = user?.role === 'SUPER_ADMIN';
+  const { logout } = useAuth();
 
   return (
     <div className="empty-state" style={{ minHeight: '100vh', display: 'grid', placeContent: 'center', textAlign: 'center', gap: '1rem', padding: '2rem' }}>
       <h2>Endereço errado</h2>
       <p>
-        {ehSuper
-          ? 'Esta conta administra a plataforma. Entre pelo subdomínio de administração.'
-          : 'Este endereço é o painel da plataforma. Entre pelo endereço do seu ERP.'}
+        {/* No host do lojista a mensagem não nomeia o painel nem o endereço dele:
+            quem precisa saber já sabe, e o texto é visível para qualquer conta
+            que entre por aqui. Do lado do painel, atrás do Access, pode ser
+            explícita. */}
+        {ehPainelPlataforma
+          ? 'Esta conta não administra a plataforma. Entre pelo endereço do seu ERP.'
+          : 'Esta conta não tem acesso a este sistema.'}
       </p>
       <button className="btn btn-primary" onClick={logout}>Sair</button>
     </div>
@@ -249,23 +252,32 @@ function App() {
               </RoleProtectedRoute>
             } 
           />
-          {/* Painel da plataforma - Apenas SUPER_ADMIN (sem empresa_id, nenhuma tela de tenant funciona para ele) */}
-          <Route
-            path="plataforma"
-            element={
-              <RoleProtectedRoute requiredRole={['SUPER_ADMIN']}>
-                <PlataformaDashboard />
-              </RoleProtectedRoute>
-            }
-          />
-          <Route
-            path="plataforma/tenants"
-            element={
-              <RoleProtectedRoute requiredRole={['SUPER_ADMIN']}>
-                <PlataformaPage />
-              </RoleProtectedRoute>
-            }
-          />
+          {/* Painel da plataforma: as rotas só são registradas no subdomínio dele.
+              Guardá-las por papel deixava /plataforma existindo no host do
+              lojista — respondia com um redirect, e uma rota que responde é uma
+              rota que revela. Fora do painel elas caem no catch-all, como
+              qualquer endereço que nunca existiu. separarPorHost mantém as duas
+              registradas em dev, onde o SPA roda num host só. */}
+          {(ehPainelPlataforma || !separarPorHost) && (
+            <Route
+              path="plataforma"
+              element={
+                <RoleProtectedRoute requiredRole={['SUPER_ADMIN']}>
+                  <PlataformaDashboard />
+                </RoleProtectedRoute>
+              }
+            />
+          )}
+          {(ehPainelPlataforma || !separarPorHost) && (
+            <Route
+              path="plataforma/tenants"
+              element={
+                <RoleProtectedRoute requiredRole={['SUPER_ADMIN']}>
+                  <PlataformaPage />
+                </RoleProtectedRoute>
+              }
+            />
+          )}
           <Route 
             path="configuracoes/integracoes" 
             element={
