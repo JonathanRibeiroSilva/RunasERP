@@ -309,7 +309,7 @@ UA Mozilla → resposta real do backend, mesma URL e mesmo método.
 
 **O que é:** não é falha. O painel da plataforma e o ERP dos lojistas são o mesmo
 bundle, e o hostname decide qual aplicação ele monta (`frontend/src/config/host.ts`).
-`escolherPorta()` mostra a tela `PortaErrada` (`frontend/src/App.tsx:88-103`) quando a
+`escolherPorta()` mostra a tela `PortaErrada` (`frontend/src/App.tsx:88-106`) quando a
 conta entrou pelo host errado:
 
 - **super admin** entrando por `app.runaserp.com.br` → tem de entrar por
@@ -320,7 +320,13 @@ conta entrou pelo host errado:
 **Como resolver:** clicar em **Sair** e fazer login de novo no host certo. É tela e
 não redirect de propósito: o cookie de sessão é host-only (`set_auth_cookies` não
 passa `domain=`, `api-gateway/routers/auth.py:29`), então a sessão de um host não
-existe no outro. `/perfil` funciona nos dois.
+existe no outro. `/perfil` funciona nos dois. No host `app` a tela diz só "Esta conta
+não tem acesso a este sistema.", sem nomear o painel.
+
+**`/plataforma` no host `app` devolve 404 do nginx:** também não é falha. O
+`frontend/nginx.conf` responde 404 em `/plataforma` quando o host não começa com
+`admin.`, para o endereço não revelar que o painel existe. O painel é só
+`admin.runaserp.com.br/plataforma`.
 
 **Antes do login do app, o `admin` exige o login do Cloudflare Access** (302 para
 `*.cloudflareaccess.com`). Quem não passa dali não está na policy Allow por e-mail,

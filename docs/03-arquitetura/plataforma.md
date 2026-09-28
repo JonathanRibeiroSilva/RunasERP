@@ -268,29 +268,39 @@ Em vez de um guard por rota, há **uma porta só**, dentro do `ProtectedRoute`
 | Super admin fora do host `admin`, ou não-super no host `admin` | `porta-errada` — tela "Endereço errado" com botão Sair |
 | Super admin no host certo, em `/plataforma*` ou `/perfil` | `ok` |
 | Super admin no host certo, em qualquer outra rota | redireciona para `/plataforma` |
-| Não-super no host certo, em `/plataforma*` | redireciona para `/dashboard` |
+| Não-super no host certo, em `/plataforma*` | redireciona para `/dashboard` (só alcançável em dev; ver abaixo) |
 | Não-super no host certo, em qualquer outra rota | `ok` |
 
 O efeito é que **tela nova nasce fechada para quem não é daquele host sem ninguém
 precisar lembrar de fechá-la**; `/perfil` vale nos dois lados porque é onde cada um
 troca a própria senha.
 
-`porta-errada` é uma **tela** (`PortaErrada`, `App.tsx:83-103`) e não um redirect para o
+`porta-errada` é uma **tela** (`PortaErrada`, `App.tsx:83-106`) e não um redirect para o
 outro host, por dois motivos: o cookie de sessão é *host-only* (`set_auth_cookies`
 não passa `domain=`), então a sessão não iria junto; e mandar o super admin para
 `/plataforma` num host que não serve `/plataforma`, e de lá de volta, fecharia um laço
-de redirect.
+de redirect. O texto da tela depende do host: no `admin`, "Esta conta não administra a
+plataforma. Entre pelo endereço do seu ERP."; no host do lojista, só "Esta conta não
+tem acesso a este sistema.", sem nomear o painel nem o endereço dele, porque ali o
+texto é visível para qualquer conta.
 
 As rotas `/plataforma` e `/plataforma/tenants` têm ainda um
-`RoleProtectedRoute requiredRole={['SUPER_ADMIN']}` (`App.tsx:253-268`) — o caminho
-inverso: impedir que um ADMIN entre no painel.
+`RoleProtectedRoute requiredRole={['SUPER_ADMIN']}` — o caminho inverso: impedir que
+um ADMIN entre no painel. E elas **só são registradas no host do painel**
+(`ehPainelPlataforma || !separarPorHost`, `App.tsx:255-280`): no host do lojista não
+existem e caem no catch-all, como qualquer endereço que nunca existiu (em dev, em
+`localhost`, continuam registradas). O `frontend/nginx.conf:71-76` fecha o mesmo lado no
+servidor: `location /plataforma` devolve **404** quando o host não casa `^admin\.`, em vez
+do `index.html` com 200 que já contaria que o painel existe.
 
-### 5.3 A separação é só de UI
+### 5.3 A separação é só do frontend
 
-Nada mudou no backend. O `/api` é relativo, então no subdomínio ele é same-origin e o
+Nada mudou no backend: além do bundle, só o nginx do próprio container do frontend
+participa (o 404 em `/plataforma`, acima). O `/api` é relativo, então no subdomínio ele é same-origin e o
 CORS não entra em jogo; o gateway não tem `TrustedHost` nem checagem de `Origin`.
 **`/api/plataforma/*` responde nos dois hosts**, protegido só por
-`require_super_admin` (seção 2.1). O host `admin` é uma fronteira da interface, não do
+`require_super_admin` (seção 2.1); o comentário em `frontend/nginx.conf:68-70` registra
+que separar essa rota exigiria duplicar o bloco `/api/` inteiro. O host `admin` é uma fronteira da interface, não do
 servidor.
 
 Produção: o PR que introduziu os dois hosts (#113, commit `4643422`) chegou à
@@ -298,7 +308,9 @@ Produção: o PR que introduziu os dois hosts (#113, commit `4643422`) chegou à
 que terminou com sucesso. A rota do túnel
 `admin.runaserp.com.br -> frontend-prod:80` e um Cloudflare Access (policy Allow por
 e-mail) na frente do host `admin` estão configurados **fora do repositório** (painel
-da Cloudflare), segundo verificação de 2026-09-28; nada no código comprova isso.
+da Cloudflare), segundo verificação de 2026-09-28; nada no código comprova isso. O registro condicional das rotas, o 404 do nginx e o
+texto novo da tela `PortaErrada` vêm do commit `045c0c0`, que em 2026-09-28 estava no
+`Developer` e **ainda não na `main`**.
 
 ### 5.4 As telas
 
@@ -535,9 +547,10 @@ trabalhar 200 ms).
 - **A `back_url` do preapproval aponta para `{FRONTEND_URL}/plataforma`**
   (`preapproval_service.py:48`), isto é, para a rota do painel do dono, não para uma tela
   do lojista. Como `FRONTEND_URL` é o host `app`, depois da separação por host (seção
-  5.2) um lojista logado que volte por ali cai em `/plataforma` no host `app` e é
-  redirecionado para `/dashboard`. Não foi possível confirmar se isso é intencional ou
-  se o lojista deveria cair em outro lugar depois de assinar.
+  5.2) um lojista que volte por ali pede `/plataforma` no host `app`. Até o commit
+  `045c0c0` isso redirecionava para `/dashboard`; com ele, o nginx responde **404** nesse
+  endereço, então quem acabou de assinar cai numa página de erro. Não foi possível
+  confirmar para onde o lojista deveria voltar depois de assinar.
 
 ---
 

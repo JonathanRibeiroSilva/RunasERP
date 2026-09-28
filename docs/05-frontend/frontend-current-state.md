@@ -63,7 +63,7 @@ Total medido: 15.340 LOC em `.ts`/`.tsx` fora de `__tests__/`.
 
 ## Code splitting
 
-- Medido em 2026-09-28, depois do PR #113: `lazy(` → **2 ocorrências**, ambas em `App.tsx:28-29` (`PlataformaPage` e `PlataformaDashboard`), com um único `<Suspense fallback={<LoadingScreen />}>` envolvendo as `<Routes>` (`App.tsx:123`). As outras 33 páginas continuam importadas estaticamente (`App.tsx:5-22`), inclusive todo o storefront e o `CheckoutPage`. Situação: **parcial** — ver H5 em `frontend-architectural-debt-log.md`.
+- Medido em 2026-09-28, depois do PR #113: `lazy(` → **2 ocorrências**, ambas em `App.tsx:28-29` (`PlataformaPage` e `PlataformaDashboard`), com um único `<Suspense fallback={<LoadingScreen />}>` envolvendo as `<Routes>` (`App.tsx:126`). As outras 33 páginas continuam importadas estaticamente (`App.tsx:5-22`), inclusive todo o storefront e o `CheckoutPage`. Situação: **parcial** — ver H5 em `frontend-architectural-debt-log.md`.
 
 ## Módulos incompletos
 

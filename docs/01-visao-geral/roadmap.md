@@ -67,7 +67,7 @@ Os demais IDs (C1, C2, C3, C5, H1–H4, H6, H7) seguem no log e valem a revisita
 vários foram parcial ou totalmente resolvidos desde a auditoria; conferir lá antes de agir.
 
 ### Página 404 de verdade
-- **Evidência**: `frontend/src/App.tsx:280` — `<Route path="*" element={<Navigate to="/dashboard" replace />} />`.
+- **Evidência**: `frontend/src/App.tsx:292` — `<Route path="*" element={<Navigate to="/dashboard" replace />} />`.
   Qualquer URL errada vira redirecionamento silencioso para o dashboard.
 
 ### Cobertura de testes

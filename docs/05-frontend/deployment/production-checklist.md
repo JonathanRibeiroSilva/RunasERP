@@ -89,7 +89,8 @@ Estado atual de `frontend/nginx.conf`:
 - [x] gzip para texto, CSS, JS, JSON e SVG (linhas 9-12).
 - [x] `/assets/` com `expires 1y` e `Cache-Control: public, immutable`
       (linhas 47-55); seguro porque o Vite gera nomes com hash.
-- [x] Fallback de SPA: `try_files $uri $uri/ /index.html` (linha 63).
+- [x] Fallback de SPA: `try_files $uri $uri/ /index.html` (linha 79).
+- [x] `/plataforma` devolve 404 fora do host `admin.*` (linhas 71-76).
 - [x] `/api/` repassado ao `api-gateway-prod:8000` com o prefixo removido e
       DNS resolvido por requisição (linhas 25-44), para não ficar preso ao IP
       de um gateway recriado.

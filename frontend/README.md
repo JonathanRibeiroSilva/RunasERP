@@ -106,6 +106,8 @@ PR #114 (merge `1df3a0f`).
 entra (`/plataforma`, `/plataforma/tenants`, `/perfil`); fora dele o
 SUPER_ADMIN vê a tela "Endereço errado", assim como qualquer outro papel no
 host do painel — tela e não redirect, porque o cookie de sessão é host-only.
+Fora do host do painel as rotas `/plataforma*` nem são registradas, e o
+`nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.`.
 Em dev (`npm run dev`) as duas aplicações convivem em `localhost:3000`; use
 `admin.localhost:3000` para exercitar o caminho de produção. O backend não
 separa nada: `/api/plataforma/*` responde nos dois hosts, protegido por

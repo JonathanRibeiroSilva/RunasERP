@@ -409,7 +409,9 @@ rótulo for `VITE_HOST_PLATAFORMA` (padrão `admin`, ou seja `admin.runaserp.com
 monta o painel. `escolherPorta()` (`frontend/src/config/host.ts`) mostra a tela
 "Endereço errado" ao super admin fora do host `admin` e ao lojista dentro dele —
 tela, não redirect, porque o cookie de sessão é host-only. `/perfil` vale nos dois
-lados; em dev (`localhost`) as duas aplicações convivem. A separação é só de UI:
+lados; em dev (`localhost`) as duas aplicações convivem. Fora do host `admin` as rotas
+`/plataforma*` nem são registradas, e o nginx do frontend devolve 404 nelas. A
+separação é só do frontend:
 `/api/plataforma/*` responde nos dois hosts, protegido por `require_super_admin`.
 
 Detalhamento em [docs/03-arquitetura/plataforma.md](./docs/03-arquitetura/plataforma.md)

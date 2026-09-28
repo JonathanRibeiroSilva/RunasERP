@@ -65,16 +65,16 @@ Painel multi-tenant, ausente das versões anteriores deste documento.
 - `pages/Plataforma/PlataformaPage.tsx` (396 linhas) - rota `/plataforma/tenants`, lista de lojistas: criação (provisionar), suspensão/reativação, troca de plano, auditoria, dumps e assinatura (cobrança).
 - `pages/Plataforma/TenantDetalhe.tsx` (327 linhas) - painel de detalhe de um tenant, renderizado dentro da `PlataformaPage` (não é rota própria).
 - `hooks/usePlataforma.ts` e `services/api/plataformaApi.ts`.
-- Rotas `plataforma` e `plataforma/tenants` em `App.tsx`, ambas protegidas por `RoleProtectedRoute requiredRole={['SUPER_ADMIN']}`. As duas páginas são carregadas com `lazy()` (chunks próprios), dentro de um `Suspense` que envolve as rotas.
+- Rotas `plataforma` e `plataforma/tenants` em `App.tsx`, ambas protegidas por `RoleProtectedRoute requiredRole={['SUPER_ADMIN']}` e **registradas só no host do painel** (`ehPainelPlataforma || !separarPorHost`): no host do lojista elas não existem e caem no catch-all, e o `frontend/nginx.conf` devolve 404 em `/plataforma` para host que não comece com `admin.` (commit `045c0c0`). As duas páginas são carregadas com `lazy()` (chunks próprios), dentro de um `Suspense` que envolve as rotas.
 - No `Sidebar`, "Plataforma" é um submenu com "Visão Geral" (`/plataforma`, com `end`, para não ficar ativo junto com `/plataforma/tenants`) e "Lojistas" (`/plataforma/tenants`); os subitens repetem `requiredRole: ['SUPER_ADMIN']` porque `podeVer()` trata item sem lista como item de tenant.
 
 **Separação por host** (`config/host.ts`, só no frontend): o mesmo bundle serve o ERP dos lojistas e o painel da plataforma. `ehPainelPlataforma` é verdadeiro quando o primeiro label de `window.location.hostname` é `VITE_HOST_PLATAFORMA` (padrão `admin`). Em dev (`import.meta.env.DEV`) a separação só vale se o host já for o do painel, então as duas aplicações convivem em `localhost` e `admin.localhost:3000` exercita o caminho de produção.
 
 **Guard global** em `App.tsx` (dentro de `ProtectedRoute`), decidido pela função pura `escolherPorta()` (testada em `config/__tests__/host.test.ts`):
 
-- com separação ativa, SUPER_ADMIN fora do host do painel, ou qualquer outro papel no host do painel, recebe a tela `PortaErrada` ("Endereço errado", com botão Sair) - uma tela e não um redirect, porque o cookie de sessão é host-only e não iria junto para o outro host;
+- com separação ativa, SUPER_ADMIN fora do host do painel, ou qualquer outro papel no host do painel, recebe a tela `PortaErrada` ("Endereço errado", com botão Sair; no host do lojista o texto não nomeia o painel nem o endereço dele) - uma tela e não um redirect, porque o cookie de sessão é host-only e não iria junto para o outro host;
 - SUPER_ADMIN em caminho que não comece por `/plataforma` nem `/perfil` é redirecionado para `/plataforma` (SUPER_ADMIN não tem `empresa_id`, então qualquer tela de tenant consultaria uma empresa inexistente);
-- os demais papéis em `/plataforma*` são redirecionados para `/dashboard`;
+- os demais papéis em `/plataforma*` são redirecionados para `/dashboard` (na prática só em dev, em `localhost`: em produção essas rotas não existem no host do lojista);
 - `/perfil` vale nos dois lados.
 
 Uma porta só, em vez de um guard por rota - tela nova nasce fechada para quem não é daquele host.

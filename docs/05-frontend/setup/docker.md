@@ -192,6 +192,9 @@ consultados:
   (o Vite gera nomes com hash de conteúdo). Repete
   `add_header X-Content-Type-Options nosniff` porque o nginx só herda
   `add_header` do nível acima quando o nível atual não declara nenhum.
+- **`location /plataforma`** — devolve 404 quando o host não casa `^admin\.`; no
+  host do painel faz o mesmo `try_files` do fallback. Sem isso, `app.*/plataforma`
+  devolveria o `index.html` com 200, o que já contaria que o painel existe.
 - **`location /`** — `try_files $uri $uri/ /index.html` (fallback do SPA).
 - **Headers de segurança** — `X-Content-Type-Options: nosniff`,
   `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` e
