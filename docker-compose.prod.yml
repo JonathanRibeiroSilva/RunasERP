@@ -36,7 +36,7 @@ x-service: &service
     redis: {condition: service_healthy}
     rabbitmq: {condition: service_healthy}
 
-# Every service validates the JWT minted by the gateway, so SECRET_KEY is shared.
+# SECRET_KEY: the gateway signs and validates the JWT; vendas mints the checkout customer token with it.
 x-service-env: &service-env
   REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   RABBITMQ_URL: ${RABBITMQ_URL:?set RABBITMQ_URL in .env}
