@@ -17,6 +17,9 @@ on:
       - 'landing-page/**'
       - 'docs/**'
       - '**.md'
+  # Lets migration-replay (below) run on demand, to pay off a check that was
+  # skipped for four waves before it existed — see that job's comment.
+  workflow_dispatch: {}
 
 jobs:
   # Catches the class of bug that shipped broken for months: a compose file
@@ -179,3 +182,64 @@ jobs:
 
       - name: Tests
         run: pytest tests -p no:cacheprovider
+
+  # The job above proves each service's migration chain replays from zero —
+  # but against its OWN throwaway Postgres, one per matrix leg. Prod is not
+  # that: it is ONE Postgres with all 7 service schemas in it (plus the
+  # gateway's), the exact shape docker-compose.dev.yml builds. Two things only
+  # that shape can catch: revisions from different services racing to touch a
+  # SHARED object (trg_auditoria, created once and attached to 8 tables across
+  # services — services/empresas/database.py's incident comment is what this
+  # guards against happening again) and a break in the real boot path, which
+  # is a subprocess call (services/*/database.py: init_db(), check=True) —
+  # not the bare `alembic upgrade head` the job above runs directly.
+  #
+  # This is the check the plan called "fim de cada onda: down -v e subir do
+  # zero" and named as skipped for four waves running — a manual step nobody
+  # remembered. Automating it here is the fix for THAT, not just for the
+  # migrations. Runs on push (not on every PR commit, to keep review cycles
+  # fast) and on workflow_dispatch, to pay off the four waves' backlog on
+  # demand without waiting for the next push.
+  migration-replay:
+    runs-on: ubuntu-latest
+    # TEMP(dcce585): sem o `if` pra rodar de verdade neste PR e medir custo
+    # real, como o usuario pediu. Repor `if: github.event_name != 'pull_request'`
+    # antes do merge -- ver a descricao do PR.
+    steps:
+      - uses: actions/checkout@v7
+
+      # frontend-dev and evolution-api are left out on purpose: neither talks
+      # to Postgres, so neither says anything about migrations replaying —
+      # frontend-dev alone would add ~1.5GB of the runner's memory for zero
+      # signal. db, redis and rabbitmq aren't named: each service's depends_on
+      # already pulls them in, same as `docker compose up` would with no args.
+      #
+      # --wait replaces a hand-rolled poll loop with the one docker compose
+      # already ships: it blocks until every started container reports
+      # healthy, or fails at the timeout. A service whose migration crashes
+      # inside init_db() never binds its port, so its healthcheck (curl -f
+      # .../health) never passes — --wait is what turns that into a red job
+      # instead of a silent hang.
+      - name: Boot the real stack against one shared Postgres, from an empty volume
+        run: |
+          docker compose --env-file .env.example -f docker-compose.dev.yml \
+            up -d --wait --wait-timeout 300 \
+            api-gateway clientes produtos estoque vendas financeiro notificacoes empresas
+
+      - name: Show final health (only reached if the step above passed)
+        run: docker compose -f docker-compose.dev.yml ps
+
+      # Runs whether the boot above passed or failed. On failure this is the
+      # only place the actual migration error shows up — --wait's own message
+      # is just "container unhealthy", not why.
+      - name: Service logs
+        if: always()
+        run: docker compose -f docker-compose.dev.yml logs --no-color
+
+      # -v: the volume is what "from an empty database" means. Leaving it
+      # would make the NEXT run of this same job replay against whatever this
+      # run built — silently turning the check back into what prod already is
+      # (a stamped schema that migrations never really replay against).
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v
