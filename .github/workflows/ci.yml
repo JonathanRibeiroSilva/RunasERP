@@ -202,9 +202,7 @@ jobs:
   # demand without waiting for the next push.
   migration-replay:
     runs-on: ubuntu-latest
-    # TEMP(dcce585): sem o `if` pra rodar de verdade neste PR e medir custo
-    # real, como o usuario pediu. Repor `if: github.event_name != 'pull_request'`
-    # antes do merge -- ver a descricao do PR.
+    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v7
 
@@ -226,15 +224,20 @@ jobs:
             up -d --wait --wait-timeout 300 \
             api-gateway clientes produtos estoque vendas financeiro notificacoes empresas
 
+      # --env-file again: compose re-reads the file on every invocation, not
+      # just `up`. Without it here, ps/logs/down silently default every
+      # ${VAR} to blank and print one "not set" warning per variable — 15+
+      # lines of noise that showed up the first time this ran and would bury
+      # a real warning the next time something actually breaks.
       - name: Show final health (only reached if the step above passed)
-        run: docker compose -f docker-compose.dev.yml ps
+        run: docker compose --env-file .env.example -f docker-compose.dev.yml ps
 
       # Runs whether the boot above passed or failed. On failure this is the
       # only place the actual migration error shows up — --wait's own message
       # is just "container unhealthy", not why.
       - name: Service logs
         if: always()
-        run: docker compose -f docker-compose.dev.yml logs --no-color
+        run: docker compose --env-file .env.example -f docker-compose.dev.yml logs --no-color
 
       # -v: the volume is what "from an empty database" means. Leaving it
       # would make the NEXT run of this same job replay against whatever this
@@ -242,4 +245,4 @@ jobs:
       # (a stamped schema that migrations never really replay against).
       - name: Tear down
         if: always()
-        run: docker compose -f docker-compose.dev.yml down -v
+        run: docker compose --env-file .env.example -f docker-compose.dev.yml down -v
