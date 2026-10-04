@@ -55,21 +55,17 @@ async def validar_token_interno(request: Request, call_next):
     esperado = settings.SERVICO_INTERNO_TOKEN
     recebido = request.headers.get(HEADER.lower())
 
-    # ponytail: fail-open enquanto o segredo não estiver nos 8 containers em
-    # prod. O deploy não é blue-green — o stack velho cai antes do novo subir
-    # (deploy.yml:26-28), então há uma janela em que o chamador já carimba e o
-    # validador ainda não tem a env, ou o contrário. Fechar junto com o deploy
-    # seria 403 no checkout, na baixa de estoque e no job de reconciliação.
-    # Medir servico_interno.ausente em prod; zerado, troca-se o log.warning
-    # abaixo pelo mesmo `return` do ramo seguinte — uma linha.
+    # Fail-closed desde 2026-10-04: servico_interno.ausente ficou em zero com
+    # tráfego real (checkout completo, cancelamento, baixa de estoque) depois
+    # do segredo confirmado nos 8 containers em prod — ver PR #107/#108 e o
+    # plano de ação. Só falta aqui porque ainda não existe rota real neste
+    # serviço que exercite o caminho (ver financeiro/notificacoes).
     if not esperado or not recebido:
-        log.warning(
-            "servico_interno.ausente",
-            path=request.url.path,
-            configurado=bool(esperado),
-            recebido=bool(recebido),
+        log.warning("servico_interno.ausente", path=request.url.path)
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": "Forbidden"},
         )
-        return await call_next(request)
 
     # encode(): compare_digest recusa str não-ASCII com TypeError, e o header vem
     # de fora — um byte acentuado viraria 500 em vez de 403.
