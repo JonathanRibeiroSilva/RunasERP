@@ -17,7 +17,7 @@ from schemas.cliente import (
     EnderecoCreate,
     EnderecoUpdate
 )
-from models.cliente import Cliente, Endereco
+from models.cliente import Cliente, Endereco, TipoMovimentoCredito
 
 log = structlog.get_logger()
 
@@ -232,9 +232,6 @@ class ClienteService:
         try:
             cliente = await self.buscar_cliente(cliente_id, empresa_id)
 
-            # TODO: Buscar saldo devedor do serviço financeiro
-            saldo_devedor = Decimal("0.00")  # Por enquanto
-
             cliente_atualizado = await self.cliente_repo.atualizar_credito(
                 cliente_id,
                 empresa_id,
@@ -270,27 +267,35 @@ class ClienteService:
         self,
         cliente_id: UUID,
         empresa_id: int,
-        delta: Decimal
+        delta: Decimal,
+        documento: str
     ) -> Cliente:
         """
-        Ajusta crédito disponível com transação atômica (filtrado por empresa).
-        
+        Ajusta crédito disponível via ledger, com transação atômica (filtrado por empresa).
+
         Args:
             cliente_id: ID do cliente
             empresa_id: ID da empresa
             delta: Valor a ajustar (positivo = crédito, negativo = débito)
-            
+            documento: numero_venda — chave de idempotência (repete a mesma
+                chamada para o mesmo documento não debita/credita de novo)
+
         Regras:
-        - credito_disponivel nunca pode ser negativo
+        - credito_disponivel nunca pode ficar negativo (teto de crédito, C3)
+        - idempotente por (empresa_id, documento, tipo) — retry e webhook
+          duplicado não duplicam o efeito (C2)
         """
+        tipo = TipoMovimentoCredito.CREDITO if delta >= 0 else TipoMovimentoCredito.DEBITO
         try:
             cliente = await self.buscar_cliente(cliente_id, empresa_id)
 
             try:
-                cliente_atualizado = await self.cliente_repo.ajustar_credito_disponivel(
+                cliente_atualizado = await self.cliente_repo.registrar_movimento_credito(
                     cliente_id,
                     empresa_id,
-                    delta
+                    tipo,
+                    delta,
+                    documento
                 )
             except ValueError as e:
                 raise HTTPException(
@@ -309,11 +314,12 @@ class ClienteService:
                 "cliente.credito_ajustado",
                 cliente_id=str(cliente_id),
                 empresa_id=empresa_id,
-                delta=str(delta)
+                delta=str(delta),
+                documento=documento
             )
-            
+
             return cliente_atualizado
-            
+
         except HTTPException:
             await self.db.rollback()
             raise
