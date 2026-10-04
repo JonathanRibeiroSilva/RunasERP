@@ -41,6 +41,10 @@ from services.estoque_resultado import (
     classificar_reserva_http,
     classificar_status_http,
 )
+from services.credito_resultado import (
+    ResultadoDebitoCredito,
+    classificar_credito_http,
+)
 
 log = structlog.get_logger()
 
@@ -52,6 +56,16 @@ class EstoqueIndeterminadoError(Exception):
     Sinaliza que a venda NÃO foi confirmada nem cancelada: foi marcada para reconciliação
     assíncrona. O caller (webhook) deve responder erro para que o Mercado Pago reentregue,
     e o job de reconciliação retenta a baixa idempotente.
+    """
+
+
+class CreditoIndeterminadoError(Exception):
+    """
+    Resultado do débito de crédito desconhecido (timeout/erro) para uma venda fiada.
+
+    Mesmo motivo de `EstoqueIndeterminadoError`: não se sabe se o ledger do cliente
+    debitou. A venda NÃO é cancelada aqui — cancelar sem saber arriscaria o cliente
+    comprar de novo com o mesmo crédito que talvez já esteja debitado.
     """
 
 
@@ -205,6 +219,59 @@ class VendaService:
                 return response.status_code in [200, 201]
         except Exception as e:
             log.error("erro_liberar_reserva", error=str(e), produto_id=str(produto_id))
+            return False
+
+    @staticmethod
+    async def debitar_credito_cliente(
+        empresa_id: int,
+        cliente_id: UUID,
+        valor: Decimal,
+        documento: str
+    ) -> ResultadoDebitoCredito:
+        """
+        Debita o valor fiado do crédito disponível do cliente (C3, Onda 6).
+
+        Três resultados, mesmo motivo de `reservar_estoque`: um bool juntaria "o
+        teto não cobre" com "não deu para saber", e só o primeiro autoriza recusar
+        a venda sem checar de novo depois.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"{settings.CLIENTES_URL}/clientes/{cliente_id}/credito/ajustar"
+                headers = {"X-Empresa-Id": str(empresa_id)}
+                payload = {"delta": float(-valor), "documento": documento}
+
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
+                return classificar_credito_http(response.status_code)
+        except Exception as e:
+            log.error("erro_debitar_credito", error=str(e), cliente_id=str(cliente_id))
+            return ResultadoDebitoCredito.INDETERMINADO
+
+    @staticmethod
+    async def creditar_credito_cliente(
+        empresa_id: int,
+        cliente_id: UUID,
+        valor: Decimal,
+        documento: str
+    ) -> bool:
+        """
+        Devolve ao cliente o crédito debitado por uma venda fiada cancelada/estornada.
+
+        Mesmo documento do débito original, tipo diferente (CREDITO) — o ledger do
+        cliente trata como evento distinto, idempotente por si só. Falha aqui vira
+        alerta para devolver à mão, igual `liberar_reserva_estoque`: um bool basta
+        porque não existe "recusa definitiva" de devolver crédito.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"{settings.CLIENTES_URL}/clientes/{cliente_id}/credito/ajustar"
+                headers = {"X-Empresa-Id": str(empresa_id)}
+                payload = {"delta": float(valor), "documento": documento}
+
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
+                return response.status_code in (200, 201)
+        except Exception as e:
+            log.error("erro_creditar_credito", error=str(e), cliente_id=str(cliente_id))
             return False
 
     @staticmethod
@@ -855,6 +922,44 @@ class VendaService:
             if tem_fiado and not venda.cliente_id:
                 raise ValueError("Venda fiada requer cliente identificado")
 
+            # GATE DE CRÉDITO (C3, Onda 6): antes do estoque de propósito — o débito
+            # de crédito é reversível com uma chamada idempotente (creditar de volta),
+            # a baixa de estoque não (já mexeu em mercadoria física). Se o crédito
+            # falhar, nada físico aconteceu ainda; se o estoque falhar depois, o
+            # crédito já debitado é devolvido abaixo.
+            if tem_fiado:
+                valor_fiado = sum(
+                    Decimal(str(p.valor_pago)) for p in data.pagamentos
+                    if p.forma_pagamento == FormaPagamento.FIADO
+                )
+                resultado_credito = await VendaService.debitar_credito_cliente(
+                    empresa_id, venda.cliente_id, valor_fiado, venda.numero_venda
+                )
+
+                if resultado_credito is ResultadoDebitoCredito.SEM_CREDITO:
+                    # Definitivo: nada foi debitado, nada físico aconteceu — recusar é seguro.
+                    raise ValueError("Crédito disponível insuficiente para esta venda fiada")
+
+                if resultado_credito is ResultadoDebitoCredito.INDETERMINADO:
+                    # Resultado desconhecido. NUNCA cancelar aqui: o crédito pode já ter
+                    # sido debitado, e cancelar deixaria o cliente sem o crédito E sem a
+                    # venda. Marca para reconciliação e aborta — o retry é idempotente.
+                    await VendaService._marcar_reconciliacao_credito(
+                        db, empresa_id, venda, status_anterior,
+                        "Débito de crédito indeterminado (timeout/erro do serviço de clientes)"
+                    )
+                    await db.commit()
+                    log.critical(
+                        "venda_paga_credito_indeterminado_reconciliar",
+                        venda_id=str(venda_id),
+                        empresa_id=empresa_id,
+                        cliente_id=str(venda.cliente_id),
+                        valor=float(valor_fiado)
+                    )
+                    raise CreditoIndeterminadoError(
+                        "Resultado do débito de crédito indeterminado"
+                    )
+
             # GATE DE ESTOQUE REAL (regra de negócio mandatória):
             # baixa atômica e idempotente de todos os itens.
             resultado_estoque, erro_estoque = await VendaService.baixar_estoque_venda(
@@ -863,6 +968,12 @@ class VendaService:
 
             if resultado_estoque is ResultadoBaixaEstoque.SEM_ESTOQUE:
                 # Definitivo: estoque insuficiente, nada foi baixado → cancelar é seguro.
+                # O crédito fiado já foi debitado acima (gate de crédito vem antes) — devolve,
+                # senão o cliente perde o crédito de uma venda que nunca se confirmou.
+                if tem_fiado:
+                    await VendaService.creditar_credito_cliente(
+                        empresa_id, venda.cliente_id, valor_fiado, venda.numero_venda
+                    )
                 await VendaService._cancelar_por_falta_estoque(
                     db, empresa_id, venda, status_anterior, erro_estoque
                 )
@@ -1006,6 +1117,35 @@ class VendaService:
             None,  # Sistema
             observacao or f"Pagamento aprovado; baixa de estoque indeterminada — pendente de "
             f"reconciliação. {motivo or ''}".strip()
+        )
+
+    @staticmethod
+    async def _marcar_reconciliacao_credito(
+        db: AsyncSession,
+        empresa_id: int,
+        venda,
+        status_anterior: str,
+        motivo: Optional[str]
+    ) -> None:
+        """
+        Marca uma venda fiada com resultado de débito de crédito indeterminado.
+
+        Mesmo molde de `_marcar_reconciliacao_estoque`, em colunas separadas: as
+        duas podem estar pendentes ao mesmo tempo, por eventos distintos da mesma
+        confirmação.
+        """
+        from services.historico_status_service import HistoricoStatusService
+
+        venda.reconciliacao_credito_pendente = True
+        venda.reconciliacao_credito_motivo = (motivo or "Débito de crédito indeterminado")[:500]
+
+        await HistoricoStatusService.registrar_mudanca(
+            db,
+            venda.id,
+            status_anterior,
+            status_anterior,
+            None,
+            f"Débito de crédito fiado indeterminado — pendente de reconciliação. {motivo or ''}".strip()
         )
 
     @staticmethod
@@ -1355,6 +1495,29 @@ class VendaService:
                     raise EstoqueIndeterminadoError(
                         erro or "Não foi possível confirmar a devolução do estoque"
                     )
+
+                # Devolver o crédito fiado, se houver — mesmo documento do débito
+                # original (venda.numero_venda), idempotente no ledger do cliente.
+                # Falha aqui não bloqueia o cancelamento (igual liberar reserva
+                # abaixo): vira warning, não um EstoqueIndeterminadoError, porque
+                # devolver crédito não tem o mesmo risco de sumir mercadoria —
+                # pior caso é o cliente reclamar que o crédito não voltou.
+                valor_fiado_cancelado = sum(
+                    (p.valor_pago for p in venda.pagamentos
+                     if p.forma_pagamento == FormaPagamento.FIADO.value),
+                    Decimal("0.00")
+                )
+                if valor_fiado_cancelado > 0:
+                    creditou = await VendaService.creditar_credito_cliente(
+                        empresa_id, venda.cliente_id, valor_fiado_cancelado, venda.numero_venda
+                    )
+                    if not creditou:
+                        log.warning(
+                            "falha_creditar_credito_cancelamento",
+                            cliente_id=str(venda.cliente_id),
+                            venda_id=str(venda_id),
+                            valor=float(valor_fiado_cancelado)
+                        )
 
                 # LIBERAR RESERVAS — só de item que não foi baixado. A reserva do
                 # baixado já foi consumida pela baixa; liberá-la de novo soltaria a
