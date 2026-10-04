@@ -94,14 +94,17 @@ async def test_credito_insuficiente_recusa_a_venda_sem_tocar_no_estoque(db, esto
     config["resultado"] = ResultadoDebitoCredito.SEM_CREDITO
     cliente_id = uuid.uuid4()
     venda = await _venda_fiada(db, cliente_id)
+    # Capturados antes: o rollback do serviço expira as instâncias da sessão, e ler
+    # um atributo expirado fora de await é um lazy-load síncrono (MissingGreenlet).
+    venda_id, numero_venda = venda.id, venda.numero_venda
 
     with pytest.raises(ValueError, match="[Cc]rédito"):
-        await VendaService.confirmar_venda(db, EMPRESA, venda.id, _confirmar_fiado())
+        await VendaService.confirmar_venda(db, EMPRESA, venda_id, _confirmar_fiado())
 
     assert estoque_ok["baixas"] == 0, "checou o estoque antes de saber se o crédito cobria"
-    assert chamadas["debitos"] == [(cliente_id, VALOR, venda.numero_venda)]
+    assert chamadas["debitos"] == [(cliente_id, VALOR, numero_venda)]
 
-    venda_recarregada = await VendaRepository.buscar_por_id(db, EMPRESA, venda.id)
+    venda_recarregada = await VendaRepository.buscar_por_id(db, EMPRESA, venda_id)
     assert venda_recarregada.status == StatusVenda.PEDIDO.value, (
         "recusar por falta de crédito não devia mudar o status da venda"
     )
@@ -112,7 +115,7 @@ async def test_credito_indeterminado_marca_reconciliacao_sem_cancelar(db, estoqu
     chamadas, config = credito
     config["resultado"] = ResultadoDebitoCredito.INDETERMINADO
     venda = await _venda_fiada(db, uuid.uuid4())
-    venda_id = venda.id
+    venda_id = venda.id  # capturado antes: ver nota em test_credito_insuficiente_recusa...
 
     with pytest.raises(CreditoIndeterminadoError):
         await VendaService.confirmar_venda(db, EMPRESA, venda_id, _confirmar_fiado())
@@ -132,11 +135,12 @@ async def test_venda_fiada_confirmada_debita_o_credito(db, estoque_ok, credito):
     chamadas, _ = credito
     cliente_id = uuid.uuid4()
     venda = await _venda_fiada(db, cliente_id)
+    venda_id, numero_venda = venda.id, venda.numero_venda
 
-    await VendaService.confirmar_venda(db, EMPRESA, venda.id, _confirmar_fiado())
+    await VendaService.confirmar_venda(db, EMPRESA, venda_id, _confirmar_fiado())
 
-    assert chamadas["debitos"] == [(cliente_id, VALOR, venda.numero_venda)]
-    venda_recarregada = await VendaRepository.buscar_por_id(db, EMPRESA, venda.id)
+    assert chamadas["debitos"] == [(cliente_id, VALOR, numero_venda)]
+    venda_recarregada = await VendaRepository.buscar_por_id(db, EMPRESA, venda_id)
     assert venda_recarregada.status == StatusVenda.CONFIRMADA.value
 
 
@@ -158,10 +162,11 @@ async def test_sem_estoque_depois_do_credito_debitado_devolve_o_credito(db, cred
 
     cliente_id = uuid.uuid4()
     venda = await _venda_fiada(db, cliente_id)
+    venda_id, numero_venda = venda.id, venda.numero_venda
 
     with pytest.raises(ValueError, match="[Ee]stoque"):
-        await VendaService.confirmar_venda(db, EMPRESA, venda.id, _confirmar_fiado())
+        await VendaService.confirmar_venda(db, EMPRESA, venda_id, _confirmar_fiado())
 
-    assert chamadas["creditos"] == [(cliente_id, VALOR, venda.numero_venda)], (
+    assert chamadas["creditos"] == [(cliente_id, VALOR, numero_venda)], (
         "estoque recusou depois do crédito debitado — o crédito tem que voltar"
     )
