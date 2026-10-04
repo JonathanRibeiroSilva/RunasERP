@@ -118,8 +118,9 @@ class CreditoUpdate(BaseModel):
 
 
 class CreditoDelta(BaseModel):
-    """Schema para ajuste de crédito (usado internamente)."""
+    """Schema para ajuste de crédito (usado internamente por vendas e financeiro)."""
     delta: Decimal  # Positivo = crédito, Negativo = débito
+    documento: str = Field(..., min_length=1, max_length=100)  # numero_venda — chave de idempotência
 
 
 class EnderecoBase(BaseModel):

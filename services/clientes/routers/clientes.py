@@ -272,10 +272,12 @@ async def ajustar_credito(
     Ajusta o crédito disponível do cliente (filtrado por empresa).
     
     - **delta**: Valor a ajustar (positivo = crédito, negativo = débito)
-    
+    - **documento**: chave de idempotência (numero_venda) — repetir a mesma
+      chamada para o mesmo documento não debita/credita de novo
+
     Este endpoint é usado internamente pelos serviços de Vendas e Financeiro.
     """
-    return await service.ajustar_credito(cliente_id, empresa_id, data.delta)
+    return await service.ajustar_credito(cliente_id, empresa_id, data.delta, data.documento)
 
 
 @router.post(
