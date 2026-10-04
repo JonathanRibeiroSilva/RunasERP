@@ -1359,6 +1359,17 @@ class VendaService:
                 # LIBERAR RESERVAS — só de item que não foi baixado. A reserva do
                 # baixado já foi consumida pela baixa; liberá-la de novo soltaria a
                 # de outro pedido. Por isso estoque_baixado só muda depois deste loop.
+                #
+                # A reserva só é marcada LIBERADA quando o estoque confirma a
+                # liberação. Antes, uma falha aqui só gerava um warning e o laço
+                # de baixo marcava LIBERADA do mesmo jeito — vendas achava ter
+                # soltado a reserva enquanto o estoque ainda a mantinha presa,
+                # sem nada de reconciliação registrado (achado verificando o
+                # plano de ação: 3 pedidos de 2026-09-12 ficaram com reserva
+                # presa, embora por abandono em PENDENTE_PAGAMENTO, não por essa
+                # falha — mas o mesmo buraco existe pro caso de falha real).
+                reservas = await ReservaEstoqueVendaRepository.listar_por_venda(db, venda_id)
+                reservas_por_item = {r.item_venda_id: r for r in reservas}
                 for item in venda.itens:
                     if item.estoque_reservado and not item.estoque_baixado:
                         sucesso = await VendaService.liberar_reserva_estoque(
@@ -1374,20 +1385,29 @@ class VendaService:
                                 produto_id=str(item.produto_id),
                                 venda_id=str(venda_id)
                             )
+                            await VendaService._marcar_reconciliacao_estoque(
+                                db,
+                                empresa_id,
+                                venda,
+                                status_anterior,
+                                motivo=f"Falha ao liberar reserva de {item.produto_id} no cancelamento",
+                                observacao=(
+                                    f"Falha ao liberar reserva do produto {item.produto_id} "
+                                    "durante o cancelamento; reserva pode ter ficado presa no estoque."
+                                )
+                            )
+                            continue
+                        reserva = reservas_por_item.get(item.id)
+                        if reserva and reserva.status == StatusReserva.RESERVADA.value:
+                            await ReservaEstoqueVendaRepository.atualizar(
+                                db,
+                                reserva.id,
+                                status=StatusReserva.LIBERADA.value,
+                                liberada_em=datetime.utcnow()
+                            )
 
                 for item in venda.itens:
                     item.estoque_baixado = False  # estornado acima
-
-                # Atualizar reservas
-                reservas = await ReservaEstoqueVendaRepository.listar_por_venda(db, venda_id)
-                for reserva in reservas:
-                    if reserva.status == StatusReserva.RESERVADA.value:
-                        await ReservaEstoqueVendaRepository.atualizar(
-                            db,
-                            reserva.id,
-                            status=StatusReserva.LIBERADA.value,
-                            liberada_em=datetime.utcnow()
-                        )
                 
                 # Atualizar venda
                 venda = await VendaRepository.atualizar(

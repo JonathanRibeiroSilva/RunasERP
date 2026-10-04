@@ -18,8 +18,12 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import select
 
-from models.venda import HistoricoStatusVenda, ItemVenda, StatusVenda, Venda
-from repositories.venda_repository import ItemVendaRepository, VendaRepository
+from models.venda import HistoricoStatusVenda, ItemVenda, StatusReserva, StatusVenda, Venda
+from repositories.venda_repository import (
+    ItemVendaRepository,
+    ReservaEstoqueVendaRepository,
+    VendaRepository,
+)
 from schemas.venda import CancelarVendaRequest
 from services import venda_service
 from services.venda_service import EstoqueIndeterminadoError, VendaService
@@ -172,6 +176,43 @@ async def test_pedido_sem_baixa_so_libera_reserva(db, estoque):
     await VendaService.cancelar_venda(db, EMPRESA, venda.id, CancelarVendaRequest(motivo=MOTIVO))
 
     assert chamadas["liberados"] == [produto]
+
+
+@pytest.mark.asyncio
+async def test_falha_ao_liberar_nao_marca_reserva_liberada(db, estoque, monkeypatch):
+    """
+    Achado verificando o plano de ação: a reserva só pode virar LIBERADA quando
+    o estoque confirma. Marcá-la assim mesmo numa falha deixa vendas e estoque
+    divergentes em silêncio — reserva presa lá, "liberada" aqui.
+    """
+    async def liberar_falha(empresa_id, produto_id, variante_id, quantidade, documento):
+        return False
+
+    monkeypatch.setattr(VendaService, "liberar_reserva_estoque", staticmethod(liberar_falha))
+
+    venda, (produto,) = await _venda(db, StatusVenda.PEDIDO.value, [(True, False)])
+    _, itens = await _recarregar(db, venda.id)
+    reserva = await ReservaEstoqueVendaRepository.criar(
+        db,
+        venda_id=venda.id,
+        item_venda_id=itens[0].id,
+        produto_id=produto,
+        variante_id=None,
+        quantidade_reservada=Decimal("1"),
+        status=StatusReserva.RESERVADA.value,
+    )
+    await db.commit()
+
+    await VendaService.cancelar_venda(db, EMPRESA, venda.id, CancelarVendaRequest(motivo=MOTIVO))
+
+    await db.refresh(reserva)
+    venda, _ = await _recarregar(db, venda.id)
+    assert reserva.status == StatusReserva.RESERVADA.value, (
+        "marcou a reserva como liberada mesmo o estoque tendo recusado a liberação"
+    )
+    assert venda.reconciliacao_estoque_pendente is True, (
+        "falha ao liberar reserva no cancelamento devia acender reconciliação"
+    )
 
 
 @pytest.mark.asyncio
