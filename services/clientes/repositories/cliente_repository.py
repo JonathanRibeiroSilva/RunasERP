@@ -4,8 +4,9 @@ Repository para operações de Cliente no banco de dados.
 from uuid import UUID
 from decimal import Decimal
 from sqlalchemy import select, update, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.cliente import Cliente, Endereco
+from models.cliente import Cliente, Endereco, MovimentoCredito, TipoMovimentoCredito
 from schemas.cliente import ClienteCreate, ClienteCreateOAuth, ClienteUpdate, EnderecoCreate, EnderecoUpdate
 import structlog
 
@@ -33,14 +34,23 @@ class ClienteRepository:
         log.info("cliente.criado", cliente_id=str(cliente.id), empresa_id=data.empresa_id)
         return cliente
     
-    async def buscar_por_id(self, cliente_id: UUID, empresa_id: int) -> Cliente | None:
-        """Busca cliente por ID (filtrado por empresa)."""
-        result = await self.db.execute(
-            select(Cliente).where(
-                Cliente.id == cliente_id,
-                Cliente.empresa_id == empresa_id
-            )
+    async def buscar_por_id(
+        self, cliente_id: UUID, empresa_id: int, for_update: bool = False
+    ) -> Cliente | None:
+        """
+        Busca cliente por ID (filtrado por empresa).
+
+        for_update: SELECT ... FOR UPDATE — trava a linha para serializar
+        débitos/créditos concorrentes do mesmo cliente (mesmo lock de
+        `estoque.EstoqueRepository.buscar_por_produto`).
+        """
+        query = select(Cliente).where(
+            Cliente.id == cliente_id,
+            Cliente.empresa_id == empresa_id
         )
+        if for_update:
+            query = query.with_for_update()
+        result = await self.db.execute(query)
         return result.scalar_one_or_none()
     
     async def buscar_por_cpf(self, cpf: str, empresa_id: int) -> Cliente | None:
@@ -170,39 +180,103 @@ class ClienteRepository:
         limite_credito: Decimal,
         dia_vencimento: int | None
     ) -> Cliente | None:
-        """Atualiza limite de crédito e dia de vencimento (filtrado por empresa)."""
+        """
+        Atualiza limite de crédito e dia de vencimento (filtrado por empresa).
+
+        C1: trocar o limite não pode apagar o saldo devedor. `credito_disponivel`
+        é recalculado como `novo_limite - saldo_devedor_atual`, não reposto para o
+        limite cheio — senão um cliente com fiado em aberto "quita" a dívida
+        sozinho só porque o lojista editou o limite dele.
+        """
         cliente = await self.buscar_por_id(cliente_id, empresa_id)
         if not cliente:
             return None
-        
+
+        saldo_devedor = cliente.limite_credito - cliente.credito_disponivel
         cliente.limite_credito = limite_credito
         cliente.dia_vencimento = dia_vencimento
-        # Recalcular crédito disponível (assumindo saldo_devedor = 0 por enquanto)
-        cliente.credito_disponivel = limite_credito
+        cliente.credito_disponivel = limite_credito - saldo_devedor
 
         await self.db.flush()
-        log.info("cliente.credito_atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id)
+        log.info(
+            "cliente.credito_atualizado", cliente_id=str(cliente_id), empresa_id=empresa_id,
+            saldo_devedor=str(saldo_devedor)
+        )
         return cliente
-    
-    async def ajustar_credito_disponivel(
+
+    async def registrar_movimento_credito(
         self,
         cliente_id: UUID,
         empresa_id: int,
-        delta: Decimal
+        tipo: TipoMovimentoCredito,
+        valor: Decimal,
+        documento: str
     ) -> Cliente | None:
-        """Ajusta crédito disponível (positivo = crédito, negativo = débito) (filtrado por empresa)."""
-        cliente = await self.buscar_por_id(cliente_id, empresa_id)
+        """
+        Debita (`valor` negativo) ou credita (`valor` positivo) o cliente via ledger.
+
+        C2+C3: idempotente e com lock de linha — mesmo desenho de
+        `EstoqueService._baixar_venda_once`. `documento` é a chave de idempotência
+        (numero_venda); a unique constraint em `movimentos_credito` (empresa_id,
+        documento, tipo) serializa chamadas concorrentes do mesmo evento e faz
+        retry/webhook duplicado não debitar/creditar duas vezes.
+
+        Levanta ValueError se o débito deixaria `credito_disponivel` negativo —
+        é o teto de crédito que C3 pedia e `vendas` nunca checava.
+        """
+        existente = await self.db.execute(
+            select(MovimentoCredito.id).where(
+                MovimentoCredito.empresa_id == empresa_id,
+                MovimentoCredito.documento == documento,
+                MovimentoCredito.tipo == tipo.value,
+            )
+        )
+        if existente.first() is not None:
+            log.info(
+                "cliente.credito_movimento_idempotente", cliente_id=str(cliente_id),
+                empresa_id=empresa_id, documento=documento, tipo=tipo.value
+            )
+            return await self.buscar_por_id(cliente_id, empresa_id)
+
+        # Trava a linha do cliente antes de ler o saldo: duas requisições concorrentes
+        # para o mesmo cliente serializam aqui, a segunda só lê depois que a primeira
+        # já gravou (ou deu rollback).
+        cliente = await self.buscar_por_id(cliente_id, empresa_id, for_update=True)
         if not cliente:
             return None
-        
-        novo_credito = cliente.credito_disponivel + delta
-        
+
+        novo_credito = cliente.credito_disponivel + valor
         if novo_credito < 0:
-            raise ValueError("Crédito disponível não pode ser negativo")
-        
+            raise ValueError(
+                f"Crédito insuficiente: disponível {cliente.credito_disponivel}, "
+                f"solicitado {-valor}"
+            )
+
+        self.db.add(MovimentoCredito(
+            empresa_id=empresa_id,
+            cliente_id=cliente_id,
+            tipo=tipo.value,
+            valor=valor,
+            documento=documento,
+        ))
+        try:
+            await self.db.flush()
+        except IntegrityError:
+            # Corrida: outra transação registrou o mesmo (empresa_id, documento, tipo)
+            # entre o SELECT de cima e este flush. Idempotente — não é erro.
+            await self.db.rollback()
+            log.info(
+                "cliente.credito_movimento_idempotente_corrida", cliente_id=str(cliente_id),
+                empresa_id=empresa_id, documento=documento, tipo=tipo.value
+            )
+            return await self.buscar_por_id(cliente_id, empresa_id)
+
         cliente.credito_disponivel = novo_credito
         await self.db.flush()
-        log.info("cliente.credito_ajustado", cliente_id=str(cliente_id), empresa_id=empresa_id, delta=str(delta))
+        log.info(
+            "cliente.credito_movimento", cliente_id=str(cliente_id), empresa_id=empresa_id,
+            tipo=tipo.value, valor=str(valor), documento=documento
+        )
         return cliente
     
     async def bloquear(self, cliente_id: UUID, empresa_id: int) -> Cliente | None:
