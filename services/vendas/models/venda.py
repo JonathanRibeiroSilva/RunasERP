@@ -136,7 +136,15 @@ class Venda(Base):
         Boolean, default=False, nullable=False, server_default="false"
     )
     reconciliacao_motivo = Column(Text, nullable=True)
-    
+
+    # Mesma ideia, para o débito de crédito fiado (C3, Onda 6): separada da de
+    # estoque porque as duas podem ficar pendentes ao mesmo tempo, por motivos
+    # diferentes, na mesma venda.
+    reconciliacao_credito_pendente = Column(
+        Boolean, default=False, nullable=False, server_default="false"
+    )
+    reconciliacao_credito_motivo = Column(Text, nullable=True)
+
     # Observações
     observacao = Column(Text, nullable=True)
     

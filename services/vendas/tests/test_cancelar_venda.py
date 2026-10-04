@@ -18,9 +18,10 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import select
 
-from models.venda import HistoricoStatusVenda, ItemVenda, StatusReserva, StatusVenda, Venda
+from models.venda import FormaPagamento, HistoricoStatusVenda, ItemVenda, StatusReserva, StatusVenda, Venda
 from repositories.venda_repository import (
     ItemVendaRepository,
+    PagamentoVendaRepository,
     ReservaEstoqueVendaRepository,
     VendaRepository,
 )
@@ -61,7 +62,7 @@ def estoque(monkeypatch):
     return chamadas, config
 
 
-async def _venda(db, status, itens, payment_id=None):
+async def _venda(db, status, itens, payment_id=None, cliente_id=None):
     """itens: lista de (estoque_reservado, estoque_baixado)."""
     venda = await VendaRepository.criar(
         db,
@@ -71,6 +72,7 @@ async def _venda(db, status, itens, payment_id=None):
         valor_total=Decimal("20"),
         status=status,
         mercadopago_payment_id=payment_id,
+        cliente_id=cliente_id,
     )
     produtos = []
     for reservado, baixado in itens:
@@ -213,6 +215,51 @@ async def test_falha_ao_liberar_nao_marca_reserva_liberada(db, estoque, monkeypa
     assert venda.reconciliacao_estoque_pendente is True, (
         "falha ao liberar reserva no cancelamento devia acender reconciliação"
     )
+
+
+@pytest.fixture
+def cliente_credito(monkeypatch):
+    """Registra o que o cancelamento pede ao ledger de crédito do cliente."""
+    chamadas = {"creditados": []}
+
+    async def creditar(empresa_id, cliente_id, valor, documento):
+        chamadas["creditados"].append((cliente_id, valor, documento))
+        return True
+
+    monkeypatch.setattr(VendaService, "creditar_credito_cliente", staticmethod(creditar))
+    return chamadas
+
+
+@pytest.mark.asyncio
+async def test_cancelar_venda_fiada_devolve_o_credito(db, estoque, cliente_credito):
+    """C3 (Onda 6): cancelar uma venda fiada tem que devolver o crédito debitado —
+    senão o cliente perde o limite de uma compra que nunca se efetivou."""
+    cliente_id = uuid.uuid4()
+    venda, _ = await _venda(
+        db, StatusVenda.CONFIRMADA.value, [(True, True)], cliente_id=cliente_id
+    )
+    await PagamentoVendaRepository.criar(
+        db,
+        venda_id=venda.id,
+        forma_pagamento=FormaPagamento.FIADO.value,
+        valor_pago=Decimal("20.00"),
+        gera_conta_receber=True,
+    )
+    await db.commit()
+
+    await VendaService.cancelar_venda(db, EMPRESA, venda.id, CancelarVendaRequest(motivo=MOTIVO))
+
+    assert cliente_credito["creditados"] == [(cliente_id, Decimal("20.00"), venda.numero_venda)]
+
+
+@pytest.mark.asyncio
+async def test_cancelar_venda_sem_fiado_nao_mexe_no_credito(db, estoque, cliente_credito):
+    """Venda paga em dinheiro não deve gerar nenhuma chamada ao ledger de crédito."""
+    venda, _ = await _venda(db, StatusVenda.CONFIRMADA.value, [(True, True)])
+
+    await VendaService.cancelar_venda(db, EMPRESA, venda.id, CancelarVendaRequest(motivo=MOTIVO))
+
+    assert cliente_credito["creditados"] == []
 
 
 @pytest.mark.asyncio
