@@ -17,12 +17,17 @@ os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://erp:erp@localhost:54
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
 os.environ.setdefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-super-secure-min-32-chars")
+# Mesmo padrão do SECRET_KEY acima: default para rodar local, a CI define o seu.
+# Sem isto, todo request do client de teste chega sem prova de origem interna, e
+# desde que o validador ficou fail-closed (2026-10-04) isso é 403 em tudo.
+os.environ.setdefault("SERVICO_INTERNO_TOKEN", "ci-local-dummy-servico-interno-token")
 
 import pytest_asyncio  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
 from database import engine, get_db  # noqa: E402
+from interno import auth_interno  # noqa: E402
 from main import app  # noqa: E402
 
 
@@ -62,7 +67,15 @@ async def client(db):
 
     app.dependency_overrides[get_db] = _db
     try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        # Carimbado por padrão: no mesh de verdade, todo request chega aqui já
+        # com a prova de origem interna (ou o gateway proxiou, ou foi uma
+        # chamada interna direta) — nunca anônimo. headers={} por chamada NÃO
+        # remove isto (httpx funde com os headers do client); um teste que
+        # precise simular a ausência do header monta seu próprio AsyncClient.
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test",
+            headers=auth_interno(),
+        ) as c:
             yield c
     finally:
         app.dependency_overrides.clear()
