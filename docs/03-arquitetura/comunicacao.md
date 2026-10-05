@@ -68,9 +68,9 @@ Chamadas diretas, sempre com `httpx.AsyncClient` e sempre carimbadas com
 |---|---|---|
 | estoque | produtos (`/produtos/{id}`, `/variantes/{id}`) | `services/estoque/services/estoque_service.py:82-98` |
 | vendas | produtos (cache de catálogo) | `services/vendas/services/cache_service.py:122-130` |
-| vendas | produtos (`/produtos/{id}`) | `services/vendas/services/venda_service.py:80-82` |
-| vendas | clientes (`/clientes/{id}`, `POST /clientes`) | `services/vendas/services/venda_service.py:124-127`, `loja_service.py:177-179` |
-| vendas | estoque (`/estoque/reservar`, `/liberar-reserva`, `/saida`, `/baixar-venda`, `/estornar-venda`, `/disponibilidade`) | `services/vendas/services/venda_service.py:157-369`, `reserva_temporaria_service.py:61-68` |
+| vendas | produtos (`/produtos/{id}`) | `services/vendas/services/venda_service.py:94,96` |
+| vendas | clientes (`/clientes/{id}`, `POST /clientes`, `/credito/ajustar`) | `services/vendas/services/venda_service.py:138-141` (existe/ativo), `:415-419,442-446` (débito/crédito do fiado, C3/Onda 6), `loja_service.py:177-179` |
+| vendas | estoque (`/estoque/reservar`, `/liberar-reserva`, `/saida`, `/baixar-venda`, `/estornar-venda`, `/disponibilidade`) | `services/vendas/services/venda_service.py:157-397`, `reserva_temporaria_service.py:61-68` |
 | vendas | empresas (`/empresas/publico/{slug}`, `/empresas/{id}`) | `services/vendas/utils/tenant.py:31-131` |
 | vendas | api-gateway (`POST /auth/cliente/registrar-interno`) | `services/vendas/services/loja_service.py:210-215` |
 | vendas | empresas (GET do nome da empresa para o e-mail de credenciais, montado como `{CLIENTES_URL}/../empresas/empresas/{id}`) | `services/vendas/services/loja_service.py:247` (A CONFIRMAR: se essa URL relativa resolve em algum ambiente; as outras chamadas a empresas usam `EMPRESAS_URL`) |

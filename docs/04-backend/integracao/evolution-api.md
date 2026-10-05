@@ -16,9 +16,9 @@ Todas são texto, montadas em `services/vendas/services/notificacao_service.py`.
 | Método | Disparado em | Telefone usado | Passa `empresa_id`? |
 |---|---|---|---|
 | `enviar_confirmacao_pedido` | Checkout da loja: `LojaService.processar_checkout` (`services/loja_service.py:530`) | `cliente_info['telefone']` | Sim |
-| `enviar_pagamento_confirmado` | `VendaService.confirmar_venda` (`services/venda_service.py:954`) | `venda.cliente_convidado_telefone` | Sim |
-| `enviar_pedido_separado` | `VendaService.separar_venda` (`services/venda_service.py:1127`) | `venda.cliente_convidado_telefone` | Sim |
-| `enviar_pedido_entregue` | `VendaService.entregar_venda` (`services/venda_service.py:1217`) | `venda.cliente_convidado_telefone` | Sim |
+| `enviar_pagamento_confirmado` | `VendaService.confirmar_venda` (`services/venda_service.py:1065`) | `venda.cliente_convidado_telefone` | Sim |
+| `enviar_pedido_separado` | `VendaService.separar_venda` (`services/venda_service.py:1267`) | `venda.cliente_convidado_telefone` | Sim |
+| `enviar_pedido_entregue` | `VendaService.entregar_venda` (`services/venda_service.py:1357`) | `venda.cliente_convidado_telefone` | Sim |
 | `enviar_pedido_cancelado` | Cancelamento automático por timeout de pagamento: `jobs/verificar_pagamentos_pendentes.py:227` | `venda.cliente_convidado_telefone` | **Não** (só a credencial global vale) |
 | `enviar_pedido_cancelado` | `jobs/verificar_timeouts_separacao.py:109`. Esse script não é agendado por nada (ver [jobs/README.md](../../../services/vendas/jobs/README.md)) | `venda.cliente_convidado_telefone` | **Não** |
 
