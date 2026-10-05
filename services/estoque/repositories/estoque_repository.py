@@ -495,7 +495,14 @@ class LoteRepository:
 
     @staticmethod
     async def marcar_vencidos(db: AsyncSession, empresa_id: int) -> int:
-        """Marca lotes vencidos."""
+        """
+        Marca lotes vencidos (E4, Onda 6).
+
+        Não comita — o chamador controla a transação, mesma convenção do resto
+        do repository (`atualizar_quantidade` acima). O job que chama isto por
+        todos os tenants (`jobs/marcar_lotes_vencidos.py`) precisa do commit do
+        lado de fora para poder seguir para o próximo tenant mesmo se um falhar.
+        """
         hoje = date.today()
         result = await db.execute(
             select(Lote).where(
@@ -507,17 +514,31 @@ class LoteRepository:
             )
         )
         lotes = result.scalars().all()
-        
+
         count = 0
         for lote in lotes:
             lote.status = StatusLote.VENCIDO.value
             lote.updated_at = datetime.utcnow()
             count += 1
-        
+
         if count > 0:
-            await db.commit()
-        
+            await db.flush()
+
         return count
+
+    @staticmethod
+    async def empresas_com_lote_vencido(db: AsyncSession) -> List[int]:
+        """IDs de empresa com ao menos um lote ATIVO vencido — para o job cross-tenant."""
+        hoje = date.today()
+        result = await db.execute(
+            select(Lote.empresa_id).where(
+                and_(
+                    Lote.data_validade < hoje,
+                    Lote.status == StatusLote.ATIVO.value
+                )
+            ).distinct()
+        )
+        return [row[0] for row in result.all()]
 
 
 class InventarioRepository:
