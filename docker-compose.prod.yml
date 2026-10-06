@@ -365,6 +365,10 @@ services:
     environment:
       <<: *service-env
       DATABASE_URL: ${DATABASE_URL_EMPRESAS:?set DATABASE_URL_EMPRESAS in .env}
+      # G5 (Onda 6): desativar_empresa passou a checar dependentes nos tres.
+      CLIENTES_URL: ${CLIENTES_URL:-http://clientes-prod:8001}
+      PRODUTOS_URL: ${PRODUTOS_URL:-http://produtos-prod:8002}
+      VENDAS_URL: ${VENDAS_URL:-http://vendas-prod:8004}
       # Prova de origem interna, o MESMO valor nos 8
       # containers. Ver services/*/interno.py.
       SERVICO_INTERNO_TOKEN: ${SERVICO_INTERNO_TOKEN}

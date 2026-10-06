@@ -5,8 +5,11 @@ Contém toda a lógica de negócio relacionada a empresas (multi-tenancy).
 from typing import Optional, List
 import re
 import unicodedata
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import settings
+from interno import auth_interno
 from exceptions import ValidationError, NotFoundError, ConflictError
 from models.empresa import Empresa, TipoEmpresa, StatusEmpresa
 from schemas.empresa import (
@@ -429,6 +432,36 @@ class EmpresaService:
         await self.session.refresh(empresa)
         return EmpresaResponse.model_validate(empresa)
 
+    @staticmethod
+    async def _tem_dados_dependentes(empresa_id: int) -> List[str]:
+        """
+        Verifica se a empresa tem clientes, produtos ou vendas cadastrados (G5).
+
+        Conservador de propósito: resposta inesperada, timeout ou erro de rede
+        em qualquer uma das três checagens entra na lista de volta igual um
+        dependente de verdade teria — presumir que há dado e bloquear a
+        desativação é mais seguro do que desativar sem saber ao certo.
+        """
+        alvos = {
+            "clientes": f"{settings.CLIENTES_URL}/clientes",
+            "produtos": f"{settings.PRODUTOS_URL}/produtos",
+            "vendas": f"{settings.VENDAS_URL}/vendas",
+        }
+        headers = auth_interno({"X-Empresa-Id": str(empresa_id)})
+
+        encontrados = []
+        async with httpx.AsyncClient() as client:
+            for nome, url in alvos.items():
+                try:
+                    response = await client.get(
+                        url, params={"limit": 1}, headers=headers, timeout=5.0
+                    )
+                    if response.status_code != 200 or response.json().get("total", 0) > 0:
+                        encontrados.append(nome)
+                except Exception:
+                    encontrados.append(nome)
+        return encontrados
+
     async def desativar_empresa(
         self,
         empresa_id: int,
@@ -453,10 +486,14 @@ class EmpresaService:
                 "Empresa não encontrada",
                 {"empresa_id": empresa_id}
             )
-        
-        # TODO: Validar se não tem dados dependentes (clientes, produtos, vendas)
-        # Por enquanto, permite desativar
-        
+
+        dependentes = await self._tem_dados_dependentes(empresa_id)
+        if dependentes:
+            raise ConflictError(
+                "Empresa tem dados dependentes e não pode ser desativada",
+                {"empresa_id": empresa_id, "dependentes": dependentes}
+            )
+
         try:
             empresa_desativada = await self.repository.desativar(empresa, atualizado_por)
             await self.session.commit()

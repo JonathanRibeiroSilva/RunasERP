@@ -139,39 +139,46 @@ Evidência: `schemas/cliente.py:16` e `:29-37`;
 
 ### 💳 Regras de Crédito
 
-**RN-CLI-006: Limite de Crédito — PARCIAL**
+**RN-CLI-006: Limite de Crédito — IMPLEMENTADA (desde a Onda 6, 2026-10-04)**
 
-Evidência: `schemas/cliente.py:116`; `services/cliente_service.py:218-260`;
-`repositories/cliente_repository.py:166-185`.
+Evidência: `schemas/cliente.py:116`; `services/cliente_service.py:218-250`;
+`repositories/cliente_repository.py:176-200`.
 
 - Padrão do banco: `0.00` (`models/cliente.py:39`).
 - `limite_credito: Decimal = Field(..., ge=0)` — negativo é `422`.
 - `PUT /clientes/{cliente_id}/credito` grava limite e dia de vencimento.
-- **A fórmula `credito_disponivel = limite_credito - débitos_pendentes` NÃO
-  roda.** O serviço fixa `saldo_devedor = Decimal("0.00")` sob um
-  `TODO: Buscar saldo devedor do serviço financeiro`
-  (`services/cliente_service.py:235-236`), a variável não é usada, e o
-  repositório grava `credito_disponivel = limite_credito` direto
-  (`repositories/cliente_repository.py:180-181`). Consequência prática: definir o
-  limite **descarta qualquer débito já descontado do disponível**.
-- Isso é consistente com o estado do serviço financeiro, que não tem rotas de
-  negócio montadas — ver o aviso em [README.md](./README.md).
+- **A fórmula `credito_disponivel = novo_limite - saldo_devedor` agora roda de
+  verdade** (C1, Onda 6). O repositório calcula `saldo_devedor = limite_credito
+  - credito_disponivel` **antes** de trocar o limite, e recalcula o disponível a
+  partir desse saldo — não reseta mais para o limite cheio
+  (`repositories/cliente_repository.py:176-200`). Um cliente com fiado em
+  aberto não "quita" a dívida sozinho só porque o limite foi editado.
+- Isso não depende mais do serviço financeiro: o saldo devedor vem do ledger
+  próprio de clientes (RN-CLI-007), não de uma integração externa.
 
-**RN-CLI-007: Crédito Disponível — PARCIAL**
+**RN-CLI-007: Crédito Disponível — IMPLEMENTADA (desde a Onda 6, 2026-10-04)**
 
-Evidência: `repositories/cliente_repository.py:187-206`;
-`services/cliente_service.py:269-323`.
+Evidência: `clientes.movimentos_credito` (migration
+`alembic/versions/20261004_150000_ledger_credito.py`);
+`repositories/cliente_repository.py:207-262`; `services/cliente_service.py:266-323`;
+`services/vendas/services/venda_service.py:920-962` (consumidor).
 
-- Existe `POST /clientes/{cliente_id}/credito/ajustar`, que soma um `delta`
-  (positivo = crédito, negativo = débito) e **rejeita resultado negativo** —
-  `ValueError("Crédito disponível não pode ser negativo")`
-  (`repositories/cliente_repository.py:201`) convertido em `400`.
-- Alterar o limite reescreve o disponível (RN-CLI-006).
-- **NÃO existe atualização automática.** Nenhum serviço chama
-  `/credito/ajustar`: não há chamada em `services/vendas/`, em
-  `services/financeiro/` nem no `api-gateway/`. Uma venda fiada **não** diminui o
-  crédito disponível e um pagamento recebido **não** o aumenta. Hoje o campo só
-  muda por chamada explícita à rota.
+- `POST /clientes/{cliente_id}/credito/ajustar` grava o ajuste como uma linha
+  no ledger `clientes.movimentos_credito`, não só no campo solto: unique
+  constraint `(empresa_id, documento, tipo)` torna a chamada idempotente —
+  repetir a mesma requisição (retry, webhook duplicado) não debita/credita
+  duas vezes (C2). `credito_disponivel` continua existindo como campo cache,
+  atualizado sob lock de linha (`SELECT ... FOR UPDATE`) na mesma transação do
+  movimento.
+- **Rejeita resultado negativo** — `ValueError("Crédito insuficiente...")`
+  (`repositories/cliente_repository.py:230-234`) convertido em `400`.
+- **Agora existe atualização automática** (C3): `VendaService.confirmar_venda`
+  chama `/credito/ajustar` com `delta` negativo antes de confirmar uma venda
+  fiada, e `VendaService.cancelar_venda` chama de volta com `delta` positivo
+  (mesmo `documento`, idempotente) se a venda cancelada tinha pagamento FIADO
+  — `services/vendas/services/venda_service.py:399-450` (as duas chamadas) e
+  `:920-962` (o gate na confirmação). Uma venda fiada **diminui** o crédito
+  disponível na confirmação, e cancelar/estornar **devolve**.
 
 **RN-CLI-008: Dia de Vencimento — PARCIAL**
 - Opcional: `dia_vencimento: int | None = Field(None, ge=1, le=28)` no schema de
@@ -196,10 +203,11 @@ Evidência: `repositories/cliente_repository.py:187-206`;
   no serviço. As duas únicas escritas em `bloqueado` são as rotas manuais acima.
 - **NÃO existe restrição de papel para desbloquear**: qualquer usuário
   autenticado alcança a rota (seção 0).
-- **A CONFIRMAR:** onde a flag `bloqueado` é consumida na hora de vender. A
-  validação de FIADO em `services/vendas/services/venda_service.py:853-855` e em
-  `services/vendas/routers/vendas.py:296-297` exige apenas que a venda tenha
-  `cliente_id`; não consulta `bloqueado` nem `credito_disponivel`.
+- **Ainda não consumida na hora de vender.** Desde a Onda 6 (C3,
+  `services/vendas/services/venda_service.py:920-962`), confirmar uma venda
+  fiada já checa e debita `credito_disponivel` via `/credito/ajustar` — mas
+  `bloqueado` continua sem ser consultado em lugar nenhum desse caminho. Um
+  cliente bloqueado com crédito disponível ainda compra fiado normalmente.
 
 ### 🗑️ Regras de Exclusão
 
@@ -331,7 +339,7 @@ Routers montados em `services/clientes/main.py:57-58`.
 | DELETE | `/clientes/{cliente_id}` | Soft delete, sem checagem de pendência |
 | POST | `/clientes/{cliente_id}/ativar` | |
 | PUT | `/clientes/{cliente_id}/credito` | Limite + dia de vencimento |
-| POST | `/clientes/{cliente_id}/credito/ajustar` | Delta; nenhum serviço a chama |
+| POST | `/clientes/{cliente_id}/credito/ajustar` | Delta + `documento` (idempotência); chamado por `vendas` na confirmação/cancelamento de venda fiada |
 | POST | `/clientes/{cliente_id}/bloquear` | |
 | POST | `/clientes/{cliente_id}/desbloquear` | |
 | POST | `/clientes/{cliente_id}/enderecos` | |
@@ -351,29 +359,37 @@ as linhas antes de paginar — `total = len(count_result.all())`
 
 ## 4. Casos de Uso
 
-### 4.1. Cliente com Crédito Insuficiente — NÃO IMPLEMENTADO
+### 4.1. Cliente com Crédito Insuficiente — IMPLEMENTADA (desde a Onda 6, 2026-10-04)
 
-**Cenário pretendido**: cliente tenta compra fiada de R$ 500 tendo R$ 300 de
-crédito disponível.
+**Cenário**: cliente tenta compra fiada de R$ 500 tendo R$ 300 de crédito
+disponível.
 
-**Comportamento pretendido**: `400 Bad Request` de crédito insuficiente, venda
-não criada, estoque não reservado.
+**Comportamento hoje**: a venda pode ser **criada** normalmente (`criar_venda`
+não checa crédito, só reserva estoque), mas a **confirmação** recusa — é ali
+que o pagamento FIADO vira real.
+`VendaService.confirmar_venda` (`services/vendas/services/venda_service.py:920-962`)
+chama `POST /clientes/{id}/credito/ajustar` com o valor fiado como débito
+**antes** de baixar o estoque. Resposta `4xx` (crédito insuficiente) →
+`ValueError` → `400 Bad Request`, a venda **não é confirmada** (fica em
+`PEDIDO`/`PENDENTE_PAGAMENTO`) e o estoque **não é baixado** — a reserva feita
+na criação continua ali, intacta, até alguém cancelar a venda ou tentar
+confirmar de novo com outra forma de pagamento.
 
-**Comportamento real hoje**: a venda fiada é aceita. A única validação de FIADO
-em vendas é exigir cliente identificado
-(`services/vendas/services/venda_service.py:853-855` e
-`services/vendas/routers/vendas.py:296-297`); não há consulta a
-`credito_disponivel` nem a `bloqueado`. Uma busca por `credito_disponivel` em
-`services/vendas/` e em `api-gateway/` não retorna nenhuma ocorrência.
+Timeout/erro do serviço de clientes (resultado indeterminado) **não** recusa
+a venda — fica marcada para reconciliação
+(`reconciliacao_credito_pendente`/`reconciliacao_credito_motivo`, colunas
+próprias, separadas das de estoque) e levanta `CreditoIndeterminadoError`, nunca
+cancela uma venda cujo crédito pode já ter sido debitado.
 
-O que existe é `POST /clientes/{id}/credito/ajustar`, que recusa deixar o crédito
-negativo (RN-CLI-007) — mas ninguém a chama no fluxo de venda.
+`bloqueado` continua sem ser consultado nesse caminho (RN-CLI-009).
 
-**Sobre pagamento misto**: `services/vendas` já aceita uma lista de pagamentos
-por venda, e um deles pode ser FIADO
-(`services/vendas/services/venda_service.py:853-854`), mas sem qualquer
-verificação de limite. Trate "parte fiado, parte à vista" como fluxo sem controle
-de crédito.
+**Sobre pagamento misto**: `services/vendas` aceita uma lista de pagamentos por
+venda, e um deles pode ser FIADO
+(`services/vendas/services/venda_service.py:921`). Só o valor da(s) parcela(s)
+FIADO entra no débito de crédito; as demais formas de pagamento não passam
+pelo ledger de clientes. Estornar a parte paga via webhook do Mercado Pago
+(`VendaService.reembolsar_venda`) **não** devolve a parte fiada — decisão de
+negócio em aberto, registrada como fora de escopo no PR #127.
 
 ---
 
@@ -387,9 +403,12 @@ de crédito.
   `services/vendas/services/loja_service.py:299-306`. A chave não existe no
   modelo `Cliente` deste serviço, então um `cliente_info.get(...)` alimentado
   pelos dados de cliente sempre cairia no padrão `False`.
-- **A CONFIRMAR:** quais testes cobrem estas regras.
-  `services/clientes/tests/` contém apenas `conftest.py`, `test_base.py` e
-  `__init__.py` — nenhum teste específico de crédito, bloqueio ou endereço.
+- **A CONFIRMAR:** quais testes cobrem as regras de bloqueio e endereço — ainda
+  nenhum teste específico para elas. Crédito (RN-CLI-006/007) passou a ter
+  cobertura própria em `services/clientes/tests/test_ledger_credito.py`
+  (limite preserva saldo devedor, débito recusado além do disponível, mesmo
+  documento não debita duas vezes, crédito de estorno idempotente, rota exige
+  prova de origem interna).
 
 ---
 
@@ -400,6 +419,8 @@ de crédito.
 
 ---
 
-**Última revisão contra o código**: 26 de Setembro de 2026  
+**Última revisão contra o código**: 26 de Setembro de 2026, com atualização
+pontual em 4 de Outubro de 2026 (RN-CLI-006, RN-CLI-007, RN-CLI-009 e a seção
+4.1, depois do ledger de crédito da Onda 6 — PRs #126 e #127).
 **Escopo da revisão**: `services/clientes/` inteiro, mais os pontos de
 `services/vendas/` e `api-gateway/` citados acima.
