@@ -222,59 +222,6 @@ class VendaService:
             return False
 
     @staticmethod
-    async def debitar_credito_cliente(
-        empresa_id: int,
-        cliente_id: UUID,
-        valor: Decimal,
-        documento: str
-    ) -> ResultadoDebitoCredito:
-        """
-        Debita o valor fiado do crédito disponível do cliente (C3, Onda 6).
-
-        Três resultados, mesmo motivo de `reservar_estoque`: um bool juntaria "o
-        teto não cobre" com "não deu para saber", e só o primeiro autoriza recusar
-        a venda sem checar de novo depois.
-        """
-        try:
-            async with httpx.AsyncClient() as client:
-                url = f"{settings.CLIENTES_URL}/clientes/{cliente_id}/credito/ajustar"
-                headers = {"X-Empresa-Id": str(empresa_id)}
-                payload = {"delta": float(-valor), "documento": documento}
-
-                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
-                return classificar_credito_http(response.status_code)
-        except Exception as e:
-            log.error("erro_debitar_credito", error=str(e), cliente_id=str(cliente_id))
-            return ResultadoDebitoCredito.INDETERMINADO
-
-    @staticmethod
-    async def creditar_credito_cliente(
-        empresa_id: int,
-        cliente_id: UUID,
-        valor: Decimal,
-        documento: str
-    ) -> bool:
-        """
-        Devolve ao cliente o crédito debitado por uma venda fiada cancelada/estornada.
-
-        Mesmo documento do débito original, tipo diferente (CREDITO) — o ledger do
-        cliente trata como evento distinto, idempotente por si só. Falha aqui vira
-        alerta para devolver à mão, igual `liberar_reserva_estoque`: um bool basta
-        porque não existe "recusa definitiva" de devolver crédito.
-        """
-        try:
-            async with httpx.AsyncClient() as client:
-                url = f"{settings.CLIENTES_URL}/clientes/{cliente_id}/credito/ajustar"
-                headers = {"X-Empresa-Id": str(empresa_id)}
-                payload = {"delta": float(valor), "documento": documento}
-
-                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
-                return response.status_code in (200, 201)
-        except Exception as e:
-            log.error("erro_creditar_credito", error=str(e), cliente_id=str(cliente_id))
-            return False
-
-    @staticmethod
     async def _desfazer_reservas(empresa_id: int, itens: list, documento: str) -> None:
         """Solta as reservas que o estoque confirmou para esta venda, antes de recusá-la.
 
@@ -448,6 +395,59 @@ class VendaService:
             venda_id=str(venda.id),
         )
         return (False, f"Resposta inesperada do estoque (HTTP {response.status_code})")
+
+    @staticmethod
+    async def debitar_credito_cliente(
+        empresa_id: int,
+        cliente_id: UUID,
+        valor: Decimal,
+        documento: str
+    ) -> ResultadoDebitoCredito:
+        """
+        Debita o valor fiado do crédito disponível do cliente (C3, Onda 6).
+
+        Três resultados, mesmo motivo de `reservar_estoque`: um bool juntaria "o
+        teto não cobre" com "não deu para saber", e só o primeiro autoriza recusar
+        a venda sem checar de novo depois.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"{settings.CLIENTES_URL}/clientes/{cliente_id}/credito/ajustar"
+                headers = {"X-Empresa-Id": str(empresa_id)}
+                payload = {"delta": float(-valor), "documento": documento}
+
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
+                return classificar_credito_http(response.status_code)
+        except Exception as e:
+            log.error("erro_debitar_credito", error=str(e), cliente_id=str(cliente_id))
+            return ResultadoDebitoCredito.INDETERMINADO
+
+    @staticmethod
+    async def creditar_credito_cliente(
+        empresa_id: int,
+        cliente_id: UUID,
+        valor: Decimal,
+        documento: str
+    ) -> bool:
+        """
+        Devolve ao cliente o crédito debitado por uma venda fiada cancelada/estornada.
+
+        Mesmo documento do débito original, tipo diferente (CREDITO) — o ledger do
+        cliente trata como evento distinto, idempotente por si só. Falha aqui vira
+        alerta para devolver à mão, igual `liberar_reserva_estoque`: um bool basta
+        porque não existe "recusa definitiva" de devolver crédito.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"{settings.CLIENTES_URL}/clientes/{cliente_id}/credito/ajustar"
+                headers = {"X-Empresa-Id": str(empresa_id)}
+                payload = {"delta": float(valor), "documento": documento}
+
+                response = await client.post(url, json=payload, headers=auth_interno(headers), timeout=5.0)
+                return response.status_code in (200, 201)
+        except Exception as e:
+            log.error("erro_creditar_credito", error=str(e), cliente_id=str(cliente_id))
+            return False
 
     @staticmethod
     async def reembolsar_venda(
@@ -1402,8 +1402,12 @@ class VendaService:
                 if venda.status != StatusVenda.ENTREGUE.value:
                     raise ValueError(f"Venda deve estar ENTREGUE. Status atual: {venda.status}")
                 
-                # TODO: Criar conta a receber se tem pagamento FIADO
-                # (Integração com serviço Financeiro quando estiver implementado)
+                # Não cria conta a receber no financeiro: decisão deliberada (Onda 6,
+                # C5). O financeiro segue esqueleto de propósito — o teto de crédito
+                # do fiado (C3) já é a dívida registrada, no ledger de clientes
+                # (clientes.movimentos_credito), não aqui. Uma "conta a receber"
+                # separada duplicaria essa fonte de verdade sem nenhum consumidor
+                # dela hoje.
                 
                 # Atualizar status
                 venda = await VendaRepository.atualizar(
