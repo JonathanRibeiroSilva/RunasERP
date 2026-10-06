@@ -294,7 +294,7 @@ chore(docker): consolidate postgres containers
 ### Auth Pattern
 1. Login → backend generates JWT → sets HttpOnly cookie
 2. Requests → browser sends cookie automatically (`credentials: 'include'`)
-3. Refresh → backend validates refresh token → updates cookie
+3. Refresh → backend validates refresh token → updates cookie (`POST /auth/refresh` exists, but the frontend never calls it: on 401 the axios interceptor logs the user out)
 4. Logout → invalidate token + clear cookie
 
 ---
@@ -303,7 +303,7 @@ chore(docker): consolidate postgres containers
 
 **Domains:** app → `https://app.runaserp.com.br` (tunnel) · platform panel → `https://admin.runaserp.com.br` (tunnel, same `frontend-prod` container; tunnel route and Cloudflare Access configured outside the repo, per a 2026-09-28 check) · landing → `https://runaserp.com.br` + `www` (Cloudflare Pages, serves `landing-page/`, outside the tunnel)
 
-The bundle picks the app from the hostname (`frontend/src/config/host.ts`: first label == `VITE_HOST_PLATAFORMA`, default `admin`). The split is UI-only: `/api/plataforma/*` answers on both hosts, guarded by `require_super_admin`. In dev both apps coexist on `localhost`; `admin.localhost:3000` exercises the production path.
+The bundle picks the app from the hostname (`frontend/src/config/host.ts`: first label == `VITE_HOST_PLATAFORMA`, default `admin`). The split is frontend-only: in production the `/plataforma*` routes are not even registered outside the panel host, and `frontend/nginx.conf` answers 404 on `/plataforma` when the host does not start with `admin.`; but `/api/plataforma/*` answers on both hosts, guarded by `require_super_admin`. In dev both apps coexist on `localhost`; `admin.localhost:3000` exercises the production path.
 
 One base file per kind of machine, plus overlays for the one axis that varies.
 Compose files stack: `-f base -f overlay`, where the overlay only restates the
