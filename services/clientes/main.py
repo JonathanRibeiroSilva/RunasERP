@@ -49,8 +49,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Prova de origem interna. Fail-open enquanto SERVICO_INTERNO_TOKEN
-# nao estiver nos 8 containers -- ver interno.py.
+# Prova de origem interna. Fail-closed desde o #124 -- ver interno.py.
 app.middleware("http")(validar_token_interno)
 
 # Incluir routers
