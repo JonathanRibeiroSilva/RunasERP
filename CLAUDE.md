@@ -95,7 +95,7 @@ npm run test         # vitest  (also test:coverage, test:watch)
 npm run format       # prettier
 ```
 
-Default login: `admin@runas.com` / `Admin@123`. Seed data: `docker compose -f docker-compose.dev.yml exec <service> python seed.py`. DB migrations have their own section below.
+Default login: `admin@runas.com` / `Admin@123`. Seed data: produtos exige a ordem `exec produtos python seed_categorias.py` → `exec produtos python seed_produtos.py` (29 EANs válidos), depois `exec estoque python seed.py`; **não rode `produtos/seed.py`**: cria 3 produtos sem EAN e bloqueia os dois seeds acima (só limpa dropando o schema). Outros serviços: `exec <service> python seed.py`. DB migrations have their own section below.
 
 ### The two legs have opposite capabilities — read this before writing a test
 
