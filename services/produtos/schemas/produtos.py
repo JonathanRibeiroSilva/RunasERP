@@ -297,6 +297,8 @@ class ProdutoCreate(ProdutoBase):
         ),
     )
     unidade_medida: UnidadeMedida = "UN"
+    codigo_barras: str | None = Field(default=None, max_length=50, description="Código de barras/EAN")
+    sku: str | None = Field(default=None, max_length=100, description="SKU interno")
 
 
 class ProdutoUpdate(BaseModel):
@@ -320,6 +322,8 @@ class ProdutoUpdate(BaseModel):
         ),
     )
     unidade_medida: UnidadeMedida | None = None
+    codigo_barras: str | None = Field(default=None, max_length=50, description="Código de barras/EAN")
+    sku: str | None = Field(default=None, max_length=100, description="SKU interno")
 
 
 class ProdutoRead(ProdutoBase):
@@ -359,6 +363,8 @@ class ProdutoReadSimples(ProdutoBase):
         default=Decimal("0.00"),
         description="O preço que vale hoje: promoção enquanto válida, senão o preço de venda",
     )
+    codigo_barras: str | None = Field(default=None, description="Código de barras/EAN")
+    sku: str | None = Field(default=None, description="SKU interno")
     
     model_config = ConfigDict(from_attributes=True)
 
