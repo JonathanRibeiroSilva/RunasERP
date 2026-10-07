@@ -651,7 +651,7 @@ npm run test -- --run             # Vitest, o mesmo comando que a CI roda
 
 # Backend (rodam dentro do container — cada serviço tem seu próprio Alembic)
 docker exec -it erp-[serviço]-dev alembic upgrade head    # Rodar migrations
-docker-compose -f docker-compose.dev.yml exec [serviço] python seed.py   # Popular dados
+docker-compose -f docker-compose.dev.yml exec [serviço] python seed.py   # Popular dados (produtos: seed_categorias.py → seed_produtos.py → estoque seed.py; NUNCA produtos/seed.py)
 
 # Testes de unidade — o mesmo comando do gate da CI (.github/workflows/ci.yml)
 pip install -r tests/requirements.txt
