@@ -14,6 +14,7 @@ import {
   FiAlertTriangle,
   FiXCircle,
   FiMaximize,
+  FiCamera,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useEstoques, useRelatorioEstoque } from '@/hooks/useEstoque';
@@ -21,6 +22,8 @@ import { useProdutoResolver } from '@/hooks/useProdutos';
 import { produtosApi } from '@/services/api/produtosApi';
 import type { Estoque } from '@/types/estoque';
 import EstoqueStatusBadge from './components/EstoqueStatusBadge';
+import ScannerEanModal from './components/ScannerEanModal';
+import { cameraSuportada } from './scannerEan';
 import EstoqueOperacaoModal, { type OperacaoEstoque } from './components/EstoqueOperacaoModal';
 import { formatarQuantidade } from './estoqueFormat';
 import './EstoquePage.scss';
@@ -52,6 +55,8 @@ const EstoquePage = () => {
   } | null>(null);
   const [codigoLido, setCodigoLido] = useState('');
   const [lendo, setLendo] = useState(false);
+  const [camera, setCamera] = useState(false);
+  const [temCamera] = useState(cameraSuportada);
 
   const { data: estoques = [], isLoading, isError } = useEstoques({ limit: 1000 });
   const { data: relatorio } = useRelatorioEstoque();
@@ -128,8 +133,8 @@ const EstoquePage = () => {
   // Leitor USB/Bluetooth é um teclado: digita o código e dá Enter. O mesmo campo
   // atende digitação manual. Casa EAN ou SKU exato; a busca do backend também
   // casa nome parcial, então o filtro abaixo descarta o que não é o código.
-  const lerCodigo = async () => {
-    const codigo = codigoLido.trim();
+  const lerCodigo = async (lido: string = codigoLido) => {
+    const codigo = lido.trim();
     if (!codigo || lendo) return;
     setLendo(true);
     try {
@@ -238,6 +243,11 @@ const EstoquePage = () => {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
+          {temCamera && (
+            <button type="button" className="btn-icon" title="Ler pela câmera" onClick={() => setCamera(true)}>
+              <FiCamera />
+            </button>
+          )}
         </div>
         <div className="filter-buttons">
           {(['todos', 'baixo', 'zerado', 'reservado'] as StatusFiltro[]).map((status) => (
@@ -376,6 +386,16 @@ const EstoquePage = () => {
             </button>
           </div>
         </>
+      )}
+
+      {camera && (
+        <ScannerEanModal
+          onClose={() => setCamera(false)}
+          onCodigo={(codigo) => {
+            setCamera(false);
+            void lerCodigo(codigo);
+          }}
+        />
       )}
 
       {modal && (
