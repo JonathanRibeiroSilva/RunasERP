@@ -35,7 +35,7 @@ serviço — não é o caminho de produção.
 
 **Autenticação**: o serviço financeiro **não valida JWT**. O único controle na
 porta dele é o header `X-Servico-Interno-Token` (`services/financeiro/interno.py`),
-hoje fail-open e com `/health` isento. O JWT de admin é exigido pelo gateway, na
+fail-closed desde 2026-10-06 (403 sem o segredo) e com `/health` isento. O JWT de admin é exigido pelo gateway, na
 rota de proxy, nunca pelo serviço.
 
 **Formato**: JSON

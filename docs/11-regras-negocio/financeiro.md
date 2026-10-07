@@ -17,6 +17,9 @@
   `services/financeiro/requirements.txt`, mas não existe nenhuma app Celery no
   repositório nem container worker/beat em nenhum `docker-compose*.yml`.
 
+**Vazio de propósito** (decisão de 2026-10-05, C5): o teto do fiado já vive no ledger de crédito de
+clientes. Implementação futura registrada no roadmap e no Trello.
+
 Este documento serve como especificação a implementar. Trate cada regra como
 intenção de projeto, não como comportamento observável do sistema.
 

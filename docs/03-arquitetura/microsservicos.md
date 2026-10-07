@@ -501,7 +501,9 @@ o recebe (o serviço expõe `/loja/{empresa_slug}/webhook/mercadopago`).
 - `models/`, `routers/`, `schemas/`, `repositories/` e `services/` contêm apenas `__init__.py`
   vazio; `seed.py` tem 16 linhas.
 - O gateway roteia `/contas/*` para este serviço (`SERVICE_URLS`), mas **não há rota `/contas`
-  implementada**: qualquer chamada resulta em 404 do serviço.
+  implementada**: qualquer chamada resulta em 404 do serviço. Chamada direta sem o
+  `X-Servico-Interno-Token` leva 403 (fail-closed desde 2026-10-06; só `/health` é isento).
+- **Vazio de propósito** (decisão de 2026-10-05, C5): ver o roadmap antes de implementar.
 - **Não existem**: contas a receber, pagamentos de fiado, jobs de vencimento, evento
   `cobranca.*`. O que antes era descrito aqui era especificação, não código.
 
@@ -515,6 +517,9 @@ o recebe (o serviço expõe `/loja/{empresa_slug}/webhook/mercadopago`).
 - **Não existem**: histórico de notificações, retry com backoff, deduplicação, consumo de
   `erp.events`. Envio de WhatsApp (Evolution) e e-mail hoje é configurado no serviço vendas
   (`configuracoes_integracao`). `A CONFIRMAR`: quem de fato envia mensagens ao comprador.
+- Chamada direta sem o `X-Servico-Interno-Token` leva 403 (fail-closed desde 2026-10-06; só `/health`
+  é isento).
+- **Vazio de propósito** (decisão de 2026-10-05, G3): ver o roadmap antes de implementar.
 
 ---
 
