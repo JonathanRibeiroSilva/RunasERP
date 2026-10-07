@@ -58,8 +58,8 @@ async def validar_token_interno(request: Request, call_next):
     # Fail-closed desde 2026-10-04: servico_interno.ausente ficou em zero com
     # tráfego real (checkout completo, cancelamento, baixa de estoque) depois
     # do segredo confirmado nos 8 containers em prod — ver PR #107/#108 e o
-    # plano de ação. Só falta aqui porque ainda não existe rota real neste
-    # serviço que exercite o caminho (ver financeiro/notificacoes).
+    # plano de ação. financeiro e notificacoes fecharam depois, sem medição
+    # (só têm /health, isento) — ver o interno.py deles.
     if not esperado or not recebido:
         log.warning("servico_interno.ausente", path=request.url.path)
         return JSONResponse(

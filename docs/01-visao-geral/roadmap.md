@@ -28,6 +28,12 @@
   jobs de cobrança, dashboard financeiro, fluxo de caixa.
 - **Dependência bloqueada por este item**: a integração Vendas → Financeiro
   (gerar `ContaReceber` para venda FIADO) não tem onde escrever enquanto o serviço for casca.
+- **Decisão (2026-10-05, C5): fica vazio de propósito.** O teto de crédito do fiado já vive no ledger
+  de clientes (`clientes.movimentos_credito`); uma conta a receber separada duplicaria essa fonte de
+  verdade sem nenhum consumidor. Antes de implementar, decidir qual das duas é a fonte do fiado.
+  Card de implementação no quadro Runas do Trello (lista *Backend — A fazer*).
+- **Segurança (2026-10-06)**: o validador de origem interna é fail-closed — rota nova nasce atrás do
+  `X-Servico-Interno-Token`, só `/health` é isento. Teste: `services/financeiro/tests/test_servico_interno.py`.
 
 ### Notificações — casca de serviço
 - **Evidência**: `services/notificacoes/main.py:56` expõe só `@app.get("/health")`;
@@ -40,6 +46,12 @@
 - **Nota**: a configuração de Evolution API já existe do lado de Vendas
   (`services/vendas/config.py:27-30`, `services/vendas/routers/admin_integracao.py:33-36`),
   mas nenhum código envia mensagem — são apenas campos de configuração por tenant.
+- **Decisão (2026-10-05, G3): fica vazio de propósito.** Os 7 `services/*/events/publisher.py` seguem sem
+  consumer (nada os importa — são código morto). Risco aceito. Ao voltar: avaliar **remover os
+  publishers** em vez de construir um consumer para eventos que ninguém usa.
+  Card de implementação no quadro Runas do Trello (lista *Backend — A fazer*).
+- **Segurança (2026-10-06)**: validador de origem interna fail-closed, igual ao do financeiro.
+  Teste: `services/notificacoes/tests/test_servico_interno.py`.
 
 ### Dashboard com dados reais
 - **Evidência**: `frontend/src/pages/Dashboard/DashboardPage.tsx:30` abre a seção `// ── MOCK DATA ──`.
