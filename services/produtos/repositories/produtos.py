@@ -4,7 +4,7 @@ Repositories para acesso aos dados de Produtos.
 from datetime import date
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from models.categoria import Categoria
@@ -126,6 +126,8 @@ class ProdutoRepository:
         preco_promocional: Decimal | None = None,
         promocao_fim: date | None = None,
         unidade_medida: str = "UN",
+        codigo_barras: str | None = None,
+        sku: str | None = None,
     ) -> Produto:
         """Cria um novo produto."""
         produto = Produto(
@@ -139,6 +141,8 @@ class ProdutoRepository:
             preco_promocional=preco_promocional,
             promocao_fim=promocao_fim,
             unidade_medida=unidade_medida,
+            codigo_barras=codigo_barras,
+            sku=sku,
         )
         self.session.add(produto)
         await self.session.flush()
@@ -214,7 +218,7 @@ class ProdutoRepository:
             limit: Limite de resultados
             apenas_ativos: True = só ativos, False = só inativos, None = todos (ativos e inativos)
             apenas_deletados: True = só deletados, False = não deletados
-            busca: Filtra por nome (ilike parcial, case-insensitive)
+            busca: Filtra por nome (ilike parcial) ou por código de barras/SKU exato
             categoria_id: Filtra por categoria
         """
         query = select(Produto).where(Produto.empresa_id == empresa_id)
@@ -235,8 +239,14 @@ class ProdutoRepository:
 
         # Filtro de busca por nome (case-insensitive, parcial)
         if busca:
-            query = query.where(Produto.nome.ilike(f"%{busca}%"))
-            count_query = count_query.where(Produto.nome.ilike(f"%{busca}%"))
+            # EAN e SKU casam exato: o leitor de código de barras cola o número aqui.
+            filtro_busca = or_(
+                Produto.nome.ilike(f"%{busca}%"),
+                Produto.codigo_barras == busca,
+                Produto.sku == busca,
+            )
+            query = query.where(filtro_busca)
+            count_query = count_query.where(filtro_busca)
 
         # Filtro por categoria
         if categoria_id is not None:
