@@ -13,10 +13,12 @@ import {
   FiLayers,
   FiAlertTriangle,
   FiXCircle,
+  FiMaximize,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useEstoques, useRelatorioEstoque } from '@/hooks/useEstoque';
 import { useProdutoResolver } from '@/hooks/useProdutos';
+import { produtosApi } from '@/services/api/produtosApi';
 import type { Estoque } from '@/types/estoque';
 import EstoqueStatusBadge from './components/EstoqueStatusBadge';
 import EstoqueOperacaoModal, { type OperacaoEstoque } from './components/EstoqueOperacaoModal';
@@ -45,7 +47,11 @@ const EstoquePage = () => {
     operacao: OperacaoEstoque;
     estoque: Estoque | null;
     produtoId?: string;
+    /** Nome vindo da leitura do código: o lookup é limitado a 100 produtos e pode não conhecê-lo. */
+    produtoNomeLido?: string;
   } | null>(null);
+  const [codigoLido, setCodigoLido] = useState('');
+  const [lendo, setLendo] = useState(false);
 
   const { data: estoques = [], isLoading, isError } = useEstoques({ limit: 1000 });
   const { data: relatorio } = useRelatorioEstoque();
@@ -119,6 +125,40 @@ const EstoquePage = () => {
   const paginaAtual = Math.min(page, totalPages);
   const linhas = filtrados.slice((paginaAtual - 1) * PAGE_SIZE, paginaAtual * PAGE_SIZE);
 
+  // Leitor USB/Bluetooth é um teclado: digita o código e dá Enter. O mesmo campo
+  // atende digitação manual. Casa EAN ou SKU exato; a busca do backend também
+  // casa nome parcial, então o filtro abaixo descarta o que não é o código.
+  const lerCodigo = async () => {
+    const codigo = codigoLido.trim();
+    if (!codigo || lendo) return;
+    setLendo(true);
+    try {
+      const { items } = await produtosApi.listar({ busca: codigo, limit: 10 });
+      const achados = items.filter((p) => p.codigo_barras === codigo || p.sku === codigo);
+      if (achados.length === 0) {
+        toast.warn(`Nenhum produto com o código ${codigo}. Cadastre o código no produto.`);
+        return;
+      }
+      if (achados.length > 1) {
+        toast.warn(`Mais de um produto com o código ${codigo}. Escolha na lista.`);
+        return;
+      }
+      const produto = achados[0];
+      const estoque = estoques.find((e) => e.produto_id === produto.id) ?? null;
+      setModal({
+        operacao: 'entrada',
+        estoque,
+        produtoId: estoque ? undefined : produto.id,
+        produtoNomeLido: produto.nome,
+      });
+      setCodigoLido('');
+    } catch {
+      toast.error('Erro ao buscar o código');
+    } finally {
+      setLendo(false);
+    }
+  };
+
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir((dir) => (dir === 'asc' ? 'desc' : 'asc'));
@@ -172,6 +212,24 @@ const EstoquePage = () => {
       </div>
 
       <div className="filters-section">
+        <div className="search-box">
+          <FiMaximize className="search-icon" />
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="Ler código de barras (Enter)..."
+            aria-label="Código de barras"
+            value={codigoLido}
+            disabled={lendo}
+            onChange={(event) => setCodigoLido(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                void lerCodigo();
+              }
+            }}
+          />
+        </div>
         <div className="search-box">
           <FiSearch className="search-icon" />
           <input
@@ -324,7 +382,9 @@ const EstoquePage = () => {
         <EstoqueOperacaoModal
           operacao={modal.operacao}
           estoque={modal.estoque}
-          produtoNome={nomeProduto(modal.estoque ? modal.estoque.produto_id : modal.produtoId ?? '')}
+          produtoNome={
+            modal.produtoNomeLido ?? nomeProduto(modal.estoque ? modal.estoque.produto_id : modal.produtoId ?? '')
+          }
           produtoIdInicial={modal.produtoId}
           onClose={() => setModal(null)}
         />

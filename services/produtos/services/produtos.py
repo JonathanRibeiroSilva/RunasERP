@@ -171,6 +171,8 @@ class ProdutoService:
             preco_promocional=dados.preco_promocional,
             promocao_fim=dados.promocao_fim,
             unidade_medida=dados.unidade_medida,
+            codigo_barras=dados.codigo_barras,
+            sku=dados.sku,
         )
 
     async def obter_produto(self, empresa_id: int, produto_id: UUID):

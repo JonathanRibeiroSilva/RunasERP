@@ -4,6 +4,7 @@ Routers FastAPI para Produtos.
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from utils.tenant import get_empresa_id
@@ -157,6 +158,10 @@ async def criar_produto(
         return await service.obter_produto(empresa_id, produto.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError:
+        # uq_produtos_empresa_codigo_barras: o EAN já pertence a outro produto da
+        # empresa, inclusive um excluído (a exclusão é soft e mantém o código).
+        raise HTTPException(status_code=409, detail="Código de barras já cadastrado em outro produto")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao criar produto")
 
@@ -256,6 +261,10 @@ async def atualizar_produto(
         return await service.obter_produto(empresa_id, produto_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError:
+        # uq_produtos_empresa_codigo_barras: o EAN já pertence a outro produto da
+        # empresa, inclusive um excluído (a exclusão é soft e mantém o código).
+        raise HTTPException(status_code=409, detail="Código de barras já cadastrado em outro produto")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Erro ao atualizar produto")
 
