@@ -37,6 +37,8 @@ const produtoSchema = z
     ),
     promocao_fim: z.string().optional().or(z.literal('')),
     unidade_medida: z.enum(CODIGOS_UNIDADE),
+    // nullish: o GET devolve null quando o produto não tem código.
+    codigo_barras: z.string().max(50, 'Máximo de 50 caracteres').nullish(),
     ativo: z.boolean(),
     estoque_inicial: quantidadeOpcional('Quantidade não pode ser negativa'),
     estoque_minimo: quantidadeOpcional('Estoque mínimo não pode ser negativo'),
@@ -190,6 +192,8 @@ const ProdutoFormPage: React.FC<ProdutoFormPageProps> = ({ isModal, produtoId: m
       preco_promocional: data.preco_promocional,
       promocao_fim: data.promocao_fim || undefined,
       unidade_medida: data.unidade_medida,
+      // Vazio vira null: '' gravaria um código que o próximo produto sem código colidiria.
+      codigo_barras: data.codigo_barras?.trim() || null,
       ativo: data.ativo,
     };
 
@@ -332,6 +336,27 @@ const ProdutoFormPage: React.FC<ProdutoFormPageProps> = ({ isModal, produtoId: m
                 <span className="pfm-error">{errors.promocao_fim.message}</span>
               ) : (
                 <span className="pfm-hint">Último dia da promoção, inclusive</span>
+              )}
+            </div>
+          </div>
+
+          {/* Código de barras */}
+          <div className="pfm-row">
+            <div className="pfm-group">
+              <label htmlFor="codigo_barras">Código de barras (EAN)</label>
+              <input
+                id="codigo_barras"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="Passe o leitor aqui ou digite"
+                // O leitor termina com Enter, que salvaria o formulário pela metade.
+                onKeyDown={(event) => event.key === 'Enter' && event.preventDefault()}
+                {...register('codigo_barras')}
+                className={errors.codigo_barras ? 'invalid' : ''}
+              />
+              {errors.codigo_barras && (
+                <span className="pfm-error">{errors.codigo_barras.message}</span>
               )}
             </div>
           </div>
