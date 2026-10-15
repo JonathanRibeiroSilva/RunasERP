@@ -15,6 +15,7 @@ import {
   FiXCircle,
   FiMaximize,
   FiCamera,
+  FiFileText,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useEstoques, useRelatorioEstoque } from '@/hooks/useEstoque';
@@ -23,6 +24,7 @@ import { produtosApi } from '@/services/api/produtosApi';
 import type { Estoque } from '@/types/estoque';
 import EstoqueStatusBadge from './components/EstoqueStatusBadge';
 import ScannerEanModal from './components/ScannerEanModal';
+import ImportarNfeModal from './components/ImportarNfeModal';
 import { cameraSuportada } from './scannerEan';
 import EstoqueOperacaoModal, { type OperacaoEstoque } from './components/EstoqueOperacaoModal';
 import { formatarQuantidade } from './estoqueFormat';
@@ -56,6 +58,7 @@ const EstoquePage = () => {
   const [codigoLido, setCodigoLido] = useState('');
   const [lendo, setLendo] = useState(false);
   const [camera, setCamera] = useState(false);
+  const [importandoNfe, setImportandoNfe] = useState(false);
   const [temCamera] = useState(cameraSuportada);
 
   const { data: estoques = [], isLoading, isError } = useEstoques({ limit: 1000 });
@@ -194,6 +197,9 @@ const EstoquePage = () => {
           </h1>
           <p>Saldo físico, reservas e movimentações de cada produto</p>
         </div>
+        <button type="button" className="btn btn-primary" onClick={() => setImportandoNfe(true)}>
+          <FiFileText /> Importar NF-e (XML)
+        </button>
       </div>
 
       <div className="kpi-grid">
@@ -397,6 +403,8 @@ const EstoquePage = () => {
           }}
         />
       )}
+
+      {importandoNfe && <ImportarNfeModal onClose={() => setImportandoNfe(false)} />}
 
       {modal && (
         <EstoqueOperacaoModal
