@@ -15,6 +15,7 @@ import {
   FiXCircle,
   FiMaximize,
   FiCamera,
+  FiFileText,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useEstoques, useRelatorioEstoque } from '@/hooks/useEstoque';
@@ -23,6 +24,7 @@ import { produtosApi } from '@/services/api/produtosApi';
 import type { Estoque } from '@/types/estoque';
 import EstoqueStatusBadge from './components/EstoqueStatusBadge';
 import ScannerEanModal from './components/ScannerEanModal';
+import ImportarNfeModal from './components/ImportarNfeModal';
 import { cameraSuportada } from './scannerEan';
 import EstoqueOperacaoModal, { type OperacaoEstoque } from './components/EstoqueOperacaoModal';
 import { formatarQuantidade } from './estoqueFormat';
@@ -56,6 +58,7 @@ const EstoquePage = () => {
   const [codigoLido, setCodigoLido] = useState('');
   const [lendo, setLendo] = useState(false);
   const [camera, setCamera] = useState(false);
+  const [importandoNfe, setImportandoNfe] = useState(false);
   const [temCamera] = useState(cameraSuportada);
 
   const { data: estoques = [], isLoading, isError } = useEstoques({ limit: 1000 });
@@ -194,6 +197,9 @@ const EstoquePage = () => {
           </h1>
           <p>Saldo físico, reservas e movimentações de cada produto</p>
         </div>
+        <button type="button" className="btn btn-primary" onClick={() => setImportandoNfe(true)}>
+          <FiFileText /> Importar NF-e (XML)
+        </button>
       </div>
 
       <div className="kpi-grid">
@@ -279,7 +285,7 @@ const EstoquePage = () => {
       ) : (
         <>
           <div className="table-responsive">
-            <table className="estoque-table">
+            <table className="estoque-table estoque-table--cards">
               <thead>
                 <tr>
                   <th className="sortable" onClick={() => toggleSort('produto')}>
@@ -302,21 +308,21 @@ const EstoquePage = () => {
               <tbody>
                 {linhas.map((linha) => (
                   <tr key={linha.chave}>
-                    <td className="nome">{nomeProduto(linha.produtoId)}</td>
-                    <td className="num">{formatarQuantidade(linha.estoque?.quantidade ?? 0)}</td>
-                    <td className="num">{formatarQuantidade(linha.estoque?.quantidade_reservada ?? 0)}</td>
-                    <td className="num strong">{formatarQuantidade(linha.estoque?.quantidade_disponivel ?? 0)}</td>
-                    <td className="num muted">
+                    <td data-label="Produto" className="nome">{nomeProduto(linha.produtoId)}</td>
+                    <td data-label="Físico" className="num">{formatarQuantidade(linha.estoque?.quantidade ?? 0)}</td>
+                    <td data-label="Reservado" className="num">{formatarQuantidade(linha.estoque?.quantidade_reservada ?? 0)}</td>
+                    <td data-label="Disponível" className="num strong">{formatarQuantidade(linha.estoque?.quantidade_disponivel ?? 0)}</td>
+                    <td data-label="Mín." className="num muted">
                       {linha.estoque ? formatarQuantidade(linha.estoque.estoque_minimo) : '—'}
                     </td>
-                    <td>
+                    <td data-label="Status">
                       {linha.estoque ? (
                         <EstoqueStatusBadge estoque={linha.estoque} />
                       ) : (
                         <span className="estoque-badge estoque-badge--neutral">Nunca recebido</span>
                       )}
                     </td>
-                    <td className="acoes">
+                    <td data-label="Ações" className="acoes">
                       {linha.estoque ? (
                         <>
                           <button
@@ -397,6 +403,8 @@ const EstoquePage = () => {
           }}
         />
       )}
+
+      {importandoNfe && <ImportarNfeModal onClose={() => setImportandoNfe(false)} />}
 
       {modal && (
         <EstoqueOperacaoModal

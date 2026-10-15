@@ -10,6 +10,11 @@
   flex-direction: column;
 
   .page-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
     margin-bottom: 1.5rem;
 
     .header-content {
@@ -208,6 +213,32 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
+    }
+  }
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding: 1rem;
+
+    .page-header .header-content h1 {
+      font-size: 1.5rem;
+    }
+
+    .kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .kpi-card {
+      gap: 0.6rem;
+      padding: 0.85rem;
+    }
+
+    .filters-section .search-box {
+      min-width: 100%;
+    }
+
+    .pagination .page-info {
+      min-width: 0;
     }
   }
 }
