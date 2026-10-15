@@ -210,6 +210,53 @@
   }
 }
 
+// Celular: cada linha vira um cartão com o rótulo da coluna (data-label) à esquerda.
+@media (max-width: #{$breakpoint-md - 1px}) {
+  .estoque-table--cards {
+    display: block;
+    background: transparent;
+    border: none;
+
+    thead {
+      display: none;
+    }
+
+    tbody,
+    tr {
+      display: block;
+    }
+
+    tbody tr,
+    tbody tr:last-child {
+      margin-bottom: 0.75rem;
+      padding: 0.25rem 0;
+      background: $surface;
+      border: 1px solid $border-default;
+      border-radius: $border-radius-lg;
+    }
+
+    td,
+    td.acoes {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 0.55rem 1rem;
+      text-align: right;
+
+      &::before {
+        content: attr(data-label);
+        margin-right: auto;
+        color: $text-secondary;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+    }
+  }
+}
+
 .lote-flag {
   display: inline-block;
   margin-left: 0.5rem;

@@ -192,7 +192,7 @@ const EstoqueDetalhePage = () => {
         <section className="lotes">
           <h2>Lotes</h2>
           <div className="table-responsive">
-            <table className="estoque-table">
+            <table className="estoque-table estoque-table--cards">
               <thead>
                 <tr>
                   <th>Código</th>
@@ -204,9 +204,9 @@ const EstoqueDetalhePage = () => {
               <tbody>
                 {lotes.map((lote) => (
                   <tr key={lote.id}>
-                    <td className="nome">{lote.codigo}</td>
-                    <td className="num">{formatarQuantidade(lote.quantidade)}</td>
-                    <td>
+                    <td data-label="Código" className="nome">{lote.codigo}</td>
+                    <td data-label="Quantidade" className="num">{formatarQuantidade(lote.quantidade)}</td>
+                    <td data-label="Validade">
                       {formatarData(lote.data_validade)}
                       {lote.vencido && <span className="lote-flag lote-flag--danger">Vencido</span>}
                       {!lote.vencido && lote.alerta_vencimento && (
@@ -215,7 +215,7 @@ const EstoqueDetalhePage = () => {
                         </span>
                       )}
                     </td>
-                    <td>{lote.status}</td>
+                    <td data-label="Status">{lote.status}</td>
                   </tr>
                 ))}
               </tbody>

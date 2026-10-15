@@ -285,7 +285,7 @@ const EstoquePage = () => {
       ) : (
         <>
           <div className="table-responsive">
-            <table className="estoque-table">
+            <table className="estoque-table estoque-table--cards">
               <thead>
                 <tr>
                   <th className="sortable" onClick={() => toggleSort('produto')}>
@@ -308,21 +308,21 @@ const EstoquePage = () => {
               <tbody>
                 {linhas.map((linha) => (
                   <tr key={linha.chave}>
-                    <td className="nome">{nomeProduto(linha.produtoId)}</td>
-                    <td className="num">{formatarQuantidade(linha.estoque?.quantidade ?? 0)}</td>
-                    <td className="num">{formatarQuantidade(linha.estoque?.quantidade_reservada ?? 0)}</td>
-                    <td className="num strong">{formatarQuantidade(linha.estoque?.quantidade_disponivel ?? 0)}</td>
-                    <td className="num muted">
+                    <td data-label="Produto" className="nome">{nomeProduto(linha.produtoId)}</td>
+                    <td data-label="Físico" className="num">{formatarQuantidade(linha.estoque?.quantidade ?? 0)}</td>
+                    <td data-label="Reservado" className="num">{formatarQuantidade(linha.estoque?.quantidade_reservada ?? 0)}</td>
+                    <td data-label="Disponível" className="num strong">{formatarQuantidade(linha.estoque?.quantidade_disponivel ?? 0)}</td>
+                    <td data-label="Mín." className="num muted">
                       {linha.estoque ? formatarQuantidade(linha.estoque.estoque_minimo) : '—'}
                     </td>
-                    <td>
+                    <td data-label="Status">
                       {linha.estoque ? (
                         <EstoqueStatusBadge estoque={linha.estoque} />
                       ) : (
                         <span className="estoque-badge estoque-badge--neutral">Nunca recebido</span>
                       )}
                     </td>
-                    <td className="acoes">
+                    <td data-label="Ações" className="acoes">
                       {linha.estoque ? (
                         <>
                           <button
