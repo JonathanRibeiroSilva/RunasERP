@@ -14,14 +14,19 @@ export const escolherFormatos = (suportados: string[]): string[] =>
   FORMATOS_VAREJO.filter((formato) => suportados.includes(formato));
 
 /**
- * `BarcodeDetector` só existe em Android, macOS e ChromeOS; a câmera ainda exige
- * HTTPS. Sem os dois, a tela cai no campo de texto (que também atende leitor USB).
+ * A câmera exige HTTPS e `getUserMedia`. O leitor não: `BarcodeDetector` só existe em
+ * Android, macOS e ChromeOS, e nos demais `criarDetector` cai num leitor em JS puro.
+ * Sem câmera, a tela fica no campo de texto (que também atende leitor USB).
  */
 export const cameraSuportada = (): boolean =>
-  typeof window !== 'undefined' &&
-  'BarcodeDetector' in window &&
-  window.isSecureContext &&
-  !!navigator.mediaDevices?.getUserMedia;
+  typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
 
-export const obterDetector = (): BarcodeDetectorCtor =>
-  (window as unknown as { BarcodeDetector: BarcodeDetectorCtor }).BarcodeDetector;
+/** `BarcodeDetector` nativo quando lê formato de varejo; senão o leitor reserva, baixado só nesse caso. */
+export const criarDetector = async (): Promise<BarcodeDetectorLike> => {
+  if ('BarcodeDetector' in window) {
+    const Detector = (window as unknown as { BarcodeDetector: BarcodeDetectorCtor }).BarcodeDetector;
+    const formatos = escolherFormatos(await Detector.getSupportedFormats());
+    if (formatos.length > 0) return new Detector({ formats: formatos });
+  }
+  return (await import('./leitorReserva')).criarLeitorReserva();
+};
