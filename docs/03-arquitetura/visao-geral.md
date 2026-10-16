@@ -25,7 +25,7 @@ serviços conversam: [`comunicacao.md`](comunicacao.md).
 | ORM | SQLAlchemy async + asyncpg | 2.0.54 / 0.31.0 |
 | Migrations | Alembic | 1.20.0 |
 | Banco | PostgreSQL | 15 (`postgres:15-alpine`) |
-| Autenticação | JWT HS256 (python-jose) + senha bcrypt (passlib) | 3.5.0 / 1.7.4 — só no gateway |
+| Autenticação | JWT HS256 (PyJWT) + senha bcrypt (passlib) | 2.15.1 / 1.7.4 — só no gateway |
 | Cache / estado | Redis | 7 (`redis:7-alpine`) |
 | Mensageria | RabbitMQ + aio-pika | `rabbitmq:3.12-management-alpine`; **sobe no compose, mas nenhum código publica ou consome** (ver `comunicacao.md`) |
 | Fila de tarefas | Celery | `celery==5.6.3` está nos requirements dos serviços, **sem uso no código** |
