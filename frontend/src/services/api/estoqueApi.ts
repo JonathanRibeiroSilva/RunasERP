@@ -14,6 +14,8 @@ import type {
   LiberarReservaPayload,
   AtualizarEstoquePayload,
   CriarEstoquePayload,
+  ConferenciaVisualPayload,
+  ConferenciaVisualResumo,
 } from '@/types/estoque';
 
 export interface ListarEstoqueParams {
@@ -40,6 +42,11 @@ export const estoqueApi = {
 
   obter(id: string, config?: AxiosRequestConfig) {
     return api.get<Estoque>(`/estoque/${id}`, config).then((r) => r.data);
+  },
+
+  /** Só valida e resume o que o modelo do navegador detectou; não escreve no estoque. */
+  conferenciaVisual(data: ConferenciaVisualPayload) {
+    return api.post<ConferenciaVisualResumo>('/estoque/conferencia-visual', data).then((r) => r.data);
   },
 
   criar(data: CriarEstoquePayload) {

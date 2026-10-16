@@ -16,6 +16,7 @@ import {
   FiMaximize,
   FiCamera,
   FiFileText,
+  FiAperture,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useEstoques, useRelatorioEstoque } from '@/hooks/useEstoque';
@@ -24,6 +25,7 @@ import { produtosApi } from '@/services/api/produtosApi';
 import type { Estoque } from '@/types/estoque';
 import EstoqueStatusBadge from './components/EstoqueStatusBadge';
 import ScannerEanModal from './components/ScannerEanModal';
+import ConferenciaVisualModal from './components/ConferenciaVisualModal';
 import ImportarNfeModal from './components/ImportarNfeModal';
 import { cameraSuportada } from './scannerEan';
 import EstoqueOperacaoModal, { type OperacaoEstoque } from './components/EstoqueOperacaoModal';
@@ -58,8 +60,11 @@ const EstoquePage = () => {
   const [codigoLido, setCodigoLido] = useState('');
   const [lendo, setLendo] = useState(false);
   const [camera, setCamera] = useState(false);
+  const [conferencia, setConferencia] = useState(false);
   const [importandoNfe, setImportandoNfe] = useState(false);
   const [temCamera] = useState(cameraSuportada);
+  // A conferência visual não usa BarcodeDetector, só câmera em contexto seguro.
+  const [podeConferir] = useState(() => window.isSecureContext && !!navigator.mediaDevices?.getUserMedia);
 
   const { data: estoques = [], isLoading, isError } = useEstoques({ limit: 1000 });
   const { data: relatorio } = useRelatorioEstoque();
@@ -249,6 +254,16 @@ const EstoquePage = () => {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
+          {podeConferir && (
+            <button
+              type="button"
+              className="btn-icon"
+              title="Conferência visual (detecção de objetos)"
+              onClick={() => setConferencia(true)}
+            >
+              <FiAperture />
+            </button>
+          )}
           {temCamera && (
             <button type="button" className="btn-icon" title="Ler pela câmera" onClick={() => setCamera(true)}>
               <FiCamera />
@@ -393,6 +408,8 @@ const EstoquePage = () => {
           </div>
         </>
       )}
+
+      {conferencia && <ConferenciaVisualModal onClose={() => setConferencia(false)} />}
 
       {camera && (
         <ScannerEanModal
