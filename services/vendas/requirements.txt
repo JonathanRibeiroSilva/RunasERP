@@ -18,5 +18,7 @@ passlib[bcrypt]==1.7.4
 # Same pin as the gateway, and here it was never explicit — the extra resolved
 # to bcrypt 5.x on its own, which breaks storefront customer auth the same way.
 bcrypt==4.0.1
-python-jose[cryptography]==3.5.0
+PyJWT==2.15.1
+# Direct dependency: Fernet (utils/crypto.py) used to ride in on python-jose[cryptography].
+cryptography==50.0.2
 aiosmtplib==5.1.3

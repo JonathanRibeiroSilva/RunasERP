@@ -217,10 +217,10 @@ class LojaService:
                                 
                                 if auth_response.status_code in [200, 201]:
                                     # 3. Gerar token JWT para o cliente
-                                    from datetime import datetime, timedelta
-                                    from jose import jwt
+                                    from datetime import datetime, timedelta, timezone
+                                    import jwt
                                     
-                                    now = datetime.utcnow()
+                                    now = datetime.now(timezone.utc)
                                     expire = now + timedelta(minutes=30)
                                     
                                     token_payload = {
