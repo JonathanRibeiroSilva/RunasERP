@@ -1,8 +1,8 @@
 """
 Cifra de credenciais de integração por tenant.
 
-Fernet vem do `cryptography`, dependência transitiva de python-jose[cryptography]
-(requirements.txt:21) — nenhum pacote novo.
+Fernet vem do `cryptography`, dependência direta em requirements.txt (antes
+carona do python-jose[cryptography], removido) — nenhum pacote novo.
 
 Sem INTEGRACOES_SECRET_KEY configurada a escrita FALHA. Cair para texto plano
 seria pior que falhar: o admin salvaria a senha do SMTP achando que está

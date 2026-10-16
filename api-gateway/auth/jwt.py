@@ -1,10 +1,11 @@
 """
 Utilitários para geração e validação de tokens JWT.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 from config import settings
 from models.usuario import RoleEnum
 
@@ -29,7 +30,7 @@ def create_access_token(
     Returns:
         Token JWT codificado
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
     payload = {
@@ -61,7 +62,7 @@ def create_refresh_token(user_id: UUID) -> str:
     Returns:
         Refresh token JWT codificado
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     
     payload = {
@@ -85,7 +86,7 @@ def decode_token(token: str) -> dict[str, Any]:
         Payload do token
         
     Raises:
-        JWTError: Se o token for inválido
+        PyJWTError: Se o token for inválido
     """
     return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 
@@ -102,5 +103,5 @@ def verify_token(token: str) -> dict[str, Any] | None:
     """
     try:
         return decode_token(token)
-    except JWTError:
+    except PyJWTError:
         return None

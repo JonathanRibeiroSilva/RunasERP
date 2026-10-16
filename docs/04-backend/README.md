@@ -48,8 +48,8 @@ integração com a Evolution API vivem hoje em `services/vendas/`.
 Este é o ponto mais fácil de entender errado.
 
 **Nenhum dos 7 serviços valida JWT.** Só o api-gateway decodifica token:
-`api-gateway/auth/jwt.py` (`decode_token` / `verify_token`, python-jose, HS256) e
-`api-gateway/auth/oauth2.py`. `python-jose` aparece apenas em
+`api-gateway/auth/jwt.py` (`decode_token` / `verify_token`, PyJWT, HS256) e
+`api-gateway/auth/oauth2.py`. `PyJWT` aparece apenas em
 `api-gateway/requirements.txt` e em `services/vendas/requirements.txt` — e em
 vendas ele é usado para **emitir** um token de cliente no checkout
 (`services/vendas/services/loja_service.py`, `jwt.encode`), nunca para validar um.
@@ -112,7 +112,7 @@ Pins do serviço produtos; o gateway usa os mesmos números nos pacotes em comum
 - **httpx 0.28.1** — chamadas serviço a serviço
 - **aio-pika 10.0.1** — cliente RabbitMQ (**não** é `pika`)
 - **redis 8.1.0**
-- Só no gateway: **python-jose[cryptography] 3.5.0**, **passlib[bcrypt] 1.7.4**
+- Só no gateway: **PyJWT 2.15.1**, **passlib[bcrypt] 1.7.4**
   com **bcrypt 4.0.1** (pin obrigatório — ver o comentário em
   `api-gateway/requirements.txt`), **slowapi 0.1.10**, **aiosmtplib**, **jinja2**
 
