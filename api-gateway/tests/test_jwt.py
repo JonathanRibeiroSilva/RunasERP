@@ -23,7 +23,9 @@ for _servico in ("EMPRESAS", "CLIENTES", "PRODUTOS", "ESTOQUE", "VENDAS",
 from auth.jwt import create_access_token, create_refresh_token, verify_token  # noqa: E402
 from config import settings  # noqa: E402
 
-# Gerado por python-jose 3.5.0, HS256, com a SECRET_KEY de teste acima.
+# Gerado por python-jose 3.5.0, HS256, com esta chave (a SECRET_KEY do ambiente
+# varia: a CI define a sua, por isso o teste a fixa).
+CHAVE_DO_TOKEN_JOSE = "test-secret-key-super-secure-min-32-chars"
 # exp em 2100 (não expira); iat 2023-11-14.
 TOKEN_EMITIDO_PELO_JOSE = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
@@ -55,7 +57,8 @@ def test_iat_nao_fica_no_futuro():
     assert abs(iat - agora) < 5
 
 
-def test_token_do_jose_continua_valido():
+def test_token_do_jose_continua_valido(monkeypatch):
+    monkeypatch.setattr(settings, "SECRET_KEY", CHAVE_DO_TOKEN_JOSE)
     payload = verify_token(TOKEN_EMITIDO_PELO_JOSE)
     assert payload["sub"] == "11111111-1111-1111-1111-111111111111"
     assert payload["role"] == "ADMIN"
