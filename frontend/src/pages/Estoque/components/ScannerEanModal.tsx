@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Modal from '@/components/common/Modal/Modal';
-import { escolherFormatos, obterDetector } from '../scannerEan';
+import { criarDetector } from '../scannerEan';
 
 interface Props {
   onCodigo: (codigo: string) => void;
@@ -9,7 +9,7 @@ interface Props {
 
 const INTERVALO_MS = 250;
 
-/** Lê EAN pela câmera traseira com o BarcodeDetector nativo (sem WASM: a CSP de produção o bloqueia). */
+/** Lê EAN pela câmera (traseira, se houver) com o BarcodeDetector nativo ou o leitor em JS puro (sem WASM: a CSP de produção o bloqueia). */
 const ScannerEanModal: React.FC<Props> = ({ onCodigo, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -21,10 +21,7 @@ const ScannerEanModal: React.FC<Props> = ({ onCodigo, onClose }) => {
 
     (async () => {
       try {
-        const Detector = obterDetector();
-        const formatos = escolherFormatos(await Detector.getSupportedFormats());
-        if (formatos.length === 0) throw new Error('formatos');
-        const detector = new Detector({ formats: formatos });
+        const detector = await criarDetector();
 
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },
