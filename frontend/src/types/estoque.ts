@@ -150,3 +150,30 @@ export interface AtualizarEstoquePayload {
   localizacao?: string | null;
   ativo?: boolean;
 }
+
+/** Contrato de POST /estoque/conferencia-visual (schemas/conferencia_visual.py no serviço de estoque). */
+export interface CaixaDelimitadora {
+  x: number;
+  y: number;
+  largura: number;
+  altura: number;
+}
+
+export interface DeteccaoObjeto {
+  rotulo: string;
+  confianca: number;
+  caixa: CaixaDelimitadora;
+}
+
+export interface ConferenciaVisualPayload {
+  modelo: 'coco-ssd';
+  versao_modelo: string;
+  detecoes: DeteccaoObjeto[];
+}
+
+export interface ConferenciaVisualResumo {
+  total_detectado: number;
+  total_aceito: number;
+  limiar_confianca: number;
+  contagem_por_rotulo: Record<string, number>;
+}
