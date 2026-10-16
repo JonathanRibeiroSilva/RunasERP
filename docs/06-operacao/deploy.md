@@ -173,7 +173,7 @@ Tres ecossistemas, todos semanais (`dependabot.yml:9-38`): `github-actions` em `
 `npm` em `/frontend`, `pip` em `/api-gateway`, `/services/*` e `/tests`. PRs
 agrupados, nao um por pacote (`dependabot.yml:5-6`): um grupo para `github-actions`,
 um para `npm` e **dois** para `pip` — `python-auth` (`bcrypt`, `passlib`,
-`python-jose`, `cryptography`, `python-multipart`) separado de `python` (`*`), porque
+`pyjwt`, `cryptography`, `python-multipart`) separado de `python` (`*`), porque
 um pacote cai no primeiro grupo que casa e o bcrypt 5 entrou em producao escondido
 num PR de 27 pacotes (`dependabot.yml:39-48`). `typescript` e
 `eslint` majors estao ignorados (`dependabot.yml:25-29`), e `bcrypt` major/minor

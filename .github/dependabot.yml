@@ -43,7 +43,7 @@ updates:
     # names its own blast radius.
     groups:
       python-auth:
-        patterns: ["bcrypt", "passlib", "python-jose", "cryptography", "python-multipart"]
+        patterns: ["bcrypt", "passlib", "pyjwt", "cryptography", "python-multipart"]
       python:
         patterns: ["*"]
     # bcrypt 5 took production login down: passlib 1.7.4 cannot detect a backend
