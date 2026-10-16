@@ -10,7 +10,7 @@ import structlog
 
 from database import init_db
 from interno import validar_token_interno
-from routers import estoque_router
+from routers import conferencia_visual_router, estoque_router
 from jobs.marcar_lotes_vencidos import marcar_lotes_vencidos
 
 
@@ -77,6 +77,7 @@ app.add_middleware(
 app.middleware("http")(validar_token_interno)
 
 # Incluir routers
+app.include_router(conferencia_visual_router)
 app.include_router(estoque_router)
 
 
