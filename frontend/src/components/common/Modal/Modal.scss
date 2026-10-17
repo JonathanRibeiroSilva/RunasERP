@@ -12,9 +12,22 @@
   animation: modal-fade 0.15s ease;
 }
 
-.modal-dialog {
+// `.modal-overlay .modal-dialog` e não `.modal-dialog`: o Bootstrap, importado
+// no app inteiro, também define `.modal-dialog` (com seletor de uma classe só) e
+// o main.tsx carrega o CSS dele DEPOIS dos componentes — então, num empate de
+// especificidade, ele vence. Com `pointer-events: none` herdado por todo campo
+// do formulário, `width: auto` e `max-width: var(--bs-modal-width)` (variável
+// que só existe dentro de um `.modal` do Bootstrap, logo sem limite nenhum).
+// Com um seletor a mais, a nossa regra ganha por especificidade, sem depender
+// de ordem de importação — e sem reordenar o main.tsx, o que mudaria o cascade
+// do app todo. As propriedades que o Bootstrap pisa são repetidas aqui de
+// propósito: sem elas ele ainda se aplicaria.
+.modal-overlay .modal-dialog {
+  position: relative;
   width: 100%;
   max-width: 520px;
+  margin: 0;
+  pointer-events: auto;
   max-height: 90vh;
   overflow-y: auto;
   background: $surface;
