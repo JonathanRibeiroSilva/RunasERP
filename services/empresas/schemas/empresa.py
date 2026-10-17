@@ -198,7 +198,7 @@ class EmpresaListItem(BaseModel):
     # A tela de plano em /plataforma edita estes dois; sem eles o modal abre
     # em branco e o super admin redigita limites que ja existem.
     max_usuarios: int
-    max_produtos: int
+    max_produtos: Optional[int]  # None = ilimitado
     ativo: bool
     criado_em: datetime
 
