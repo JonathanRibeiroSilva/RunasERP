@@ -17,7 +17,8 @@ export interface Tenant {
   ativo: boolean;
   criado_em: string;
   max_usuarios: number;
-  max_produtos: number;
+  /** null = ilimitado. */
+  max_produtos: number | null;
   usuarios_ativos: number;
   /** null = tenant ainda não cobrado; a régua só age sobre quem tem assinatura. */
   assinatura: AssinaturaResumo | null;
