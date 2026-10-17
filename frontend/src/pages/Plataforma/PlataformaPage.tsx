@@ -86,7 +86,7 @@ const PlataformaPage = () => {
     planoForm.reset({
       plano: tenant.plano,
       max_usuarios: String(tenant.max_usuarios),
-      max_produtos: String(tenant.max_produtos),
+      max_produtos: tenant.max_produtos === null ? '' : String(tenant.max_produtos),
     });
     setTenantPlano(tenant);
   };
