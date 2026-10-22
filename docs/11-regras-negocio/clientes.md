@@ -148,8 +148,9 @@ Evidência: `schemas/cliente.py:116`; `services/cliente_service.py:218-250`;
 - `limite_credito: Decimal = Field(..., ge=0)` — negativo é `422`.
 - `PUT /clientes/{cliente_id}/credito` grava limite e dia de vencimento.
 - **A fórmula `credito_disponivel = novo_limite - saldo_devedor` agora roda de
-  verdade** (C1, Onda 6). O repositório calcula `saldo_devedor = limite_credito
-  - credito_disponivel` **antes** de trocar o limite, e recalcula o disponível a
+  verdade** (C1, Onda 6). O repositório lê o cliente sob lock de linha (`SELECT
+  ... FOR UPDATE`), calcula `saldo_devedor = limite_credito -
+  credito_disponivel` **antes** de trocar o limite e recalcula o disponível a
   partir desse saldo — não reseta mais para o limite cheio
   (`repositories/cliente_repository.py:176-200`). Um cliente com fiado em
   aberto não "quita" a dívida sozinho só porque o limite foi editado.
