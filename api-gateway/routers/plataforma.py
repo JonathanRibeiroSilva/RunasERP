@@ -93,11 +93,23 @@ async def listar_tenants(db: Annotated[AsyncSession, Depends(get_db)]):
     for e in empresas["items"]:
         e["usuarios_ativos"] = contagem.get(e["id"], 0)
         e["assinatura"] = assinaturas.get(e["id"])
-        # A régua suspende pelos usuários e não toca na empresa: sem isto o
-        # tenant suspenso por atraso aparece como ATIVA e sem o botão de reativar.
-        if e["assinatura"] and e["assinatura"]["status"] == "SUSPENSA":
+        if _esta_suspenso(e):
             e["ativo"], e["status"] = False, "SUSPENSA"
     return empresas
+
+
+def _esta_suspenso(empresa: dict) -> bool:
+    """
+    Suspenso pelo status da empresa ou pela assinatura.
+
+    A régua suspende pelos usuários e pela assinatura, sem tocar na empresa; a
+    suspensão manual de antes de `ativo` ser gravado deixou status SUSPENSA com
+    ativo=true. A tela escolhe pausar/reativar por `ativo`, então ele é derivado
+    do que de fato corta o acesso, e não da coluna que os dados antigos deixaram
+    inconsistente.
+    """
+    assinatura = empresa.get("assinatura")
+    return empresa["status"] == "SUSPENSA" or bool(assinatura and assinatura["status"] == "SUSPENSA")
 
 
 @router.post("/tenants", status_code=status.HTTP_201_CREATED, summary="Provisionar tenant")
