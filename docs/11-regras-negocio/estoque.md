@@ -114,7 +114,7 @@ Tabela `estoque.movimentacoes` (não tem `empresa_id` próprio; o tenant vem do 
 
 **RN-MOV-001: Tipos de Movimentação** (Parcial)
 Enum: `ENTRADA`, `SAIDA`, `AJUSTE`, `DEVOLUCAO`, `PERDA`, `TRANSFERENCIA`. Uso real:
-- `ENTRADA`: `POST /estoque/entrada`.
+- `ENTRADA`: `POST /estoque/entrada` e `POST /estoque/entrada-nfe` (motivo `Entrada por XML de NF-e`; a mesma chave de acesso não entra duas vezes por empresa, 409).
 - `SAIDA`: `POST /estoque/saida` e `baixar-venda` (motivo `Venda confirmada`).
 - `AJUSTE`: `POST /estoque/ajuste`.
 - `DEVOLUCAO`: **estorno de venda reembolsada** (`estornar-venda`, motivo `Venda reembolsada`), que **aumenta** o estoque. Não é devolução ao fornecedor.
