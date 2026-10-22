@@ -382,7 +382,7 @@ async def entrada_estoque(
 ### Padrão 3: Router Simplificado
 
 No estoque o router não gerencia transação, apenas valida o tenant e chama o
-service (`services/estoque/routers/estoque.py:140`):
+service (`services/estoque/routers/estoque.py:141`):
 
 ```python
 @router.post("/entrada", response_model=EstoqueResponse, status_code=status.HTTP_201_CREATED)
