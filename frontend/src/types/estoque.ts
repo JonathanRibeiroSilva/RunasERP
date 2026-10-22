@@ -111,6 +111,15 @@ export interface EntradaEstoquePayload {
   custo_unitario?: number;
 }
 
+/** Entrada em lote de uma NF-e: tudo ou nada, e a mesma chave não entra duas vezes (409). */
+export interface EntradaNfePayload {
+  empresa_id: number;
+  chave: string;
+  numero: string;
+  emitente?: string;
+  itens: { produto_id: string; quantidade: number; custo_unitario?: number }[];
+}
+
 export interface SaidaEstoquePayload {
   empresa_id: number;
   produto_id: string;

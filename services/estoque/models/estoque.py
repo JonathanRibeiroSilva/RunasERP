@@ -219,6 +219,33 @@ class EstornoVendaProcessado(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class EntradaNfeProcessada(Base):
+    """
+    Ledger de idempotência da entrada de estoque por NF-e (upload de XML).
+
+    Garante que uma nota entre EXATAMENTE UMA VEZ por empresa. A unique constraint
+    (empresa_id, chave) serializa importações simultâneas da mesma nota (duplo clique,
+    retry, duas abas): a segunda colide no índice único e é recusada com 409.
+
+    chave == chave de acesso da NF-e (44 dígitos). A linha nasce na mesma transação das
+    entradas, então uma nota que falha no meio não gasta a chave.
+    """
+    __tablename__ = "entradas_nfe_processadas"
+    __table_args__ = (
+        UniqueConstraint('empresa_id', 'chave', name='uq_entrada_nfe_empresa_chave'),
+        {"schema": "estoque"}
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+
+    # Multi-tenancy
+    empresa_id = Column(Integer, nullable=False)
+
+    chave = Column(String(44), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class Inventario(Base):
     """
     Modelo de Inventário.

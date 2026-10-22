@@ -96,13 +96,13 @@ vários foram parcial ou totalmente resolvidos desde a auditoria; conferir lá a
   *Evidência*: nenhum arquivo em `services/produtos/` menciona `HistoricoPreco`, `kit` ou `composto`.
 - **Estoque**: FIFO/FEFO.
   *Evidência*: nenhuma ocorrência de `fifo`/`fefo` em `services/estoque/`. (Lote `VENCIDO` sair do
-  estoque é intencional — é o descarte, `services/estoque/services/estoque_service.py:324-327` —
+  estoque é intencional — é o descarte, `services/estoque/services/estoque_service.py:409-412` —
   então "bloqueio de lote vencido" não é pendência.)
-- **Estoque**: inventário. *Evidência*: o modelo `Inventario` existe (`services/estoque/models/estoque.py:222`)
+- **Estoque**: inventário. *Evidência*: o modelo `Inventario` existe (`services/estoque/models/estoque.py:249`)
   e o `InventarioRepository` (`repositories/estoque_repository.py:523`), mas nenhuma rota de
-  `services/estoque/routers/` o referencia, `estoque_service.py:34` só o importa e não há tela no frontend.
+  `services/estoque/routers/` o referencia, `estoque_service.py:35` só o importa e não há tela no frontend.
 - **Estoque**: alertas *automáticos* (push) de estoque mínimo e de lote vencendo. Hoje só há alerta sob
-  consulta (`GET /baixo` e `GET /lotes/vencendo`, `services/estoque/routers/estoque.py:78` e `:314`); o campo
+  consulta (`GET /baixo` e `GET /lotes/vencendo`, `services/estoque/routers/estoque.py:79` e `:338`); o campo
   `estoque_minimo` está em `models/estoque.py:70`. O disparo depende do serviço de Notificações acima.
 - **Vendas**: devolução como entidade própria.
   *Evidência*: nenhuma ocorrência de `devolucao` em `services/vendas/models/`.

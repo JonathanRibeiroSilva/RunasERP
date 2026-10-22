@@ -141,9 +141,9 @@ Amostra do que estava errado:
 |---|---|
 | `GET /pedidos`, `GET /pedidos/{id}`, `PATCH /pedidos/{id}/status` | prefixo `/pedidos` não existe em `ServiceProxy.SERVICE_URLS` (`api-gateway/proxy/service_proxy.py:23-38`) |
 | `POST /produtos/{id}/variantes` | variantes é router próprio: `APIRouter(prefix="/variantes")` (`services/produtos/routers/produtos.py:297`) |
-| `GET /estoque/{variante_id}` | `GET /estoque/{estoque_id}` (`services/estoque/routers/estoque.py:111`) |
-| `POST /estoque/{variante_id}/entrada` | `POST /estoque/entrada` (`estoque.py:140`) |
-| `GET /estoque/alertas/minimo` | `GET /estoque/baixo` (`estoque.py:78`) |
+| `GET /estoque/{variante_id}` | `GET /estoque/{estoque_id}` (`services/estoque/routers/estoque.py:112`) |
+| `POST /estoque/{variante_id}/entrada` | `POST /estoque/entrada` (`estoque.py:141`) |
+| `GET /estoque/alertas/minimo` | `GET /estoque/baixo` (`estoque.py:79`) |
 | `GET /contas`, `POST /contas/{id}/pagamentos` | `/contas` roteia para `financeiro`, que **não tem router** — só `GET /health` |
 | login devolve `expires_in: 1800` | `LoginResponse` tem `access_token`, `refresh_token`, `token_type`, `user` — **sem `expires_in`** (`api-gateway/schemas/usuario.py:77-82`) |
 

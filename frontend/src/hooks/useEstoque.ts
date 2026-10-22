@@ -61,7 +61,8 @@ const useEstoqueMutation = <TPayload>(mutationFn: (payload: TPayload) => Promise
 };
 
 export const useEntradaEstoque = () => useEstoqueMutation(estoqueApi.entrada);
-export const useSaidaEstoque = () => useEstoqueMutation(estoqueApi.saida);
+export const useEntradaNfe = () => useEstoqueMutation(estoqueApi.entradaNfe);
+export const useSaidaEstoque =() => useEstoqueMutation(estoqueApi.saida);
 export const useAjusteEstoque = () => useEstoqueMutation(estoqueApi.ajuste);
 export const useReservarEstoque = () => useEstoqueMutation(estoqueApi.reservar);
 export const useLiberarReserva = () => useEstoqueMutation(estoqueApi.liberarReserva);

@@ -224,6 +224,27 @@ class EntradaEstoqueRequest(BaseModel):
     nota_fiscal: Optional[str] = Field(None, max_length=100)
 
 
+class EntradaNfeItem(BaseModel):
+    """Item de uma NF-e já casado com um produto (produto + quantidade + custo)."""
+    produto_id: UUID = Field(..., description="ID do produto")
+    quantidade: float = Field(..., gt=0, description="Quantidade a adicionar")
+    custo_unitario: Optional[float] = Field(None, ge=0)
+
+
+class EntradaNfeRequest(BaseModel):
+    """
+    Schema para entrada de estoque por NF-e (lote atômico e idempotente pela chave).
+
+    Todos os itens entram em uma única transação: ou todos, ou nenhum. A mesma chave
+    de acesso não entra duas vezes para a mesma empresa.
+    """
+    empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")
+    chave: str = Field(..., pattern=r"^\d{44}$", description="Chave de acesso da NF-e (44 dígitos)")
+    numero: str = Field(..., pattern=r"^\d{1,9}$", description="Número da NF-e (nNF)")
+    emitente: Optional[str] = Field(None, max_length=200, description="Nome do emitente (xNome)")
+    itens: List[EntradaNfeItem] = Field(..., min_length=1, description="Itens a dar entrada")
+
+
 class SaidaEstoqueRequest(BaseModel):
     """Schema para saída de estoque."""
     empresa_id: int = Field(..., gt=0, description="ID da empresa (multi-tenancy)")

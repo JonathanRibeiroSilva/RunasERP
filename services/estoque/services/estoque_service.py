@@ -19,6 +19,7 @@ from models.estoque import (
     Estoque,
     BaixaVendaProcessada,
     EstornoVendaProcessado,
+    EntradaNfeProcessada,
 )
 from utils.concorrencia import (
     MAX_TENTATIVAS_DEADLOCK,
@@ -41,6 +42,7 @@ from schemas.estoque import (
     MovimentacaoCreate,
     LoteCreate,
     EntradaEstoqueRequest,
+    EntradaNfeRequest,
     SaidaEstoqueRequest,
     AjusteEstoqueRequest,
     ReservaEstoqueRequest,
@@ -55,6 +57,10 @@ from config import settings
 from interno import auth_interno
 
 log = structlog.get_logger()
+
+
+class NfeJaImportadaError(ValueError):
+    """A chave de acesso desta NF-e já deu entrada no estoque da empresa."""
 
 
 class EstoqueService:
@@ -206,70 +212,10 @@ class EstoqueService:
         """Registra entrada de estoque com transação atômica."""
         try:
             async with db.begin_nested():
-                # Buscar ou criar estoque. Toda escrita nesta classe lê a linha
-                # com FOR UPDATE: a quantidade nova é calculada em Python a partir
-                # dessa leitura, e sem o lock duas requisições simultâneas partem
-                # do mesmo valor e a segunda apaga a primeira (lost update).
-                estoque = await EstoqueRepository.buscar_por_produto(
-                    db, empresa_id, data.produto_id, data.variante_id, for_update=True
+                estoque, lote_id = await EstoqueService._registrar_entrada(
+                    db, empresa_id, data, usuario_id
                 )
-                
-                if not estoque:
-                    # Verificar se produto existe (no tenant correto)
-                    if not await EstoqueService.verificar_produto_existe(empresa_id, data.produto_id, data.variante_id):
-                        raise ValueError("Produto ou variante não encontrado")
-                    
-                    # Criar estoque
-                    estoque = await EstoqueRepository.criar(
-                        db,
-                        empresa_id=empresa_id,
-                        produto_id=data.produto_id,
-                        variante_id=data.variante_id,
-                        quantidade=0.0,
-                        estoque_minimo=0.0
-                    )
-                
-                # Registrar movimentação
-                quantidade_anterior = estoque.quantidade
-                quantidade_posterior = quantidade_anterior + data.quantidade
-                
-                movimentacao = await MovimentacaoRepository.criar(
-                    db,
-                    estoque_id=estoque.id,
-                    tipo=TipoMovimentacao.ENTRADA.value,
-                    quantidade=data.quantidade,
-                    quantidade_anterior=quantidade_anterior,
-                    quantidade_posterior=quantidade_posterior,
-                    motivo=data.motivo,
-                    observacao=data.observacao,
-                    documento=data.documento,
-                    custo_unitario=data.custo_unitario,
-                    usuario_id=usuario_id
-                )
-                
-                # Atualizar quantidade
-                estoque = await EstoqueRepository.atualizar_quantidade(db, empresa_id, estoque.id, quantidade_posterior)
-                
-                # Criar lote se solicitado
-                lote_id = None
-                if data.criar_lote and data.codigo_lote:
-                    lote = await LoteRepository.criar(
-                        db,
-                        empresa_id=empresa_id,
-                        estoque_id=estoque.id,
-                        codigo=data.codigo_lote,
-                        quantidade=data.quantidade,
-                        data_fabricacao=data.data_fabricacao,
-                        data_validade=data.data_validade,
-                        fornecedor=data.fornecedor,
-                        nota_fiscal=data.nota_fiscal,
-                        custo_unitario=data.custo_unitario
-                    )
-                    lote_id = lote.id
-                    
-                    # Atualizar movimentação com lote
-                    movimentacao.lote_id = lote_id
-            
+
             # Commit da transação principal
             await db.commit()
             
@@ -288,6 +234,145 @@ class EstoqueService:
         except Exception as e:
             await db.rollback()
             log.error("erro_entrada_estoque", error=str(e))
+            raise
+
+    @staticmethod
+    async def _registrar_entrada(
+        db: AsyncSession,
+        empresa_id: int,
+        data: EntradaEstoqueRequest,
+        usuario_id: Optional[UUID] = None
+    ) -> Tuple[Estoque, Optional[UUID]]:
+        """Soma uma entrada ao estoque na sessão, sem commit: quem chama é dono da transação."""
+        # Buscar ou criar estoque. Toda escrita nesta classe lê a linha
+        # com FOR UPDATE: a quantidade nova é calculada em Python a partir
+        # dessa leitura, e sem o lock duas requisições simultâneas partem
+        # do mesmo valor e a segunda apaga a primeira (lost update).
+        estoque = await EstoqueRepository.buscar_por_produto(
+            db, empresa_id, data.produto_id, data.variante_id, for_update=True
+        )
+
+        if not estoque:
+            # Verificar se produto existe (no tenant correto)
+            if not await EstoqueService.verificar_produto_existe(empresa_id, data.produto_id, data.variante_id):
+                raise ValueError("Produto ou variante não encontrado")
+
+            # Criar estoque
+            estoque = await EstoqueRepository.criar(
+                db,
+                empresa_id=empresa_id,
+                produto_id=data.produto_id,
+                variante_id=data.variante_id,
+                quantidade=0.0,
+                estoque_minimo=0.0
+            )
+
+        # Registrar movimentação
+        quantidade_anterior = estoque.quantidade
+        quantidade_posterior = quantidade_anterior + data.quantidade
+
+        movimentacao = await MovimentacaoRepository.criar(
+            db,
+            estoque_id=estoque.id,
+            tipo=TipoMovimentacao.ENTRADA.value,
+            quantidade=data.quantidade,
+            quantidade_anterior=quantidade_anterior,
+            quantidade_posterior=quantidade_posterior,
+            motivo=data.motivo,
+            observacao=data.observacao,
+            documento=data.documento,
+            custo_unitario=data.custo_unitario,
+            usuario_id=usuario_id
+        )
+
+        # Atualizar quantidade
+        estoque = await EstoqueRepository.atualizar_quantidade(db, empresa_id, estoque.id, quantidade_posterior)
+
+        # Criar lote se solicitado
+        lote_id = None
+        if data.criar_lote and data.codigo_lote:
+            lote = await LoteRepository.criar(
+                db,
+                empresa_id=empresa_id,
+                estoque_id=estoque.id,
+                codigo=data.codigo_lote,
+                quantidade=data.quantidade,
+                data_fabricacao=data.data_fabricacao,
+                data_validade=data.data_validade,
+                fornecedor=data.fornecedor,
+                nota_fiscal=data.nota_fiscal,
+                custo_unitario=data.custo_unitario
+            )
+            lote_id = lote.id
+
+            # Atualizar movimentação com lote
+            movimentacao.lote_id = lote_id
+
+        return estoque, lote_id
+
+    @staticmethod
+    async def entrada_nfe(
+        db: AsyncSession,
+        empresa_id: int,
+        data: EntradaNfeRequest
+    ) -> List[EstoqueResponse]:
+        """
+        Dá entrada em todos os itens de uma NF-e de forma atômica e uma vez só por chave.
+
+        Reserva a chave no ledger EntradaNfeProcessada ANTES de movimentar: a unique
+        constraint serializa importações simultâneas da mesma nota. Tudo ou nada — se um
+        item falha, o rollback desfaz os anteriores e a chave volta a ficar livre.
+
+        Raises:
+            NfeJaImportadaError: se a chave já deu entrada para esta empresa.
+            ValueError: se algum produto não existir ou estiver inativo.
+        """
+        try:
+            db.add(EntradaNfeProcessada(empresa_id=empresa_id, chave=data.chave))
+            try:
+                await db.flush()
+            except IntegrityError:
+                raise NfeJaImportadaError("Esta NF-e já foi importada")
+
+            documento = f"NF-e {data.numero}"
+            observacao = " · ".join(filter(None, [data.emitente, f"chave {data.chave}"]))
+            resultados: List[Estoque] = []
+            # Mesma ordem global da baixa de venda: entrada e venda simultâneas não se travam.
+            itens_ordenados = sorted(
+                data.itens, key=lambda i: chave_ordenacao_item(i.produto_id, None)
+            )
+            for item in itens_ordenados:
+                entrada = EntradaEstoqueRequest(
+                    empresa_id=empresa_id,
+                    produto_id=item.produto_id,
+                    quantidade=item.quantidade,
+                    custo_unitario=item.custo_unitario,
+                    motivo="Entrada por XML de NF-e",
+                    documento=documento,
+                    observacao=observacao,
+                )
+                try:
+                    estoque, _ = await EstoqueService._registrar_entrada(db, empresa_id, entrada)
+                except ValueError as e:
+                    raise ValueError(f"Produto {item.produto_id}: {e}") from e
+                resultados.append(estoque)
+
+            await db.commit()
+
+            log.info(
+                "entrada_nfe_concluida",
+                empresa_id=empresa_id,
+                chave=data.chave,
+                itens=len(data.itens)
+            )
+
+            return [EstoqueResponse.model_validate(e) for e in resultados]
+        except ValueError:
+            await db.rollback()
+            raise
+        except Exception as e:
+            await db.rollback()
+            log.error("erro_entrada_nfe", error=str(e), chave=data.chave)
             raise
 
     @staticmethod
