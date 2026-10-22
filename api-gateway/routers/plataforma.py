@@ -93,6 +93,10 @@ async def listar_tenants(db: Annotated[AsyncSession, Depends(get_db)]):
     for e in empresas["items"]:
         e["usuarios_ativos"] = contagem.get(e["id"], 0)
         e["assinatura"] = assinaturas.get(e["id"])
+        # A régua suspende pelos usuários e não toca na empresa: sem isto o
+        # tenant suspenso por atraso aparece como ATIVA e sem o botão de reativar.
+        if e["assinatura"] and e["assinatura"]["status"] == "SUSPENSA":
+            e["ativo"], e["status"] = False, "SUSPENSA"
     return empresas
 
 
@@ -145,7 +149,7 @@ async def _definir_acesso(db: AsyncSession, empresa_id: int, ativo: bool, status
     de exibição; usuario.ativo é a que corta.
     """
     empresa = _repassar(await _empresas(
-        "PATCH", f"/empresas/{empresa_id}/plano", json={"status": status_empresa}
+        "PATCH", f"/empresas/{empresa_id}/plano", json={"status": status_empresa, "ativo": ativo}
     ))
     await db.execute(
         update(Usuario).where(Usuario.empresa_id == empresa_id).values(ativo=ativo)
@@ -162,7 +166,11 @@ async def suspender_tenant(empresa_id: int, db: Annotated[AsyncSession, Depends(
 
 @router.patch("/tenants/{empresa_id}/reativar", summary="Reativar tenant")
 async def reativar_tenant(empresa_id: int, db: Annotated[AsyncSession, Depends(get_db)]):
-    return await _definir_acesso(db, empresa_id, ativo=True, status_empresa="ATIVA")
+    empresa = await _definir_acesso(db, empresa_id, ativo=True, status_empresa="ATIVA")
+    # Fora de _definir_acesso de propósito: suspender não mexe na cobrança.
+    await preapproval_service.reativar_manualmente(db, empresa_id)
+    await db.commit()
+    return empresa
 
 
 class PlanoUpdate(BaseModel):
