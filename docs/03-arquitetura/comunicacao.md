@@ -66,7 +66,7 @@ Chamadas diretas, sempre com `httpx.AsyncClient` e sempre carimbadas com
 
 | Origem | Destino | Onde |
 |---|---|---|
-| estoque | produtos (`/produtos/{id}`, `/variantes/{id}`) | `services/estoque/services/estoque_service.py:82-98` |
+| estoque | produtos (`/produtos/{id}`, `/variantes/{id}`) | `services/estoque/services/estoque_service.py:88-104` |
 | vendas | produtos (cache de catálogo) | `services/vendas/services/cache_service.py:122-130` |
 | vendas | produtos (`/produtos/{id}`) | `services/vendas/services/venda_service.py:94,96` |
 | vendas | clientes (`/clientes/{id}`, `POST /clientes`, `/credito/ajustar`) | `services/vendas/services/venda_service.py:138-141` (existe/ativo), `:415-419,442-446` (débito/crédito do fiado, C3/Onda 6), `loja_service.py:177-179` |

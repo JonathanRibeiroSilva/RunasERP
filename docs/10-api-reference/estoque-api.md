@@ -43,6 +43,7 @@ Rotas que recebem `empresa_id` no corpo (`POST /estoque`, `/entrada`, `/saida`, 
 | GET | `/estoque/{estoque_id}` | 200 | Busca por ID do registro de estoque |
 | PUT | `/estoque/{estoque_id}` | 200 | Atualiza mínimo, máximo, localização, ativo |
 | POST | `/estoque/entrada` | 201 | Entrada de mercadoria |
+| POST | `/estoque/entrada-nfe` | 201 | Entrada atômica e idempotente dos itens de uma NF-e |
 | POST | `/estoque/saida` | 200 | Saída de mercadoria |
 | POST | `/estoque/baixar-venda` | 200 | Baixa atômica e idempotente dos itens de uma venda |
 | POST | `/estoque/estornar-venda` | 200 | Estorno atômico e idempotente de uma venda |
@@ -179,6 +180,32 @@ curl -X POST "http://localhost:8003/estoque/entrada" \
   -H "Content-Type: application/json" \
   -d '{"empresa_id": 1, "produto_id": "<uuid>", "quantidade": 100, "motivo": "Compra do fornecedor ABC"}'
 ```
+
+---
+
+### Entrada por NF-e
+```http
+POST /estoque/entrada-nfe
+```
+
+```json
+{
+  "empresa_id": 1,
+  "chave": "35261012345678000199550010000012341000012345",
+  "numero": "1234",
+  "emitente": "Distribuidora Exemplo",
+  "itens": [
+    {"produto_id": "uuid", "quantidade": 24, "custo_unitario": 5.0}
+  ]
+}
+```
+
+Obrigatórios: `empresa_id`, `chave` (exatamente 44 dígitos), `numero` (1 a 9 dígitos, o `nNF`) e `itens` (ao menos um). Cada item segue as regras de `/estoque/entrada`: produto ativo, `quantidade` > 0, estoque criado na primeira entrada. As movimentações saem com `motivo: "Entrada por XML de NF-e"`, `documento: "NF-e <numero>"` e `observacao` com emitente e chave.
+
+- **Tudo ou nada:** os itens entram numa transação só. Se um falha (400, com o `produto_id` na mensagem), nenhum entra e a chave **não é gasta**: corrigida a nota, o reenvio funciona.
+- **Idempotente pela chave:** a chave é única por empresa (`entradas_nfe_processadas`). Importar a mesma nota de novo, inclusive duas requisições ao mesmo tempo, responde **409** e não soma nada.
+
+**Response 201:** lista de `EstoqueResponse` atualizados, na ordem de `produto_id` (não na ordem do envio).
 
 ---
 
@@ -348,7 +375,7 @@ GET /estoque/relatorios/movimentacoes?data_inicio=...&data_fim=...
 | 400 | `ValueError` do serviço (estoque não encontrado na operação, quantidade insuficiente, produto inválido, `X-Empresa-Id` <= 0). Vale para criar, entrada, saída, estorno, ajuste, reservar e liberar |
 | 403 | `empresa_id` do corpo diferente de `X-Empresa-Id` |
 | 404 | `GET`/`PUT /estoque/{estoque_id}` com ID inexistente na empresa |
-| 409 | `POST /estoque/baixar-venda` com falha de validação (sem estoque suficiente, item inexistente, sem `documento`) |
+| 409 | `POST /estoque/baixar-venda` com falha de validação (sem estoque suficiente, item inexistente, sem `documento`); `POST /estoque/entrada-nfe` com chave de acesso já importada |
 | 422 | Validação do Pydantic (campo faltando, quantidade `<= 0`, `X-Empresa-Id` ausente) |
 | 500 | Erro interno (`{"detail": "Erro interno do servidor"}`) |
 

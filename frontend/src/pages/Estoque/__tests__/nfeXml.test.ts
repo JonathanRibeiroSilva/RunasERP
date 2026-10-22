@@ -42,4 +42,9 @@ describe('lerNfe', () => {
     expect(() => lerNfe('<pedido/>')).toThrow();
     expect(() => lerNfe('não é xml')).toThrow();
   });
+
+  it('recusa nota sem a chave de 44 dígitos, que é o que impede a entrada em dobro', () => {
+    expect(() => lerNfe(XML.replace(/Id="NFe\d+"/, 'Id="NFe123"'))).toThrow();
+    expect(() => lerNfe(XML.replace(/ Id="NFe\d+"/, ''))).toThrow();
+  });
 });

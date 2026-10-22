@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import Modal from '@/components/common/Modal/Modal';
 import { getErrorMessage } from '@/services/api/axios';
 import { produtosApi } from '@/services/api/produtosApi';
-import { useEntradaEstoque } from '@/hooks/useEstoque';
+import { useEntradaNfe } from '@/hooks/useEstoque';
 import { useAuth } from '@/hooks/useAuth';
 import { lerNfe, type CandidatoItem, type Nfe } from '../nfeXml';
 import { formatarQuantidade } from '../estoqueFormat';
@@ -34,7 +34,7 @@ const casarPorCodigo = async (codigos: string[]) => {
 
 const ImportarNfeModal: React.FC<Props> = ({ onClose }) => {
   const { user } = useAuth();
-  const entrada = useEntradaEstoque();
+  const entrada = useEntradaNfe();
   const [nfe, setNfe] = useState<Nfe | null>(null);
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [lendo, setLendo] = useState(false);
@@ -67,30 +67,28 @@ const ImportarNfeModal: React.FC<Props> = ({ onClose }) => {
   const darEntrada = async () => {
     if (!nfe) return;
     setGravando(true);
-    const falhas: string[] = [];
-    // ponytail: uma chamada por item e sem trava de nota repetida; entrada em lote
-    // idempotente pela chave da NF-e exige endpoint novo no serviço de estoque.
-    for (const linha of casadas) {
-      try {
-        await entrada.mutateAsync({
-          empresa_id: user!.empresa_id,
+    try {
+      await entrada.mutateAsync({
+        empresa_id: user!.empresa_id,
+        chave: nfe.chave,
+        numero: nfe.numero,
+        emitente: nfe.emitente,
+        itens: casadas.map((linha) => ({
           produto_id: linha.produto!.id,
           quantidade: linha.uso!.quantidade,
           custo_unitario: linha.uso!.custoUnitario,
-          motivo: 'Entrada por XML de NF-e',
-          documento: `NF-e ${nfe.numero}`,
-          observacao: `${nfe.emitente} · chave ${nfe.chave}`,
-        });
-      } catch {
-        falhas.push(linha.descricao);
-      }
+        })),
+      });
+      toast.success(`Entrada registrada em ${casadas.length} item(ns) da NF-e ${nfe.numero}`);
+      onClose();
+    } catch (error) {
+      // Tudo ou nada: com a nota recusada nada entrou (nem a chave foi gasta), então o
+      // modal fica aberto. O erro de item cita o produto pelo id; aqui vira o nome.
+      const detalhe = getErrorMessage(error, 'Não foi possível dar entrada na nota');
+      toast.error(casadas.reduce((msg, linha) => msg.replace(linha.produto!.id, linha.produto!.nome), detalhe));
+    } finally {
+      setGravando(false);
     }
-    setGravando(false);
-    const certas = casadas.length - falhas.length;
-    if (certas > 0) toast.success(`Entrada registrada em ${certas} item(ns) da NF-e ${nfe.numero}`);
-    // Fecha mesmo com falha: reenviar a nota repetiria as entradas que deram certo.
-    if (falhas.length > 0) toast.error(`Sem entrada (lance à mão): ${falhas.join(', ')}`);
-    onClose();
   };
 
   const footer = (
@@ -161,7 +159,6 @@ const ImportarNfeModal: React.FC<Props> = ({ onClose }) => {
           {casadas.length < linhas.length && (
             <p>Itens sem cadastro ficam de fora: cadastre o código de barras no produto e lance a entrada à mão.</p>
           )}
-          <p role="note">Importar a mesma nota duas vezes duplica a entrada.</p>
         </>
       )}
     </Modal>

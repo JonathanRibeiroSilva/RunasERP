@@ -18,6 +18,7 @@ from schemas.estoque import (
     LoteResponse,
     LoteComAlerta,
     EntradaEstoqueRequest,
+    EntradaNfeRequest,
     SaidaEstoqueRequest,
     AjusteEstoqueRequest,
     ReservaEstoqueRequest,
@@ -28,7 +29,7 @@ from schemas.estoque import (
     RelatorioEstoque,
     RelatorioMovimentacoes,
 )
-from services.estoque_service import EstoqueService
+from services.estoque_service import EstoqueService, NfeJaImportadaError
 from repositories.estoque_repository import (
     EstoqueRepository,
     MovimentacaoRepository,
@@ -151,6 +152,29 @@ async def entrada_estoque(
     try:
         estoque, lote_id = await EstoqueService.entrada_estoque(db, empresa_id, data)
         return estoque
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/entrada-nfe", response_model=List[EstoqueResponse], status_code=status.HTTP_201_CREATED)
+async def entrada_nfe(
+    data: EntradaNfeRequest,
+    empresa_id: Annotated[int, Depends(get_empresa_id)],
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Dá entrada nos itens de uma NF-e de forma atômica (todos os itens ou nenhum).
+
+    Idempotente pela chave de acesso: importar a mesma nota de novo retorna 409 e não
+    soma nada.
+    """
+    if data.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="empresa_id do body não corresponde ao header X-Empresa-Id")
+
+    try:
+        return await EstoqueService.entrada_nfe(db, empresa_id, data)
+    except NfeJaImportadaError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

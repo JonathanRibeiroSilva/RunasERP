@@ -8,6 +8,7 @@ import type {
   RelatorioEstoque,
   TipoMovimentacao,
   EntradaEstoquePayload,
+  EntradaNfePayload,
   SaidaEstoquePayload,
   AjustePayload,
   ReservaPayload,
@@ -82,6 +83,10 @@ export const estoqueApi = {
 
   entrada(data: EntradaEstoquePayload) {
     return api.post<Estoque>('/estoque/entrada', data).then((r) => r.data);
+  },
+
+  entradaNfe(data: EntradaNfePayload) {
+    return api.post<Estoque[]>('/estoque/entrada-nfe', data).then((r) => r.data);
   },
 
   saida(data: SaidaEstoquePayload) {
