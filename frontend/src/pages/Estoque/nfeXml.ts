@@ -55,10 +55,12 @@ export const lerNfe = (xml: string): Nfe => {
     };
   });
 
-  return {
-    numero: texto(primeiro(inf, 'ide'), 'nNF'),
-    chave: (inf.getAttribute('Id') ?? '').replace(/^NFe/, ''),
-    emitente: texto(primeiro(inf, 'emit'), 'xNome'),
-    itens,
-  };
+  const numero = texto(primeiro(inf, 'ide'), 'nNF');
+  const chave = (inf.getAttribute('Id') ?? '').replace(/^NFe/, '');
+  // A chave é o que o estoque usa para não dar entrada na mesma nota duas vezes.
+  if (!/^\d{44}$/.test(chave) || !/^\d{1,9}$/.test(numero)) {
+    throw new Error('O arquivo não é o XML de uma NF-e.');
+  }
+
+  return { numero, chave, emitente: texto(primeiro(inf, 'emit'), 'xNome'), itens };
 };
