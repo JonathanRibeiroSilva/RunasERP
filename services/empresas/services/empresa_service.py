@@ -418,7 +418,7 @@ class EmpresaService:
         Separado de atualizar_empresa de propósito: os dois schemas são
         disjuntos, e é essa separação que impede o lojista de se auto-promover.
         """
-        empresa = await self.repository.buscar_por_id(empresa_id)
+        empresa = await self.repository.buscar_por_id(empresa_id, incluir_inativas=True)
         if not empresa:
             raise NotFoundError(
                 "Empresa não encontrada",

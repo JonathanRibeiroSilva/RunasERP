@@ -40,16 +40,16 @@ class ClienteRepository:
         """
         Busca cliente por ID (filtrado por empresa).
 
-        for_update: SELECT ... FOR UPDATE — trava a linha para serializar
-        débitos/créditos concorrentes do mesmo cliente (mesmo lock de
-        `estoque.EstoqueRepository.buscar_por_produto`).
+        for_update: SELECT ... FOR UPDATE — serializa débito/crédito e troca de limite
+        do mesmo cliente. Com populate_existing: o service já leu o cliente antes, e
+        sem ele o lock devolveria a instância velha do identity map (ver VendaRepository).
         """
         query = select(Cliente).where(
             Cliente.id == cliente_id,
             Cliente.empresa_id == empresa_id
         )
         if for_update:
-            query = query.with_for_update()
+            query = query.with_for_update().execution_options(populate_existing=True)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
     
@@ -188,7 +188,7 @@ class ClienteRepository:
         limite cheio — senão um cliente com fiado em aberto "quita" a dívida
         sozinho só porque o lojista editou o limite dele.
         """
-        cliente = await self.buscar_por_id(cliente_id, empresa_id)
+        cliente = await self.buscar_por_id(cliente_id, empresa_id, for_update=True)
         if not cliente:
             return None
 
