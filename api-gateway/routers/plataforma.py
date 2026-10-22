@@ -161,7 +161,11 @@ async def _definir_acesso(db: AsyncSession, empresa_id: int, ativo: bool, status
     de exibição; usuario.ativo é a que corta.
     """
     empresa = _repassar(await _empresas(
-        "PATCH", f"/empresas/{empresa_id}/plano", json={"status": status_empresa, "ativo": ativo}
+        # empresa.ativo é o flag de soft delete do serviço empresas (a listagem e
+        # as buscas filtram por ele), então suspender NUNCA o desliga — só o
+        # status e os usuários cortam o acesso. True aqui também devolve quem o
+        # #163 chegou a esconder.
+        "PATCH", f"/empresas/{empresa_id}/plano", json={"status": status_empresa, "ativo": True}
     ))
     await db.execute(
         update(Usuario).where(Usuario.empresa_id == empresa_id).values(ativo=ativo)

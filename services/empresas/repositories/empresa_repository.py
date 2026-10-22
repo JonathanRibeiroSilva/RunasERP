@@ -39,20 +39,23 @@ class EmpresaRepository:
         await self.session.refresh(empresa)
         return empresa
     
-    async def buscar_por_id(self, empresa_id: int) -> Optional[Empresa]:
+    async def buscar_por_id(
+        self, empresa_id: int, incluir_inativas: bool = False
+    ) -> Optional[Empresa]:
         """
-        Busca empresa por ID (apenas ativas).
-        
+        Busca empresa por ID (apenas ativas, salvo incluir_inativas).
+
         Args:
             empresa_id: ID da empresa
-            
+            incluir_inativas: só a plataforma pede — precisa alcançar quem está
+                escondido para poder devolvê-lo
+
         Returns:
             Empresa encontrada ou None
         """
-        stmt = select(Empresa).where(
-            Empresa.id == empresa_id,
-            Empresa.ativo == True
-        )
+        stmt = select(Empresa).where(Empresa.id == empresa_id)
+        if not incluir_inativas:
+            stmt = stmt.where(Empresa.ativo == True)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
     
@@ -163,9 +166,14 @@ class EmpresaRepository:
         listar() exige tenant_id justamente para não existir um caminho de
         listagem cross-tenant por omissão de parâmetro. Quem quer todas pede
         por nome, e só o router de plataforma pede.
+
+        Suspensa entra mesmo com ativo=false: suspensões gravadas assim ficaram
+        sumidas da tela, e sem aparecer ali não há botão para reativar.
         """
         result = await self.session.execute(
-            select(Empresa).where(Empresa.ativo == True).order_by(Empresa.nome_fantasia)
+            select(Empresa)
+            .where(or_(Empresa.ativo == True, Empresa.status == StatusEmpresa.SUSPENSA))
+            .order_by(Empresa.nome_fantasia)
         )
         return list(result.scalars().all())
 
