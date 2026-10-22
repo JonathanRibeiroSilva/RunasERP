@@ -134,6 +134,24 @@ async def registrar_pagamento(db: AsyncSession, mp_preapproval_id: str) -> int |
     return empresa_id
 
 
+async def reativar_manualmente(db: AsyncSession, empresa_id: int) -> None:
+    """
+    Reativação do suporte: tira o tenant de somente leitura/suspensa sem pagamento.
+
+    Sem estender a carência a régua reclassificaria o tenant na rodada seguinte
+    (carencia_ate já passou), então ele ganha DIAS_CARENCIA a partir de hoje.
+    Cancelada fica como está: reativar acesso não desfaz um cancelamento no MP.
+    """
+    await db.execute(
+        text(
+            "UPDATE gateway.assinaturas SET status = 'ATIVA', somente_leitura_desde = NULL, "
+            "carencia_ate = :carencia, atualizado_em = now() "
+            "WHERE empresa_id = :e AND status <> 'CANCELADA'"
+        ),
+        {"e": empresa_id, "carencia": date.today() + timedelta(days=DIAS_CARENCIA)},
+    )
+
+
 async def aplicar_regua(db: AsyncSession) -> dict:
     """
     Varredura diária de vencimentos. Uma query em assinaturas, nenhum dado de
