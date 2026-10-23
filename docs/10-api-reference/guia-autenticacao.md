@@ -119,7 +119,7 @@ Os demais endpoints têm o limite padrão de 300 requisições/minuto por IP (`a
 
 `RoleEnum` (`api-gateway/models/usuario.py`): `SUPER_ADMIN`, `ADMIN`, `OPERADOR`.
 
-A autorização por role é feita **no gateway** (`auth/oauth2.py`, `routers/proxy.py`). Os serviços não validam o JWT: confiam em `X-Empresa-Id` injetado pelo gateway (que descarta o header vindo do cliente) e checam `X-Servico-Interno-Token`, este último fail-open enquanto `SERVICO_INTERNO_TOKEN` estiver vazio (ver `CLAUDE.md`). Por isso, chamar a porta de um serviço direto, sem passar pelo gateway, não é um fluxo suportado.
+A autorização por role é feita **no gateway** (`auth/oauth2.py`, `routers/proxy.py`). Os serviços não validam o JWT: confiam em `X-Empresa-Id` injetado pelo gateway (que descarta o header vindo do cliente) e checam `X-Servico-Interno-Token`, este último fail-closed: sem token configurado ou sem o header, 403 (ver `CLAUDE.md`). Por isso, chamar a porta de um serviço direto, sem passar pelo gateway, não é um fluxo suportado.
 
 | Role | Escopo |
 |------|--------|
