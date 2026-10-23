@@ -319,7 +319,7 @@ conta entrou pelo host errado:
 
 **Como resolver:** clicar em **Sair** e fazer login de novo no host certo. É tela e
 não redirect de propósito: o cookie de sessão é host-only (`set_auth_cookies` não
-passa `domain=`, `api-gateway/routers/auth.py:29`), então a sessão de um host não
+passa `domain=`, `api-gateway/routers/auth.py:30`), então a sessão de um host não
 existe no outro. `/perfil` funciona nos dois. No host `app` a tela diz só "Esta conta
 não tem acesso a este sistema.", sem nomear o painel.
 

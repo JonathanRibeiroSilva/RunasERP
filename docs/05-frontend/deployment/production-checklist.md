@@ -73,7 +73,7 @@ compose via `${FRONTEND_URL:?}`):
 - CORS do gateway: `allow_origins=[settings.FRONTEND_URL]`
   (`api-gateway/main.py:81`).
 - Flag `secure` dos cookies: `FRONTEND_URL.startswith("https://")`
-  (`api-gateway/routers/auth.py:39`, `routers/auth_cliente.py:34`,
+  (`api-gateway/routers/auth.py:40`, `routers/auth_cliente.py:34`,
   `services/vendas/routers/loja.py:35`).
 - Link de reset de senha (`api-gateway/services/email_service.py:140`), back_url
   da assinatura e URLs de retorno do Mercado Pago no vendas.
