@@ -80,7 +80,7 @@ Todo model declara o schema (`__table_args__ = {"schema": "<nome>"}`); `alembic/
 
 Conventional Commits em pt-BR: `<tipo>(<escopo>): <descrição curta>` (até 72 caracteres, imperativo, sem ponto). Tipos: `feat` `fix` `refactor` `docs` `test` `chore` `perf` `ci`. Exemplo: `fix(estoque): impede estoque negativo em venda concorrente`.
 
-**Nunca commite sozinho.** Sugira a mensagem e deixe o desenvolvedor rodar. Git é a fonte da verdade: sem changelog manual e sem documento temporário ou arquivado (`_TEMP.md`, `_WIP.md`, `BUGFIX_*.md`, `RESUMO_*.md`, `AUDITORIA_*.md`): se não está num commit, não existe.
+**Não commite sem pedido explícito**; sem pedido, sugira a mensagem e deixe o desenvolvedor rodar. Worktrees ficam dentro do projeto, em `.claude/worktrees/<nome>` (`git worktree add .claude/worktrees/<nome> -b <branch> origin/Developer`), nunca como pasta irmã. Git é a fonte da verdade: sem changelog manual e sem documento temporário ou arquivado (`_TEMP.md`, `_WIP.md`, `BUGFIX_*.md`, `RESUMO_*.md`, `AUDITORIA_*.md`): se não está num commit, não existe.
 
 ---
 
@@ -92,8 +92,8 @@ Fluxo padrão: **entender → implementar → verificar → sugerir a mensagem d
 
 São princípios de orientação: valem para **código novo** e para o trecho legado que você está alterando; não reescreva legado só para cumpri-los.
 
-- **Clean Code:** nomes descritivos (nada de `x`, `tmp`, `cli`); uma função, uma responsabilidade; funções pequenas (alvo abaixo de 15 linhas; hoje 29% das funções do legado passam disso); sem número mágico, use constante nomeada; sem efeito colateral escondido; DRY, extraia a lógica repetida; sem código morto nem bloco comentado (`shared/` na raiz ainda é código morto, ver Infraestrutura).
-- **Calisthenics (só o que o código já segue):** no máximo 2 níveis de indentação por método (56 de 836 funções passam disso) e sem `else`, use guard clause ou retorno antecipado (só 24 de 836 têm `else`). Value objects `CPF`/`Email`/`Dinheiro`, máximo de 2 variáveis por classe e a regra de um ponto por linha não valem aqui: o código não os segue e modelos ORM/Pydantic têm 3 campos ou mais por natureza.
+- **Clean Code:** nomes descritivos (nada de `x`, `tmp`, `cli`); uma função, uma responsabilidade; funções pequenas (alvo: corpo abaixo de 15 linhas; em 22/10/2026, 29% das funções do legado passavam disso); sem número mágico, use constante nomeada; sem efeito colateral escondido; DRY, extraia a lógica repetida; sem código morto nem bloco comentado (`shared/` na raiz ainda é código morto, ver Infraestrutura).
+- **Calisthenics (só o que o código já segue):** no máximo 2 níveis de indentação por método (medido em 23/10/2026: 56 de 836 funções passam disso) e sem `else`, use guard clause ou retorno antecipado (24 de 836 têm `else`). Value objects `CPF`/`Email`/`Dinheiro`, máximo de 2 variáveis por classe e a regra de um ponto por linha não valem aqui: o código não os segue e modelos ORM/Pydantic têm 3 campos ou mais por natureza.
 - **SOLID:** **S** uma responsabilidade por classe/módulo · **O** aberto para extensão, fechado para modificação · **L** subclasse substituível pela base · **I** interfaces específicas em vez de gerais · **D** dependa de abstrações, não de implementações.
 
 ### Tratamento de erro

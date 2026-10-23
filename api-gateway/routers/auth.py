@@ -1,6 +1,7 @@
 """
 Router de autenticação.
 """
+from datetime import datetime, timezone
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
@@ -12,7 +13,7 @@ import secrets
 from database import get_db
 from repositories.usuario_repository import UsuarioRepository
 from auth.jwt import create_access_token, create_refresh_token, verify_token
-from auth.oauth2 import get_current_user
+from auth.oauth2 import get_current_user, get_token_from_cookie_or_header
 from auth.redis_client import get_redis
 from schemas.usuario import Token, RefreshTokenRequest, UsuarioResponse, LoginResponse, ForgotPasswordRequest, ResetPasswordRequest, AlterarSenhaRequest
 from models.usuario import Usuario
@@ -212,11 +213,17 @@ async def refresh(
 async def logout(
     response: Response,
     current_user: Annotated[Usuario, Depends(get_current_user)],
-    redis: Annotated[Redis, Depends(get_redis)]
+    redis: Annotated[Redis, Depends(get_redis)],
+    token: Annotated[str, Depends(get_token_from_cookie_or_header)]
 ):
     """
-    Logout: invalida refresh_token e remove cookies.
+    Logout: revoga access_token (blacklist até o exp), invalida refresh_token e remove cookies.
     """
+    # Revogar o access token pelo que falta do exp; get_current_user já lê esta chave
+    restante = verify_token(token)["exp"] - int(datetime.now(timezone.utc).timestamp())
+    if restante > 0:
+        await redis.set(f"blacklist:{token}", "1", ex=restante)
+
     # Remover refresh token do Redis
     await redis.delete(f"refresh:{current_user.id}")
     

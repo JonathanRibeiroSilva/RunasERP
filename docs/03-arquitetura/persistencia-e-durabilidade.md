@@ -20,7 +20,7 @@ mais prováveis são configuração, não catástrofe:
 
 | # | Como o dado se perde | Chance | Estrago | Defesa | Estado |
 |---|----------------------|--------|---------|--------|--------|
-| 1 | Volume órfão por troca do nome do projeto Compose | alta | total | bind mount absoluto do `db` | **aberto** (o `external: true` declarado é descartado pelo Coolify; se o `name:` também é, A CONFIRMAR — ver abaixo) |
+| 1 | Volume órfão por troca do nome do projeto Compose | alta | total | bind mount absoluto do `db` | **aberto** (o Coolify descarta o `external: true` e também o `name:` do volume; medido em 2026-10-23, ver abaixo) |
 | 2 | `docker compose down -v` / remoção do projeto | média | total | bind mount absoluto do `db` | **aberto**, mesma causa |
 | 3 | Drift do `create_all` → migration destrutiva | média | parcial | Alembic dono do schema | resolvido |
 | 4 | VPS morre / falha de disco / provedor | baixa | total | backup fora da máquina | aberto (o dump atual fica no mesmo disco) |
@@ -53,10 +53,15 @@ serviço `db-backup`, que o Coolify reescreve a seção `volumes` e descarta o
 bind mounts sem mexer. Por isso o backup (abaixo) usa bind mount absoluto e o
 banco ainda não.
 
-A CONFIRMAR na VPS: com qual volume o `erp-db-prod` sobe de fato
-(`docker inspect erp-db-prod --format '{{json .Mounts}}'`) e se o `name:` fixo
-também foi descartado (no repositório só o descarte do `external:` está
-registrado), e se o `name:` da rede (`runaserp_erp-network`) é respeitado.
+**Medido na VPS em 2026-10-23 (Coolify 4.4.7; a primeira medição foi em
+2026-08-24, com o mesmo resultado):** o container do banco (no Coolify chama-se
+`db-yd9rf7vub6mdcgd8qa7t7g9j`, não `erp-db-prod`) monta o volume comum
+`yd9rf7vub6mdcgd8qa7t7g9j_db-data` (`docker inspect <container> --format
+'{{json .Mounts}}'`). Ou seja, o `name:` fixo **também** é descartado: o volume
+tem o prefixo do projeto do Coolify e vive no ciclo de vida dele. O
+`runaserp_db_data` existe, está vazio (0 itens) e nenhum container o usa
+(`docker ps -a --filter volume=runaserp_db_data` volta vazio). O `name:` da
+**rede** é respeitado: o banco está em `runaserp_erp-network`.
 
 **Correção pendente:** trocar `db_data:/var/lib/postgresql/data` por um bind
 mount absoluto no host (o mesmo padrão de `/data/erp/backups`), migrando os dados
