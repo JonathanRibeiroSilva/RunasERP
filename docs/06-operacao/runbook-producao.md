@@ -123,9 +123,23 @@ Grandezas medidas que existem no repositório:
 entre o Coolify e o host, não falha real do deploy — a stack pode ter subido normalmente.
 Confirme pelo `/api/health/ready` e pelos containers antes de mexer em qualquer coisa.
 
-> **A CONFIRMAR:** essa correspondência (255 = SSH) vem da operação, não de nenhum
-> arquivo deste repositório — o `deploy.yml` fala com a API do Coolify e não usa SSH
-> em nenhum passo. Anexe aqui o trecho do log do Coolify na próxima ocorrência.
+**Por que 255 é SSH:** é o exit code do cliente `ssh`, não do comando remoto. O
+`deploy.yml` não usa SSH (fala com a API do Coolify); quem usa é o próprio Coolify,
+que dirige o deploy por uma sessão SSH até o host. Com 1 vCPU saturado extraindo
+layers, o keepalive dessa sessão cai e o deploy fica `failed` sem nenhum erro no log
+(o bloco `Error:` só traz a barra de progresso do compose). Evidência (coletada em
+2026-09 e conferida em 2026-10-23):
+
+- `journalctl -u ssh` no host mostra `disconnected by user` (código 11) vindo do IP do
+  container do Coolify (19 ocorrências entre 2026-10-01 e 2026-10-23);
+- os horários do log do app ficam **depois** do `finished_at` do registro: o `docker
+  exec` sobrevive à queda do cliente e o compose termina de subir os containers depois
+  de o deploy já constar como falho;
+- `docker ps` mostra tudo `healthy` depois.
+
+Para ver o exit code antes de qualquer outra coisa, no `coolify-db`: `select status,
+finished_at from application_deployment_queues where deployment_uuid='...'`. A
+mensagem completa está na coluna `logs` (JSON, precisa de parser).
 
 ### O job de deploy falhou dizendo "unreachable"
 
@@ -319,7 +333,7 @@ conta entrou pelo host errado:
 
 **Como resolver:** clicar em **Sair** e fazer login de novo no host certo. É tela e
 não redirect de propósito: o cookie de sessão é host-only (`set_auth_cookies` não
-passa `domain=`, `api-gateway/routers/auth.py:29`), então a sessão de um host não
+passa `domain=`, `api-gateway/routers/auth.py:30`), então a sessão de um host não
 existe no outro. `/perfil` funciona nos dois. No host `app` a tela diz só "Esta conta
 não tem acesso a este sistema.", sem nomear o painel.
 

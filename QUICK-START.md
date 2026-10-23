@@ -177,7 +177,7 @@ Cloudflare Zero Trust, não em arquivo no repositório.
 ## 🧪 Teste manual rápido
 
 > ⚠️ **O gateway não tem prefixo `/api`.** Os routers são montados na raiz
-> (`api-gateway/routers/auth.py:25` é `APIRouter(prefix="/auth")`). Batendo
+> (`api-gateway/routers/auth.py:26` é `APIRouter(prefix="/auth")`). Batendo
 > direto na porta 8000 o caminho é `/auth/login`; o `/api` só existe na borda,
 > porque `frontend/vite.config.ts:84` reescreve `^/api` para nada antes de
 > repassar ao gateway.

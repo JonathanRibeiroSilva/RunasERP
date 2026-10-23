@@ -172,12 +172,13 @@ env. Fechar junto com o deploy daria 403 no checkout e na baixa de estoque.
 
 O serviço `empresas` não tem noção de papel (role). As rotas de administração da
 plataforma — criar tenant, listar todas as empresas, alterar plano, apagar tenant —
-são guardadas por um segundo segredo, de **escopo menor: só gateway e empresas**.
+são guardadas por um segundo segredo, de **escopo menor no compose: só gateway e empresas**
+(em produção o escopo não existe, ver o aviso no fim desta seção).
 
 | | |
 |---|---|
 | Headers | `X-Plataforma: 1` **e** `X-Plataforma-Token: <segredo>` |
-| Segredo | `PLATAFORMA_INTERNO_TOKEN` (só em `api-gateway-prod` e `empresas-prod`) |
+| Segredo | `PLATAFORMA_INTERNO_TOKEN` (no compose, só em `api-gateway-prod` e `empresas-prod`; **em produção o Coolify injeta o mesmo `.env` em todos os containers**, ver abaixo) |
 | Quem injeta | `api-gateway/routers/plataforma.py`, helper `_empresas()` |
 | Pré-condição | o router inteiro roda sob `dependencies=[Depends(require_super_admin)]` |
 | Quem valida | `exigir_plataforma` em `services/empresas/routers/empresas.py` |
@@ -186,6 +187,13 @@ Por que não basta o `SERVICO_INTERNO_TOKEN`: ele é o mesmo nos 8 containers, l
 apenas que a chamada veio de *algum* deles. Rotas que apagam tenant precisam de prova
 mais forte. Antes deste par, `X-Plataforma: 1` era afirmação sem prova — bastava
 alcançar a porta 8007 para virar administrador da plataforma.
+
+> **Em produção o escopo menor não existe.** O Coolify injeta o mesmo `.env` em todos
+> os containers da stack, ignorando o `environment:` por serviço do compose. Medido em
+> 2026-10-23: o hash de `PLATAFORMA_INTERNO_TOKEN` é idêntico nos 9 containers
+> `*-prod` (frontend, api-gateway, empresas, clientes, estoque, financeiro,
+> notificacoes, produtos e vendas); a primeira conferência, em 2026-09-28, deu o mesmo.
+> Comprometer qualquer um deles dá o token que apaga tenant. Acompanhamento: card 07.
 
 Ordem da validação em `exigir_plataforma`:
 
