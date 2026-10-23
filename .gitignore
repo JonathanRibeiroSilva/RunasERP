@@ -124,6 +124,7 @@ graphify-out/cache/
 # reference any dated directory. The current graph at graphify-out/ stays tracked.
 graphify-out/20*/
 
-# Claude Code local settings and local audit notes
-.claude/
+# Claude Code local settings and local audit notes (rules/ is versioned: CLAUDE.md points to it)
+.claude/*
+!.claude/rules/
 ponytail-audit*.md
