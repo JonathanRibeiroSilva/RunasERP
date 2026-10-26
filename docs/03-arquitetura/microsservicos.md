@@ -76,7 +76,7 @@ mas é rota de tela, não prova de rota de API).
 GET  /auth/me
 POST /auth/login             → OAuth2 password flow; retorna access_token + refresh_token e seta cookies HTTP-only
 POST /auth/refresh           → novo access_token a partir do refresh_token
-POST /auth/logout            → apaga refresh:{user_id} no Redis e limpa cookies
+POST /auth/logout            → blacklist do access token, apaga refresh:{user_id}, limpa cookies
 POST /auth/forgot-password   → limite 5/min
 POST /auth/reset-password
 POST /auth/alterar-senha

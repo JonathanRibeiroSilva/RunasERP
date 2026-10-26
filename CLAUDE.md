@@ -141,7 +141,7 @@ Escreva doc só para arquitetura complexa, integração externa (Mercado Pago, G
 - Rate limit nos endpoints de auth (hoje em `api-gateway/routers/auth.py`: login 10/min, forgot-password 5/min, reset-password 10/min; padrão 300/min por IP)
 - CSP, `X-Content-Type-Options`, `X-Frame-Options`
 
-**Fluxo de auth:** (1) login → o backend gera o JWT e seta o cookie HttpOnly; (2) o navegador manda o cookie sozinho (`credentials: 'include'`); (3) `POST /auth/refresh` existe, mas o frontend não o chama: num 401 o interceptor do axios desloga; (4) logout limpa o cookie **mas não invalida o access token** (card 67).
+**Fluxo de auth:** (1) login → o backend gera o JWT e seta o cookie HttpOnly; (2) o navegador manda o cookie sozinho (`credentials: 'include'`); (3) `POST /auth/refresh` existe, mas o frontend não o chama: num 401 o interceptor do axios desloga; (4) logout limpa o cookie, grava o access token em `blacklist:{token}` até o `exp` e apaga o refresh (card 67).
 
 ---
 

@@ -12,7 +12,7 @@ A API do Runas usa **OAuth2 com JWT** (JSON Web Tokens) para autenticação.
 1. Login com email/senha → Recebe `access_token` + `refresh_token` + dados do usuário (`user`). Os mesmos tokens também são gravados como cookies HTTP-only.
 2. Usa o `access_token` em todas as requisições (cookie `access_token` ou header `Authorization: Bearer`; o cookie tem prioridade)
 3. Quando expirar, renova com `refresh_token`
-4. Logout apaga o `refresh_token` do Redis e limpa os cookies (o `access_token` já emitido continua válido até expirar; o gateway não o coloca em blacklist)
+4. Logout apaga o `refresh_token` do Redis, limpa os cookies e grava o `access_token` em `blacklist:{token}` até o `exp` (o gateway passa a rejeitá-lo com 401)
 
 > **URL base:** os exemplos usam `http://localhost:8000` (gateway direto, `docker-compose.dev.yml`). Pelo frontend/nginx (e em produção, atrás do Cloudflare) as mesmas rotas ficam sob `/api` (ex.: `/api/auth/login`); o nginx remove o prefixo antes de repassar ao gateway (`frontend/nginx.conf`).
 > Estas rotas são de **usuários do sistema** (`Usuario`). Clientes da loja online usam `/auth/cliente/*` (login, registro, OAuth Google/Microsoft), fora do escopo deste guia.
