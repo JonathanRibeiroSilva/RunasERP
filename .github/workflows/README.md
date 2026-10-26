@@ -19,7 +19,9 @@ o arquivo é a fonte da verdade.
 
 Dispara em `pull_request` para `main` e `Developer` e também em `push` nessas
 duas branches. No push existe `paths-ignore` (`landing-page/**`, `docs/**`,
-`**.md`); num PR o portão roda inteiro, independente do diff.
+`**.md`); num PR o portão roda inteiro, independente do diff. O filtro é pela
+BASE do PR: um PR aberto contra outra branch (empilhado) não dispara o CI, por
+decisão. Abra sempre contra `Developer`.
 
 Quatro jobs:
 
