@@ -120,11 +120,12 @@ class _Usuario:
 
 
 def _encaminhar(headers, request_id="gateway-id-0001"):
-    scope = {"type": "http", "method": "GET", "path": "/vendas", "query_string": b"",
+    # /pagamentos: um prefixo que o SERVICE_URLS mapeia (em /vendas o proxy dá 404 antes dos headers)
+    scope = {"type": "http", "method": "GET", "path": "/pagamentos", "query_string": b"",
              "headers": [(k.encode(), v.encode()) for k, v in headers.items()]}
     request = Request(scope)
     request.state.request_id = request_id
-    asyncio.run(service_proxy.ServiceProxy.proxy_request(request, "/vendas", _Usuario))
+    asyncio.run(service_proxy.ServiceProxy.proxy_request(request, "/pagamentos", _Usuario))
     return _ClienteFake.chamadas[-1]["headers"]
 
 
