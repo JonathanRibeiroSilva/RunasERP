@@ -10,6 +10,7 @@ import structlog
 
 from database import init_db
 from interno import validar_token_interno
+from request_context import acao_de, contexto_requisicao, request_id_de
 from routers import vendas_router
 from routers.loja import router as loja_router
 from routers.webhook import router as webhook_router
@@ -22,6 +23,7 @@ from jobs.reconciliar_estoque_vendas import reconciliar_estoque_vendas
 
 structlog.configure(
     processors=[
+        structlog.contextvars.merge_contextvars,  # request_id/usuario_id/empresa_id
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.JSONRenderer()
     ]
@@ -88,6 +90,8 @@ app.add_middleware(
 
 # Prova de origem interna. Fail-closed desde o #124 -- ver interno.py.
 app.middleware("http")(validar_token_interno)
+# Depois do token = por fora dele: o 403 também sai com request_id.
+app.middleware("http")(contexto_requisicao)
 
 # Registrar routers
 app.include_router(vendas_router)
@@ -106,9 +110,15 @@ async def health_check():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Handler global de exceções."""
-    log.error("unhandled_exception", error=str(exc), path=request.url.path)
+    """Handler global de exceções.
+
+    Roda por fora do middleware de contexto, então o id vai no corpo e no header daqui.
+    """
+    request_id = request_id_de(request)
+    log.error("unhandled_exception", error=str(exc), path=request.url.path,
+              action=acao_de(request), request_id=request_id)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Erro interno do servidor"}
+        content={"detail": "Erro interno do servidor", "request_id": request_id},
+        headers={"X-Request-Id": request_id},
     )
