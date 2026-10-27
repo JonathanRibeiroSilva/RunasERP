@@ -9,6 +9,9 @@ A guarda é o nome da variável em qualquer arquivo versionado, sem diferenciar
 maiúsculas: o pydantic-settings também não diferencia, então um campo
 `auth_bypass` num config leria a mesma env. `git grep` só vê o que está
 versionado — não abre `.env` real.
+
+`graphify-out/` fica de fora: é o grafo gerado pelo hook e indexa o nome deste
+próprio teste (`test_auth_bypass_...`), então reprovaria o PR para a main.
 """
 import subprocess
 from pathlib import Path
@@ -19,7 +22,7 @@ ESTE_ARQUIVO = Path(__file__).resolve().relative_to(REPO).as_posix()
 
 def test_auth_bypass_nao_reaparece_no_repositorio():
     achados = subprocess.run(
-        ["git", "grep", "-n", "-i", "auth_bypass", "--", ".", f":!{ESTE_ARQUIVO}"],
+        ["git", "grep", "-n", "-i", "auth_bypass", "--", ".", f":!{ESTE_ARQUIVO}", ":!graphify-out"],
         cwd=REPO, capture_output=True, encoding="utf-8",
     )
 
