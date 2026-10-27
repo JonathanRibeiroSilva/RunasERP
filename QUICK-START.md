@@ -18,10 +18,11 @@ Copy-Item .env.example .env
 Os defaults do `.env.example` já servem para desenvolvimento local. Dois campos
 merecem atenção:
 
-- `SERVICO_INTERNO_TOKEN` e `PLATAFORMA_INTERNO_TOKEN` vêm **vazios** de
-  propósito. Vazio = *fail-open*: a validação loga a ausência e deixa passar.
-  Para exercitar a prova de origem interna, gere com `openssl rand -hex 32` e
-  use o **mesmo valor** em todos os containers (`.env.example:182,188`).
+- `SERVICO_INTERNO_TOKEN` e `PLATAFORMA_INTERNO_TOKEN` vêm **vazios** do
+  `.env.example`. O primeiro vazio é *fail-closed*: todo serviço responde 403,
+  menos em `/health`. O segundo vazio é *fail-open* de propósito: loga e deixa
+  passar. Gere com `openssl rand -hex 32` e use o **mesmo valor** em todos os
+  containers (`.env.example:182,188`); o `SERVICO_INTERNO_TOKEN` é obrigatório.
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`.env.example:93-94`) definem o usuário que
   o gateway cria sozinho no boot.
 

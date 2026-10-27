@@ -38,9 +38,9 @@ Authorization: Bearer <access_token>
 ```
 
 Existe também um header de prova de origem interna, `X-Servico-Interno-Token`
-(`services/clientes/interno.py`). Ele está **fail-open**: se o serviço não tiver
-`SERVICO_INTERNO_TOKEN` configurado, ou se a requisição não trouxer o header,
-a requisição passa. Só um valor *presente e diferente* resulta em **403**.
+(`services/clientes/interno.py`). Ele está **fail-closed**: se o serviço não tiver
+`SERVICO_INTERNO_TOKEN` configurado, ou se a requisição não trouxer o header, ou se o
+valor for diferente, a resposta é **403**. Só `/health` é isento.
 
 ---
 

@@ -37,7 +37,7 @@ Dois esquemas, conforme o router (`services/vendas/utils/tenant.py`):
 - **Rotas administrativas** (`/vendas`, `/admin/entrega`, `/pagamentos/admin`, `/integracoes`): dependem do header `X-Empresa-Id` (inteiro > 0, senão 400). O gateway injeta o header a partir do usuário autenticado.
 - **Rotas da loja** (`/loja/*`): dependem do query param `empresaSlug`. O serviço resolve o slug chamando `GET {EMPRESAS_URL}/empresas/publico/{slug}`; sem o param, 400; slug inexistente, 404; loja com `catalogo_ativo` falso, 404 `Loja indisponível no momento`.
 - **Rotas de cliente logado** (`meus-pedidos`, `retry-payment`, `recuperar-carrinho`): além do slug, exigem `X-Cliente-Id`, injetado pelo gateway a partir do JWT do cliente. Sem o header, 401.
-- **Prova de origem interna:** todo pedido (menos `/health`) deve trazer `X-Servico-Interno-Token`. O gateway o carimba. Enquanto `SERVICO_INTERNO_TOKEN` não estiver configurado, o serviço deixa passar e só registra warning (`interno.py:58-72`); token presente e errado devolve 403.
+- **Prova de origem interna:** todo pedido (menos `/health`) deve trazer `X-Servico-Interno-Token`. O gateway o carimba. Com `SERVICO_INTERNO_TOKEN` vazio, header ausente ou token errado, o serviço registra warning e devolve 403 (`interno.py:58-72`).
 
 O gateway remove `x-empresa-id`, `x-cliente-id` e `x-servico-interno-token` enviados pelo cliente antes de injetar os seus (`api-gateway/proxy/service_proxy.py`, lista `for interno in (...)` em `proxy_request`).
 

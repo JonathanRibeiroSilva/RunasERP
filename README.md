@@ -319,9 +319,9 @@ em probe reprovado) e o Coolify só lê o healthcheck durante o deploy.
 ### 3. Microsserviços — roteamento, isolamento e comunicação
 
 O gateway é o **único** ponto de entrada: nenhum serviço publica porta no host em
-produção, e nenhum lê o schema de outro. A validação do carimbo de origem interna,
-porém, ainda é *fail-open* — quem alcançasse a rede interna passaria (ver
-*Autenticação* → `X-Servico-Interno-Token`).
+produção, e nenhum lê o schema de outro. A validação do carimbo de origem interna
+é *fail-closed*: sem o segredo, o serviço responde 403 (ver *Autenticação* →
+`X-Servico-Interno-Token`).
 
 ```
    api-gateway  :8000
@@ -693,14 +693,12 @@ isso é um segredo compartilhado, o **mesmo nos 8 containers**
   Docker bate em `localhost:PORTA/health` sem passar pelo gateway;
 - cobertura em `tests/unit/test_auth_servico_a_servico.py`.
 
-> ⚠️ **Hoje a validação é FAIL-OPEN**: se o segredo estiver faltando em qualquer um
-> dos dois lados, o middleware apenas registra `servico_interno.ausente` e deixa
-> passar. É deliberado enquanto o deploy não for blue-green — o stack velho cai antes
-> do novo subir, então existe uma janela em que o chamador já carimba e o validador
-> ainda não tem a env (ou o contrário), e fechar nessa janela seria 403 no checkout,
-> na baixa de estoque e no job de reconciliação. Fechar é trocar o `log.warning` pelo
-> `return` do ramo seguinte — uma linha — depois de medir `servico_interno.ausente`
-> zerado em produção.
+> **A validação é FAIL-CLOSED** (desde 2026-10-04): se o segredo estiver faltando em
+> qualquer um dos dois lados, o middleware registra `servico_interno.ausente` e
+> responde 403, em tudo menos `/health`. O fechamento veio depois de medir
+> `servico_interno.ausente` zerado em produção com tráfego real. O deploy não é
+> blue-green (o stack velho cai antes do novo subir), então um segredo novo precisa
+> chegar a todos os containers no mesmo deploy.
 
 O token é estático, não um claim assinado: responde "veio de dentro" e nada mais —
 não diz **qual** serviço chamou nem expira. Para as rotas de plataforma, que apagam

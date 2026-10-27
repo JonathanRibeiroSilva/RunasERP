@@ -33,7 +33,7 @@ o `docker-compose.dev.yml` usa as mesmas nos `command:`. O healthcheck do
 - **Tenant**: os serviços não validam JWT. Confiam no header `X-Empresa-Id` injetado pelo
   gateway (ver `comunicacao.md`); sem o header a rota é rejeitada (400 em `empresas`).
 - **Origem interna**: `X-Servico-Interno-Token` validado em `services/*/interno.py`
-  (fail-open enquanto o segredo não estiver em todos os containers).
+  (fail-closed: sem o segredo, o serviço responde 403 em tudo menos `/health`).
 - **Banco**: um PostgreSQL, um schema por serviço; isolamento entre tenants por coluna
   `empresa_id` (`UniqueConstraint` costuma incluir `empresa_id`).
 - **Eventos RabbitMQ**: cada serviço tem `events/publisher.py`, mas nenhum código publica ou
