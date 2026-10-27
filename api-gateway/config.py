@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     # Segredo compartilhado pelos 8 containers: prova que a requisicao veio de
     # dentro da malha. O gateway e o unico que so carimba (nunca valida) --
     # nada interno chama o gateway de volta exceto loja_service, que carimba
-    # tambem. Vazio = fail-open (ver services/*/interno.py).
+    # tambem. Vazio = sem carimbo e os servicos respondem 403 (ver services/*/interno.py).
     SERVICO_INTERNO_TOKEN: str = ""
 
     # Escopo MENOR que o de cima: so o gateway e o servico empresas. Prova que

@@ -17,7 +17,7 @@ HEADER = "X-Servico-Interno-Token"
 def auth_interno(headers: dict[str, str] | None = None) -> dict[str, str]:
     """Devolve os headers com a prova de origem interna. Só para destino interno."""
     headers = dict(headers or {})
-    # Vazio = fail-open: o validador do outro lado loga e deixa passar.
+    # Vazio = sem carimbo: o validador do outro lado responde 403.
     if settings.SERVICO_INTERNO_TOKEN:
         headers[HEADER] = settings.SERVICO_INTERNO_TOKEN
     return headers

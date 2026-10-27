@@ -63,7 +63,7 @@ class Settings(BaseSettings):
         return self.MP_ENVIRONMENT.strip().lower() != "production"
 
     # Segredo compartilhado pelos 8 containers: prova que a requisicao veio
-    # de dentro da malha. Vazio = fail-open (ver interno.py).
+    # de dentro da malha. Vazio = fail-closed, tudo menos /health responde 403 (ver interno.py).
     SERVICO_INTERNO_TOKEN: str = ""
 
     model_config = SettingsConfigDict(
