@@ -150,21 +150,20 @@ malha é um segredo compartilhado.
   Docker bate em `localhost:PORTA/health` sem passar pelo gateway.
 - Token inválido → `403 {"detail": "Forbidden"}` e log `servico_interno.invalido`.
 
-### Hoje é FAIL-OPEN
+### Hoje é FAIL-CLOSED
 
 Se o segredo **não estiver dos dois lados** (env vazia no chamador ou no validador), a
-requisição **passa** e o serviço apenas registra:
+requisição **é recusada** com `403 {"detail": "Forbidden"}` e o serviço registra:
 
 ```
-log.warning("servico_interno.ausente", path=..., configurado=..., recebido=...)
+log.warning("servico_interno.ausente", path=...)
 ```
 
-Motivo documentado no código: o deploy não é blue-green — o stack velho cai antes do
-novo subir — então há uma janela em que um lado já carimba e o outro ainda não tem a
-env. Fechar junto com o deploy daria 403 no checkout e na baixa de estoque.
-
-**Como fechar**: medir `servico_interno.ausente` em produção; zerado, troca-se o
-`log.warning` pelo `return`/`raise` do ramo seguinte — uma linha.
+Fechado em 2026-10-04, depois de `servico_interno.ausente` ficar em zero com tráfego
+real (checkout, cancelamento, baixa de estoque) e o segredo confirmado nos 8
+containers. O deploy não é blue-green — o stack velho cai antes do novo subir — então
+um segredo novo precisa chegar a todos os containers no mesmo deploy, senão há 403
+no checkout e na baixa de estoque.
 
 ---
 
@@ -199,7 +198,8 @@ Ordem da validação em `exigir_plataforma`:
 
 1. `X-Plataforma != "1"` → `403 "Rota exclusiva da administração da plataforma"`.
 2. Segredo ausente de um dos lados → `log.warning("plataforma.sem_segredo")` e
-   **deixa passar** (fail-open, mesma janela de deploy do item 3).
+   **deixa passar** (fail-open, pela mesma janela de deploy sem blue-green que a
+   seção 3 tinha antes de fechar).
 3. Segredo presente e diferente → `log.warning("plataforma.segredo_invalido")` + `403`.
 
 **Como fechar**: medir `plataforma.sem_segredo`; zerado, o `log.warning` vira o mesmo
@@ -297,16 +297,16 @@ O isolamento é **lógico (schema + `X-Empresa-Id`)**, não físico.
 | Caminho | Transporte | Prova de identidade |
 |---|---|---|
 | Cliente → gateway | HTTPS via Cloudflare Tunnel, nginx do frontend em `/api/` | JWT + RBAC no gateway |
-| Gateway → serviço | `httpx.AsyncClient` (timeout 30s) | `X-Servico-Interno-Token` (fail-open) + `X-Empresa-Id`/`X-Cliente-Id` injetados |
+| Gateway → serviço | `httpx.AsyncClient` (timeout 30s) | `X-Servico-Interno-Token` (fail-closed) + `X-Empresa-Id`/`X-Cliente-Id` injetados |
 | Gateway → empresas (plataforma) | `httpx.AsyncClient` (timeout 30s) | acima + `X-Plataforma: 1` e `X-Plataforma-Token` (fail-open) |
 | Serviço → serviço | `httpx.AsyncClient` (timeout 5s/10s) | `auth_interno()` explícito por chamada |
 | Eventos assíncronos | — | **não existe em uso** |
 
 ### Dívida conhecida
 
-1. Os dois contratos de segredo são **fail-open**. Fechar cada um é uma linha, depois de
-   confirmar que `servico_interno.ausente` e `plataforma.sem_segredo` estão zerados em
-   produção.
+1. O contrato do `X-Plataforma-Token` ainda é **fail-open**. Fechar é uma linha, depois
+   de confirmar que `plataforma.sem_segredo` está zerado em produção. O do
+   `X-Servico-Interno-Token` já está fechado.
 2. `SERVICO_INTERNO_TOKEN` é token estático, não claim assinado: responde "veio de
    dentro" e nada mais — não diz qual serviço chamou nem expira.
 3. RabbitMQ, `aio-pika` e `celery` consomem recurso e espaço de imagem sem nenhum uso.

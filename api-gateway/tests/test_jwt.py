@@ -43,6 +43,16 @@ def test_access_token_ida_e_volta():
     assert payload["user_type"] == "usuario"
 
 
+def test_access_token_carrega_cliente_id_quando_recebe():
+    """O token do cliente leva `cliente_id` (39e0454); o de usuário não ganha o claim."""
+    uid, cid = uuid.uuid4(), uuid.uuid4()
+    do_cliente = verify_token(
+        create_access_token(uid, "CLIENTE", "cliente", empresa_id=1, cliente_id=cid)
+    )
+    assert do_cliente["cliente_id"] == str(cid)
+    assert "cliente_id" not in verify_token(create_access_token(uid, "ADMIN"))
+
+
 def test_refresh_token_ida_e_volta():
     uid = uuid.uuid4()
     payload = verify_token(create_refresh_token(uid))

@@ -293,8 +293,9 @@ Limites que você deve conhecer:
   `docker-compose.dev.yml` — publicá-las na LAN é entregar qualquer tenant a
   qualquer um na rede.
 - `SERVICO_INTERNO_TOKEN` e `PLATAFORMA_INTERNO_TOKEN` vêm **vazios** do
-  `.env.example` (`:136`, `:142`) e vazio é *fail-open*: a prova de origem
-  interna loga a ausência e deixa passar.
+  `.env.example` (`:136`, `:142`). Vazio no `SERVICO_INTERNO_TOKEN` é
+  *fail-closed* (403 em tudo menos `/health`); vazio no `PLATAFORMA_INTERNO_TOKEN`
+  é *fail-open*: loga a ausência e deixa passar.
 - **A CONFIRMAR**: não há medição de cobertura de teste publicada nem auditoria
   de segurança externa registrada no repositório.
 

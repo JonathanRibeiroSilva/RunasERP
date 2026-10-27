@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     FINANCEIRO_URL: str = "http://financeiro:8005"
     
     # Segredo compartilhado pelos 8 containers: prova que a requisicao veio
-    # de dentro da malha. Vazio = fail-open (ver interno.py).
+    # de dentro da malha. Vazio = fail-closed, tudo menos /health responde 403 (ver interno.py).
     SERVICO_INTERNO_TOKEN: str = ""
 
     model_config = SettingsConfigDict(

@@ -14,7 +14,7 @@ O serviço não autentica usuário. Ele confia nos headers que o api-gateway inj
 | `X-Plataforma: 1` + `X-Plataforma-Token` | só o router `/plataforma` do gateway, depois do `require_super_admin` | rotas de administração da plataforma (`exigir_plataforma`: sem `X-Plataforma: 1` → 403) |
 | `X-Servico-Interno-Token` | chamadas internas (`interno.auth_interno`) | prova de origem interna, validada pelo middleware de `interno.py` em toda rota exceto `/health` |
 
-`X-Servico-Interno-Token` e `X-Plataforma-Token` são **fail-open** enquanto `SERVICO_INTERNO_TOKEN` / `PLATAFORMA_INTERNO_TOKEN` estiverem vazios (ou o header não vier): o serviço loga `servico_interno.ausente` / `plataforma.sem_segredo` e deixa passar. Token presente e errado → 403.
+`X-Servico-Interno-Token` é **fail-closed**: com `SERVICO_INTERNO_TOKEN` vazio, header ausente ou token errado → 403 (só `/health` é isento) e o serviço loga `servico_interno.ausente` / `servico_interno.invalido`. `X-Plataforma-Token` é **fail-open** de propósito: com `PLATAFORMA_INTERNO_TOKEN` vazio (ou o header não vier), o serviço loga `plataforma.sem_segredo` e deixa passar. Token presente e errado → 403.
 
 ## 🎯 Funcionalidades
 
@@ -235,7 +235,8 @@ Variáveis obrigatórias (`config.py`); o serviço também lê um `.env` no pró
 DATABASE_URL=postgresql+asyncpg://erp:erp@localhost:5432/erp
 RABBITMQ_URL=amqp://guest:guest@localhost:5672/
 REDIS_URL=redis://localhost:6379/0
-# opcionais; vazios = fail-open
+# SERVICO_INTERNO_TOKEN: obrigatório (vazio = 403 em tudo menos /health)
+# PLATAFORMA_INTERNO_TOKEN: opcional (vazio = fail-open)
 SERVICO_INTERNO_TOKEN=
 PLATAFORMA_INTERNO_TOKEN=
 ```

@@ -81,10 +81,11 @@ webhook e cron não têm usuário logado, então não podem herdar `require_supe
   evento repetido responde **200**, porque 4xx faria o MP reenviar para sempre (`:448`).
 - `POST /plataforma/jobs/regua` (`:480`) — varredura diária. Não é público de fato:
   exige `X-Job-Token` igual a `PLATAFORMA_JOB_TOKEN`, e **rejeita com 403 se a env
-  estiver vazia** (`:492`) — é a única das quatro validações de segredo em header
-  entre gateway e serviços que é *fail closed*; as outras três
-  (`SERVICO_INTERNO_TOKEN`, `PLATAFORMA_INTERNO_TOKEN` e `REGISTRO_INTERNO_TOKEN` —
-  `api-gateway/routers/auth_cliente.py:600-611`) são fail-open. (Fora da conta fica
+  estiver vazia** (`:492`) — é uma das duas das quatro validações de segredo em header
+  entre gateway e serviços que são *fail closed*, junto com `SERVICO_INTERNO_TOKEN`
+  (fechado em 2026-10-04); as outras duas (`PLATAFORMA_INTERNO_TOKEN` e
+  `REGISTRO_INTERNO_TOKEN` — `api-gateway/routers/auth_cliente.py:600-611`) são
+  fail-open. (Fora da conta fica
   a assinatura HMAC do webhook do MP de cada lojista, em vendas: usa o segredo do
   lojista, não um nosso, e sem segredo configurado ou sem `x-signature` a
   notificação ainda passa — `services/vendas/routers/webhook.py:36-43`.)
@@ -155,8 +156,8 @@ roda em três etapas:
 
 Antes ainda, o middleware `validar_token_interno` (`services/empresas/main.py:56`,
 implementado em `services/empresas/interno.py:50-83`) valida o
-`X-Servico-Interno-Token` em tudo exceto `/health` (`interno.py:31`) — e tem o
-**mesmo fail-open**, pelo mesmo motivo (`interno.py:58-72`).
+`X-Servico-Interno-Token` em tudo exceto `/health` (`interno.py:31`) — e é
+**fail-closed**: segredo vazio ou header ausente → 403 (`interno.py:63-70`).
 
 ### 3.4 O que acontece se alguém chamar o empresas direto
 
@@ -165,8 +166,9 @@ Depende de onde essa pessoa está e do estado dos segredos:
 | Origem | Hoje, em produção | Com os dois segredos setados |
 |---|---|---|
 | Internet | Não alcança: o `docker-compose.prod.yml` **não publica porta nenhuma** (nenhuma chave `ports:` no arquivo; o tráfego entra pelo túnel, ver `docker-compose.prod.yml:10`) | idem |
-| Rede Docker, sem headers | passa (fail-open do `interno.py`) | 403 no middleware |
-| Rede Docker, com `X-Plataforma: 1` e sem `X-Plataforma-Token` | **passa** — vira plataforma | **403** em `exigir_plataforma` |
+| Rede Docker, sem headers | 403 no middleware (fail-closed do `interno.py`) | 403 no middleware |
+| Rede Docker, com `X-Plataforma: 1` e sem nenhum token | 403 no middleware | 403 no middleware |
+| Rede Docker, com `X-Servico-Interno-Token` e `X-Plataforma: 1`, sem `X-Plataforma-Token` | **passa** — vira plataforma | **403** em `exigir_plataforma` |
 | Outro container da malha (tem o `SERVICO_INTERNO_TOKEN`, não tem o de plataforma) | passa | **403** — é exatamente o caso que o segredo de escopo menor existe para cobrir |
 
 Em desenvolvimento a porta 8007 está publicada, mas só em loopback:
@@ -176,7 +178,7 @@ Em desenvolvimento a porta 8007 está publicada, mas só em loopback:
 
 | Header | Segredo | Escopo | Prova o quê | Fail-open? |
 |---|---|---|---|---|
-| `X-Servico-Interno-Token` | `SERVICO_INTERNO_TOKEN` | os 8 containers | "veio de dentro da malha" — não diz *qual* serviço | Sim (`services/empresas/interno.py:65-72`) |
+| `X-Servico-Interno-Token` | `SERVICO_INTERNO_TOKEN` | os 8 containers | "veio de dentro da malha" — não diz *qual* serviço | **Não** (`services/empresas/interno.py:63-70`) |
 | `X-Plataforma-Token` | `PLATAFORMA_INTERNO_TOKEN` | gateway + empresas | "veio do router `/plataforma`, depois do `require_super_admin`" | Sim (`empresas.py:69-80`) |
 | `X-Empresa-Id` | — (sem segredo próprio) | injetado pelo gateway | "o tenant do portador é este" | N/A — *fail closed* no consumidor (`empresas.py:27-41`) |
 | `X-Job-Token` | `PLATAFORMA_JOB_TOKEN` | gateway + cron do host | "é o cron diário" | **Não** (`plataforma.py:492`) |
@@ -515,7 +517,7 @@ padrão, e o lojista abre o catálogo quando terminar de configurar (`:116-117`)
 |---|---|---|
 | `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD` | gateway | nenhum super admin é criado (`seed.py:112-116`) |
 | `PLATAFORMA_INTERNO_TOKEN` | gateway **e** empresas, mesmo valor | fail-open: `X-Plataforma: 1` sozinho volta a valer |
-| `SERVICO_INTERNO_TOKEN` | os 8 containers, mesmo valor | fail-open na malha inteira |
+| `SERVICO_INTERNO_TOKEN` | os 8 containers, mesmo valor | **403** em tudo menos `/health` — fail closed |
 | `PLATAFORMA_MP_ACCESS_TOKEN` | gateway | `RuntimeError` ao gerar/cancelar assinatura |
 | `PLATAFORMA_JOB_TOKEN` | gateway + cron do host | **403** no job — fail closed |
 
@@ -541,8 +543,9 @@ trabalhar 200 ms).
   estiver, a validação da seção 3.3 é fail-open e o modelo de confiança da seção 4 não
   vale na prática. Verificar `plataforma.sem_segredo` nos logs do container
   `erp-empresas-prod`.
-- **`SERVICO_INTERNO_TOKEN` idem**, para o middleware de `interno.py`: verificar
-  `servico_interno.ausente`.
+- **`SERVICO_INTERNO_TOKEN` está preenchido nos 8 containers?** O middleware de
+  `interno.py` é fail-closed: segredo vazio vira 403 em tudo menos `/health`. Verificar
+  `servico_interno.ausente` nos logs.
 - **O cron da régua está instalado no host, e por qual endereço?** Não há nada no
   repositório que o instale — só as sugestões comentadas nos templates. A do `.env.example`
   aponta para `http://localhost:8000`, endereço que não existe no host de produção (o
