@@ -22,13 +22,14 @@ from routers import auth, auth_cliente, auth_admin, plataforma
 from routers import proxy
 from middleware.auditoria_middleware import AuditoriaMiddleware
 from middleware.inadimplencia_middleware import InadimplenciaMiddleware
-from middleware.logging_middleware import LoggingMiddleware
+from middleware.logging_middleware import LoggingMiddleware, acao_de, request_id_de
 from middleware.rate_limit import limiter
 
 
 # Configurar structlog
 structlog.configure(
     processors=[
+        structlog.contextvars.merge_contextvars,  # request_id/usuario_id/empresa_id
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.JSONRenderer()
     ]
@@ -82,14 +83,15 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    # Sem isto o browser não enxerga o marcador de replay idempotente
-    expose_headers=["X-Idempotent-Replay"],
+    # Sem isto o browser não enxerga o marcador de replay idempotente nem o id
+    # que o usuário informa ao suporte
+    expose_headers=["X-Idempotent-Replay", "X-Request-Id"],
 )
 
-# Logging middleware
-app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuditoriaMiddleware)  # trilha de intenção (auditoria nível 1)
 app.add_middleware(InadimplenciaMiddleware)  # 402 na escrita de tenant em atraso
+# Por último = por fora de tudo: o request_id vale também para o 402 e o 429.
+app.add_middleware(LoggingMiddleware)
 
 # Routers
 app.include_router(auth.router)
@@ -173,9 +175,16 @@ async def readiness_check():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Handler global de exceções."""
-    log.error("unhandled_exception", error=str(exc), path=request.url.path)
+    """Handler global de exceções.
+
+    Roda no ServerErrorMiddleware, por fora do LoggingMiddleware: o header de
+    resposta dele não alcança este 500, então o id vai no corpo e no header daqui.
+    """
+    request_id = request_id_de(request)
+    log.error("unhandled_exception", error=str(exc), path=request.url.path,
+              action=acao_de(request), request_id=request_id)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Erro interno do servidor"}
+        content={"detail": "Erro interno do servidor", "request_id": request_id},
+        headers={"X-Request-Id": request_id},
     )

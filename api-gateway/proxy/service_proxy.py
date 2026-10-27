@@ -120,6 +120,10 @@ class ServiceProxy:
         if current_user and getattr(current_user, "cliente_id", None):
             headers["X-Cliente-Id"] = str(current_user.cliente_id)
 
+        # Só para o log dos serviços (usuario_id); nenhum serviço decide acesso por ele.
+        if current_user and getattr(current_user, "id", None):
+            headers["X-Usuario-Id"] = str(current_user.id)
+
         return empresa_id
 
     @classmethod
@@ -167,8 +171,16 @@ class ServiceProxy:
         # sobrescrito abaixo, e chaves de request.headers vem minusculas, entao um
         # x-empresa-id do cliente sobreviveria ao lado do X-Empresa-Id injetado.
         for interno in ("x-empresa-id", "x-cliente-id", "x-plataforma",
-                        "x-servico-interno-token", "x-plataforma-token"):
+                        "x-servico-interno-token", "x-plataforma-token",
+                        "x-usuario-id", "x-correlation-id"):
             headers.pop(interno, None)
+
+        # O id viaja em X-Correlation-Id, não em X-Request-Id: o webhook da MP assina
+        # o manifesto com o x-request-id dela (vendas/services/webhook_assinatura.py),
+        # e reescrever esse header derrubaria toda assinatura. O dela segue intacto.
+        request_id = getattr(request.state, "request_id", None)
+        if request_id:
+            headers["X-Correlation-Id"] = request_id
 
         # E o gateway que prova a origem interna dos headers acima. Um unico
         # carimbo aqui cobre toda escrita e leitura de todos os servicos --
