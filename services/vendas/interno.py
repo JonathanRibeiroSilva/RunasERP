@@ -41,7 +41,7 @@ def auth_interno(headers: dict[str, str] | None = None) -> dict[str, str]:
     exatamente esses três.
     """
     headers = dict(headers or {})
-    # Vazio = fail-open: o validador do outro lado loga e deixa passar.
+    # Vazio = sem carimbo: o validador do outro lado responde 403.
     if settings.SERVICO_INTERNO_TOKEN:
         headers[HEADER] = settings.SERVICO_INTERNO_TOKEN
     return headers
