@@ -278,7 +278,7 @@ receber_mercadoria("NF-12345", [
 
 **O gateway não expõe a API administrativa de vendas.** `SERVICE_URLS` e `routers/proxy.py` só encaminham `/loja`, `/carrinho`, `/pagamentos` e `/integracoes` para o serviço de vendas; não há rota `/vendas` nem `/pedidos` no gateway. A listagem `GET /vendas` existe no serviço (`services/vendas/routers/vendas.py`), mas só se alcança direto na porta 8004, o que é possível em desenvolvimento (`127.0.0.1:8004`, `docker-compose.dev.yml`); em produção a porta não é publicada (`docker-compose.prod.yml`). **A CONFIRMAR:** se o frontend ou algum cliente precisa dessa listagem por meio do gateway; hoje não há caminho.
 
-Chamando o serviço direto, o header `X-Empresa-Id` é obrigatório e, quando `SERVICO_INTERNO_TOKEN` está configurado no ambiente, também `X-Servico-Interno-Token` (vazio = o serviço deixa passar, `services/vendas/interno.py`). A paginação é `skip`/`limit` (`limit` até 1000), o filtro de período é `data_inicio`/`data_fim`, e a resposta é `{total, skip, limit, items}`, cada item com `valor_total` e `status`.
+Chamando o serviço direto, o header `X-Empresa-Id` é obrigatório e também `X-Servico-Interno-Token` com o valor de `SERVICO_INTERNO_TOKEN` (sem ele, ou com a env vazia, o serviço responde 403; só `/health` é isento, `services/vendas/interno.py`). A paginação é `skip`/`limit` (`limit` até 1000), o filtro de período é `data_inicio`/`data_fim`, e a resposta é `{total, skip, limit, items}`, cada item com `valor_total` e `status`.
 
 ```python
 # Gerar relatório de vendas do mês (chamando o serviço de vendas direto, só em dev)

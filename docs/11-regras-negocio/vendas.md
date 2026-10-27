@@ -307,7 +307,7 @@ Chamadas do vendas ao serviço de Estoque (`services/venda_service.py`, `reserva
 ## 6. Outras regras existentes no código
 
 - **Multi-tenancy**: rotas de `/vendas` exigem o header `X-Empresa-Id`; rotas de `/loja` resolvem o tenant por `empresaSlug`; toda consulta filtra por `empresa_id`.
-- **Origem interna**: `X-Servico-Interno-Token` é validado por middleware; enquanto `SERVICO_INTERNO_TOKEN` estiver vazio, o serviço deixa passar (fail-open) com log; `/health` é isento.
+- **Origem interna**: `X-Servico-Interno-Token` é validado por middleware; com `SERVICO_INTERNO_TOKEN` vazio, ou sem o header, o serviço responde 403 (fail-closed) e loga `servico_interno.ausente`; `/health` é isento.
 - **Área do cliente**: `GET /loja/meus-pedidos`, `POST /loja/pedidos/{numero_venda}/retry-payment` e `.../recuperar-carrinho` exigem cliente autenticado (o gateway injeta `X-Cliente-Id`); o pedido tem de pertencer ao cliente (403 caso contrário). `GET /loja/rastrear/{numero_venda}` é público e devolve status, datas e histórico.
 - **Configurações por tenant**: `/admin/entrega/...` (taxa de entrega e faixas por bairro), `/pagamentos/admin/...` (credenciais do Mercado Pago) e `/integracoes` (WhatsApp/SMTP), com segredos cifrados (`INTEGRACOES_SECRET_KEY`).
 - **Relatório**: `GET /vendas/relatorios/resumo` (período obrigatório) devolve total de vendas, valor total, ticket médio e contagem/valor por status.
