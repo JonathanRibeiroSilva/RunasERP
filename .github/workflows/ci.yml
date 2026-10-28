@@ -1,27 +1,14 @@
 name: CI
 
 on:
-  # Only PRs into Developer: the promotion PR (Developer -> main) would pay a full
-  # CI that the deploy workflow runs again when the merge lands on main.
+  # Only PRs into Developer. A merge to main is gated by the deploy workflow, which
+  # calls this one with `full`, so a push trigger here would run the same CI twice.
+  # A promotion PR (Developer -> main) gets no CI of its own for the same reason.
   pull_request:
     branches: [Developer]
-  # main is here too: a hotfix pushed straight to main skips the PR gate
-  # otherwise, and main is what the deploy workflow builds from.
-  push:
-    branches: [main, Developer]
-    # Só no push: um PR continua rodando o gate inteiro, aconteça o que
-    # acontecer no diff. Aqui o que se evita é rebuildar nove imagens por um
-    # commit que não pode quebrar nenhuma delas — c26e51e, só README, gastou
-    # o ciclo completo. Mesma lista do deploy.yml MENOS .github/**: uma
-    # mudança em workflow não muda o que roda em produção, mas muda o que a
-    # CI faz, e essa é a única chance de validá-la fora de um PR.
-    paths-ignore:
-      - 'landing-page/**'
-      - 'docs/**'
-      - '**.md'
   # Runs everything: outside a PR the `checks` job marks every scope.
   workflow_dispatch: {}
-  # For the deploy workflow, which gates the merge on a full run of this one.
+  # For the deploy workflow, which gates every merge to main on a full run of this one.
   workflow_call:
     inputs:
       full:
@@ -47,7 +34,7 @@ concurrency:
 
 jobs:
   # Decides what the other jobs run and validates what is cheap to always validate.
-  # In a PR the scope comes from the diff; anywhere else (push, dispatch, `full`)
+  # In a PR the scope comes from the diff; anywhere else (dispatch, `full`)
   # everything is marked, so a service added later is tested with no edit here.
   checks:
     runs-on: ubuntu-latest
@@ -333,7 +320,7 @@ jobs:
   # This is the check the plan called "fim de cada onda: down -v e subir do
   # zero" and named as skipped for four waves running — a manual step nobody
   # remembered. Automating it here is the fix for THAT, not just for the
-  # migrations. Runs on push and on workflow_dispatch, and in a PR only when the
+  # migrations. Runs on workflow_dispatch and in the deploy workflow's full run, and in a PR only when the
   # diff touches what the `migrations` filter lists (not on every PR commit, to
   # keep review cycles fast).
   migration-replay:
