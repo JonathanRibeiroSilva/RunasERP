@@ -7,9 +7,12 @@ menos. Estes testes guardam o formato que mantém essa conta.
 
 Cada card da esteira acrescenta os seus testes aqui, sempre antes do workflow.
 """
+import os
 import re
 import shutil
 import subprocess
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 import pytest
@@ -204,5 +207,138 @@ def test_actions_de_terceiro_pinadas_ci():
     ]
     terceiros = [u for u in usos if not u.startswith(("actions/", "./"))]
     assert terceiros, "esperava ao menos dorny/paths-filter e docker/login-action"
+    for uso in terceiros:
+        assert re.search(r"@[0-9a-f]{40}$", uso), f"{uso} não está pinada por SHA"
+
+
+# --- Card 80: pipeline do merge ----------------------------------------------------
+
+PATHS_IGNORE_DEPLOY = ["landing-page/**", "docs/**", "**.md", ".github/**", "scripts/**"]
+
+
+def _deploy() -> dict:
+    return _wf("deploy.yml")
+
+
+def _indice(job: dict, trecho: str) -> int:
+    """Posição do primeiro step cujo `run` contém o trecho."""
+    return next(i for i, s in enumerate(_steps(job)) if trecho in s.get("run", ""))
+
+
+def test_ci_nao_dispara_em_push():
+    """O merge em main é coberto pelo deploy.yml; rodar a CI de novo pagaria duas vezes."""
+    assert "push" not in _on(_ci())
+
+
+def test_deploy_encadeia_test_publish_deploy():
+    jobs = _deploy()["jobs"]
+    assert set(jobs) == {"test", "publish", "deploy"}
+    assert set(jobs["deploy"]["needs"]) >= {"test", "publish"}
+    assert jobs["test"]["uses"] == "./.github/workflows/ci.yml"
+    assert jobs["test"]["with"] == {"full": True, "build_images": False}
+
+
+def test_test_concede_o_que_o_ci_pede():
+    """O GitHub valida as permissões do workflow chamado ao abrir o run, até as do job pulado."""
+    perms = _deploy()["jobs"]["test"]["permissions"]
+    assert perms["contents"] == "read"
+    assert perms["pull-requests"] == "read"
+    assert perms["packages"] == "read"
+
+
+def test_concurrency_no_workflow_inteiro():
+    wf = _deploy()
+    assert wf["concurrency"]["group"] == "deploy-production"
+    assert wf["concurrency"]["cancel-in-progress"] is False
+    assert not any("concurrency" in job for job in wf["jobs"].values())
+
+
+def test_rollback_manual_pula_test_e_publish_mas_nao_o_deploy():
+    """`needs` pulado pula o dependente em silêncio, a não ser que o `if` use status."""
+    jobs = _deploy()["jobs"]
+    assert "inputs.tag" in jobs["test"]["if"]
+    assert "inputs.tag" in jobs["publish"]["if"]
+    assert "!failure()" in jobs["deploy"]["if"] and "!cancelled()" in jobs["deploy"]["if"]
+
+
+def test_latest_so_e_promovido_no_job_deploy():
+    jobs = _deploy()["jobs"]
+    assert ":latest" not in _runs(jobs["publish"])
+    assert "scripts/promote-latest.sh" in _runs(jobs["deploy"])
+
+
+def test_smoke_roda_antes_do_push_no_publish():
+    publish = _deploy()["jobs"]["publish"]
+    assert _indice(publish, "ci-smoke-auth.sh") < _indice(publish, "compose $FILES push")
+
+
+def test_deploy_mantem_paths_ignore():
+    push = _on(_deploy())["push"]
+    assert push["branches"] == ["main"]
+    assert push["paths-ignore"] == PATHS_IGNORE_DEPLOY
+
+
+def test_health_vem_depois_da_coolify():
+    deploy = _deploy()["jobs"]["deploy"]
+    assert _indice(deploy, "scripts/coolify-deploy.sh") < _indice(deploy, "scripts/health-ready.sh")
+
+
+def test_health_usa_user_agent_de_navegador():
+    """Sem cara de navegador o Cloudflare desafia o curl e o health vira falso negativo."""
+    assert "Mozilla/5.0" in (REPO / "scripts" / "health-ready.sh").read_text(encoding="utf-8")
+
+
+def _rodar_health(url: str) -> subprocess.CompletedProcess:
+    bash, curl = shutil.which("bash"), shutil.which("curl")
+    if bash is None or curl is None:
+        pytest.skip("sem bash ou curl neste ambiente")
+    env = {**os.environ, "HEALTH_TENTATIVAS": "1", "HEALTH_INTERVALO": "0"}
+    return subprocess.run(
+        [bash, "scripts/health-ready.sh", url],
+        cwd=REPO, env=env, capture_output=True, text=True, timeout=60,
+    )
+
+
+def test_health_ready_aceita_200():
+    class Ok(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"ok"}')
+
+        def log_message(self, *args):
+            pass
+
+    servidor = HTTPServer(("127.0.0.1", 0), Ok)
+    threading.Thread(target=servidor.serve_forever, daemon=True).start()
+    try:
+        r = _rodar_health(f"http://127.0.0.1:{servidor.server_port}/")
+    finally:
+        servidor.shutdown()
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_health_ready_falha_sem_200():
+    """Porta 9 (discard) fechada: o curl não conecta e o script tem de sair com erro."""
+    assert _rodar_health("http://127.0.0.1:9/").returncode != 0
+
+
+def test_nenhum_segredo_dentro_de_run():
+    """`${{ secrets.* }}` num run é substituição textual: vira código no shell do runner."""
+    for nome in ("ci.yml", "deploy.yml"):
+        for job in _wf(nome)["jobs"].values():
+            assert "${{ secrets." not in _runs(job), nome
+
+
+@pytest.mark.parametrize("job,minutos", {"publish": 30, "deploy": 25}.items())
+def test_todo_job_do_deploy_tem_timeout(job, minutos):
+    # O `test` tem `uses` e não aceita timeout: herda os do ci.yml.
+    assert _deploy()["jobs"][job]["timeout-minutes"] == minutos
+
+
+def test_actions_de_terceiro_pinadas_deploy():
+    usos = [s["uses"] for job in _deploy()["jobs"].values() for s in _steps(job) if "uses" in s]
+    terceiros = [u for u in usos if not u.startswith(("actions/", "./"))]
+    assert terceiros, "esperava ao menos docker/login-action"
     for uso in terceiros:
         assert re.search(r"@[0-9a-f]{40}$", uso), f"{uso} não está pinada por SHA"
