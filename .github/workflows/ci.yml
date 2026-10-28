@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Only PRs into Developer: the promotion PR (Developer -> main) would pay a full
+  # CI that the deploy workflow runs again when the merge lands on main.
   pull_request:
-    branches: [main, Developer]
+    branches: [Developer]
   # main is here too: a hotfix pushed straight to main skips the PR gate
   # otherwise, and main is what the deploy workflow builds from.
   push:
@@ -17,18 +19,165 @@ on:
       - 'landing-page/**'
       - 'docs/**'
       - '**.md'
-  # Lets migration-replay (below) run on demand, to pay off a check that was
-  # skipped for four waves before it existed — see that job's comment.
+  # Runs everything: outside a PR the `checks` job marks every scope.
   workflow_dispatch: {}
+  # For the deploy workflow, which gates the merge on a full run of this one.
+  workflow_call:
+    inputs:
+      full:
+        description: Run every scope, whatever the diff touches
+        type: boolean
+        default: false
+      build_images:
+        description: Build and smoke-test the production images
+        type: boolean
+        default: true
+
+# Least privilege by default (finding C10); `checks` and `build` widen it below.
+permissions:
+  contents: read
+
+# A new push to a PR makes the previous run obsolete, and an obsolete run keeps
+# billing. Outside a PR the group is the run_id, unique to this run: it never
+# cancels anything and never collides with the caller's `deploy-production` group
+# when deploy.yml calls this workflow.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Catches the class of bug that shipped broken for months: a compose file
-  # referencing services that don't exist, or a Dockerfile COPYing a missing file.
-  build:
+  # Decides what the other jobs run and validates what is cheap to always validate.
+  # In a PR the scope comes from the diff; anywhere else (push, dispatch, `full`)
+  # everything is marked, so a service added later is tested with no edit here.
+  checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # pull-requests: paths-filter lists the PR's files through the API, which the
+    # top-level permissions above would otherwise deny.
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      services: ${{ steps.scope.outputs.services }}
+      images: ${{ steps.scope.outputs.images }}
+      frontend: ${{ steps.scope.outputs.frontend }}
+      migrations: ${{ steps.scope.outputs.migrations }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with: {python-version: '3.12'}
 
+      - run: pip install -r tests/requirements.txt
+
+      # The filter keys ARE the values the jobs consume (a dir for services, a key
+      # of docker-compose.build.yml for images), so `changes` needs no mapping table.
+      # tests/unit/test_pipeline_ci_deploy.py fails if a service has no key here.
+      # picomatch: `*` does not cross `/`, hence **/alembic/** and not */alembic/**.
+      # Keys starting with `_` are only YAML anchors.
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            _svc: &svc
+              - 'postgres/**'
+              - 'tests/requirements.txt'
+              - '.github/workflows/ci.yml'
+              - 'scripts/ci-services.sh'
+            _img: &img
+              - 'docker-compose.prod.yml'
+              - 'docker-compose.build.yml'
+              - '.env.production.example'
+              - '.github/workflows/ci.yml'
+              - 'scripts/ci-smoke-auth.sh'
+            api-gateway:
+              - 'api-gateway/**'
+              - *svc
+            services/clientes:
+              - 'services/clientes/**'
+              - *svc
+            services/empresas:
+              - 'services/empresas/**'
+              - *svc
+            services/estoque:
+              - 'services/estoque/**'
+              - *svc
+            services/financeiro:
+              - 'services/financeiro/**'
+              - *svc
+            services/notificacoes:
+              - 'services/notificacoes/**'
+              - *svc
+            services/produtos:
+              - 'services/produtos/**'
+              - *svc
+            services/vendas:
+              - 'services/vendas/**'
+              - *svc
+            api-gateway-prod:
+              - 'api-gateway/**'
+              - *img
+            clientes-prod:
+              - 'services/clientes/**'
+              - *img
+            empresas-prod:
+              - 'services/empresas/**'
+              - *img
+            estoque-prod:
+              - 'services/estoque/**'
+              - *img
+            financeiro-prod:
+              - 'services/financeiro/**'
+              - *img
+            notificacoes-prod:
+              - 'services/notificacoes/**'
+              - *img
+            produtos-prod:
+              - 'services/produtos/**'
+              - *img
+            vendas-prod:
+              - 'services/vendas/**'
+              - *img
+            frontend-prod:
+              - 'frontend/**'
+              - *img
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci.yml'
+            migrations:
+              - '**/alembic/**'
+              - '**/database.py'
+              - 'postgres/**'
+              - 'docker-compose.dev.yml'
+              - '.github/workflows/ci.yml'
+
+      - name: Decide the scope
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          FULL: ${{ inputs.full }}
+          CHANGES: ${{ steps.filter.outputs.changes }}
+        run: |
+          if [ "$EVENT" != pull_request ] || [ "$FULL" = true ]; then
+            services=$(bash scripts/ci-services.sh --listar | paste -sd' ')
+            images=$(python -c 'import yaml; print(" ".join(yaml.safe_load(open("docker-compose.build.yml"))["services"]))')
+            frontend=true
+            migrations=true
+          else
+            services=$(jq -r 'map(select(. == "api-gateway" or startswith("services/"))) | join(" ")' <<<"$CHANGES")
+            images=$(jq -r 'map(select(endswith("-prod"))) | join(" ")' <<<"$CHANGES")
+            frontend=$(jq -r 'index("frontend") != null' <<<"$CHANGES")
+            migrations=$(jq -r 'index("migrations") != null' <<<"$CHANGES")
+          fi
+          {
+            echo "services=$services"
+            echo "images=$images"
+            echo "frontend=$frontend"
+            echo "migrations=$migrations"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      # Catches the class of bug that shipped broken for months: a compose file
+      # referencing services that don't exist, or a Dockerfile COPYing a missing file.
       # Each compose gets its own template: dev requires VITE_* that the
       # production one has no reason to carry, so a single shared .env fails one
       # of the two no matter which it is.
@@ -37,20 +186,70 @@ jobs:
           docker compose --env-file .env.production.example -f docker-compose.prod.yml config >/dev/null
           docker compose --env-file .env.example -f docker-compose.dev.yml config >/dev/null
 
-      # docker-compose.prod.yml is pull-only; the build sections it needs come
-      # from docker-compose.build.yml, same pair the deploy workflow uses.
-      - name: Build all production images
-        run: docker compose --env-file .env.production.example -f docker-compose.prod.yml -f docker-compose.build.yml build
+      # Scoped to tests/unit by path, not by marker: several files directly under
+      # tests/ are manual scripts that call a live localhost service and carry no
+      # marker, so a marker filter still collects them and they fail with no stack up.
+      # No exit-5 tolerance: an empty tests/unit means the gate is not a gate.
+      - name: Unit tests
+        run: pytest -c tests/pytest.ini tests/unit
+
+  # `!cancelled()` + the explicit result: a status function in `if` drops the
+  # implicit success() check, so the result of `checks` has to be asked for.
+  # The same goes for every job below.
+  #
+  # docker-compose.prod.yml is pull-only; the build sections it needs come
+  # from docker-compose.build.yml, same pair the deploy workflow uses.
+  build:
+    needs: checks
+    if: >-
+      ${{ !cancelled() && needs.checks.result == 'success'
+      && needs.checks.outputs.images != ''
+      && format('{0}', inputs.build_images) != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # packages: read is what the cache needs. Without the login below the
+    # `cache_from` refs of docker-compose.build.yml answer 401 and every image is
+    # rebuilt from scratch (finding C1).
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGES: ${{ needs.checks.outputs.images }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Only the images the diff touches ($IMAGES is a word list on purpose).
+      - name: Build the affected production images
+        run: docker compose --env-file .env.production.example -f docker-compose.prod.yml -f docker-compose.build.yml build $IMAGES
 
       # A green build only proves pip resolved the requirements, never that login
       # works: scripts/ci-smoke-auth.sh runs passlib/bcrypt inside the built images.
       # Both services that authenticate get it: the gateway for operators, and
-      # vendas for storefront customers.
+      # vendas for storefront customers. Skipped when neither was rebuilt: there is
+      # no fresh image to run it in.
       - name: Smoke-test auth primitives inside the built images
-        run: bash scripts/ci-smoke-auth.sh .env.production.example api-gateway-prod vendas-prod
+        run: |
+          smoke=()
+          for img in api-gateway-prod vendas-prod; do
+            case " $IMAGES " in *" $img "*) smoke+=("$img") ;; esac
+          done
+          if [ "${#smoke[@]}" -eq 0 ]; then
+            echo "neither auth image was rebuilt: smoke skipped"
+          else
+            bash scripts/ci-smoke-auth.sh .env.production.example "${smoke[@]}"
+          fi
 
   frontend:
+    needs: checks
+    if: ${{ !cancelled() && needs.checks.result == 'success' && needs.checks.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run: {working-directory: frontend}
     steps:
@@ -70,27 +269,13 @@ jobs:
       - run: npm run build
       - run: npm run test -- --run
 
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with: {python-version: '3.12'}
-
-      - run: pip install -r tests/requirements.txt
-
-      # Scoped to tests/unit by path, not by marker: several files directly under
-      # tests/ are manual scripts that call a live localhost service and carry no
-      # marker, so a marker filter still collects them and they fail with no stack up.
-      # No exit-5 tolerance: an empty tests/unit means the gate is not a gate.
-      - name: Unit tests
-        run: pytest -c tests/pytest.ini tests/unit
-
-  # The job above reads source; this one runs it. One job for all services, each
+  # `checks` reads source; this job runs it. One job for all services, each
   # from its own directory and virtualenv (the services import flat, so two of them
   # in one pytest process fight over which `main` sits on sys.path first): a matrix
   # leg per service billed eight minutes for ~3 s of tests each, see the script.
   services:
+    needs: checks
+    if: ${{ !cancelled() && needs.checks.result == 'success' && needs.checks.outputs.services != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -112,6 +297,8 @@ jobs:
       PGHOST: localhost
       PGUSER: erp
       PGPASSWORD: erp
+      # Only the dirs the diff touches (all of them outside a PR), as a word list.
+      SERVICES: ${{ needs.checks.outputs.services }}
       RABBITMQ_URL: amqp://guest:guest@localhost:5672/
       SECRET_KEY: ci-only-secret-key-for-tests-min-32-chars
       # Only the gateway reads these, but its alembic/env.py imports the settings,
@@ -130,9 +317,9 @@ jobs:
 
       # Per service: createdb, pip, db-init schemas, `alembic upgrade head` from an
       # empty database, then pytest. Runs all of them and fails at the end.
-      - run: bash scripts/ci-services.sh
+      - run: bash scripts/ci-services.sh $SERVICES
 
-  # The job above proves each service's migration chain replays from zero —
+  # The `services` job proves each service's migration chain replays from zero —
   # but against its OWN throwaway Postgres, one per service. Prod is not
   # that: it is ONE Postgres with all 7 service schemas in it (plus the
   # gateway's), the exact shape docker-compose.dev.yml builds. Two things only
@@ -146,12 +333,16 @@ jobs:
   # This is the check the plan called "fim de cada onda: down -v e subir do
   # zero" and named as skipped for four waves running — a manual step nobody
   # remembered. Automating it here is the fix for THAT, not just for the
-  # migrations. Runs on push (not on every PR commit, to keep review cycles
-  # fast) and on workflow_dispatch, to pay off the four waves' backlog on
-  # demand without waiting for the next push.
+  # migrations. Runs on push and on workflow_dispatch, and in a PR only when the
+  # diff touches what the `migrations` filter lists (not on every PR commit, to
+  # keep review cycles fast).
   migration-replay:
+    needs: checks
+    if: >-
+      ${{ !cancelled() && needs.checks.result == 'success'
+      && (github.event_name != 'pull_request' || needs.checks.outputs.migrations == 'true') }}
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
