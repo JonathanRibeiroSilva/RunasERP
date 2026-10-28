@@ -342,3 +342,103 @@ def test_actions_de_terceiro_pinadas_deploy():
     assert terceiros, "esperava ao menos docker/login-action"
     for uso in terceiros:
         assert re.search(r"@[0-9a-f]{40}$", uso), f"{uso} não está pinada por SHA"
+
+
+# --- Card 103: rollback automático --------------------------------------------------
+
+
+def _decidir(live: str, arquivos: str) -> str:
+    """O que `rollback-decide.sh <live>` responde para a lista de `git diff --name-only`."""
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("sem bash neste ambiente")
+    return subprocess.run(
+        [bash, "scripts/rollback-decide.sh", live],
+        cwd=REPO, input=arquivos, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+
+
+def _step(job: dict, **campos) -> dict:
+    """O step cujo id, ou o `run` que contém o trecho, bate com o pedido."""
+    def bate(s):
+        return all(
+            (s.get(k) == v) if k == "id" else (v in s.get(k, ""))
+            for k, v in campos.items()
+        )
+    return next(s for s in _steps(job) if bate(s))
+
+
+def _posicao(job: dict, step: dict) -> int:
+    return next(i for i, s in enumerate(_steps(job)) if s is step)
+
+
+def test_decide_sem_producao():
+    """Sem a tag `producao` não há para onde voltar: o script avisa em vez de reverter."""
+    assert _decidir("", "") == "sem-producao"
+
+
+def test_decide_migration():
+    assert _decidir("abc", "services/vendas/alembic/versions/0007_x.py\n") == "migration"
+    assert _decidir("abc", "README.md\napi-gateway/alembic/versions/a.py\n") == "migration"
+
+
+def test_decide_reverter():
+    """alembic.ini e env.py não são migration: só `versions/` muda o schema."""
+    assert _decidir("abc", "services/vendas/main.py\nservices/vendas/alembic.ini\n") == "reverter"
+
+
+def test_ensaio_rollback_e_boolean_de_dispatch():
+    campo = _on(_deploy())["workflow_dispatch"]["inputs"]["ensaio_rollback"]
+    assert campo["type"] == "boolean"
+
+
+def test_deploy_busca_o_historico():
+    """Sem o histórico completo o `git diff <live> <sha>` não acha o sha antigo."""
+    checkout = next(s for s in _steps(_deploy()["jobs"]["deploy"]) if "actions/checkout" in s.get("uses", ""))
+    assert checkout["with"]["fetch-depth"] == 0
+
+
+def test_contents_write_so_no_deploy():
+    """O write é só para mover a tag; o resto da esteira continua só lendo."""
+    wf = _deploy()
+    assert wf["permissions"] == {"contents": "read"}
+    for nome, job in wf["jobs"].items():
+        escrita = job.get("permissions", {}).get("contents") == "write"
+        assert escrita == (nome == "deploy"), nome
+
+
+def test_health_continua_para_o_rollback_decidir():
+    assert _step(_deploy()["jobs"]["deploy"], id="health")["continue-on-error"] is True
+
+
+def test_producao_so_move_depois_do_health():
+    deploy = _deploy()["jobs"]["deploy"]
+    marca = _step(deploy, run="git push -f")
+    assert "refs/tags/producao" in marca["run"]
+    assert _posicao(deploy, marca) > _posicao(deploy, _step(deploy, id="health"))
+    assert "steps.health.outcome == 'success'" in marca["if"]
+
+
+def test_live_e_lido_antes_de_promover():
+    """A tag lida depois da promoção já seria o sha novo."""
+    deploy = _deploy()["jobs"]["deploy"]
+    live = _step(deploy, id="live")
+    assert _posicao(deploy, live) < _posicao(deploy, _step(deploy, id="promote"))
+    assert "refs/tags/producao" in live["run"]
+
+
+def test_rollback_so_roda_quando_o_health_falha():
+    deploy = _deploy()["jobs"]["deploy"]
+    rollback = _step(deploy, run="rollback-decide.sh")
+    assert "steps.health.outcome == 'failure'" in rollback["if"]
+    assert "git diff --name-only" in rollback["run"]
+    # Reaproveita os scripts do card 80 e termina sempre vermelho.
+    for script in ("promote-latest.sh", "coolify-deploy.sh", "health-ready.sh"):
+        assert script in rollback["run"], script
+    assert rollback["run"].rstrip().endswith("exit 1")
+
+
+def test_ensaio_aponta_o_primeiro_health_para_um_caminho_inexistente():
+    health = _step(_deploy()["jobs"]["deploy"], id="health")
+    assert "ensaio_rollback" in str(health["env"]) + health["run"]
+    assert "-ensaio-inexistente" in str(health["env"]) + health["run"]

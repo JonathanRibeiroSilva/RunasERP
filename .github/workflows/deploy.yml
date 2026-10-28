@@ -60,6 +60,13 @@ on:
         description: 'sha already in ghcr to republish as :latest (empty = build this commit)'
         required: false
         default: ''
+      # Pair it with `tag` = the sha of the producao git tag: the first health check
+      # asks for a path that does not exist, so the automatic rollback runs for real
+      # while the stack is healthy.
+      ensaio_rollback:
+        description: 'rehearse the automatic rollback: the first health check is made to fail'
+        type: boolean
+        default: false
 
 # A second push waits for the first instead of racing it to the registry.
 concurrency:
@@ -146,18 +153,27 @@ jobs:
   # Runs after both, and also when they were skipped (a rollback by `tag`): a status
   # function in `if` drops the implicit success() check, so a failed or cancelled
   # needs is asked for explicitly.
+  #
+  # The git tag `producao` is the sha that last passed the health check, i.e. what is
+  # live. It is moved only after a green health, and it is where the automatic rollback
+  # goes back to. Nobody creates it by hand: the first green deploy does. contents:
+  # write is for that tag and for nothing else, hence the full history in the checkout
+  # (the rollback diffs the live sha against the new one).
   deploy:
     needs: [test, publish]
     if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
-      contents: read
+      contents: write
       packages: write
     env:
       TAG: ${{ inputs.tag || github.sha }}
+      HEALTH_URL: https://app.runaserp.com.br/api/health/ready
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       # `compose config --images` needs the ${VAR:?} entries to resolve, so the
       # promotion needs the build env too.
@@ -171,6 +187,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Read before promoting: it has to be the sha that was live until now. Empty when
+      # the tag does not exist yet (the first deploy after this was added).
+      - name: Read the live sha
+        id: live
+        run: echo "sha=$(git rev-parse -q --verify 'refs/tags/producao^{commit}' || true)" >> "$GITHUB_OUTPUT"
 
       # Manifest-only copy inside ghcr: this is the moment the release goes live.
       - name: Promote the sha to latest
@@ -188,6 +210,58 @@ jobs:
         run: bash scripts/coolify-deploy.sh
 
       # Coolify finishing says the containers were started, not that the app works.
+      #
+      # continue-on-error so the rollback step below can decide; the job still ends red
+      # there. The rehearsal asks for a path that does not exist and gives up after one
+      # attempt: a 404 will not turn into a 200 in three minutes.
       - name: Check production health
         id: health
-        run: bash scripts/health-ready.sh https://app.runaserp.com.br/api/health/ready
+        continue-on-error: true
+        env:
+          ENSAIO: ${{ inputs.ensaio_rollback }}
+        run: |
+          if [ "$ENSAIO" = true ]; then
+            HEALTH_TENTATIVAS=1 bash scripts/health-ready.sh "$HEALTH_URL-ensaio-inexistente"
+          else
+            bash scripts/health-ready.sh "$HEALTH_URL"
+          fi
+
+      - name: Mark the sha as production
+        if: steps.health.outcome == 'success'
+        run: git push -f origin "$TAG:refs/tags/producao"
+
+      # Puts the previous images back, unless that would be unsafe or impossible; see
+      # scripts/rollback-decide.sh. The job ends red in every branch, because the
+      # deploy it was asked to do did not happen.
+      #
+      # The diff is its own assignment on purpose: if it fails (the live sha is not in
+      # the history), the step stops. Piping it straight into the script would hand it
+      # an empty list, which reads as "no migration" and would roll back blind.
+      - name: Automatic rollback
+        if: steps.health.outcome == 'failure'
+        env:
+          LIVE: ${{ steps.live.outputs.sha }}
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_UUID: ${{ secrets.COOLIFY_UUID }}
+        run: |
+          arquivos=
+          if [ -n "$LIVE" ]; then
+            arquivos=$(git diff --name-only "$LIVE" "$TAG")
+          fi
+          decisao=$(printf '%s\n' "$arquivos" | bash scripts/rollback-decide.sh "$LIVE")
+          case "$decisao" in
+            sem-producao)
+              echo "::error::no producao tag: automatic rollback disabled" ;;
+            migration)
+              echo "::error::a migration landed between $LIVE and $TAG: decide the rollback by hand" ;;
+            reverter)
+              if bash scripts/promote-latest.sh "$LIVE" \
+                && bash scripts/coolify-deploy.sh \
+                && bash scripts/health-ready.sh "$HEALTH_URL"; then
+                echo "::error::deploy reverted to $LIVE"
+              else
+                echo "::error::rollback failed too: production is down"
+              fi ;;
+          esac
+          exit 1
