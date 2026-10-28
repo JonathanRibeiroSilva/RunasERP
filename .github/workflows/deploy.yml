@@ -1,15 +1,19 @@
 name: Deploy
 
 # Production deploys happen only from main. Developer is the integration branch;
-# it reaches main through a pull request, which is where CI gates the change.
+# it reaches main through a pull request.
 #
-# Split of responsibility: this workflow only produces images. Coolify owns the
-# VPS and does the actual deploy — it is told to go once the images are up.
+# Split of responsibility: this workflow produces and verifies images. Coolify owns
+# the VPS and does the actual deploy: it is told to go once the images are proven.
+#
+#   test ──────┐   full CI (ci.yml), no image build: publish builds them
+#   publish ───┴─► deploy   promote :<sha> to :latest, Coolify, health check
+#
+# test and publish run in parallel, and deploy waits for both. Nothing moves :latest
+# (what Coolify and the build cache read) before the tests and the smoke test pass.
 on:
-  # Every merge to main ships. The secrets this needs (PROD_ENV, COOLIFY_URL,
-  # COOLIFY_TOKEN, COOLIFY_UUID) are configured, which is what kept this manual
-  # before. CI gates the PR into main and this job rebuilds all nine images
-  # itself, so a build that does not compile never reaches the registry.
+  # Every merge to main ships. A PR into main runs no CI of its own: this pipeline is
+  # the gate, so a promotion pays one full CI instead of two.
   #
   # The graphify workflow commits back to main with GITHUB_TOKEN, and a push made
   # with that token does not trigger workflows — a graph refresh never deploys.
@@ -46,10 +50,10 @@ on:
       - '.github/**'
       - 'scripts/**'
   # Kept alongside the push trigger: a redeploy or a rollback should not require
-  # inventing a commit. Leave `tag` empty and this rebuilds the current commit,
-  # exactly as a push does. Fill it with a sha already in ghcr and the build is
-  # skipped entirely: those images are pulled and republished as :latest, which
-  # is the only thing Coolify looks at. That is the rollback.
+  # inventing a commit. Leave `tag` empty and this tests and rebuilds the current
+  # commit, exactly as a push does. Fill it with a sha already in ghcr and test and
+  # publish are skipped: that sha is promoted to :latest, which is the only thing
+  # Coolify looks at. That is the rollback.
   workflow_dispatch:
     inputs:
       tag:
@@ -62,16 +66,41 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 env:
   FILES: -f docker-compose.prod.yml -f docker-compose.build.yml
 
 jobs:
-  deploy:
+  # The whole CI, whatever the diff touches: a merge to main is the last gate. The
+  # images are built by `publish` below, so ci.yml is told not to build them twice.
+  #
+  # The permissions are what ci.yml asks of its own jobs. GitHub checks them when the
+  # run opens, for every job of the called workflow, including `build`, which is
+  # skipped here: without packages: read the whole run is refused at startup.
+  test:
+    if: ${{ !inputs.tag }}
+    permissions:
+      contents: read
+      pull-requests: read
+      packages: read
+    uses: ./.github/workflows/ci.yml
+    with:
+      full: true
+      build_images: false
+
+  # The VPS is 1 vCPU / 4 GB — building nine images there would starve the running
+  # stack, so the runner builds and the VPS only ever pulls.
+  publish:
+    if: ${{ !inputs.tag }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
-
+    env:
+      TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v7
 
@@ -79,20 +108,19 @@ jobs:
       # bakes VITE_* into the bundle at build time — those values have to be
       # correct HERE, not just in Coolify. Coolify stays the source of truth for
       # everything read at runtime; this secret only has to cover the build.
+      # The secret goes through env, not into the script text: `${{ }}` inside
+      # `run:` is textual substitution.
       - name: Write build env
-        run: |
-          cat > .env <<'PROD_ENV_EOF'
-          ${{ secrets.PROD_ENV }}
-          PROD_ENV_EOF
+        env:
+          PROD_ENV: ${{ secrets.PROD_ENV }}
+        run: printf '%s\n' "$PROD_ENV" > .env
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # The VPS is 1 vCPU / 4 GB — building nine images there would starve the
-      # running stack, so the runner builds and the VPS only ever pulls.
       # ponytail: cache_from in docker-compose.build.yml points every service at
       # the published :latest, and BUILDKIT_INLINE_CACHE=1 below is what writes
       # the metadata that makes those refs usable — drop the build arg and the
@@ -101,139 +129,65 @@ jobs:
       # of unchanged dependencies inside its own outage window: 2m39s of pulling,
       # 2m20s of it extraction, in deploy u6g9bhcoqgpxhhzel2thseg2 — for a commit
       # whose only change was one line of YAML.
-      #
-      # The first run after this lands still pays full price: it caches against a
-      # :latest that was built without the metadata. The second run is the test.
-      # ROLLBACK_TAG is read through env, not spliced into the script: the value
-      # comes from a dispatch form, and `${{ }}` inside `run:` is textual
-      # substitution — a tag containing $(...) would execute on the runner.
-      #
-      # On the rollback path the images already exist in ghcr but not on this
-      # runner, and `docker tag` cannot rename what is not local — hence the pull.
-      - name: Publish images
+      - name: Build the images
+        run: docker compose $FILES build --build-arg BUILDKIT_INLINE_CACHE=1
+
+      # Before the push on purpose: a green build only proves pip resolved the
+      # requirements, so an image that cannot hash a password must not reach the
+      # registry. The same script the PR gate runs.
+      - name: Smoke-test auth primitives inside the built images
+        run: bash scripts/ci-smoke-auth.sh .env api-gateway-prod vendas-prod
+
+      # Only the sha tag. The production tag is promoted by the deploy job once the
+      # tests are green, so a failed run leaves orphan sha tags in ghcr and nothing else.
+      - name: Push the sha-tagged images
+        run: docker compose $FILES push
+
+  # Runs after both, and also when they were skipped (a rollback by `tag`): a status
+  # function in `if` drops the implicit success() check, so a failed or cancelled
+  # needs is asked for explicitly.
+  deploy:
+    needs: [test, publish]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ inputs.tag || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # `compose config --images` needs the ${VAR:?} entries to resolve, so the
+      # promotion needs the build env too.
+      - name: Write build env
         env:
-          ROLLBACK_TAG: ${{ inputs.tag }}
-          TAG: ${{ inputs.tag || github.sha }}
-        run: |
-          if [ -n "$ROLLBACK_TAG" ]; then
-            echo "rollback: republishing $ROLLBACK_TAG as :latest, no build"
-            docker compose $FILES config --images | grep '^ghcr\.io/' | xargs -rn1 docker pull
-          else
-            docker compose $FILES build --build-arg BUILDKIT_INLINE_CACHE=1
-            docker compose $FILES push
-          fi
+          PROD_ENV: ${{ secrets.PROD_ENV }}
+        run: printf '%s\n' "$PROD_ENV" > .env
 
-          # Coolify pulls :latest, so republish the same images under that tag.
-          # The SHA tags stay in ghcr and are what a rollback points back at.
-          docker compose $FILES config --images | grep '^ghcr\.io/' | while read -r img; do
-            docker tag "$img" "${img%:*}:latest"
-            docker push "${img%:*}:latest"
-          done
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Coolify pulls the new images and restarts the stack. It reads
-      # docker-compose.prod.yml from this repo, which has no build sections —
-      # so there is nothing it *can* build, only pull.
-      #
-      # COOLIFY_URL must be the Cloudflare hostname in front of the tunnel, not
-      # the VPS IP. Pointing it at the IP asks a GitHub runner to open an
-      # *inbound* connection to 187.127.10.108:8000, and that is a coin flip:
-      # run 32047638162 got a reply in 0.5s, run 32048659255 fifteen minutes
-      # later ate a 132s connect timeout — with the host idle, ufw disabled, no
-      # fail2ban, port 8000 listening and zero kernel-level drops. The SYNs never
-      # arrived. 187.127.0.0/18 is a block Hostinger only took over in 2025, and
-      # reachability depends on which Azure egress the runner happens to land on.
-      # Over the tunnel the VPS dials Cloudflare outbound and the runner only
-      # ever talks to the anycast edge, which has no such problem.
-      #
-      # The retry is a seatbelt, not the fix: it turns one 132s hang into five
-      # bounded attempts. Nothing reaches Coolify on a connect failure, so a
-      # retried POST cannot double-queue a deploy.
-      #
-      # -A is not cosmetic: the zone has a WAF rule ("User-Agent suspeito")
-      # that issues a managed challenge to any UA containing curl or wget.
-      # Default curl sends `curl/8.x` and gets a 403 in 0.2s, from the edge,
-      # with Cf-Mitigated: challenge — run 32058772049 died exactly there.
-      # Same IP, same path, same method, only the UA changed: curl/8.5.0 -> 403,
-      # anything Mozilla-ish -> 401 from Coolify. The edge is what answers.
-      - name: Trigger Coolify deploy
-        id: trigger
-        run: |
-          response="$(curl -fsS -X POST \
-            --connect-timeout 10 --retry 5 --retry-delay 10 \
-            -A 'Mozilla/5.0 (compatible; RunasDeploy/1.0; +github-actions)' \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            "${{ secrets.COOLIFY_URL }}/api/v1/deploy?uuid=${{ secrets.COOLIFY_UUID }}&force=false")"
-          echo "$response"
-          echo "uuid=$(printf '%s' "$response" | jq -r '.deployments[0].deployment_uuid')" >> "$GITHUB_OUTPUT"
+      # Manifest-only copy inside ghcr: this is the moment the release goes live.
+      - name: Promote the sha to latest
+        id: promote
+        run: bash scripts/promote-latest.sh "$TAG"
 
-      # Coolify answers as soon as it accepts the request, not when the stack is
-      # up — without this step a deploy that never comes back is a green job.
-      #
-      # This used to poll the public /health URL with default curl, and the WAF
-      # rule described above answered it at the edge: `curl/8.x` gets a 403 with
-      # Cf-Mitigated: challenge and the request never reaches the VPS. The cause
-      # is the User-Agent, not the runner's IP — the same runner, same IP, same
-      # path with a Mozilla-ish UA is let through, which is exactly what the -A
-      # flag above buys. The step counted that 403 as a pass, so it verified
-      # nothing — every run that had it (32029262468, 31853329182, 32047638162)
-      # burned the full 5 minutes on 403s and went green without once seeing the
-      # stack. That was tolerable
-      # while deploys were manual; on every merge to main it is a lie.
-      #
-      # Coolify's own deployment record is the check the edge cannot intercept:
-      # same host, same token, already in hand — no WAF rule and no new secret.
-      # It reports what actually happened on the VPS rather than what Cloudflare
-      # felt like saying, and it fails loudly when the deploy fails.
-      - name: Wait for Coolify to finish the deploy
-        run: |
-          uuid='${{ steps.trigger.outputs.uuid }}'
-          if [ -z "$uuid" ] || [ "$uuid" = null ]; then
-            echo "::error::no deployment_uuid in the trigger response"
-            exit 1
-          fi
-          echo "polling deployment $uuid"
-          # 90 x 10s = 15 min. A cold pull of all nine images has taken ~10.
-          unreachable=0
-          for _ in $(seq 90); do
-            body="$(curl -fsS --connect-timeout 10 \
-              -A 'Mozilla/5.0 (compatible; RunasDeploy/1.0; +github-actions)' \
-              -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-              "${{ secrets.COOLIFY_URL }}/api/v1/deployments/$uuid")" || body=''
-            status="$(printf '%s' "$body" | jq -r '.status // empty' 2>/dev/null)"
-            # Losing the API mid-deploy is expected, not a failure. cloudflared
-            # is a container in the very stack being deployed, so Coolify stops
-            # the tunnel this request travels through; the edge then answers 530
-            # for COOLIFY_URL until the new stack is up. Run 32060269768 polled
-            # in_progress five times and then died on that 530 — it failed
-            # because the deploy was working. Keep asking; only give up if the
-            # tunnel never comes back, which means production is down anyway.
-            if [ -z "$status" ]; then
-              unreachable=$((unreachable + 1))
-              echo "  unreachable ($unreachable)"
-              # ~45 misses: each costs up to 10s of connect timeout plus the
-              # 10s sleep, so this is roughly 10-15 minutes of silence.
-              if [ "$unreachable" -ge 45 ]; then
-                echo "::error::Coolify unreachable for ~15 min; last body: $body"
-                exit 1
-              fi
-              sleep 10
-              continue
-            fi
-            unreachable=0
-            echo "  $status"
-            case "$status" in
-              finished|success) echo "deploy $uuid finished"; exit 0 ;;
-              failed|error|cancelled*)
-                # Without this the job says only "ended as failed" and the reason
-                # lives in the Coolify UI. The same record already carries the
-                # deploy log; print it so the failure is readable here.
-                # The grep is not cosmetic: a nine-image pull writes thousands of
-                # progress lines, so an unfiltered tail shows only download bars
-                # and never the error that ended the deploy.
-                printf '%s' "$body" | jq -r '.logs' 2>/dev/null | jq -r '.[].output' 2>/dev/null | grep -vE 'Downloading|Pulling fs layer|Download complete|Extracting|Waiting' | tail -50
-                echo "::error::deploy $uuid ended as $status"; exit 1 ;;
-            esac
-            sleep 10
-          done
-          echo "::error::deploy $uuid still $status after 15 minutes"
-          exit 1
+      # Coolify pulls the new images and restarts the stack. The secrets are read
+      # from env by the script; see it for why COOLIFY_URL is a hostname.
+      - name: Deploy through Coolify and wait for it
+        id: coolify
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_UUID: ${{ secrets.COOLIFY_UUID }}
+        run: bash scripts/coolify-deploy.sh
+
+      # Coolify finishing says the containers were started, not that the app works.
+      - name: Check production health
+        id: health
+        run: bash scripts/health-ready.sh https://app.runaserp.com.br/api/health/ready
