@@ -42,37 +42,12 @@ jobs:
       - name: Build all production images
         run: docker compose --env-file .env.production.example -f docker-compose.prod.yml -f docker-compose.build.yml build
 
-      # A green build only proves pip resolved the requirements — it never runs
-      # a line of the app. bcrypt 5.0 installed perfectly and then broke every
-      # login on the first request, because passlib could not read its version
-      # and hash() started rejecting a 9-character password as "longer than 72
-      # bytes". Nothing in CI called hash(), so it shipped.
-      #
-      # This runs the real primitive inside the real image with the real pins.
+      # A green build only proves pip resolved the requirements, never that login
+      # works: scripts/ci-smoke-auth.sh runs passlib/bcrypt inside the built images.
       # Both services that authenticate get it: the gateway for operators, and
       # vendas for storefront customers.
-      #
-      # ponytail: covers password hashing only, because that is what broke and
-      # what a dependency bump can break without failing the build. Widen it the
-      # next time a bump reaches production through the same blind spot.
       - name: Smoke-test auth primitives inside the built images
-        run: |
-          # Kept on one line per statement: python -c does not dedent, so an
-          # indented block here is an IndentationError, not a test.
-          check='from passlib.context import CryptContext; ctx = CryptContext(schemes=["bcrypt"], deprecated="auto"); h = ctx.hash("smoke-test-123"); assert ctx.verify("smoke-test-123", h), "rejected the correct password"; assert not ctx.verify("wrong", h), "accepted a wrong password"; print("auth primitives ok")'
-          # docker run, not compose run: compose wants the service's external
-          # volumes to exist before it starts anything, and this needs no
-          # network, no database and no volume — just the interpreter inside the
-          # image. The tag still comes from the compose config, so REGISTRY and
-          # TAG stay defined in one place.
-          for svc in api-gateway-prod vendas-prod; do
-            echo "== $svc"
-            img="$(docker compose --env-file .env.production.example \
-              -f docker-compose.prod.yml -f docker-compose.build.yml \
-              config --format json \
-              | python3 -c "import json,sys; print(json.load(sys.stdin)['services']['$svc']['image'])")"
-            docker run --rm --entrypoint python "$img" -c "$check"
-          done
+        run: bash scripts/ci-smoke-auth.sh .env.production.example api-gateway-prod vendas-prod
 
   frontend:
     runs-on: ubuntu-latest
@@ -111,24 +86,13 @@ jobs:
       - name: Unit tests
         run: pytest -c tests/pytest.ini tests/unit
 
-  # The job above reads source; this one runs it. One leg per service, each from
-  # its own directory: the services import flat (`from main import app`,
-  # `from config import settings`), so two of them in one pytest process fight
-  # over which `main` sits on sys.path first.
+  # The job above reads source; this one runs it. One job for all services, each
+  # from its own directory and virtualenv (the services import flat, so two of them
+  # in one pytest process fight over which `main` sits on sys.path first): a matrix
+  # leg per service billed eight minutes for ~3 s of tests each, see the script.
   services:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        svc:
-          - api-gateway
-          - services/clientes
-          - services/empresas
-          - services/estoque
-          - services/financeiro
-          - services/notificacoes
-          - services/produtos
-          - services/vendas
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:15-alpine
@@ -143,12 +107,13 @@ jobs:
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 10
+    # DATABASE_URL and REDIS_URL are per service, so the script defines them.
     env:
-      DATABASE_URL: postgresql+asyncpg://erp:erp@localhost:5432/erp
-      REDIS_URL: redis://localhost:6379/15
+      PGHOST: localhost
+      PGUSER: erp
+      PGPASSWORD: erp
       RABBITMQ_URL: amqp://guest:guest@localhost:5672/
       SECRET_KEY: ci-only-secret-key-for-tests-min-32-chars
-      PGPASSWORD: erp
       # Only the gateway reads these, but its alembic/env.py imports the settings,
       # so they must exist before the migration step, not just inside pytest.
       CLIENTES_URL: http://localhost:8001
@@ -158,33 +123,17 @@ jobs:
       FINANCEIRO_URL: http://localhost:8005
       NOTIFICACOES_URL: http://localhost:8006
       EMPRESAS_URL: http://localhost:8007
-    defaults:
-      run: {working-directory: '${{ matrix.svc }}'}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with: {python-version: '3.12'}
 
-      # The service's own pins, not a test-only list: the point is to run the code
-      # against the versions the image ships.
-      - run: pip install -r requirements.txt -r "$GITHUB_WORKSPACE/tests/requirements.txt"
-
-      # What db-init does in production before any service boots: schemas, grants,
-      # and the shared audit function the 2026-08-28 revisions attach triggers to.
-      - name: Schemas (db-init)
-        run: psql -h localhost -U erp -d erp -v ON_ERROR_STOP=1 -q -f "$GITHUB_WORKSPACE/postgres/init-schemas.sql"
-
-      # The whole chain against an empty database. Production was stamped at a
-      # baseline and never did this; without this step the first to try would be
-      # a new VPS, with the container dying on boot.
-      - name: Migrations from an empty database
-        run: alembic upgrade head
-
-      - name: Tests
-        run: pytest tests -p no:cacheprovider
+      # Per service: createdb, pip, db-init schemas, `alembic upgrade head` from an
+      # empty database, then pytest. Runs all of them and fails at the end.
+      - run: bash scripts/ci-services.sh
 
   # The job above proves each service's migration chain replays from zero —
-  # but against its OWN throwaway Postgres, one per matrix leg. Prod is not
+  # but against its OWN throwaway Postgres, one per service. Prod is not
   # that: it is ONE Postgres with all 7 service schemas in it (plus the
   # gateway's), the exact shape docker-compose.dev.yml builds. Two things only
   # that shape can catch: revisions from different services racing to touch a
