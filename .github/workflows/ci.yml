@@ -300,7 +300,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
-        with: {python-version: '3.12'}
+        with:
+          python-version: '3.12'
+          # The script makes a fresh venv per service, but every `pip install` reads
+          # the runner's pip cache, and this saves/restores that dir between runs
+          # (key = hash of these files; evicted after 7 days without use).
+          cache: pip
+          cache-dependency-path: |
+            api-gateway/requirements.txt
+            services/*/requirements.txt
+            tests/requirements.txt
 
       # Per service: createdb, pip, db-init schemas, `alembic upgrade head` from an
       # empty database, then pytest. Runs all of them and fails at the end.
