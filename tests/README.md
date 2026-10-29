@@ -13,12 +13,12 @@ manuais soltos em `tests/`, contados nos 62 mas fora das 256).
 
 | Onde | Arquivos | Funções | Roda no CI? |
 |---|---:|---:|---|
-| `tests/unit/` | 17 | 85 | **sim** — job `backend` |
+| `tests/unit/` | 17 | 85 | **sim** — passo "Unit tests" do job `checks` |
 | `tests/integration/` | 9 | 33 | não |
 | `tests/e2e/` | 1 | 1 | não |
-| `services/*/tests/` + `api-gateway/tests/` | 32 | 137 | **sim** — job `services` (matriz de 8) |
+| `services/*/tests/` + `api-gateway/tests/` | 32 | 137 | **sim** — job `services` (`scripts/ci-services.sh`) |
 
-Quebra do leg por serviço (`.github/workflows/ci.yml`, `matrix.svc`):
+Quebra por serviço (os diretórios que o `scripts/ci-services.sh` percorre):
 
 | Serviço | Arquivos | Funções |
 |---|---:|---:|
@@ -64,17 +64,20 @@ Tratar essa pasta como cobertura é o erro que esta documentação já cometeu.
 
 ## Os três legs que o CI roda
 
-`.github/workflows/ci.yml` tem quatro jobs; três executam teste:
+`.github/workflows/ci.yml` roda **escopado pelo diff** e só em PR para `Developer`;
+o dispatch manual e o `deploy.yml` (job `test`, no merge em `main`) rodam tudo. Três
+jobs executam teste:
 
 | Job | Comando | Escopo |
 |---|---|---|
-| `backend` | `pytest -c tests/pytest.ini tests/unit` | 85 funções |
-| `services` | `pytest tests -p no:cacheprovider` (matriz de 8, cada um do seu diretório) | 137 funções |
-| `frontend` | `npm run test -- --run` (vitest, em `frontend/`) | testes do React |
+| `checks` (passo "Unit tests") | `pytest -c tests/pytest.ini tests/unit` | 85 funções; roda em todo PR |
+| `services` | `bash scripts/ci-services.sh <diretórios>`, que roda `pytest tests -p no:cacheprovider` em cada serviço, do seu diretório | 137 funções; só os serviços que o diff toca |
+| `frontend` | `npm run test -- --run` (vitest, em `frontend/`) | testes do React; só se o diff toca `frontend/` |
 
-O quarto job, `build`, valida os dois composes, builda as imagens de produção e
-roda um smoke test do `passlib`/`bcrypt` dentro das imagens do `api-gateway` e
-do `vendas`.
+Os outros jobs não rodam teste de aplicação: o `checks` também valida os dois
+composes; o `build` constrói as imagens afetadas e roda um smoke test do
+`passlib`/`bcrypt` dentro das do `api-gateway` e do `vendas`; o `migration-replay`
+sobe o stack inteiro contra um único Postgres vazio.
 
 ---
 
@@ -114,16 +117,22 @@ Quem precisa de quê:
 
 ## Comandos
 
-São os mesmos legs de `.github/workflows/ci.yml` (jobs `backend`, `services` e
-`frontend`). Rode exatamente assim:
+São os mesmos legs de `.github/workflows/ci.yml` (o passo "Unit tests" do `checks`
+e os jobs `services` e `frontend`). Rode exatamente assim:
 
 ```bash
-# Leg 1 — unitários (job `backend` do CI)
+# Leg 1 — unitários (passo "Unit tests" do job `checks` do CI)
 pytest -c tests/pytest.ini tests/unit
 
-# Leg 2 — por serviço (job `services` do CI, matriz de 8)
+# Leg 2 — por serviço (job `services` do CI, que roda scripts/ci-services.sh)
+bash scripts/ci-services.sh services/produtos   # sem argumento = api-gateway + os 7 serviços
+bash scripts/ci-services.sh --listar            # os diretórios que ele conhece
+# O script cria banco e venv novos por serviço, aplica init-schemas + alembic e roda o
+# pytest. Precisa de Postgres (usuário erp) e Redis em localhost, de createdb/psql no PATH
+# e, no ambiente, do que o job `services` define (ci.yml:283-299): PGPASSWORD, SECRET_KEY
+# e as *_URL do gateway.
+# Só o pytest, com o banco já migrado:
 cd services/produtos && pytest tests -p no:cacheprovider
-# idem para: api-gateway, services/{clientes,empresas,estoque,financeiro,notificacoes,vendas}
 
 # Leg 3 — frontend (job `frontend` do CI)
 cd frontend && npm run test -- --run
