@@ -83,6 +83,26 @@ def test_build_chama_o_smoke_compartilhado():
     assert "api-gateway-prod" in runs and "vendas-prod" in runs
 
 
+def test_services_guarda_o_cache_do_pip_entre_runs():
+    """Card 112: o cache do pip morria com o run, e o job levava ~3 min só instalando.
+
+    A chave do cache é o hash dos requirements: se um serviço (ou o de teste) ficar de
+    fora do `cache-dependency-path`, mexer nos pins dele não invalida o cache.
+    """
+    passos = [s for s in _steps(_ci()["jobs"]["services"])
+              if str(s.get("uses", "")).startswith("actions/setup-python@")]
+    assert len(passos) == 1
+    com = passos[0]["with"]
+    assert com["cache"] == "pip"
+    cobertos = {
+        p.relative_to(REPO).as_posix()
+        for linha in com["cache-dependency-path"].split()
+        for p in REPO.glob(linha)
+    }
+    esperados = {f"{d}/requirements.txt" for d in _pastas_testadas()} | {"tests/requirements.txt"}
+    assert cobertos == esperados
+
+
 # --- Card 102: CI do PR escopada ---------------------------------------------------
 
 JOBS_QUE_ESPERAM_O_CHECKS = ["services", "build", "frontend", "migration-replay"]
