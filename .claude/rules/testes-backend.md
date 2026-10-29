@@ -4,11 +4,12 @@ paths:
   - "**/tests/**/*.py"
   - "**/test_*.py"
   - ".github/workflows/ci.yml"
+  - "scripts/ci-services.sh"
 ---
 
 # Testes de backend — as duas pernas do CI
 
-O CI (`.github/workflows/ci.yml`) roda exatamente duas pernas. Rode essas duas; o resto não é o que o gate checa.
+O CI (`.github/workflows/ci.yml`, só em PR para `Developer` e escopado pelo diff; o deploy roda tudo) roda exatamente duas pernas. Rode essas duas; o resto não é o que o gate checa.
 
 ```bash
 # Perna 1 — suíte unitária, a partir da raiz do repo. Nenhum serviço precisa estar de pé.
@@ -16,13 +17,16 @@ pip install -r tests/requirements.txt
 pytest -c tests/pytest.ini tests/unit
 pytest -c tests/pytest.ini tests/unit/test_tenant_guards.py -v   # um arquivo
 
-# Perna 2 — por serviço, a partir do diretório do próprio serviço (matriz de 8 no CI:
-# api-gateway + os 7 serviços). Cada serviço importa "plano" (`from main import app`),
-# então dois serviços no mesmo processo do pytest brigam por sys.path.
+# Perna 2 — por serviço, a partir do diretório do próprio serviço. No CI é o job `services`:
+# um job só que roda scripts/ci-services.sh (api-gateway + os 7 serviços, cada um com venv e
+# banco próprios). Cada serviço importa "plano" (`from main import app`), então dois serviços
+# no mesmo processo do pytest brigam por sys.path.
+bash scripts/ci-services.sh services/<nome>   # o equivalente local do CI; sem argumento = todos.
+# Precisa de Postgres e Redis em localhost e do ambiente que o job `services` define.
+# Ou só o pytest, com o banco já migrado:
 cd services/<nome>            # ou cd api-gateway
 # O caminho de tests/requirements.txt é relativo a onde você está: ../../tests a partir de
-# services/<nome>, ../tests a partir de api-gateway. O CI contorna com
-# $GITHUB_WORKSPACE/tests/requirements.txt.
+# services/<nome>, ../tests a partir de api-gateway. O script instala da raiz do repo.
 pip install -r requirements.txt -r ../../tests/requirements.txt
 pytest tests
 ```

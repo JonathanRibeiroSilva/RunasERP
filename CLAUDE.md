@@ -60,7 +60,7 @@ npm run test         # vitest  (também test:coverage, test:watch)
 npm run format       # prettier
 ```
 
-O CI roda **duas pernas de teste de backend** (`.github/workflows/ci.yml`), e elas têm ambientes opostos. Antes de escrever ou rodar teste, leia `.claude/rules/testes-backend.md` (carrega sozinho ao abrir arquivo de teste). Nunca rode `pytest` puro na raiz.
+O CI (só em PR para `Developer`, escopado pelo diff) roda **duas pernas de teste de backend** (`.github/workflows/ci.yml`), e elas têm ambientes opostos. Antes de escrever ou rodar teste, leia `.claude/rules/testes-backend.md` (carrega sozinho ao abrir arquivo de teste). Nunca rode `pytest` puro na raiz.
 
 Login padrão: `admin@runas.com` / `Admin@123`. Seed: `produtos` exige a ordem `exec produtos python seed_categorias.py` → `exec produtos python seed_produtos.py` (29 EANs válidos), depois `exec estoque python seed.py`; **não rode `produtos/seed.py`**: cria 3 produtos sem EAN e bloqueia os dois seeds acima (só limpa dropando o schema). Outros serviços: `exec <serviço> python seed.py`.
 
@@ -70,7 +70,7 @@ Login padrão: `admin@runas.com` / `Admin@123`. Seed: `produtos` exige a ordem `
 
 **Sempre Alembic. Nunca `Base.metadata.create_all()` em produção.**
 
-**Uma revision ruim é crashloop, não degradação.** Os 8 apps rodam `alembic upgrade head` como subprocesso no `lifespan` (`init_db()` em `<app>/database.py`, ex.: `api-gateway/database.py:47-66` chamado em `api-gateway/main.py:45`) antes de servir qualquer requisição. Se falhar, o container reinicia e cai de novo. Produção está carimbada num baseline, então revisions antigas não rodam de novo, mas uma **nova** roda no próximo boot, sobre dados de produção, sem ninguém olhando. **Rollback de deploy volta imagem, nunca DDL** (`TAG=<sha>`): migration que a imagem anterior não lê é porta sem volta, então escreva-a compatível com a versão anterior ou planeje a descida antes do merge.
+**Uma revision ruim é crashloop, não degradação.** Os 8 apps rodam `alembic upgrade head` como subprocesso no `lifespan` (`init_db()` em `<app>/database.py`, ex.: `api-gateway/database.py:47-66` chamado em `api-gateway/main.py:45`) antes de servir qualquer requisição. Se falhar, o container reinicia e cai de novo. Produção está carimbada num baseline, então revisions antigas não rodam de novo, mas uma **nova** roda no próximo boot, sobre dados de produção, sem ninguém olhando. **Rollback de deploy volta imagem, nunca DDL** (tag `producao` ou dispatch `tag=<sha>`): migration que a imagem anterior não lê é porta sem volta, então escreva-a compatível com a versão anterior ou planeje a descida antes do merge.
 
 Todo model declara o schema (`__table_args__ = {"schema": "<nome>"}`); `alembic/env.py` usa `include_schemas=False` e `version_table_schema="<schema>"`. **Nunca:** `include_schemas=True`, model sem `__table_args__`, migration sem revisão, editar migration já aplicada. Comandos e erros comuns: `.claude/rules/migrations.md` (carrega sozinho ao abrir `alembic/`).
 
@@ -160,7 +160,7 @@ Um arquivo base por tipo de máquina, mais overlays para o único eixo que varia
 | `docker-compose.prod.yml` | Coolify | runtime de produção. **Só pull, nenhum `build:`**: imagens vêm do ghcr. |
 | `docker-compose.build.yml` | GitHub Actions | overlay do prod: devolve os `build:` para o CI construir e publicar. |
 
-Imagens de produção: `${REGISTRY}/<serviço>:${TAG}` (padrões no compose: `ghcr.io/jonathanribeirosilva/runaserp`, `latest`). O CI publica toda imagem duas vezes, `:<sha>` e `:latest`; rollback é `TAG=<sha>` na VPS.
+Imagens de produção: `${REGISTRY}/<serviço>:${TAG}` (padrões no compose: `ghcr.io/jonathanribeirosilva/runaserp`, `latest`). O `publish` empurra só `:<sha>`; o `deploy` promove `:latest` depois dos testes e roda o health check. Rollback: automático para a tag `producao` (para na migration) ou dispatch com `tag=<sha>`.
 
 ```powershell
 # Teste de API — SEMPRE pelo túnel Cloudflare (cobre OAuth, CORS, HTTPS, webhooks)
