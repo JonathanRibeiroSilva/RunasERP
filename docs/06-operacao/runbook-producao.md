@@ -26,12 +26,12 @@ aplica a dev: o compose de produção é outro arquivo, sem `build:` e sem porta
 2. **Toda requisição de diagnóstico precisa de `-A` com UA de navegador.** A zona tem
    uma regra de WAF ("User-Agent suspeito") que desafia qualquer UA contendo `curl`
    ou `wget` e devolve **403 do próprio edge**, sem tocar a VPS
-   (`.github/workflows/deploy.yml:152-157`, `.github/workflows/uptime.yml:33-37`,
+   (`scripts/coolify-deploy.sh:24-28`, `.github/workflows/uptime.yml:33-37`,
    `scripts/medir-downtime.sh:29-33`). Um curl padrão mede o Cloudflare, não o ERP.
 3. **Todo deploy é uma janela de indisponibilidade, por desenho.** Não é incidente.
    Ver a seção [Deploy derruba a stack](#deploy-derruba-a-stack-inteira-isso-é-esperado).
 4. **A VPS é apertada:** 1 vCPU / 4 GB, e é por isso que ela só puxa imagem, nunca
-   constrói (`docker-compose.prod.yml:5-7`, `.github/workflows/deploy.yml:94-95`).
+   constrói (`docker-compose.prod.yml:5-7`, `.github/workflows/deploy.yml:100-101`).
 
 ### O comando de diagnóstico
 
@@ -68,7 +68,7 @@ curl -sS -A 'Mozilla/5.0' -w '\n%{http_code}\n' \
 `COOLIFY_URL` **tem de ser o hostname do Cloudflare na frente do túnel**, nunca o IP
 da VPS: apontar para o IP pede ao runner do GitHub uma conexão *de entrada*, e isso é
 cara ou coroa — a mesma chamada respondeu em 0,5 s numa run e estourou 132 s de
-connect timeout quinze minutos depois, com o host ocioso (`deploy.yml:137-146`).
+connect timeout quinze minutos depois, com o host ocioso (`scripts/coolify-deploy.sh:10-18`).
 
 ---
 
@@ -78,10 +78,14 @@ connect timeout quinze minutos depois, com o host ocioso (`deploy.yml:137-146`).
 GitHub → Actions → Deploy → Run workflow → input "tag" = <sha já publicado no ghcr>
 ```
 
-Com `tag` preenchida, **nada é construído**: as imagens daquele sha são puxadas do ghcr
-e republicadas como `:latest`, que é o que o Coolify consome
-(`deploy.yml:48-58` e `:113-131`). Com `tag` vazia, o workflow reconstrói o commit atual,
+Com `tag` preenchida, **nada é construído**: as imagens daquele sha, que já estão no
+ghcr, são promovidas a `:latest`, que é o que o Coolify consome
+(`deploy.yml:52-62` e `:198-200`). Com `tag` vazia, o workflow reconstrói o commit atual,
 igual a um push.
+
+Se o health check depois do deploy falhar, o próprio workflow tenta voltar para a tag
+git `producao` (e não volta quando o salto trouxe migration); ver
+[deploy.md, seção 6](deploy.md#6-rollback).
 
 > ### ⚠️ O rollback reverte IMAGENS. Nunca reverte DDL.
 > Cada serviço roda `alembic upgrade head` no boot, e o rollback só troca as imagens de
@@ -96,7 +100,7 @@ igual a um push.
 **O que você vê:** site fora do ar durante um deploy; 502 ou 530 no navegador.
 
 **O que é:** o Coolify 4.3 para e remove **todo** container do app antes do `up -d`
-(`docker-compose.prod.yml:90-91`; a mesma coisa dita em `deploy.yml:26-29`: "Coolify
+(`docker-compose.prod.yml:90-91`; a mesma coisa dita em `deploy.yml:31-32`: "Coolify
 tears the old stack down before the new one is up, so every deploy is an outage
 window"). São 13 containers de vida longa mais 2 one-shot (`db-backup` e `db-init`,
 ambos `restart: "no"`), pela lista de `container_name:` do compose.
@@ -146,8 +150,8 @@ mensagem completa está na coluna `logs` (JSON, precisa de parser).
 Perder a API do Coolify no meio do deploy é **esperado**: o `cloudflared` é um container
 da própria stack sendo deployada, então o Coolify derruba o túnel pelo qual essa
 requisição viaja, e o edge passa a responder 530 para o `COOLIFY_URL` até a stack nova
-subir (`deploy.yml:203-209`). O workflow tolera ~45 falhas seguidas (~10-15 min) antes de
-desistir (`deploy.yml:210-221`). Se ele desistiu, o túnel não voltou — aí produção está
+subir (`scripts/coolify-deploy.sh:69-74`). O script tolera ~45 falhas seguidas (~10-15 min) antes de
+desistir (`scripts/coolify-deploy.sh:75-83`). Se ele desistiu, o túnel não voltou — aí produção está
 fora de verdade.
 
 ---
@@ -311,7 +315,7 @@ curl -sSI -X PUT -A 'Mozilla/5.0' https://app.runaserp.com.br/api/<rota> | grep 
 
 Se aparecer **`Cf-Mitigated: challenge`**, quem respondeu foi o edge — a requisição nunca
 chegou à VPS, e não há nada para procurar no log do gateway. A regra de WAF conhecida e
-documentada é a de **User-Agent** (`deploy.yml:152-157`): `curl/8.5.0` → 403 do edge,
+documentada é a de **User-Agent** (`scripts/coolify-deploy.sh:24-28`): `curl/8.5.0` → 403 do edge,
 UA Mozilla → resposta real do backend, mesma URL e mesmo método.
 
 > **A CONFIRMAR:** uma regra de WAF que desafie especificamente métodos de escrita
@@ -478,11 +482,11 @@ Quando alguém perguntar "por que está assim?", a resposta já está escrita:
 
 | Decisão | Onde |
 |---|---|
-| `paths-ignore` do deploy (e por que `docker-compose.prod.yml` ficou de fora) | `.github/workflows/deploy.yml:18-47` |
-| `tag` do `workflow_dispatch` = rollback sem build | `.github/workflows/deploy.yml:48-58` |
-| `COOLIFY_URL` tem de ser o hostname do túnel, não o IP | `.github/workflows/deploy.yml:137-146` |
-| `-A` no curl: regra de WAF por User-Agent | `.github/workflows/deploy.yml:152-157`, `uptime.yml:33-37` |
-| Perder a API do Coolify no meio do deploy é esperado | `.github/workflows/deploy.yml:203-209` |
+| `paths-ignore` do deploy (e por que `docker-compose.prod.yml` ficou de fora) | `.github/workflows/deploy.yml:22-51` |
+| `tag` do `workflow_dispatch` = rollback sem build | `.github/workflows/deploy.yml:52-62` |
+| `COOLIFY_URL` tem de ser o hostname do túnel, não o IP | `scripts/coolify-deploy.sh:10-18` |
+| `-A` no curl: regra de WAF por User-Agent | `scripts/coolify-deploy.sh:24-28`, `uptime.yml:33-37` |
+| Perder a API do Coolify no meio do deploy é esperado | `scripts/coolify-deploy.sh:69-74` |
 | Por que o "Container Status Changes" do Coolify não cobre a aplicação | `.github/workflows/uptime.yml:3-11` |
 | Por que o cron `*/10` não significa 10 minutos | `.github/workflows/uptime.yml:14-20` |
 | Sem `build:` no compose de produção (1 vCPU) | `docker-compose.prod.yml:1-7` |

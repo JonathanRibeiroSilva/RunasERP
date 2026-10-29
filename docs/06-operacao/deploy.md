@@ -10,10 +10,12 @@ linha `A CONFIRMAR`.
 
 ## 1. O caminho, em uma frase
 
-Merge em `main` -> GitHub Actions constroi as 9 imagens e publica no **ghcr.io** ->
-o runner chama a API do **Coolify** pelo hostname Cloudflare -> o Coolify, na VPS,
-**puxa** as imagens e sobe o stack -> o **tunel Cloudflare** (`cloudflared`, um
-container do proprio stack) e o unico caminho de entrada.
+Merge em `main` -> GitHub Actions roda a CI inteira e, em paralelo, constroi as 9
+imagens e publica `:<sha>` no **ghcr.io** -> com testes e smoke verdes, o runner
+promove `:<sha>` para `:latest` e chama a API do **Coolify** pelo hostname Cloudflare
+-> o Coolify, na VPS, **puxa** as imagens e sobe o stack -> o runner confere
+`/api/health/ready` -> o **tunel Cloudflare** (`cloudflared`, um container do proprio
+stack) e o unico caminho de entrada.
 
 A VPS nunca constroi nada. `docker-compose.prod.yml` nao tem **um unico** `build:`
 como chave de servico — verifique com `grep -nE '^\s+build:' docker-compose.prod.yml`,
@@ -30,104 +32,169 @@ Cinco workflows em `.github/workflows/` mais o `.github/dependabot.yml`.
 
 | Arquivo | Dispara quando | O que faz |
 |---|---|---|
-| `ci.yml` | `pull_request` para `main`/`Developer`; `push` nessas duas | 4 jobs de gate (build, frontend, backend, services) |
-| `deploy.yml` | `push` em `main`; `workflow_dispatch` | constroi, publica no ghcr e manda o Coolify subir |
+| `ci.yml` | `pull_request` para `Developer`; `workflow_dispatch`; `workflow_call` (do `deploy.yml`) | gate escopado pelo diff: `checks` mais build, frontend, services e migration-replay |
+| `deploy.yml` | `push` em `main`; `workflow_dispatch` | `test` e `publish` em paralelo, depois `deploy`: promove `:latest`, manda o Coolify subir e confere a saude |
 | `landing.yml` | `push` em `main` tocando `landing-page/**`; `workflow_dispatch` | publica a landing no Cloudflare Pages |
 | `uptime.yml` | cron `*/10 * * * *`; `workflow_dispatch` | sonda producao e alerta no Telegram |
 | `graphify-update.yml` | `push` em `main` tocando codigo; `workflow_dispatch` | regenera `graphify-out/` e commita de volta |
 
 ### ci.yml — o gate
 
-Dispara em `pull_request` para `[main, Developer]` e em `push` para as mesmas duas
-branches (`ci.yml:3-9`). `main` esta na lista de push de proposito: um hotfix
-empurrado direto para `main` pularia o gate do PR, e e de `main` que o deploy
-constroi (`ci.yml:6-7`).
+Tres gatilhos (`ci.yml:3-21`): `pull_request` para `Developer` e so ela
+(`ci.yml:7-8`), `workflow_dispatch` (`ci.yml:10`) e `workflow_call`
+(`ci.yml:12-21`). **Nao ha `push`.** Um PR `Developer` -> `main` nao tem CI proprio
+de proposito: o merge em `main` passa pelo `deploy.yml`, que chama este workflow com
+`full: true`, e um gatilho aqui rodaria a mesma CI duas vezes (`ci.yml:4-6`). O filtro
+e pela base do PR: um PR empilhado (base diferente de `Developer`) nao dispara nada.
 
-O `paths-ignore` (`landing-page/**`, `docs/**`, `**.md`) vale **so no push** — o
-bloco esta aninhado sob `push:` (`ci.yml:16-19`). Um PR roda o gate inteiro sempre,
-aconteca o que acontecer no diff (`ci.yml:10-15`). Repare que a lista e a mesma do
-`deploy.yml` **menos** `.github/**`: mudar um workflow nao muda o que roda em
-producao, mas muda o que a CI faz, e essa e a unica chance de valida-lo fora de um PR
-(`ci.yml:13-15`).
+O `workflow_dispatch` roda tudo e serve para pre-checar uma branch antes do PR. O
+`workflow_call` tem dois inputs: `full` (todos os escopos, seja qual for o diff) e
+`build_images` (padrao `true`; o deploy passa `false`, porque o `publish` ja constroi)
+(`ci.yml:12-21`). Um push novo no mesmo PR cancela a rodada anterior
+(`ci.yml:31-33`).
 
-Os 4 jobs:
+**Escopo pelo diff.** O job `checks` decide o que o resto roda (`ci.yml:141-164`): em
+PR, o `dorny/paths-filter` marca so o que o diff toca; em dispatch ou com `full`,
+marca tudo. As chaves do filtro sao os proprios valores que os jobs consomem — um
+diretorio de servico ou uma chave do `docker-compose.build.yml` (`ci.yml:59-62`) — e
+`tests/unit/test_pipeline_ci_deploy.py` falha se um servico ficar sem chave.
 
-- **build** (`ci.yml:24`) — valida os dois composes com `docker compose config`
-  (`ci.yml:32-35`), constroi todas as imagens de producao com o par
-  `docker-compose.prod.yml + docker-compose.build.yml` (`ci.yml:39-40`) e roda um
-  smoke-test do `passlib`/`bcrypt` **dentro** das imagens de `api-gateway-prod` e
-  `vendas-prod` (`ci.yml:55-72`).
-- **frontend** (`ci.yml:74-93`) — `npm ci`, `npm run lint`, `npm run build`,
-  `npm run test -- --run`, em Node 22.
-- **backend** (`ci.yml:95-109`) — `pytest -c tests/pytest.ini tests/unit` em
-  Python 3.12.
-- **services** (`ci.yml:115-181`) — matriz de 8 legs (`api-gateway` + os 7 servicos),
-  cada uma com Postgres 15 e Redis 7 como service containers, rodando
-  `postgres/init-schemas.sql` (`ci.yml:171-172`), depois `alembic upgrade head` a
-  partir de um banco vazio (`ci.yml:177-178`), e so entao `pytest tests`
-  (`ci.yml:180-181`).
+Os jobs:
+
+- **checks** (`ci.yml:39-181`) — roda sempre. Decide o escopo, valida os dois composes
+  com `docker compose config` (`ci.yml:171-174`) e roda
+  `pytest -c tests/pytest.ini tests/unit` em Python 3.12 (`ci.yml:180-181`). Esse
+  passo e o que antes era o job `backend`.
+- **build** (`ci.yml:189-233`) — so se ha imagem no escopo e `build_images` nao e
+  `false` (`ci.yml:191-194`). Constroi **so as imagens afetadas**, com o par
+  `docker-compose.prod.yml + docker-compose.build.yml` (`ci.yml:215-216`), e roda o
+  smoke do `passlib`/`bcrypt` **dentro** de `api-gateway-prod` e `vendas-prod` quando
+  uma das duas foi reconstruida (`ci.yml:223-233`).
+- **frontend** (`ci.yml:235-257`) — so se o diff toca `frontend/` (`ci.yml:237`).
+  `npm ci`, `npm run lint`, `npm run build`, `npm run test -- --run`, em Node 22.
+- **services** (`ci.yml:263-316`) — so se ha servico no escopo (`ci.yml:265`). **Um
+  job, nao uma matriz**: `bash scripts/ci-services.sh $SERVICES` (`ci.yml:316`), com
+  Postgres 15 e Redis 7 como service containers (`ci.yml:268-281`). Para cada servico
+  o script cria venv e banco proprios, roda `postgres/init-schemas.sql`
+  (`scripts/ci-services.sh:58`), `alembic upgrade head` a partir de um banco vazio
+  (`scripts/ci-services.sh:66`) e so entao `pytest tests`
+  (`scripts/ci-services.sh:67`); roda todos e falha no fim. Oito legs cobravam oito
+  minutos por ~3 s de teste cada (`ci.yml:259-262`).
+- **migration-replay** (`ci.yml:335-384`) — em dispatch e no `full`; em PR, so se o
+  diff toca migration, `database.py`, `postgres/**` ou `docker-compose.dev.yml`
+  (`ci.yml:337-339`, filtro em `ci.yml:134-139`). Sobe os 8 apps contra **um unico**
+  Postgres, de volume vazio (`ci.yml:357-361`), que e o formato de producao, e termina
+  com `down -v` (`ci.yml:382-384`).
 
 ### deploy.yml — o unico que toca producao
 
-**Gatilho.** `push` em `main` (`deploy.yml:16-17`) e `workflow_dispatch`
-(`deploy.yml:53-58`). `Developer` chega em `main` por pull request, que e onde a CI
-faz o gate (`deploy.yml:3-4`).
+**Gatilho.** `push` em `main` (`deploy.yml:20-21`) e `workflow_dispatch`
+(`deploy.yml:57-69`). `Developer` chega em `main` por pull request **sem CI proprio**:
+o portao e o proprio `deploy.yml`, que roda a CI inteira antes de promover
+(`deploy.yml:15-17`).
 
-**paths-ignore** (`deploy.yml:42-47`): `landing-page/**`, `docs/**`, `**.md`,
+**Forma.** Tres jobs (`deploy.yml:9-13`):
+
+```text
+test ──────┐   CI inteira (ci.yml com full), sem construir imagem
+publish ───┴─► deploy   promove :<sha> para :latest, Coolify, health check
+```
+
+`test` e `publish` rodam em paralelo e o `deploy` espera os dois. Nada move o
+`:latest` — o que o Coolify e o cache de build leem — antes de os testes e o smoke
+passarem (`deploy.yml:12-13`).
+
+**paths-ignore** (`deploy.yml:46-51`): `landing-page/**`, `docs/**`, `**.md`,
 `.github/**`, `scripts/**`. As duas ultimas entradas tem historia registrada no
 proprio arquivo: o PR #26 mudou so `404.html`, `landing.yml` e `deploy.ps1` — nada
 que rode em producao — e o deploy que isso disparou abortou no meio, deixando a
-aplicacao fora do ar por 25 minutos (`deploy.yml:24-31`). `scripts/**` entrou pela
-mesma evidencia: nenhum Dockerfile copia de `scripts/` (`deploy.yml:36-41`).
+aplicacao fora do ar por 25 minutos (`deploy.yml:28-35`). `scripts/**` entrou pela
+mesma evidencia: nenhum Dockerfile copia de `scripts/` (`deploy.yml:40-45`).
 
 `docker-compose.prod.yml` esta **deliberadamente fora** do `paths-ignore`: ele mora
 na raiz, o Coolify o le, e uma mudanca nele **tem** de chegar em producao
-(`deploy.yml:33-34`).
+(`deploy.yml:37-38`).
 
 Concorrencia: grupo `deploy-production` com `cancel-in-progress: false` — um segundo
-push espera o primeiro em vez de correr com ele ate o registry (`deploy.yml:60-63`).
+push espera o primeiro em vez de correr com ele ate o registry (`deploy.yml:72-74`).
 
-**Os passos** (job `deploy`, `ubuntu-latest`, `packages: write`):
+**Os jobs, em ordem:**
 
-1. **Write build env** (`deploy.yml:82-86`) — escreve o secret `PROD_ENV` num `.env`.
-   O Compose nao parseia sem as entradas `${VAR:?}`, e os `VITE_*` sao assados no
-   bundle em tempo de build, entao esses valores precisam estar corretos **no
-   runner** (`deploy.yml:78-81`). O Coolify continua sendo a fonte da verdade do que
-   e lido em runtime.
-2. **Login no ghcr** (`deploy.yml:88-92`) — `docker/login-action` contra `ghcr.io`
-   com o `GITHUB_TOKEN`.
-3. **Publish images** (`deploy.yml:113-131`) — `docker compose -f
-   docker-compose.prod.yml -f docker-compose.build.yml build --build-arg
-   BUILDKIT_INLINE_CACHE=1` seguido de `push` (o par de arquivos vem de `env.FILES`,
-   `deploy.yml:66`). Depois cada imagem e re-tagueada e empurrada como `:latest`,
-   porque e so isso que o Coolify olha; as tags `:<sha>` ficam no ghcr e sao o alvo
-   de um rollback (`deploy.yml:126-131`).
-4. **Trigger Coolify deploy** (`deploy.yml:158-167`) —
-   `POST ${COOLIFY_URL}/api/v1/deploy?uuid=${COOLIFY_UUID}&force=false`, com
-   `Authorization: Bearer ${COOLIFY_TOKEN}`, `--connect-timeout 10 --retry 5
-   --retry-delay 10`. O `deployment_uuid` da resposta e lido com `jq`.
-5. **Wait for Coolify to finish** (`deploy.yml:187-239`) — polling em
-   `${COOLIFY_URL}/api/v1/deployments/<uuid>`, 90 tentativas de 10s (15 min).
+1. **test** (`deploy.yml:89-98`) — chama o `ci.yml` com `full: true` e
+   `build_images: false`. Pulado quando o dispatch traz `tag` (`deploy.yml:90`). As
+   `permissions` repetem o que o `ci.yml` pede de si mesmo, senao o GitHub recusa a
+   run inteira na abertura (`deploy.yml:86-88`).
+2. **publish** (`deploy.yml:102-151`) — o runner constroi, a VPS so puxa:
+   - **Write build env** (`deploy.yml:120-123`) — escreve o secret `PROD_ENV` num
+     `.env`. O Compose nao parseia sem as entradas `${VAR:?}`, e os `VITE_*` sao
+     assados no bundle em tempo de build, entao esses valores precisam estar corretos
+     **no runner** (`deploy.yml:114-119`). O Coolify continua sendo a fonte da verdade
+     do que e lido em runtime.
+   - **Login no ghcr** (`deploy.yml:125-129`) — `docker/login-action` contra
+     `ghcr.io` com o `GITHUB_TOKEN`.
+   - **Build the images** (`deploy.yml:139-140`) — `docker compose $FILES build
+     --build-arg BUILDKIT_INLINE_CACHE=1`, com `FILES` = o par
+     `docker-compose.prod.yml + docker-compose.build.yml` (`deploy.yml:79-80`).
+   - **Smoke de auth** (`deploy.yml:145-146`) — `scripts/ci-smoke-auth.sh`, antes do
+     push: uma imagem que nao sabe hashear senha nao chega ao registry.
+   - **Push** (`deploy.yml:150-151`) — **so a tag `:<sha>`**. O `:latest` nao e
+     empurrado aqui; uma run que falha deixa `:<sha>` orfaos no ghcr e mais nada. As
+     tags `:<sha>` ficam la e sao o alvo de um rollback.
+3. **deploy** (`deploy.yml:162-267`; `contents: write` so para a tag `producao`,
+   `packages: write` para o `:latest`, `deploy.yml:167-169`) — roda depois de `test` e
+   `publish`, **tambem quando os dois foram pulados** (`deploy.yml:164`: um rollback
+   por `tag` nao tem `test` nem `publish`). O checkout traz o historico inteiro
+   (`deploy.yml:175-176`), porque o rollback compara o sha no ar com o novo.
+   1. **Write build env** e login (`deploy.yml:180-189`) — `docker compose config
+      --images` tambem precisa das entradas `${VAR:?}`.
+   2. **Read the live sha** (`deploy.yml:193-195`) — o sha da tag git `producao`,
+      lido **antes** de promover; vazio se a tag ainda nao existe.
+   3. **Promote the sha to latest** (`deploy.yml:198-200`) — `scripts/promote-latest.sh`
+      copia o manifesto de `:<sha>` para `:latest` dentro do ghcr com `docker buildx
+      imagetools create` (`scripts/promote-latest.sh:25-28`): nada e puxado para o
+      runner, sao segundos. **Este e o momento em que a versao vai ao ar**, porque
+      `:latest` e a unica tag que o Coolify olha.
+   4. **Deploy through Coolify** (`deploy.yml:204-210`) — `scripts/coolify-deploy.sh`:
+      `POST ${COOLIFY_URL}/api/v1/deploy?uuid=${COOLIFY_UUID}&force=false`, com
+      `Authorization: Bearer ${COOLIFY_TOKEN}`, `--connect-timeout 10 --retry 5
+      --retry-delay 10` (`scripts/coolify-deploy.sh:37-41`); o `deployment_uuid` da
+      resposta e lido com `jq` (`:43`). Depois faz polling em
+      `${COOLIFY_URL}/api/v1/deployments/<uuid>`, 90 tentativas de 10s = 15 min
+      (`:60-101`).
+   5. **Check production health** (`deploy.yml:217-227`) — `scripts/health-ready.sh`
+      pede `GET https://app.runaserp.com.br/api/health/ready` ate 200: 18 tentativas
+      de 10s, tres minutos (`scripts/health-ready.sh:6-7`, `:23-24`). Coolify terminar
+      diz que os containers subiram, nao que o app responde. O passo tem
+      `continue-on-error` para o rollback decidir (`deploy.yml:212-219`).
+   6. **Mark the sha as production** (`deploy.yml:229-231`) — so com health verde,
+      `git push -f origin $TAG:refs/tags/producao`. A tag `producao` e o sha que
+      passou no health check pela ultima vez, isto e, o que esta no ar; ninguem a cria
+      a mao, o primeiro deploy verde faz (`deploy.yml:157-160`).
+   7. **Automatic rollback** (`deploy.yml:240-267`) — so se o health falhou. Veja a
+      secao 6.
 
-**Tres coisas nao obvias nesses dois ultimos passos:**
+**Tres coisas nao obvias no deploy pelo Coolify** (todas em
+`scripts/coolify-deploy.sh`):
 
 - `COOLIFY_URL` tem de ser o **hostname Cloudflare na frente do tunel**, nunca o IP
   da VPS. Apontar para o IP pede que um runner do GitHub abra uma conexao de
   **entrada** na VPS, e isso e cara ou coroa: a run 32047638162 respondeu em 0,5s e a
   32048659255, quinze minutos depois, comeu 132s de connect timeout com o host
-  ocioso e a porta escutando (`deploy.yml:137-146`). Pelo tunel, a VPS disca para
-  fora e o runner so fala com o edge anycast.
+  ocioso e a porta escutando (`scripts/coolify-deploy.sh:10-18`). Pelo tunel, a VPS
+  disca para fora e o runner so fala com o edge anycast.
 - O `-A 'Mozilla/...'` **nao e cosmetico**: a zona tem uma regra de WAF
   ("User-Agent suspeito") que desafia qualquer UA contendo `curl` ou `wget` e
-  responde 403 no edge, com `Cf-Mitigated: challenge` (`deploy.yml:152-157`).
+  responde 403 no edge, com `Cf-Mitigated: challenge`
+  (`scripts/coolify-deploy.sh:24-28`). O `health-ready.sh` carrega o mesmo `-A`
+  (`scripts/health-ready.sh:14-16`).
 - **Perder a API no meio do deploy e esperado.** O `cloudflared` e um container do
   proprio stack sendo derrubado, entao o Coolify para o tunel por onde essa
   requisicao viaja e o edge passa a responder 530 ate o stack novo subir. Por isso o
   loop tolera ate **45 respostas inalcancaveis** (~10-15 min de silencio) antes de
-  desistir (`deploy.yml:203-218`).
+  desistir (`scripts/coolify-deploy.sh:69-86`).
 
-Em falha, o passo imprime o log do deploy vindo do proprio registro do Coolify,
-filtrando as linhas de progresso de pull (`deploy.yml:226-234`).
+Em falha, o script imprime o log do deploy vindo do proprio registro do Coolify,
+filtrando as linhas de progresso de pull (`scripts/coolify-deploy.sh:92-98`).
 
 ### landing.yml
 
@@ -165,7 +232,7 @@ So `main`, so arquivos de codigo (`**.py`, `**.ts`, `**.tsx`, `**.js`, `**.jsx`,
 contem `[skip graphify]` (`graphify-update.yml:27`) e commita `graphify-out/` com
 essa marca (`graphify-update.yml:105`) usando o `GITHUB_TOKEN`
 (`graphify-update.yml:109-114`). Um push feito com o `GITHUB_TOKEN` **nao dispara
-outros workflows**, entao um refresh do grafo nunca deploya (`deploy.yml:14-15`).
+outros workflows**, entao um refresh do grafo nunca deploya (`deploy.yml:18-19`).
 
 ### dependabot.yml
 
@@ -203,7 +270,7 @@ producao sente: sem ele, o `pip install` re-executava a cada run e gerava um dig
 novo para dependencias identicas — o deploy `u6g9bhcoqgpxhhzel2thseg2` gastou 2m39s
 puxando, 2m20s so extraindo, com o site fora do ar, para um commit cuja unica mudanca
 era uma linha de YAML (`docker-compose.build.yml:11-25`). O `cache_from` so funciona
-junto com `BUILDKIT_INLINE_CACHE=1` em `deploy.yml:122`; tirar o build arg mata as
+junto com `BUILDKIT_INLINE_CACHE=1` em `deploy.yml:140`; tirar o build arg mata as
 entradas de cache em silencio (`docker-compose.build.yml:31-33`).
 
 A imagem do `frontend` e a unica especifica de ambiente: os `VITE_*` sao assados no
@@ -257,7 +324,7 @@ segundo o comentario do proprio arquivo, nao esta.
 `notificacoes`, `evolution` — com SQL **inline no compose**, e o proprio arquivo diz
 que isso e um espelho de `postgres/init-schemas.sql`
 (`docker-compose.prod.yml:158-167`). **As duas copias tem de andar juntas**: a CI roda
-`postgres/init-schemas.sql` (`ci.yml:171-172`) e producao roda a copia inline.
+`postgres/init-schemas.sql` (`scripts/ci-services.sh:58`) e producao roda a copia inline.
 Divergiram, a CI valida algo que producao nao tem.
 
 O SQL inline existe porque o Coolify copia so o arquivo de compose para
@@ -354,20 +421,48 @@ docker logs erp-cloudflared-prod | grep "Registered tunnel connection"
 
 ## 6. Rollback
 
-Esta no proprio `workflow_dispatch` do `deploy.yml` (`deploy.yml:48-58`):
+Tres caminhos, todos no `deploy.yml`.
 
-- Campo `tag` **vazio** -> reconstroi o commit atual, exatamente como um push faz.
-- Campo `tag` com um **sha ja presente no ghcr** -> o build e pulado inteiro; as
-  imagens sao puxadas e republicadas como `:latest`, que e a unica coisa que o
-  Coolify olha (`deploy.yml:118-124`). Esse e o rollback.
+**Automatico.** Se o health check pos-deploy falha (`deploy.yml:217-227`), o passo
+**Automatic rollback** (`deploy.yml:240-267`) pergunta ao `scripts/rollback-decide.sh`
+o que fazer, passando o sha que estava no ar (o da tag `producao`, lido antes de
+promover) e os arquivos que mudaram entre ele e o novo (`deploy.yml:247-252`):
 
-O `ROLLBACK_TAG` e lido por `env:` e nao interpolado dentro do `run:` porque `${{ }}`
-em `run:` e substituicao textual — uma tag contendo `$(...)` executaria no runner
-(`deploy.yml:107-109`).
+| Resposta | Quando | O que o job faz |
+|---|---|---|
+| `reverter` | nenhum arquivo de `alembic/versions/` no salto | promove o sha antigo de volta para `:latest`, redeploya pelo Coolify e confere a saude de novo (`deploy.yml:258-265`) |
+| `migration` | o salto adiciona ou muda uma migration | **nao reverte** (`deploy.yml:256-257`): a migration ja rodou no boot, e a imagem velha subiria contra o schema novo, o que e pior que o deploy que falhou. A decisao e humana |
+| `sem-producao` | a tag `producao` ainda nao existe | nao reverte (`deploy.yml:254-255`): o primeiro deploy verde cria a tag |
+
+So `alembic/versions/` conta; `alembic.ini` e `env.py` nao mudam o schema
+(`scripts/rollback-decide.sh:14-25`). O job termina **vermelho nos tres casos**,
+porque o deploy pedido nao aconteceu (`deploy.yml:233-235`). A lista de arquivos vem
+de uma atribuicao propria de proposito: se o `git diff` falhar (o sha no ar nao esta
+no historico), o passo para, em vez de entregar uma lista vazia, que o script leria
+como "sem migration" e reverteria as cegas (`deploy.yml:237-239`).
+
+**Manual.** `workflow_dispatch` com o campo `tag` (`deploy.yml:59-62`):
+
+- `tag` **vazio** -> `test` e `publish` rodam sobre o commit atual, exatamente como um
+  push faz.
+- `tag` com um **sha ja presente no ghcr** -> `test` e `publish` sao pulados
+  (`deploy.yml:90`, `deploy.yml:103`) e o `deploy` promove aquele sha para `:latest`,
+  que e a unica coisa que o Coolify olha (`deploy.yml:198-200`). Esse e o rollback
+  manual. O health check roda igual e, se passar, a tag `producao` passa a apontar para
+  aquele sha.
+
+O `tag` entra por `env:` (`TAG`, `deploy.yml:171`) e nao interpolado dentro do `run:`,
+porque `${{ }}` em `run:` e substituicao textual — uma tag contendo `$(...)` executaria
+no runner.
+
+**Ensaio.** `ensaio_rollback` (`deploy.yml:66-69`), junto com `tag` = o sha da tag
+`producao`: a primeira consulta de saude pede um caminho que nao existe e desiste em
+uma tentativa (`deploy.yml:223-225`), entao o rollback automatico roda de verdade com a
+stack saudavel.
 
 **O rollback so troca imagens de volta. Ele nao desfaz DDL** — todo servico roda
 `alembic upgrade head` no boot (`docker-compose.prod.yml:85-87`). E por isso que o
-`db-backup` existe.
+`db-backup` existe, e por isso o automatico para quando o salto cruza uma migration.
 
 ---
 
@@ -382,13 +477,13 @@ em `run:` e substituicao textual — uma tag contendo `$(...)` executaria no run
   comentarios nao concordam.
 - **A CONFIRMAR:** como o app esta configurado **dentro** do Coolify (qual repo, qual
   branch, qual caminho de compose, qual UUID). Nada disso vive neste repositorio; so
-  os nomes dos secrets aparecem: os quatro estao listados juntos no comentario
-  `deploy.yml:9-10`, e no codigo `PROD_ENV` esta em `deploy.yml:85` e
-  `COOLIFY_TOKEN`/`COOLIFY_URL`/`COOLIFY_UUID` em `deploy.yml:164-165`.
+  os nomes dos secrets aparecem: `PROD_ENV` em `deploy.yml:122` e `:182`, e
+  `COOLIFY_URL`/`COOLIFY_TOKEN`/`COOLIFY_UUID` em `deploy.yml:207-209` (de novo em
+  `deploy.yml:244-246`, no rollback).
 - **A CONFIRMAR:** a duracao real de um deploy. Os comentarios do `deploy.yml` citam
-  "~15 minutos" (`deploy.yml:18-20`) e "um pull frio das nove imagens ja levou ~10"
-  (`deploy.yml:195`), mas nada disso foi medido na escrita deste documento.
+  "~15 minutos" (`deploy.yml:22-23`) e "um pull frio das nove imagens ja levou ~10"
+  (`scripts/coolify-deploy.sh:61`), mas nada disso foi medido na escrita deste documento.
 - **A CONFIRMAR:** o tamanho da janela de indisponibilidade por deploy.
-  `deploy.yml:27-29` afirma que o Coolify derruba o stack antigo antes de o novo
+  `deploy.yml:31-32` afirma que o Coolify derruba o stack antigo antes de o novo
   subir — ou seja, todo deploy e uma janela de queda — mas a duracao dela nao esta
   registrada em nenhum arquivo deste repositorio.
