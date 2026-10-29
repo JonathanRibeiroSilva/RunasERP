@@ -7,7 +7,7 @@ onde o leitor pode precisar conferir, a fonte vem como `arquivo:linha`.
 
 ## 1. A base do PR tem de ser `Developer`
 
-> **Se a base do PR não for `Developer` (ou `main`), a CI não roda. Nenhum job.
+> **Se a base do PR não for `Developer`, a CI não roda. Nenhum job.
 > O PR fica com "no checks reported", que não é a mesma coisa que "rodando".**
 
 O gatilho é explícito:
@@ -15,22 +15,28 @@ O gatilho é explícito:
 ```yaml
 on:
   pull_request:
-    branches: [main, Developer]
+    branches: [Developer]
 ```
 
-`.github/workflows/ci.yml:3-5`
+`.github/workflows/ci.yml:7-8`
 
 Essa lista é a lista de **branches de destino**. Um PR empilhado sobre outra
-branch de feature (base `feat/algo`, por exemplo) não casa com nenhuma das duas,
+branch de feature (base `feat/algo`, por exemplo) não casa com `Developer`,
 então o GitHub não agenda job nenhum — e a tela do PR mostra ausência de checks,
-não falha de checks. Já custou tempo ao time: esperar um verde que nunca ia
+não falha de checks. O PR de promoção `Developer` → `main` também fica sem CI,
+mas por desenho: o merge em `main` dispara o `deploy.yml`, que roda a CI inteira
+antes de publicar (`.github/workflows/ci.yml:4-6`).
+
+Para pré-checar uma branch antes do PR, rode o workflow **CI** à mão
+(**Actions** → **CI** → **Run workflow**): o `workflow_dispatch` roda todos os
+escopos (`.github/workflows/ci.yml:10`). Já custou tempo ao time: esperar um verde que nunca ia
 chegar. Antes de esperar, confira a base do PR.
 
 Se você já abriu com a base errada, troque a base pela UI do GitHub ("Edit" ao
 lado do título) e confira a aba Checks.
 
 A CONFIRMAR: se a troca de base, sozinha, agenda os jobs. O gatilho não declara
-`types:` (`.github/workflows/ci.yml:3-5`), e sem `types:` o `pull_request` do
+`types:` (`.github/workflows/ci.yml:7-8`), e sem `types:` o `pull_request` do
 GitHub cobre apenas `opened`, `synchronize` e `reopened` — trocar a base é outra
 atividade. Se os checks não aparecerem, um push novo na branch resolve.
 
@@ -40,7 +46,8 @@ atividade. Se os checks não aparecerem, um push novo na branch resolve.
 - `main` só recebe `Developer` por PR. É de `main` que o deploy sai
   (`.github/workflows/deploy.yml:3-4`, comentário: *"Production deploys happen
   only from main. Developer is the integration branch; it reaches main through a
-  pull request, which is where CI gates the change."*).
+  pull request."*). Esse PR não tem CI próprio: o portão é o `deploy.yml`, que
+  roda a CI inteira no merge (`.github/workflows/deploy.yml:15-17`).
 - A branch de feature morre depois do merge — apague-a.
 
 A CONFIRMAR: a regra de apagar a branch de feature após o merge é convenção do
@@ -74,8 +81,8 @@ uma linha transfere para o revisor o trabalho de reconstruir sua intenção.
 ### Merge em `main` dispara deploy de produção
 
 `.github/workflows/deploy.yml` roda em `push: branches: [main]`. Ele reconstrói
-as nove imagens e avisa o Coolify, que **derruba a stack antiga antes de subir a
-nova** — ou seja, **todo deploy é uma janela de indisponibilidade**. O próprio
+as nove imagens (em paralelo com a CI inteira), promove `:latest` e avisa o Coolify,
+que **derruba a stack antiga antes de subir a nova** — ou seja, **todo deploy é uma janela de indisponibilidade**. O próprio
 workflow registra o caso: o PR #26 mexeu só em arquivos que não rodam em
 produção e o deploy que ele disparou abortou no meio, deixando a aplicação fora
 por 25 minutos (`.github/workflows/deploy.yml`, comentário do bloco
@@ -98,7 +105,7 @@ pip install -r tests/requirements.txt
 pytest -c tests/pytest.ini tests/unit
 ```
 
-(mesmo comando do job `backend`, `.github/workflows/ci.yml:102-109`)
+(mesmo comando do passo "Unit tests" do job `checks`, `.github/workflows/ci.yml:180-181`)
 
 - **Tem asyncio automático.** `tests/pytest.ini:5` traz `asyncio_mode = auto`,
   então um `async def test_...` roda sem marcador nenhum.
@@ -111,7 +118,7 @@ pytest -c tests/pytest.ini tests/unit
   `docker-compose.prod.yml`).
 - O escopo é `tests/unit` por caminho, de propósito: vários arquivos soltos
   direto em `tests/` são scripts manuais que chamam um serviço no localhost
-  (`.github/workflows/ci.yml:105-107`).
+  (`.github/workflows/ci.yml:176-179`).
 
 ### Leg B — por serviço (`cd services/<nome> && pytest tests`)
 
@@ -121,7 +128,8 @@ pip install -r requirements.txt -r ../../tests/requirements.txt
 pytest tests -p no:cacheprovider
 ```
 
-(mesma sequência do job `services`, `.github/workflows/ci.yml:167` e `:181`)
+(mesma sequência que o job `services` roda por serviço, `scripts/ci-services.sh:51-67`;
+`bash scripts/ci-services.sh services/vendas` faz tudo isso com banco novo)
 
 - **Tem FastAPI** — `fastapi==0.141.1` está no `requirements.txt` de cada
   serviço (`services/vendas/requirements.txt:1`,
@@ -137,7 +145,7 @@ pytest tests -p no:cacheprovider
 - Um leg por serviço, nunca dois no mesmo processo: os serviços importam flat
   (`from main import app`, `from config import settings`) e dois deles brigam
   por qual `main` fica primeiro no `sys.path`
-  (`.github/workflows/ci.yml:112-114`).
+  (`scripts/ci-services.sh:12-14`).
 
 **Pré-requisito do leg B:** Postgres e Redis alcançáveis. Os defaults do conftest
 são `postgresql+asyncpg://erp:erp@localhost:5432/erp` e
@@ -158,7 +166,7 @@ npm run build
 npm run test -- --run
 ```
 
-(job `frontend`, `.github/workflows/ci.yml:86-93`)
+(job `frontend`, `.github/workflows/ci.yml:235-257`)
 
 O `lint` está travado em `--max-warnings 115` (`frontend/package.json:10`): é a
 contagem que existia quando o gate entrou. Ele bloqueia warning **novo** sem
@@ -248,17 +256,19 @@ E leia a saída. Um hook que só pode falhar em silêncio é pior que hook nenhu
 
 ## 5. O que a CI exige, job a job
 
-Quatro jobs, todos em `.github/workflows/ci.yml`:
+Cinco jobs em `.github/workflows/ci.yml`. O `checks` roda sempre e decide o que os
+outros fazem a partir do diff (`ci.yml:141-164`):
 
 | Job | O que roda |
 |---|---|
-| `build` | Valida os dois composes com `--env-file` (`.env.production.example` + `docker-compose.prod.yml`; `.env.example` + `docker-compose.dev.yml`), constrói as 9 imagens de produção e faz smoke test das primitivas de auth dentro das imagens de `api-gateway-prod` e `vendas-prod` (`ci.yml:32-72`) |
-| `frontend` | `npm ci`, `npm run lint`, `npm run build`, `npm run test -- --run`, Node 22 (`ci.yml:74-93`) |
-| `backend` | `pip install -r tests/requirements.txt` e `pytest -c tests/pytest.ini tests/unit`, Python 3.12 (`ci.yml:95-109`) |
-| `services` | Matriz de 8 legs (`api-gateway` + os 7 serviços), cada um com Postgres 15 e Redis 7 como service container, `postgres/init-schemas.sql`, `alembic upgrade head` a partir de banco vazio, e `pytest tests` (`ci.yml:115-181`) |
+| `checks` | Decide o escopo; valida os dois composes com `--env-file` (`.env.production.example` + `docker-compose.prod.yml`; `.env.example` + `docker-compose.dev.yml`); `pip install -r tests/requirements.txt` e `pytest -c tests/pytest.ini tests/unit`, Python 3.12 (`ci.yml:39-181`) |
+| `build` | Constrói só as imagens de produção que o diff toca e faz smoke test das primitivas de auth dentro de `api-gateway-prod` e `vendas-prod`, se uma delas foi reconstruída (`ci.yml:189-233`) |
+| `frontend` | Só se o diff toca `frontend/`: `npm ci`, `npm run lint`, `npm run build`, `npm run test -- --run`, Node 22 (`ci.yml:235-257`) |
+| `services` | Um job só: `scripts/ci-services.sh` percorre os serviços do escopo, cada um com venv e banco próprios, Postgres 15 e Redis 7 como service container, `postgres/init-schemas.sql`, `alembic upgrade head` a partir de banco vazio, e `pytest tests` (`ci.yml:263-316`) |
+| `migration-replay` | Em PR só se o diff toca migration, `database.py`, `postgres/**` ou `docker-compose.dev.yml`: sobe o stack real num único Postgres vazio (`ci.yml:335-384`) |
 
-O job `services` tem `fail-fast: false` (`ci.yml:118`): um leg vermelho não
-cancela os outros sete, então o PR mostra todos os serviços quebrados de uma vez.
+O script do `services` roda todos os serviços e falha no fim
+(`scripts/ci-services.sh:18`): o PR mostra todos os serviços quebrados de uma vez.
 
 ### Por que existe o smoke test de auth
 
@@ -267,15 +277,14 @@ aplicação. `bcrypt 5.0` instalou perfeitamente e quebrou **todo login em
 produção** no primeiro request: o passlib não conseguiu ler a versão do bcrypt e
 o `hash()` passou a rejeitar uma senha de 9 caracteres como "longer than 72
 bytes". Nada na CI chamava `hash()`, então foi para produção
-(`.github/workflows/ci.yml:42-54`).
+(`scripts/ci-smoke-auth.sh:11-15`).
 
 O passo roda a primitiva real, dentro da imagem real, com os pins reais, nos dois
 serviços que autenticam: o gateway (operadores) e o vendas (clientes da loja).
 
-Nos jobs disparados por `push`, `landing-page/**`, `docs/**` e `**.md` são
-ignorados — um commit só de README não gasta o ciclo de nove imagens
-(`ci.yml:8-19`). **Em `pull_request` não há `paths-ignore`: o gate inteiro roda
-sempre.**
+A CI não tem `paths-ignore`: o escopo vem do diff (`ci.yml:141-164`). Um PR só de
+`docs/` não constrói imagem nem roda serviço — só o `checks` roda. O
+`workflow_dispatch` e o deploy rodam todos os escopos.
 
 ---
 
