@@ -8,28 +8,28 @@ Este é o único README de `tests/`. Os outros cinco `.md` que existiam aqui
 
 ## O que existe hoje
 
-**62 arquivos `test_*.py` versionados, 256 funções `test_*`** (mais 3 scripts
-manuais soltos em `tests/`, contados nos 62 mas fora das 256).
+**88 arquivos `test_*.py` versionados, 404 funções `test_*`** (mais 3 scripts
+manuais soltos em `tests/`, contados nos 88 mas fora das 404). Medido em 2026-10-29.
 
 | Onde | Arquivos | Funções | Roda no CI? |
 |---|---:|---:|---|
-| `tests/unit/` | 17 | 85 | **sim** — passo "Unit tests" do job `checks` |
+| `tests/unit/` | 19 | 131 | **sim** — passo "Unit tests" do job `checks` |
 | `tests/integration/` | 9 | 33 | não |
 | `tests/e2e/` | 1 | 1 | não |
-| `services/*/tests/` + `api-gateway/tests/` | 32 | 137 | **sim** — job `services` (`scripts/ci-services.sh`) |
+| `services/*/tests/` + `api-gateway/tests/` | 56 | 239 | **sim** — job `services` (`scripts/ci-services.sh`) |
 
 Quebra por serviço (os diretórios que o `scripts/ci-services.sh` percorre):
 
 | Serviço | Arquivos | Funções |
 |---|---:|---:|
-| `api-gateway` | 5 | 21 |
-| `services/vendas` | 10 | 40 |
-| `services/produtos` | 7 | 45 |
-| `services/estoque` | 5 | 17 |
-| `services/empresas` | 2 | 8 |
-| `services/clientes` | 1 | 2 |
-| `services/financeiro` | 1 | 2 |
-| `services/notificacoes` | 1 | 2 |
+| `api-gateway` | 11 | 47 |
+| `services/vendas` | 13 | 54 |
+| `services/produtos` | 9 | 55 |
+| `services/estoque` | 9 | 40 |
+| `services/empresas` | 6 | 19 |
+| `services/clientes` | 4 | 12 |
+| `services/financeiro` | 2 | 6 |
+| `services/notificacoes` | 2 | 6 |
 
 `tests/performance/` está vazio — não há `locustfile.py` nem teste de carga
 nenhum. A pasta só não sumiu porque o git não versiona diretório vazio.
@@ -55,7 +55,7 @@ testes de regressão — mas nem todos dependem de serviço vivo:
 | `tests/test_estrutura_simples.py` | valida arquivos e sintaxe via `ast`, offline | não |
 | `tests/test_produtos_local.py` | importa os models de produtos por um `sys.path` montado à mão | não |
 
-Só o `test_produtos_api.py` tem funções `test_*` (5, fora das 256). Os outros
+Só o `test_produtos_api.py` tem funções `test_*` (5, fora das 404). Os outros
 dois rodam no nível do módulo e chamam `sys.exit(1)` quando algo falha.
 
 Tratar essa pasta como cobertura é o erro que esta documentação já cometeu.
@@ -70,8 +70,8 @@ jobs executam teste:
 
 | Job | Comando | Escopo |
 |---|---|---|
-| `checks` (passo "Unit tests") | `pytest -c tests/pytest.ini tests/unit` | 85 funções; roda em todo PR |
-| `services` | `bash scripts/ci-services.sh <diretórios>`, que roda `pytest tests -p no:cacheprovider` em cada serviço, do seu diretório | 137 funções; só os serviços que o diff toca |
+| `checks` (passo "Unit tests") | `pytest -c tests/pytest.ini tests/unit` | 131 funções; roda em todo PR |
+| `services` | `bash scripts/ci-services.sh <diretórios>`, que roda `pytest tests -p no:cacheprovider` em cada serviço, do seu diretório | 239 funções; só os serviços que o diff toca |
 | `frontend` | `npm run test -- --run` (vitest, em `frontend/`) | testes do React; só se o diff toca `frontend/` |
 
 Os outros jobs não rodam teste de aplicação: o `checks` também valida os dois
@@ -169,7 +169,7 @@ O detalhe que derruba quem move um teste de um leg para o outro:
 
 ### De onde vem o banco do leg por serviço
 
-Não há `create_all` em lugar nenhum. O schema contra o qual esses 137 testes
+Não há `create_all` em lugar nenhum. O schema contra o qual esses 239 testes
 rodam é o que as migrations constroem, na mesma ordem que a produção:
 
 1. `psql -f postgres/init-schemas.sql` — schemas, grants e a função de auditoria
