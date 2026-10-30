@@ -140,15 +140,15 @@ push espera o primeiro em vez de correr com ele ate o registry (`deploy.yml:72-7
    - **Push** (`deploy.yml:150-151`) — **so a tag `:<sha>`**. O `:latest` nao e
      empurrado aqui; uma run que falha deixa `:<sha>` orfaos no ghcr e mais nada. As
      tags `:<sha>` ficam la e sao o alvo de um rollback.
-3. **deploy** (`deploy.yml:162-267`; `contents: write` so para a tag `producao`,
-   `packages: write` para o `:latest`, `deploy.yml:167-169`) — roda depois de `test` e
-   `publish`, **tambem quando os dois foram pulados** (`deploy.yml:164`: um rollback
+3. **deploy** (`deploy.yml:161-267`; `deployments: write` so para registrar o sha no ar,
+   `packages: write` para o `:latest`, `deploy.yml:166-169`) — roda depois de `test` e
+   `publish`, **tambem quando os dois foram pulados** (`deploy.yml:163`: um rollback
    por `tag` nao tem `test` nem `publish`). O checkout traz o historico inteiro
    (`deploy.yml:175-176`), porque o rollback compara o sha no ar com o novo.
    1. **Write build env** e login (`deploy.yml:180-189`) — `docker compose config
       --images` tambem precisa das entradas `${VAR:?}`.
-   2. **Read the live sha** (`deploy.yml:193-195`) — o sha da tag git `producao`,
-      lido **antes** de promover; vazio se a tag ainda nao existe.
+   2. **Read the live sha** (`deploy.yml:193-195`) — o sha do ultimo deployment `production` com sucesso,
+      lido **antes** de promover; vazio se nenhum foi registrado ainda.
    3. **Promote the sha to latest** (`deploy.yml:198-200`) — `scripts/promote-latest.sh`
       copia o manifesto de `:<sha>` para `:latest` dentro do ghcr com `docker buildx
       imagetools create` (`scripts/promote-latest.sh:25-28`): nada e puxado para o
@@ -167,7 +167,7 @@ push espera o primeiro em vez de correr com ele ate o registry (`deploy.yml:72-7
       diz que os containers subiram, nao que o app responde. O passo tem
       `continue-on-error` para o rollback decidir (`deploy.yml:212-219`).
    6. **Mark the sha as production** (`deploy.yml:229-231`) — so com health verde,
-      `git push -f origin $TAG:refs/tags/producao`. A tag `producao` e o sha que
+      `scripts/production-sha.sh set $TAG`: um deployment `production` com status `success`, nao uma tag git (o `GITHUB_TOKEN` nao move tag para tras, nem por `git push` nem pela API, quando o `.github/workflows` dos dois shas difere). O ultimo deployment e o sha que
       passou no health check pela ultima vez, isto e, o que esta no ar; ninguem a cria
       a mao, o primeiro deploy verde faz (`deploy.yml:157-160`).
    7. **Automatic rollback** (`deploy.yml:240-267`) — so se o health falhou. Veja a
@@ -425,14 +425,14 @@ Tres caminhos, todos no `deploy.yml`.
 
 **Automatico.** Se o health check pos-deploy falha (`deploy.yml:217-227`), o passo
 **Automatic rollback** (`deploy.yml:240-267`) pergunta ao `scripts/rollback-decide.sh`
-o que fazer, passando o sha que estava no ar (o da tag `producao`, lido antes de
+o que fazer, passando o sha que estava no ar (o do ultimo deployment `production`, lido antes de
 promover) e os arquivos que mudaram entre ele e o novo (`deploy.yml:247-252`):
 
 | Resposta | Quando | O que o job faz |
 |---|---|---|
 | `reverter` | nenhum arquivo de `alembic/versions/` no salto | promove o sha antigo de volta para `:latest`, redeploya pelo Coolify e confere a saude de novo (`deploy.yml:258-265`) |
 | `migration` | o salto adiciona ou muda uma migration | **nao reverte** (`deploy.yml:256-257`): a migration ja rodou no boot, e a imagem velha subiria contra o schema novo, o que e pior que o deploy que falhou. A decisao e humana |
-| `sem-producao` | a tag `producao` ainda nao existe | nao reverte (`deploy.yml:254-255`): o primeiro deploy verde cria a tag |
+| `sem-producao` | nenhum deployment `production` registrado ainda | nao reverte (`deploy.yml:254-255`): o primeiro deploy verde o registra |
 
 So `alembic/versions/` conta; `alembic.ini` e `env.py` nao mudam o schema
 (`scripts/rollback-decide.sh:14-25`). O job termina **vermelho nos tres casos**,
@@ -448,15 +448,15 @@ como "sem migration" e reverteria as cegas (`deploy.yml:237-239`).
 - `tag` com um **sha ja presente no ghcr** -> `test` e `publish` sao pulados
   (`deploy.yml:90`, `deploy.yml:103`) e o `deploy` promove aquele sha para `:latest`,
   que e a unica coisa que o Coolify olha (`deploy.yml:198-200`). Esse e o rollback
-  manual. O health check roda igual e, se passar, a tag `producao` passa a apontar para
+  manual. O health check roda igual e, se passar, o deployment `production` passa a registrar
   aquele sha.
 
 O `tag` entra por `env:` (`TAG`, `deploy.yml:171`) e nao interpolado dentro do `run:`,
 porque `${{ }}` em `run:` e substituicao textual — uma tag contendo `$(...)` executaria
 no runner.
 
-**Ensaio.** `ensaio_rollback` (`deploy.yml:66-69`), junto com `tag` = o sha da tag
-`producao`: a primeira consulta de saude pede um caminho que nao existe e desiste em
+**Ensaio.** `ensaio_rollback` (`deploy.yml:66-69`), junto com `tag` = o sha no ar
+(`scripts/production-sha.sh get`): a primeira consulta de saude pede um caminho que nao existe e desiste em
 uma tentativa (`deploy.yml:223-225`), entao o rollback automatico roda de verdade com a
 stack saudavel.
 

@@ -83,8 +83,8 @@ ghcr, são promovidas a `:latest`, que é o que o Coolify consome
 (`deploy.yml:52-62` e `:198-200`). Com `tag` vazia, o workflow reconstrói o commit atual,
 igual a um push.
 
-Se o health check depois do deploy falhar, o próprio workflow tenta voltar para a tag
-git `producao` (e não volta quando o salto trouxe migration); ver
+Se o health check depois do deploy falhar, o próprio workflow tenta voltar para o sha que estava no ar
+(deployment `production`), e não volta quando o salto trouxe migration); ver
 [deploy.md, seção 6](deploy.md#6-rollback).
 
 > ### ⚠️ O rollback reverte IMAGENS. Nunca reverte DDL.

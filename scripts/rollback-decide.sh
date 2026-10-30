@@ -3,7 +3,7 @@
 #
 #   git diff --name-only "$LIVE" "$TAG" | scripts/rollback-decide.sh "$LIVE"
 #
-#   sem-producao  no live sha (the producao git tag does not exist yet): nowhere to go back to
+#   sem-producao  no live sha (no successful production deployment recorded yet): nowhere to go back to
 #   migration     the jump from live to the new sha added or changed an alembic migration
 #   reverter      safe to put the live images back
 #
