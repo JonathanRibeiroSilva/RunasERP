@@ -393,7 +393,7 @@ def _posicao(job: dict, step: dict) -> int:
 
 
 def test_decide_sem_producao():
-    """Sem a tag `producao` não há para onde voltar: o script avisa em vez de reverter."""
+    """Sem sha no ar registrado não há para onde voltar: o script avisa em vez de reverter."""
     assert _decidir("", "") == "sem-producao"
 
 
@@ -418,33 +418,69 @@ def test_deploy_busca_o_historico():
     assert checkout["with"]["fetch-depth"] == 0
 
 
-def test_contents_write_so_no_deploy():
-    """O write é só para mover a tag; o resto da esteira continua só lendo."""
+def test_so_o_deploy_grava_o_sha_no_ar():
+    """`deployments: write` é só para registrar o sha no ar; nenhum job escreve no repositório."""
     wf = _deploy()
     assert wf["permissions"] == {"contents": "read"}
     for nome, job in wf["jobs"].items():
-        escrita = job.get("permissions", {}).get("contents") == "write"
-        assert escrita == (nome == "deploy"), nome
+        perms = job.get("permissions", {})
+        assert perms.get("contents") != "write", nome
+        assert (perms.get("deployments") == "write") == (nome == "deploy"), nome
 
 
 def test_health_continua_para_o_rollback_decidir():
     assert _step(_deploy()["jobs"]["deploy"], id="health")["continue-on-error"] is True
 
 
-def test_producao_so_move_depois_do_health():
+def test_producao_so_e_gravada_depois_do_health():
     deploy = _deploy()["jobs"]["deploy"]
-    marca = _step(deploy, run="git push -f")
-    assert "refs/tags/producao" in marca["run"]
+    marca = _step(deploy, run="production-sha.sh set")
     assert _posicao(deploy, marca) > _posicao(deploy, _step(deploy, id="health"))
     assert "steps.health.outcome == 'success'" in marca["if"]
 
 
+def test_sha_no_ar_nao_anda_por_tag_git():
+    """Card 114: mover a tag para tras, por `git push` ou pela API, é recusado ao
+    GITHUB_TOKEN quando o .github/workflows dos dois shas difere; o rollback manual
+    ficava vermelho. Um deployment é só um registro, aceita qualquer sha."""
+    deploy = _deploy()["jobs"]["deploy"]
+    assert "GH_TOKEN" in _step(deploy, run="production-sha.sh set")["run"]
+    assert "git push" not in _runs(deploy) and "refs/tags" not in _runs(deploy)
+    script = (REPO / "scripts" / "production-sha.sh").read_text(encoding="utf-8")
+    assert "/git/refs" not in script and "environment: \"production\"" in script
+
+
 def test_live_e_lido_antes_de_promover():
-    """A tag lida depois da promoção já seria o sha novo."""
+    """O sha lido depois da promoção já seria o novo."""
     deploy = _deploy()["jobs"]["deploy"]
     live = _step(deploy, id="live")
     assert _posicao(deploy, live) < _posicao(deploy, _step(deploy, id="promote"))
-    assert "refs/tags/producao" in live["run"]
+    assert "production-sha.sh get" in live["run"]
+
+
+def test_sha_no_ar_pula_deployment_sem_success(tmp_path):
+    """Um `set` que morreu no meio deixa um deployment sem status: não é o que está no ar."""
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("sem bash neste ambiente")
+    gh = tmp_path / "gh"
+    gh.write_text(
+        r"""#!/usr/bin/env bash
+case "$*" in
+  *deployments?environment=production*) printf '30 sha-novo\n20 sha-bom\n10 sha-velho\n' ;;
+  */deployments/30/statuses*) echo in_progress ;;
+  */deployments/20/statuses*) echo success ;;
+  *) exit 1 ;;
+esac
+""",
+        encoding="utf-8", newline="\n",
+    )
+    gh.chmod(0o755)
+    env = {**os.environ, "PATH": f"{tmp_path}{os.pathsep}{os.environ['PATH']}", "GITHUB_REPOSITORY": "o/r"}
+    saida = subprocess.run(
+        [bash, "scripts/production-sha.sh", "get"], cwd=REPO, env=env, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert saida == "sha-bom"
 
 
 def test_rollback_so_roda_quando_o_health_falha():

@@ -75,10 +75,10 @@ e o `deploy` espera os dois. Concorrência: grupo `deploy-production`, sem cance
    nunca constrói), faz o smoke de auth **antes** do push e empurra **só** `:<sha>`
    (`deploy.yml:150-151`). Uma rodada que falha deixa `:<sha>` órfãos no ghcr e
    mais nada. Pulado quando o dispatch traz `tag`.
-3. **`deploy`** (`deploy.yml:162-267`) — roda depois dos dois, e também quando
-   foram pulados (`deploy.yml:164`: um rollback por `tag` não tem `test` nem
+3. **`deploy`** (`deploy.yml:161-267`) — roda depois dos dois, e também quando
+   foram pulados (`deploy.yml:163`: um rollback por `tag` não tem `test` nem
    `publish`). Em ordem:
-   - lê o sha que está no ar, o da tag `producao` (`deploy.yml:193-195`);
+   - lê o sha que está no ar, o do último deployment `production` com sucesso (`deploy.yml:193-195`);
    - **promove `:<sha>` para `:latest`** com `scripts/promote-latest.sh`
      (`deploy.yml:198-200`), uma cópia de manifesto dentro do ghcr: é a única tag
      que a Coolify lê, então este é o momento em que a versão vai ao ar;
@@ -86,7 +86,7 @@ e o `deploy` espera os dois. Concorrência: grupo `deploy-production`, sem cance
      (`deploy.yml:204-210`; 90 tentativas de 10 s = 15 min);
    - confere `GET /api/health/ready` por até 3 minutos, `scripts/health-ready.sh`
      (`deploy.yml:217-227`; 18 tentativas de 10 s);
-   - se a saúde passou, move a tag git `producao` para o sha (`deploy.yml:229-231`);
+   - se a saúde passou, grava o sha como deployment `production` (`deploy.yml:229-231`);
    - se não passou, o **rollback automático** (`deploy.yml:240-267`).
 
 Este workflow não deploya: quem faz o deploy de fato é a Coolify, avisada por
@@ -94,9 +94,9 @@ Este workflow não deploya: quem faz o deploy de fato é a Coolify, avisada por
 `/api/v1/deployments/{uuid}` até terminar. São 9 imagens: api-gateway, os 7 serviços
 e o frontend.
 
-### A tag `producao` e o rollback automático
+### O sha no ar e o rollback automático
 
-A tag git `producao` aponta para o sha que **passou no health check pela última
+O último deployment `production` com sucesso é o sha que **passou no health check pela última
 vez**, isto é, o que está no ar (`deploy.yml:157-160`). Ninguém a cria à mão: nasce
 no primeiro deploy verde e só anda depois de um health verde.
 
@@ -107,7 +107,7 @@ mudaram entre o sha no ar e o novo, uma de três respostas:
 |---|---|---|
 | `reverter` | sem migration no salto | promove o sha de volta, redeploya e reconfere a saúde |
 | `migration` | o salto adiciona ou muda `alembic/versions/` | **não reverte**: a migration já rodou no boot, e imagem velha contra schema novo é pior que o deploy que falhou; a decisão é humana |
-| `sem-producao` | a tag ainda não existe | não reverte (o primeiro deploy fica sem rollback automático) |
+| `sem-producao` | nenhum deployment `production` registrado ainda | não reverte (o primeiro deploy fica sem rollback automático) |
 
 O job termina **vermelho em todos os casos**, porque o deploy pedido não aconteceu
 (`deploy.yml:233-235`).
@@ -119,12 +119,12 @@ já está no ghcr: `test` e `publish` são pulados e o `deploy` promove aquele s
 `:latest`. `tag` vazio reconstrói o commit atual, igual a um push.
 
 O input `ensaio_rollback` (`deploy.yml:66-69`) ensaia o rollback automático com a
-stack saudável: use-o junto com `tag` = o sha da tag `producao`; a primeira consulta
+stack saudável: use-o junto com `tag` = o sha no ar (`scripts/production-sha.sh get`); a primeira consulta
 de saúde pede um caminho que não existe e desiste em uma tentativa
 (`deploy.yml:223-225`), então o rollback roda de verdade.
 
 Secrets usados: `PROD_ENV`, `COOLIFY_URL`, `COOLIFY_TOKEN`, `COOLIFY_UUID`. O
-`deploy` pede `contents: write` só para mover a tag (`deploy.yml:167-169`).
+`deploy` pede `deployments: write` só para registrar o sha no ar (`deploy.yml:166-169`).
 
 ## `landing.yml` — Landing
 

@@ -493,7 +493,7 @@ publicada ou consumida em código hoje (ver a ressalva da seção 2):
 > A VPS de 1 vCPU não constrói nove imagens sem matar o stack em execução: o runner
 > constrói, o host só puxa. `pull_policy: always` é obrigatório porque `:latest` é
 > tag móvel e o padrão do Compose (`missing`) mantém a cópia velha para sempre.
-> Rollback: automático para a tag git `producao`, ou dispatch do deploy com `tag=<sha>` — o `publish` empurra `:<sha>` e o `deploy` promove `:latest`.
+> Rollback: automático para o sha no ar, ou dispatch do deploy com `tag=<sha>` — o `publish` empurra `:<sha>` e o `deploy` promove `:latest`.
 >
 > O `paths-ignore` completo do `deploy.yml` tem cinco entradas, uma a mais que
 > o diagrama comporta: `landing-page/**`, `docs/**`, `**.md`, `.github/**` e

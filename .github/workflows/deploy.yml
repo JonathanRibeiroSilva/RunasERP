@@ -60,7 +60,7 @@ on:
         description: 'sha already in ghcr to republish as :latest (empty = build this commit)'
         required: false
         default: ''
-      # Pair it with `tag` = the sha of the producao git tag: the first health check
+      # Pair it with `tag` = the live sha (scripts/production-sha.sh get): the first health check
       # asks for a path that does not exist, so the automatic rollback runs for real
       # while the stack is healthy.
       ensaio_rollback:
@@ -154,18 +154,18 @@ jobs:
   # function in `if` drops the implicit success() check, so a failed or cancelled
   # needs is asked for explicitly.
   #
-  # The git tag `producao` is the sha that last passed the health check, i.e. what is
-  # live. It is moved only after a green health, and it is where the automatic rollback
-  # goes back to. Nobody creates it by hand: the first green deploy does. contents:
-  # write is for that tag and for nothing else, hence the full history in the checkout
-  # (the rollback diffs the live sha against the new one).
+  # The newest successful deployment of the `production` environment is the sha that last
+  # passed the health check, i.e. what is live (scripts/production-sha.sh). It is written
+  # only after a green health, and it is where the automatic rollback goes back to. Not a
+  # git tag: GITHUB_TOKEN may not move one back to a commit with other workflows (card 114).
   deploy:
     needs: [test, publish]
     if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
-      contents: write
+      contents: read
+      deployments: write
       packages: write
     env:
       TAG: ${{ inputs.tag || github.sha }}
@@ -189,10 +189,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Read before promoting: it has to be the sha that was live until now. Empty when
-      # the tag does not exist yet (the first deploy after this was added).
+      # nothing was recorded yet (the first deploy after this was added).
       - name: Read the live sha
         id: live
-        run: echo "sha=$(git rev-parse -q --verify 'refs/tags/producao^{commit}' || true)" >> "$GITHUB_OUTPUT"
+        run: echo "sha=$(GH_TOKEN=${{ github.token }} bash scripts/production-sha.sh get)" >> "$GITHUB_OUTPUT"
 
       # Manifest-only copy inside ghcr: this is the moment the release goes live.
       - name: Promote the sha to latest
@@ -228,7 +228,7 @@ jobs:
 
       - name: Mark the sha as production
         if: steps.health.outcome == 'success'
-        run: git push -f origin "$TAG:refs/tags/producao"
+        run: GH_TOKEN=${{ github.token }} bash scripts/production-sha.sh set "$TAG"
 
       # Puts the previous images back, unless that would be unsafe or impossible; see
       # scripts/rollback-decide.sh. The job ends red in every branch, because the
@@ -252,7 +252,7 @@ jobs:
           decisao=$(printf '%s\n' "$arquivos" | bash scripts/rollback-decide.sh "$LIVE")
           case "$decisao" in
             sem-producao)
-              echo "::error::no producao tag: automatic rollback disabled" ;;
+              echo "::error::no live sha recorded: automatic rollback disabled" ;;
             migration)
               echo "::error::a migration landed between $LIVE and $TAG: decide the rollback by hand" ;;
             reverter)
