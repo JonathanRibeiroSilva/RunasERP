@@ -115,7 +115,6 @@
   "224": "financeiro/seed.py",
   "232": "GlitterWarp",
   "239": "importantify",
-  "240": "preco_do_catalogo",
   "241": "estoque/jobs/__init__.py",
   "243": "TestUsuariosAdmin",
   "248": "notificacoes/tests/conftest.py",
