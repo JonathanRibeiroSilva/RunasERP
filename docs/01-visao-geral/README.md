@@ -96,7 +96,7 @@ Frontend (React) → API Gateway (FastAPI) → 7 microsserviços (FastAPI)
 - **SQLAlchemy** - ORM (async)
 - **Alembic** - Migrações de banco
 - **Pydantic** - Validação de dados
-- **Pytest** - 62 arquivos `test_*.py` no repositório
+- **Pytest** - 88 arquivos `test_*.py` no repositório (2026-10-29; ver `tests/README.md`)
 
 > `celery==5.6.3` aparece nos `requirements.txt` dos 7 serviços, mas **nenhum
 > código Python instancia um app Celery**. Não há worker Celery rodando; as
