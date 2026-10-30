@@ -242,25 +242,25 @@ antes de repassar (`frontend/nginx.conf:36`). Detalhes no
 
 ## Testes
 
-Existem **62 arquivos `test_*.py`** no repositório, mas o CI roda só **49**: os de
+Existem **88 arquivos `test_*.py`** no repositório (2026-10-29; ver `tests/README.md`), mas o CI roda só **75**: os de
 `tests/unit` e os das pernas por serviço. `tests/integration` (9), `tests/e2e` (1) e
 os 3 scripts soltos em `tests/` **não rodam no CI** (`.github/workflows/ci.yml`
 não os referencia). Não há `Makefile`: os comandos abaixo são os do `.github/workflows/ci.yml`.
 
 | Local | Arquivos |
 |---|---|
-| `tests/unit` | 17 |
+| `tests/unit` | 19 |
 | `tests/integration` | 9 (fora do CI) |
 | `tests/e2e` | 1 (fora do CI) |
 | `tests/` (scripts manuais, contra serviço vivo) | 3 (fora do CI) |
-| `api-gateway/tests` | 5 |
-| `services/vendas/tests` | 10 |
-| `services/produtos/tests` | 7 |
-| `services/estoque/tests` | 5 |
-| `services/empresas/tests` | 2 |
-| `services/clientes/tests` | 1 |
-| `services/financeiro/tests` | 1 |
-| `services/notificacoes/tests` | 1 |
+| `api-gateway/tests` | 11 |
+| `services/vendas/tests` | 13 |
+| `services/produtos/tests` | 9 |
+| `services/estoque/tests` | 9 |
+| `services/empresas/tests` | 6 |
+| `services/clientes/tests` | 4 |
+| `services/financeiro/tests` | 2 |
+| `services/notificacoes/tests` | 2 |
 
 O CI tem duas pernas, com capacidades diferentes:
 

@@ -83,7 +83,7 @@ vários foram parcial ou totalmente resolvidos desde a auditoria; conferir lá a
   Qualquer URL errada vira redirecionamento silencioso para o dashboard.
 
 ### Cobertura de testes
-- **Situação real**: 62 arquivos `test_*.py` versionados, rodando no CI
+- **Situação real**: 88 arquivos `test_*.py` versionados (2026-10-29; ver `tests/README.md`), 75 rodando no CI
   (`.github/workflows/ci.yml`, leg `tests/unit` + matriz por serviço) mais a suíte vitest do frontend.
 - **Aberto**: não existe medição de cobertura publicada, e não há teste E2E de verdade.
 - Meta mantida: 80% de cobertura medida, não estimada.

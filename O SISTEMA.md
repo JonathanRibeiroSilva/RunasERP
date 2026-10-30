@@ -198,7 +198,7 @@ Produtos, Vendas.
 
 ### Testes
 
-62 arquivos `test_*.py` versionados. A CI (`.github/workflows/ci.yml`) roda
+88 arquivos `test_*.py` versionados (medido em 2026-10-29; contagem em `tests/README.md`). A CI (`.github/workflows/ci.yml`) roda
 `pytest -c tests/pytest.ini tests/unit` e `pytest tests`, além de validar os
 composes e construir as imagens de produção. São 5 workflows no total: `ci.yml`,
 `deploy.yml`, `uptime.yml`, `graphify-update.yml` e `landing.yml`.
