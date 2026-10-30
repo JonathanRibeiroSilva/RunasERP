@@ -494,6 +494,30 @@ def test_rollback_so_roda_quando_o_health_falha():
     assert rollback["run"].rstrip().endswith("exit 1")
 
 
+def test_dispatch_recusa_tag_que_nao_e_sha_completo():
+    """Card 115: as imagens levam `github.sha` inteiro. O sha curto (`8d4f77c`) passava por
+    checkout, login e leitura do sha no ar e só morria no promote, com `not found`."""
+    bash = shutil.which("bash")
+    if bash is None:
+        pytest.skip("sem bash neste ambiente")
+    deploy = _deploy()["jobs"]["deploy"]
+    passo = _steps(deploy)[0]
+    assert passo["if"] == "${{ inputs.tag }}"  # push usa github.sha, que já é completo
+    assert "FULL sha (40" in _on(_deploy())["workflow_dispatch"]["inputs"]["tag"]["description"]
+
+    def rodar(tag: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [bash, "-c", passo["run"]], env={**os.environ, **passo["env"], "INPUT_TAG": tag},
+            capture_output=True, text=True,
+        )
+
+    assert rodar("a" * 40).returncode == 0
+    for ruim in ("8d4f77c", "A" * 40, "a" * 39, "a" * 41, "a" * 40 + "\nfoo", "../" + "a" * 37):
+        r = rodar(ruim)
+        assert r.returncode != 0, ruim
+        assert "40" in r.stdout, ruim  # a mensagem diz o que se espera
+
+
 def test_ensaio_aponta_o_primeiro_health_para_um_caminho_inexistente():
     health = _step(_deploy()["jobs"]["deploy"], id="health")
     assert "ensaio_rollback" in str(health["env"]) + health["run"]

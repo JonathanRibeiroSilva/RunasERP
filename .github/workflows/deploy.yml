@@ -57,7 +57,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'sha already in ghcr to republish as :latest (empty = build this commit)'
+        description: 'FULL sha (40 characters) already in ghcr to republish as :latest (empty = build this commit)'
         required: false
         default: ''
       # Pair it with `tag` = the live sha (scripts/production-sha.sh get): the first health check
@@ -171,6 +171,21 @@ jobs:
       TAG: ${{ inputs.tag || github.sha }}
       HEALTH_URL: https://app.runaserp.com.br/api/health/ready
     steps:
+      # The images are tagged with the whole github.sha (publish), so a dispatch `tag`
+      # is looked up verbatim. A short sha used to get through checkout, login and the
+      # live-sha read and die in the promote with `not found` (card 115): refuse it
+      # first, before anything touches ghcr. A push has no `tag`; its github.sha is
+      # already complete, and the automatic rollback's LIVE is a recorded github.sha.
+      - name: Check the tag is a full sha
+        if: ${{ inputs.tag }}
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ ! $INPUT_TAG =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::tag must be the FULL sha, 40 lowercase hex characters (git rev-parse <ref>, or scripts/production-sha.sh get); got: $INPUT_TAG"
+            exit 1
+          fi
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
